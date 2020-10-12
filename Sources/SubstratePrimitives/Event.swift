@@ -14,9 +14,11 @@ public protocol AnyEvent {
     var data: ScaleRegistryDecodable { get }
 }
 
-public protocol Event: AnyEvent, ScaleRegistryDecodable {
+public protocol Event: AnyEvent {
     static var MODULE: Module.Type { get }
     static var EVENT: String { get }
+    
+    init(decodingDataFrom decoder: ScaleDecoder, with registry: TypeRegistry) throws
 }
 
 extension Event {

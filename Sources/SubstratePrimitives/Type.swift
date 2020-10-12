@@ -55,7 +55,6 @@ extension SType: CustomStringConvertible {
     }
 }
 
-
 extension SType: CustomDebugStringConvertible {
     public var debugDescription: String {
         return self.description

@@ -10,11 +10,11 @@ import ScaleCodec
 
 public struct EventRecord: ScaleRegistryDecodable {
     public enum Phase {
-        /// Applying an extrinsic.
+        // Applying an extrinsic.
         case applyExtrinsic(UInt32)
-        /// Finalizing the block.
+        // Finalizing the block.
         case finalization
-        /// Initializing the block.
+        // Initializing the block.
         case initialization
     }
     let phase: Phase
@@ -37,14 +37,7 @@ extension EventRecord.Phase: ScaleDecodable {
 extension EventRecord {
     public init(from decoder: ScaleDecoder, with registry: TypeRegistry) throws {
         self.phase = try decoder.decode()
-        let (module, name) = try decoder.decode((String, String).self)
-        do {
-            self.event = try registry.decodeEvent(module: module, event: name, from: decoder)
-        } catch {
-            self.event = try registry.metadata.decode(
-                event: name, module: module, from: decoder, with: registry
-            )
-        }
+        self.event = try registry.decodeEvent(from: decoder)
         self.topics = try decoder.decode()
     }
 }

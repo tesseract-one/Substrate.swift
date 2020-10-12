@@ -39,7 +39,6 @@ extension CaseIterable where Self: Equatable & ScaleDecodable, Self.AllCases.Ind
     }
 }
 
-
 extension Optional: ScaleRegistryEncodable where Wrapped: ScaleRegistryEncodable {
     public func encode(in encoder: ScaleEncoder, with registry: TypeRegistry) throws {
         try encode(in: encoder) { val, enc in
@@ -47,7 +46,6 @@ extension Optional: ScaleRegistryEncodable where Wrapped: ScaleRegistryEncodable
         }
     }
 }
-
 
 extension Optional: ScaleRegistryDecodable where Wrapped: ScaleRegistryDecodable {
     public init(from decoder: ScaleDecoder, with registry: TypeRegistry) throws {

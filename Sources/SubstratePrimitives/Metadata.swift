@@ -15,9 +15,12 @@ public protocol Metadata {
     
     // Call
     func encode<T: AnyCall>(call: T, in encoder: ScaleEncoder, with registry: TypeRegistry) throws
+    func decode(call index: Int, module: Int, from decoder: ScaleDecoder, with registry: TypeRegistry) throws -> AnyCall
+    func find(call: Int, module: Int) -> (module: String, function: String)?
     
     // Event
-    func decode(event: String, module: String, from decoder: ScaleDecoder, with registry: TypeRegistry) throws -> AnyEvent
+    func decode(event index: Int, module: Int, from decoder: ScaleDecoder, with registry: TypeRegistry) throws -> AnyEvent
+    func find(event: Int, module: Int) -> (module: String, event: String)?
     
     // Generic Values
     func encode(
