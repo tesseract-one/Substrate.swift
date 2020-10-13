@@ -6,7 +6,7 @@
 //
 
 import XCTest
-import SubstratePrimitives
+import Primitives
 import ScaleCodec
 
 final class StorageKeyTests: XCTestCase {

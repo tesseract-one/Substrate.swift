@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Polkadot",
+    name: "Substrate",
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
         .library(
@@ -12,7 +12,7 @@ let package = Package(
             targets: ["Polkadot"]),
         .library(
             name: "SubstratePrimitives",
-            targets: ["SubstratePrimitives"]),
+            targets: ["Primitives"]),
         .library(
             name: "CBlake2b",
             targets: ["CBlake2b"])
@@ -28,18 +28,18 @@ let package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "Polkadot",
-            dependencies: ["SubstratePrimitives"]),
+            dependencies: ["Primitives"]),
         .target(
             name: "CBlake2b",
             dependencies: []),
         .target(
-            name: "SubstratePrimitives",
+            name: "Primitives",
             dependencies: ["ScaleCodec", "xxHash-Swift", "CBlake2b"]),
         .testTarget(
             name: "PolkadotTests",
             dependencies: ["Polkadot"]),
         .testTarget(
-            name: "SubstratePrimitivesTests",
-            dependencies: ["SubstratePrimitives"]),
+            name: "PrimitivesTests",
+            dependencies: ["Primitives"]),
     ]
 )

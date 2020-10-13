@@ -6,7 +6,7 @@
 //
 
 import XCTest
-import SubstratePrimitives
+import Primitives
 
 final class HashersTests: XCTestCase {
     func testBlake2b128() {
