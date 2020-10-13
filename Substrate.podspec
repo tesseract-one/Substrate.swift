@@ -37,7 +37,7 @@ Swift APIs for Polkadot and any Substrate-based chain.
   
   s.subspec 'CBlake2b' do |ss|
     ss.source_files = 'Sources/CBlake2b/**/*.c'
-    ss.public_header_files = 'Sources/CBlake2b/inclide/*.h'
+    ss.public_header_files = 'Sources/CBlake2b/include/*.h'
   end
 
   s.default_subspecs = 'Polkadot'
