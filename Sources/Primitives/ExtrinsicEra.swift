@@ -7,9 +7,6 @@
 
 import Foundation
 import ScaleCodec
-#if os(Linux) || os(FreeBSD)
-import Glibc
-#endif
 
 public enum ExtrinsicEra {
     case immortal
@@ -92,7 +89,7 @@ extension ExtrinsicEra: ScaleRegistryCodable {}
 
 extension UInt64 {
     fileprivate var _nextPowerOfTwo: UInt64? {
-        let i = flsll(Int64(bitPattern: self))
+        let i = Self.bitWidth - self.leadingZeroBitCount
         guard i < 64 else { return nil }
         return 1 << i
     }
