@@ -6,7 +6,12 @@
 //
 
 import XCTest
+
+#if !COCOAPODS
 import Primitives
+#else
+import Substrate
+#endif
 
 final class HashersTests: XCTestCase {
     func testBlake2b128() {

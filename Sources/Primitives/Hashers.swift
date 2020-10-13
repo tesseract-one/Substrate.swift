@@ -8,7 +8,10 @@
 import Foundation
 import ScaleCodec
 import xxHash_Swift
+
+#if !COCOAPODS
 import CBlake2b
+#endif
 
 public protocol Hasher {
     static var byteLength: Int { get }

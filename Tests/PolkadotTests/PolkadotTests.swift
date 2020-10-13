@@ -1,5 +1,10 @@
 import XCTest
+
+#if !COCOAPODS
 @testable import Polkadot
+#else
+@testable import Substrate
+#endif
 
 final class PolkadotTests: XCTestCase {
     func testExample() {

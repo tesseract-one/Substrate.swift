@@ -9,10 +9,9 @@ Pod::Spec.new do |s|
   s.author           = { 'Tesseract Systems, Inc.' => 'info@tesseract.one' }
   s.source           = { :git => 'https://github.com/tesseract-one/Substrate.swift.git', :tag => s.version.to_s }
 
-  s.ios.deployment_target = '9.0'
-  s.osx.deployment_target = '10.10'
-  s.tvos.deployment_target = '9.0'
-  s.watchos.deployment_target = '2.0'
+  s.ios.deployment_target = '10.0'
+  s.osx.deployment_target = '10.12'
+  s.tvos.deployment_target = '12.0'
   
   s.swift_versions = ['5', '5.1', '5.2']
   
@@ -24,7 +23,6 @@ Pod::Spec.new do |s|
     ss.dependency 'Substrate/Primitives'
     
     ss.test_spec 'PolkadotTests' do |test_spec|
-      test_spec.platforms = {:ios => '9.0', :osx => '10.10', :tvos => '9.0'}
       test_spec.source_files = 'Tests/PolkadotTests/**/*.swift'
     end
   end
@@ -34,15 +32,15 @@ Pod::Spec.new do |s|
 
     ss.dependency 'Substrate/CBlake2b'
     ss.dependency 'ScaleCodec', '~> 0.1'
+    ss.dependency 'xxHash-Swift', '~> 1.1'
     
     ss.test_spec 'PrimitivesTests' do |test_spec|
-      test_spec.platforms = {:ios => '9.0', :osx => '10.10', :tvos => '9.0'}
       test_spec.source_files = 'Tests/PrimitivesTests/**/*.swift'
     end
   end
   
   s.subspec 'CBlake2b' do |ss|
-    ss.source_files = 'Sources/CBlake2b/**/*.c'
+    ss.source_files = 'Sources/CBlake2b/**/*.{h,c}'
     ss.public_header_files = 'Sources/CBlake2b/include/*.h'
   end
 

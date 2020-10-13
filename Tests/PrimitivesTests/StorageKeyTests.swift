@@ -6,8 +6,13 @@
 //
 
 import XCTest
-import Primitives
 import ScaleCodec
+
+#if !COCOAPODS
+import Primitives
+#else
+import Substrate
+#endif
 
 final class StorageKeyTests: XCTestCase {
     

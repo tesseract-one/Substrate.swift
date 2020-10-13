@@ -1,5 +1,0 @@
-module CBlake2b {
-    header "blake2.h"
-    link "CBlake2b"
-    export *
-}
