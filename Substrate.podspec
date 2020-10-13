@@ -3,10 +3,6 @@ Pod::Spec.new do |s|
   s.version          = '0.0.1'
   s.summary          = 'Swift APIs for Polkadot and any Substrate-based chain.'
 
-  s.description      = <<-DESC
-Swift APIs for Polkadot and any Substrate-based chain.
-                       DESC
-
   s.homepage         = 'https://github.com/tesseract-one/Substrate.swift'
 
   s.license          = { :type => 'Apache 2.0', :file => 'LICENSE' }
@@ -26,6 +22,11 @@ Swift APIs for Polkadot and any Substrate-based chain.
     ss.source_files = 'Sources/Polkadot/**/*.swift'
 
     ss.dependency 'Substrate/Primitives'
+    
+    ss.test_spec 'PolkadotTests' do |test_spec|
+      test_spec.platforms = {:ios => '9.0', :osx => '10.10', :tvos => '9.0'}
+      test_spec.source_files = 'Tests/PolkadotTests/**/*.swift'
+    end
   end
 
   s.subspec 'Primitives' do |ss|
@@ -33,6 +34,11 @@ Swift APIs for Polkadot and any Substrate-based chain.
 
     ss.dependency 'Substrate/CBlake2b'
     ss.dependency 'ScaleCodec', '~> 0.1'
+    
+    ss.test_spec 'PrimitivesTests' do |test_spec|
+      test_spec.platforms = {:ios => '9.0', :osx => '10.10', :tvos => '9.0'}
+      test_spec.source_files = 'Tests/PrimitivesTests/**/*.swift'
+    end
   end
   
   s.subspec 'CBlake2b' do |ss|
