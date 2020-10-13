@@ -7,6 +7,9 @@
 
 import Foundation
 import ScaleCodec
+#if os(Linux) || os(FreeBSD)
+import Glibc
+#endif
 
 public enum ExtrinsicEra {
     case immortal
