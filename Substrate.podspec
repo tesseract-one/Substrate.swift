@@ -21,6 +21,7 @@ Pod::Spec.new do |s|
     ss.source_files = 'Sources/Polkadot/**/*.swift'
 
     ss.dependency 'Substrate/Primitives'
+    ss.dependency 'Substrate/RPC'
     
     ss.test_spec 'PolkadotTests' do |test_spec|
       test_spec.source_files = 'Tests/PolkadotTests/**/*.swift'
@@ -36,6 +37,17 @@ Pod::Spec.new do |s|
     
     ss.test_spec 'PrimitivesTests' do |test_spec|
       test_spec.source_files = 'Tests/PrimitivesTests/**/*.swift'
+    end
+  end
+  
+  s.subspec 'RPC' do |ss|
+    ss.source_files = 'Sources/RPC/**/*.swift'
+
+    ss.dependency 'Starscream', '~> 4.0'
+    
+    ss.test_spec 'RPCTests' do |test_spec|
+      test_spec.dependency 'Serializable.swift', '~> 0.1'
+      test_spec.source_files = 'Tests/RPCTests/**/*.swift'
     end
   end
   
