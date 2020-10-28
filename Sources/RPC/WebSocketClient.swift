@@ -11,27 +11,26 @@ import Starscream
 public class WebSocketRpcClient {
     private typealias DataCallback = (Result<Data, RpcClientError>) -> Void
     
-    public var url: URL { socket.request.url! }
+    public var url: URL { _socket.request.url! }
     public var responseQueue: DispatchQueue
     public var encoder: JSONEncoder
     public var decoder: JSONDecoder
     
-    public var reconnectWaitingTimeout: TimeInterval {
-        didSet { self.updateTimer() }
-    }
+    public var reconnectWaitingTimeout: TimeInterval
+    public var callTimeout: TimeInterval
     
     public var onConnect: Optional<(Dictionary<String, String>) -> Void>
     public var onDisconnect: Optional<(String, UInt16) -> Void>
     public var onError: Optional<(SubscribableRpcClientError) -> Void>
     
-    private let socket: WebSocket
-    private var connected: Bool
-    private var callIndex: UInt32
-    private var requests: Dictionary<UInt32, DataCallback>
-    private var subscriptions: Dictionary<String, (WebSocketRpcSubscription, DataCallback)>
-    private var pengingRequests: Array<(UInt32, Data, Date)>
-    private var internalQueue: DispatchQueue
-    private var timer: DispatchSourceTimer?
+    private let _socket: WebSocket
+    private var _isConnected: Bool
+    private var _callIndex: UInt32
+    private var _requests: Dictionary<UInt32, (cb: DataCallback, started: Date)>
+    private var _subscriptions: Dictionary<String, (sub: WebSocketRpcSubscription, cb: DataCallback)>
+    private var _pengingRequests: Array<(id: UInt32, body: Data, cb: DataCallback, added: Date)>
+    private var _internalQueue: DispatchQueue
+    private var _timer: DispatchSourceTimer?
     
     public init(
         url: URL, responseQueue: DispatchQueue = .main, headers: [String: String] = [:],
@@ -39,13 +38,14 @@ public class WebSocketRpcClient {
     ) {
         self.responseQueue = responseQueue; self.encoder = encoder; self.decoder = decoder
         
-        callIndex = 0; requests = [:]; subscriptions = [:]
-        connected = false; pengingRequests = []
-        internalQueue = DispatchQueue(
+        _callIndex = 0; _requests = [:]; _subscriptions = [:]
+        _isConnected = false; _pengingRequests = []
+        _internalQueue = DispatchQueue(
             label: "substrate.rpc.websocket.internalQueue",
             target: .global(qos: .default)
         )
-        reconnectWaitingTimeout = 40; onConnect = nil; onDisconnect = nil
+        reconnectWaitingTimeout = 40; callTimeout = 60
+        onConnect = nil; onDisconnect = nil
         onError = { err in print("[WebSocket] ERROR:", err) } // Default error handler
         
         var request = URLRequest(url: url)
@@ -55,42 +55,44 @@ public class WebSocketRpcClient {
         for (h, v) in headers {
             request.setValue(v, forHTTPHeaderField: h)
         }
-        socket = WebSocket(request: request)
-        socket.delegate = self
-        socket.callbackQueue = internalQueue
+        _socket = WebSocket(request: request)
+        _socket.delegate = self
+        _socket.callbackQueue = _internalQueue
+        _startTimer()
     }
     
-    fileprivate func unsubscribe(subscription: WebSocketRpcSubscription, cb: RpcClientCallback<Bool>? = nil) {
-        internalQueue.async {
+    fileprivate func _unsubscribe(subscription: WebSocketRpcSubscription, cb: RpcClientCallback<Bool>? = nil) {
+        _internalQueue.async {
             subscription.cancelled = true
             guard subscription.subscribed else { return }
-            self.subscriptions.removeValue(forKey: subscription.id)
+            self._subscriptions.removeValue(forKey: subscription.id)
             let req = JsonRpcRequest(
-                id: self.nextId(),
+                id: self._nextId(),
                 method: subscription.method.substrateMethod,
                 params: [subscription.id]
             )
-            self.send(req: req, wait: false) { res in self.responseQueue.async { cb?(res) } }
+            self._send(req: req, wait: false) { res in self.responseQueue.async { cb?(res) } }
         }
     }
     
     // Should be callled from internalQueue
-    private func send<Params, Res>(req: JsonRpcRequest<Params>, wait: Bool, response: @escaping RpcClientCallback<Res>)
+    private func _send<Params, Res>(req: JsonRpcRequest<Params>, wait: Bool, response: @escaping RpcClientCallback<Res>)
         where Params: Encodable & Sequence, Res: Decodable
     {
         let id = req.id
-        let encoded = encode(value: req)
+        let encoded = _encode(value: req)
         guard case .success(let data) = encoded else {
             if case .failure(let error) = encoded {
                 response(.failure(error))
             }
             return
         }
-        self.requests[id] = { [weak self] res in
+        
+        let callback: DataCallback = { [weak self] res in
             guard let sself = self else { return }
-            sself.requests.removeValue(forKey: id)
+            sself._requests.removeValue(forKey: id)
             let result = res
-                .flatMap { sself.decode(data: $0, JsonRpcResponse<Res>.self) }
+                .flatMap { sself._decode(data: $0, JsonRpcResponse<Res>.self) }
                 .flatMap {
                     $0.isError
                         ? .failure(.rpc(error: $0.error!))
@@ -98,32 +100,39 @@ public class WebSocketRpcClient {
                 }
             response(result)
         }
-        if self.connected {
-            self.socket.write(data: data)
+        
+        if _isConnected {
+            _send(id: id, data: data, cb: callback)
         } else if wait {
-            self.pengingRequests.append((id, data, Date()))
+            _pengingRequests.append((id: id, body: data, cb: callback, added: Date()))
         } else {
-            self.requests[id]?(.failure(.transport(error: SubscribableRpcClientError.timedout)))
+            response(.failure(.transport(error: SubscribableRpcClientError.timedout)))
         }
     }
     
     // Should be callled from internalQueue
-    private func onData(data: Data) {
-        switch decode(data: data, JsonRpcIdHeader.self) {
+    private func _send(id: UInt32, data: Data, cb: @escaping DataCallback) {
+        _requests[id] = (cb: cb, started: Date())
+        _socket.write(data: data)
+    }
+    
+    // Should be callled from internalQueue
+    private func _onData(data: Data) {
+        switch _decode(data: data, JsonRpcIdHeader.self) {
         case .success(let header):
             if let id = header.id { // Response
-                if let req = requests[id] {
-                    req(.success(data))
+                if let req = _requests[id] {
+                    req.cb(.success(data))
                 } else { // unknown request
                     responseQueue.async {
                         self.onError?(.unknownRequest(id: id))
                     }
                 }
             } else { // Event
-                switch decode(data: data, JsonRpcSubscriptionInfo.self) {
+                switch _decode(data: data, JsonRpcSubscriptionInfo.self) {
                 case .success(let info):
-                    if let subs = subscriptions[info.params.subscription] {
-                        subs.1(.success(data))
+                    if let subs = _subscriptions[info.params.subscription] {
+                        subs.cb(.success(data))
                     } else { // unknown event
                         responseQueue.async {
                             self.onError?(.unknownSubscription(id: info.params.subscription))
@@ -143,47 +152,66 @@ public class WebSocketRpcClient {
     }
     
     // Should be called only on internalQueue
-    private func disconnected(message: String, code: UInt16) {
-        for sub in subscriptions.values {
-            sub.0.cancelled = true
-            
+    private func _connected() {
+        for req in _pengingRequests {
+            _send(id: req.id, data: req.body, cb: req.cb)
+        }
+        _pengingRequests.removeAll()
+    }
+    
+    // Should be called only on internalQueue
+    private func _disconnected(message: String, code: UInt16) {
+        for sub in _subscriptions.values {
+            sub.sub.cancelled = true
             responseQueue.async {
-                sub.1(.failure(.transport(
+                sub.cb(.failure(.transport(
                     error: SubscribableRpcClientError.disconnected(message: message, code: code)
                 )))
             }
         }
-        subscriptions.removeAll()
+        _subscriptions.removeAll()
+        for req in _requests.values {
+            req.cb(.failure(.transport(
+                error: SubscribableRpcClientError.disconnected(message: message, code: code)
+            )))
+        }
+        _requests.removeAll()
     }
     
-    private func updateTimer() {
-        internalQueue.async {
-            self.timer?.cancel()
-            self.timer = DispatchSource.makeTimerSource(queue: self.internalQueue)
-            self.timer?.setEventHandler { [weak self] in
-                self?.checkTimeout()
+    private func _startTimer() {
+        _internalQueue.async {
+            self._timer?.cancel()
+            self._timer = DispatchSource.makeTimerSource(queue: self._internalQueue)
+            self._timer?.setEventHandler { [weak self] in
+                self?._checkTimeout()
             }
-            self.timer?.schedule(deadline: .now(), repeating: 5.0)
-            self.timer?.resume()
+            self._timer?.schedule(deadline: .now(), repeating: 1.0)
+            self._timer?.resume()
         }
     }
     
     // Should be callled from internalQueue
-    private func checkTimeout() {
-        var i = 0
+    private func _checkTimeout() {
         let now = Date()
-        while i < pengingRequests.count {
-            let req = pengingRequests[i]
-            if (now.timeIntervalSince(req.2) >= reconnectWaitingTimeout) {
-                pengingRequests.remove(at: i)
-                self.requests[req.0]?(.failure(.transport(error: SubscribableRpcClientError.timedout)))
-            } else {
-                i += 1
+        _pengingRequests = _pengingRequests.filter { req in
+            if now.timeIntervalSince(req.added) >= self.reconnectWaitingTimeout {
+                req.cb(.failure(.transport(error: SubscribableRpcClientError.timedout)))
+                return false
             }
+            return true
+        }
+        var outdated = Array<DataCallback>()
+        for req in _requests.values {
+            if now.timeIntervalSince(req.started) >= callTimeout {
+                outdated.append(req.cb)
+            }
+        }
+        for cb in outdated {
+            cb(.failure(.transport(error: SubscribableRpcClientError.timedout)))
         }
     }
     
-    private func encode<Req: Encodable>(value: Req) -> Result<Data, RpcClientError> {
+    private func _encode<Req: Encodable>(value: Req) -> Result<Data, RpcClientError> {
         do {
             return try .success(encoder.encode(value))
         } catch let error as EncodingError {
@@ -193,7 +221,7 @@ public class WebSocketRpcClient {
         }
     }
     
-    private func decode<Res: Decodable>(data: Data, _ type: Res.Type) -> Result<Res, RpcClientError> {
+    private func _decode<Res: Decodable>(data: Data, _ type: Res.Type) -> Result<Res, RpcClientError> {
         do {
             return try .success(decoder.decode(Res.self, from: data))
         } catch let error as DecodingError {
@@ -204,14 +232,14 @@ public class WebSocketRpcClient {
     }
     
     // Non thread safe. Never call without queue
-    private func nextId() -> UInt32 {
-        callIndex = callIndex == UInt32.max ? 1 : callIndex + 1
-        return callIndex
+    private func _nextId() -> UInt32 {
+        _callIndex = _callIndex == UInt32.max ? 1 : _callIndex + 1
+        return _callIndex
     }
     
     deinit {
-        timer?.cancel()
-        socket.delegate = nil
+        _timer?.cancel()
+        _socket.delegate = nil
         disconnect()
     }
 }
@@ -220,9 +248,9 @@ extension WebSocketRpcClient: RpcClient {
     public func call<P, R>(method: Method, params: P, response: @escaping RpcClientCallback<R>)
         where P: Encodable & Sequence, R: Decodable
     {
-        internalQueue.async {
-            let req = JsonRpcRequest(id: self.nextId(), method: method.substrateMethod, params: params)
-            self.send(req: req, wait: true) { result in
+        _internalQueue.async {
+            let req = JsonRpcRequest(id: self._nextId(), method: method.substrateMethod, params: params)
+            self._send(req: req, wait: true) { result in
                 self.responseQueue.async { response(result) }
             }
         }
@@ -230,14 +258,14 @@ extension WebSocketRpcClient: RpcClient {
 }
 
 extension WebSocketRpcClient: SubscribableRpcClient {
-    public var isConnected: Bool { connected }
+    public var isConnected: Bool { _isConnected }
     
     public func connect() {
-        socket.connect()
+        _socket.connect()
     }
     
     public func disconnect() {
-        socket.disconnect(closeCode: CloseCode.normal.rawValue)
+        _socket.disconnect(closeCode: CloseCode.normal.rawValue)
     }
     
     public func subscribe<P, E>(
@@ -245,23 +273,23 @@ extension WebSocketRpcClient: SubscribableRpcClient {
     ) -> RpcSubscription
         where P: Encodable & Sequence, E: Decodable
     {
-        return internalQueue.sync {
-            let id = self.nextId()
+        return _internalQueue.sync {
+            let id = self._nextId()
             let req = JsonRpcRequest(id: id, method: method.substrateMethod, params: params)
             let subscription = WebSocketRpcSubscription(id: String(id), method: unsubscribe, client: self)
             let handler: DataCallback = { [weak self] result in
                 guard let sself = self else { return }
                 let parsed = result
-                    .flatMap { sself.decode(data: $0, JsonRpcSubscriptionEvent<E>.self)  }
+                    .flatMap { sself._decode(data: $0, JsonRpcSubscriptionEvent<E>.self)  }
                     .map { $0.params.result }
                 sself.responseQueue.async { listener(parsed) }
             }
-            self.send(req: req, wait: true) { (result: Result<String, RpcClientError>)  in
+            self._send(req: req, wait: true) { (result: Result<String, RpcClientError>)  in
                 switch result {
                 case .success(let subId):
                     subscription.subscribed(id: subId)
-                    self.subscriptions[subId] = (subscription, handler)
-                    if (subscription.cancelled) { self.unsubscribe(subscription: subscription) }
+                    self._subscriptions[subId] = (subscription, handler)
+                    if (subscription.cancelled) { self._unsubscribe(subscription: subscription) }
                 case .failure(let err):
                     subscription.cancelled = true
                     self.responseQueue.async { handler(.failure(err)) }
@@ -276,35 +304,32 @@ extension WebSocketRpcClient: WebSocketDelegate {
     public func didReceive(event: WebSocketEvent, client: WebSocket) {
         switch event {
         case .connected(let headers):
-            connected = true
-            for request in pengingRequests {
-                socket.write(data: request.1)
-            }
-            pengingRequests.removeAll()
+            _isConnected = true
+            _connected()
             responseQueue.async { self.onConnect?(headers) }
         case .disconnected(let s, let c):
-            connected = false
-            disconnected(message: s, code: c)
+            _isConnected = false
+            _disconnected(message: s, code: c)
             responseQueue.async { self.onDisconnect?(s, c) }
         case .binary(let data):
-            onData(data: data)
+            _onData(data: data)
         case .text(let str):
             if let data = str.data(using: .utf8) {
-                onData(data: data)
+                _onData(data: data)
             } else {
                 responseQueue.async {
                     self.onError?(.wrongEncoding(value: str))
                 }
             }
         case .error(let err):
-            connected = false
-            disconnected(message: "Error", code: .max)
+            _isConnected = false
+            _disconnected(message: "Error", code: .max)
             responseQueue.async {
                 self.onError?(.transport(error: err))
             }
         case .cancelled:
-            connected = false
-            disconnected(message: "Cancelled", code: .max)
+            _isConnected = false
+            _disconnected(message: "Cancelled", code: .max)
         default:
             return
         }
@@ -333,7 +358,7 @@ class WebSocketRpcSubscription: RpcSubscription {
     }
     
     func unsubscribe(response: RpcClientCallback<Bool>?) {
-        client?.unsubscribe(subscription: self, cb: response)
+        client?._unsubscribe(subscription: self, cb: response)
     }
 }
 

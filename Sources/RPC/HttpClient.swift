@@ -14,6 +14,7 @@ public class HttpRpcClient: RpcClient {
     public var encoder: JSONEncoder
     public var decoder: JSONDecoder
     public var session: URLSession
+    public var callTimeout: TimeInterval
     
     public init(
         url: URL, responseQueue: DispatchQueue = .main,
@@ -23,16 +24,18 @@ public class HttpRpcClient: RpcClient {
         self.url = url; self.responseQueue = responseQueue
         self.encoder = encoder; self.decoder = decoder
         self.session = session; self.headers = headers
+        callTimeout = 60
     }
     
     public func call<P, R>(method: Method, params: P, response: @escaping RpcClientCallback<R>)
         where P: Encodable & Sequence, R: Decodable
     {
         let request = JsonRpcRequest(id: 1, method: method.substrateMethod, params: params)
-        guard let body = encode(value: request, response: response) else { return }
+        guard let body = _encode(value: request, response: response) else { return }
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.httpBody = body
+        req.timeoutInterval = callTimeout
         for (k, v) in headers {
             req.addValue(v, forHTTPHeaderField: k)
         }
@@ -52,7 +55,7 @@ public class HttpRpcClient: RpcClient {
                 }
                 return
             }
-            let result = self.decode(data: data, JsonRpcResponse<R>.self)
+            let result = self._decode(data: data, JsonRpcResponse<R>.self)
                 .flatMap {
                     $0.isError
                         ? .failure(.rpc(error: $0.error!))
@@ -62,7 +65,7 @@ public class HttpRpcClient: RpcClient {
         }.resume()
     }
     
-    private func encode<Req: Encodable, Res: Decodable>(
+    private func _encode<Req: Encodable, Res: Decodable>(
         value: Req, response: @escaping RpcClientCallback<Res>
     ) -> Data? {
         do {
@@ -76,7 +79,7 @@ public class HttpRpcClient: RpcClient {
         }
     }
     
-    private func decode<Res: Decodable>(data: Data, _ type: Res.Type) -> Result<Res, RpcClientError> {
+    private func _decode<Res: Decodable>(data: Data, _ type: Res.Type) -> Result<Res, RpcClientError> {
         do {
             return try .success(decoder.decode(Res.self, from: data))
         } catch let error as DecodingError {
