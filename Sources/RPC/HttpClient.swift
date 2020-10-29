@@ -6,6 +6,9 @@
 //
 
 import Foundation
+#if os(Linux)
+import FoundationNetworking
+#endif
 
 public class HttpRpcClient: RpcClient {
     public let url: URL
