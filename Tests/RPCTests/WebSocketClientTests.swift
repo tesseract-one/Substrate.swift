@@ -5,6 +5,7 @@
 //  Created by Yehor Popovych on 10/28/20.
 //
 
+#if !os(Linux)
 import XCTest
 import Serializable
 
@@ -14,7 +15,7 @@ import RPC
 import Substrate
 #endif
 
-final class StorageKeyTests: XCTestCase {
+final class WebSocketClientTests: XCTestCase {
     func testSimpleRequest() {
         let expect = expectation(description: "Simple Request")
         let client = WebSocketRpcClient(url: URL(string: "wss://rpc.polkadot.io")!)
@@ -80,3 +81,4 @@ final class StorageKeyTests: XCTestCase {
         wait(for: expects, timeout: 20)
     }
 }
+#endif

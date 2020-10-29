@@ -3,7 +3,7 @@
 
 import PackageDescription
 
-let package = Package(
+var package = Package(
     name: "Substrate",
     products: [
         // Products define the executables and libraries produced by a package, and make them visible to other packages.
@@ -25,7 +25,6 @@ let package = Package(
         // .package(url: /* package url */, from: "1.0.0"),
         .package(url: "https://github.com/tesseract-one/swift-scale-codec.git", .branch("main")),
         .package(url: "https://github.com/daisuke-t-jp/xxHash-Swift.git", from: "1.1.0"),
-        .package(url: "https://github.com/daltoniam/Starscream.git", from: "4.0.0"),
         .package(url: "https://github.com/tesseract-one/Serializable.swift.git", from: "0.2.0")
     ],
     targets: [
@@ -46,7 +45,7 @@ let package = Package(
         ),
         .target(
             name: "RPC",
-            dependencies: ["Starscream"]),
+            dependencies: []),
         .testTarget(
             name: "PolkadotTests",
             dependencies: ["Polkadot"]),
@@ -58,3 +57,13 @@ let package = Package(
             dependencies: ["RPC", "Serializable"]),
     ]
 )
+
+#if !os(Linux)
+package.dependencies.append(.package(url: "https://github.com/daltoniam/Starscream.git", from: "4.0.0"))
+for target in package.targets {
+    if target.name == "RPC" {
+        target.dependencies.append("Starscream")
+        break
+    }
+}
+#endif

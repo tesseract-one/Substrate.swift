@@ -5,6 +5,7 @@
 //  Created by Yehor Popovych on 10/28/20.
 //
 
+#if !os(Linux)
 import Foundation
 import Starscream
 
@@ -395,3 +396,4 @@ private struct JsonRpcSubscriptionInfo: Decodable {
     let jsonrpc: String
     let params: Params
 }
+#endif
