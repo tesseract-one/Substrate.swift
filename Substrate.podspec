@@ -46,7 +46,7 @@ Pod::Spec.new do |s|
     ss.dependency 'Starscream', '~> 4.0'
     
     ss.test_spec 'RPCTests' do |test_spec|
-      test_spec.dependency 'Serializable.swift', '~> 0.1'
+      test_spec.dependency 'Serializable.swift', '~> 0.2'
       test_spec.source_files = 'Tests/RPCTests/**/*.swift'
     end
   end

@@ -11,24 +11,37 @@ import Starscream
 public class WebSocketRpcClient {
     private typealias DataCallback = (Result<Data, RpcClientError>) -> Void
     
+    // Connection url. Read only.
     public var url: URL { _socket.request.url! }
+    // DispatchQueue for callbacks. By default is main queue.
+    // This will not block main queue. All operations work on internal queue.
+    // Set it if you want to get responses in a different queue.
     public var responseQueue: DispatchQueue
+    // JSON Encoder. By default is a special preconfigured one.
     public var encoder: JSONEncoder
+    // JSON Decoder. By default is a special preconfigured one.
     public var decoder: JSONDecoder
     
-    public var reconnectWaitingTimeout: TimeInterval
+    // How much to wait for reconnect before cancelling the call.
+    public var callReconnectWaitingTimeout: TimeInterval
+    // How much to wait for response from the server.
     public var callTimeout: TimeInterval
     
+    // Connection event. Dictionary is a list of headers.
     public var onConnect: Optional<(Dictionary<String, String>) -> Void>
+    // Disconnect event. Parameters are message and code.
     public var onDisconnect: Optional<(String, UInt16) -> Void>
+    // Global Error event.
+    // Unhandled or broken messages and socket errors will be sent here.
+    // By default will log them to the console. Set to `nil` to remove logs.
     public var onError: Optional<(SubscribableRpcClientError) -> Void>
     
     private let _socket: WebSocket
     private var _isConnected: Bool
     private var _callIndex: UInt32
-    private var _requests: Dictionary<UInt32, (cb: DataCallback, started: Date)>
+    private var _requests: Dictionary<UInt32, (cb: DataCallback, timeout: Date)>
     private var _subscriptions: Dictionary<String, (sub: WebSocketRpcSubscription, cb: DataCallback)>
-    private var _pengingRequests: Array<(id: UInt32, body: Data, cb: DataCallback, added: Date)>
+    private var _pengingRequests: Array<(id: UInt32, body: Data, cb: DataCallback, timeout: Date)>
     private var _internalQueue: DispatchQueue
     private var _timer: DispatchSourceTimer?
     
@@ -44,7 +57,7 @@ public class WebSocketRpcClient {
             label: "substrate.rpc.websocket.internalQueue",
             target: .global(qos: .default)
         )
-        reconnectWaitingTimeout = 40; callTimeout = 60
+        callReconnectWaitingTimeout = 40; callTimeout = 60
         onConnect = nil; onDisconnect = nil
         onError = { err in print("[WebSocket] ERROR:", err) } // Default error handler
         
@@ -104,15 +117,19 @@ public class WebSocketRpcClient {
         if _isConnected {
             _send(id: id, data: data, cb: callback)
         } else if wait {
-            _pengingRequests.append((id: id, body: data, cb: callback, added: Date()))
+            let timeout = Date(timeIntervalSinceNow: callReconnectWaitingTimeout)
+            _pengingRequests.append((id: id, body: data, cb: callback, timeout: timeout))
         } else {
-            response(.failure(.transport(error: SubscribableRpcClientError.timedout)))
+            response(.failure(.transport(
+                error: SubscribableRpcClientError.disconnected(message: "Send Failed", code: .max)
+            )))
         }
     }
     
     // Should be callled from internalQueue
     private func _send(id: UInt32, data: Data, cb: @escaping DataCallback) {
-        _requests[id] = (cb: cb, started: Date())
+        let timeout = Date(timeIntervalSinceNow: callTimeout)
+        _requests[id] = (cb: cb, timeout: timeout)
         _socket.write(data: data)
     }
     
@@ -194,20 +211,21 @@ public class WebSocketRpcClient {
     private func _checkTimeout() {
         let now = Date()
         _pengingRequests = _pengingRequests.filter { req in
-            if now.timeIntervalSince(req.added) >= self.reconnectWaitingTimeout {
-                req.cb(.failure(.transport(error: SubscribableRpcClientError.timedout)))
+            if now >= req.timeout {
+                req.cb(.failure(.transport(error: SubscribableRpcClientError.timeout)))
                 return false
             }
             return true
         }
         var outdated = Array<DataCallback>()
+        outdated.reserveCapacity(_requests.count / 2)
         for req in _requests.values {
-            if now.timeIntervalSince(req.started) >= callTimeout {
+            if now >= req.timeout {
                 outdated.append(req.cb)
             }
         }
         for cb in outdated {
-            cb(.failure(.transport(error: SubscribableRpcClientError.timedout)))
+            cb(.failure(.transport(error: SubscribableRpcClientError.timeout)))
         }
     }
     
@@ -323,13 +341,16 @@ extension WebSocketRpcClient: WebSocketDelegate {
             }
         case .error(let err):
             _isConnected = false
-            _disconnected(message: "Error", code: .max)
+            _disconnected(message: "Socket Error", code: .max)
             responseQueue.async {
                 self.onError?(.transport(error: err))
             }
         case .cancelled:
             _isConnected = false
-            _disconnected(message: "Cancelled", code: .max)
+            _disconnected(message: "Socket Cancelled", code: .max)
+            responseQueue.async {
+                self.onError?(.transport(error: nil))
+            }
         default:
             return
         }

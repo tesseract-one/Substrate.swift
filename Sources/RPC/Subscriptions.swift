@@ -22,7 +22,7 @@ public enum SubscribableRpcClientError: Error {
     case malformedMessage(data: Data, error: RpcClientError)
     case disconnected(message: String, code: UInt16)
     case transport(error: Error?)
-    case timedout
+    case timeout
 }
 
 public protocol SubscribableRpcClient {
