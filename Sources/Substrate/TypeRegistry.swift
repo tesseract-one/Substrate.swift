@@ -15,9 +15,9 @@ public class TypeRegistry: Primitives.TypeRegistry {
     private var _calls: Dictionary<String, Call.Type>
     private var _types: Dictionary<SType, ScaleRegistryDecodable.Type>
     
-    public let metadata: Metadata
+    public let metadata: Primitives.Metadata
     
-    public required init(metadata: Metadata) throws {
+    public required init(metadata: Primitives.Metadata) throws {
         self.metadata = metadata
     }
     
@@ -42,7 +42,11 @@ public class TypeRegistry: Primitives.TypeRegistry {
     }
     
     public func decodeValue(type: SType, from decoder: ScaleDecoder) throws -> ScaleRegistryDecodable {
-        <#code#>
+        if let vtype = _types[type] {
+            return try vtype.init(from: decoder, with: self)
+        } else {
+            return try metadata.decode(type: type, from: decoder, with: self)
+        }
     }
     
     public func encode<C>(call: C, in encoder: ScaleEncoder) throws where C : AnyCall {
