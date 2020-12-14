@@ -11,9 +11,9 @@ import ScaleCodec
 
 
 public class TypeRegistry: Primitives.TypeRegistry {
-    private let _events: Dictionary<String, Event.Type>
-    private let _calls: Dictionary<String, Call.Type>
-    private let _types: Dictionary<SType, ScaleRegistryDecodable.Type>
+    private var _events: Dictionary<String, Event.Type>
+    private var _calls: Dictionary<String, Call.Type>
+    private var _types: Dictionary<SType, ScaleRegistryDecodable.Type>
     
     public let metadata: Metadata
     
@@ -21,13 +21,20 @@ public class TypeRegistry: Primitives.TypeRegistry {
         self.metadata = metadata
     }
     
-    
-    public func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent {
-        <#code#>
+    public func registerEvent<E>(_ t: E.Type) throws where E : Event {
+        _events["\(E.MODULE).\(E.EVENT)"] = t
     }
     
-    public func registerEvent<E>(_ t: E.Type) throws where E : Event {
-        <#code#>
+    public func registerType<T>(_ t: T.Type, as type: SType) throws where T : ScaleRegistryDecodable {
+        _types[type] = t
+    }
+    
+    public func registerCall<C>(_ t: C.Type) throws where C : Call {
+        _calls["\(C.MODULE).\(C.FUNCTION)"] = t
+    }
+    
+    public func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent {
+        
     }
     
     public func encode<V>(value: V, type: SType, in encoder: ScaleEncoder) throws where V : ScaleRegistryEncodable {
@@ -38,19 +45,11 @@ public class TypeRegistry: Primitives.TypeRegistry {
         <#code#>
     }
     
-    public func registerType<T>(_ t: T.Type, as type: SType) throws where T : ScaleRegistryDecodable {
-        <#code#>
-    }
-    
     public func encode<C>(call: C, in encoder: ScaleEncoder) throws where C : AnyCall {
         <#code#>
     }
     
     public func decodeCall(from decoder: ScaleDecoder) throws -> AnyCall {
-        <#code#>
-    }
-    
-    public func registerCall<C>(_ t: C.Type) throws where C : Call {
         <#code#>
     }
 }
