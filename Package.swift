@@ -11,10 +11,13 @@ var package = Package(
             name: "Polkadot",
             targets: ["Polkadot"]),
         .library(
+            name: "Substrate",
+            targets: ["Substrate"]),
+        .library(
             name: "SubstratePrimitives",
             targets: ["Primitives"]),
         .library(
-            name: "SubstrateRPC",
+            name: "SubstrateRpc",
             targets: ["RPC"]),
         .library(
             name: "CBlake2b",
@@ -32,6 +35,9 @@ var package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "Polkadot",
+            dependencies: ["Substrate"]),
+        .target(
+            name: "Substrate",
             dependencies: ["Primitives", "RPC"]),
         .target(
             name: "CBlake2b",

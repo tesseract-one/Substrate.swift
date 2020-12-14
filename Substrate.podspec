@@ -16,12 +16,22 @@ Pod::Spec.new do |s|
   s.swift_versions = ['5', '5.1', '5.2']
   
   s.module_name = 'Substrate'
+  
+  s.subspec 'Substrate' do |ss|
+    ss.source_files = 'Sources/Substrate/**/*.swift'
+
+    ss.dependency 'Substrate/Primitives'
+    ss.dependency 'Substrate/RPC'
+    
+    ss.test_spec 'SubstrateTests' do |test_spec|
+      test_spec.source_files = 'Tests/SubstrateTests/**/*.swift'
+    end
+  end
 
   s.subspec 'Polkadot' do |ss|
     ss.source_files = 'Sources/Polkadot/**/*.swift'
 
-    ss.dependency 'Substrate/Primitives'
-    ss.dependency 'Substrate/RPC'
+    ss.dependency 'Substrate/Substrate'
     
     ss.test_spec 'PolkadotTests' do |test_spec|
       test_spec.source_files = 'Tests/PolkadotTests/**/*.swift'
