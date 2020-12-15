@@ -26,7 +26,9 @@ public class HttpRpcClient: RpcClient {
     ) {
         self.url = url; self.responseQueue = responseQueue
         self.encoder = encoder; self.decoder = decoder
-        self.session = session; self.headers = headers
+        self.session = session
+        self.headers = ["Content-Type": "application/json"]
+        self.headers.merge(headers) { (_, new) in new }
         callTimeout = 60
     }
     
@@ -42,7 +44,7 @@ public class HttpRpcClient: RpcClient {
         for (k, v) in headers {
             req.addValue(v, forHTTPHeaderField: k)
         }
-        session.dataTask(with: url) { data, urlResponse, error in
+        session.dataTask(with: req) { data, urlResponse, error in
             guard let urlResponse = urlResponse as? HTTPURLResponse, let data = data, error == nil else {
                 let err: RpcClientError = error != nil
                     ? .transport(error: error!)
