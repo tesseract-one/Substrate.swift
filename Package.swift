@@ -25,7 +25,8 @@ var package = Package(
         // .package(url: /* package url */, from: "1.0.0"),
         .package(url: "https://github.com/tesseract-one/swift-scale-codec.git", .branch("main")),
         .package(url: "https://github.com/daisuke-t-jp/xxHash-Swift.git", from: "1.1.0"),
-        .package(url: "https://github.com/tesseract-one/Serializable.swift.git", from: "0.2.0")
+        .package(url: "https://github.com/tesseract-one/Serializable.swift.git", from: "0.2.0"),
+        .package(url: "https://github.com/tesseract-one/WebSocket.swift.git", from: "0.0.1"),
     ],
     targets: [
         // Targets are the basic building blocks of a package. A target can define a module or a test suite.
@@ -45,7 +46,7 @@ var package = Package(
         ),
         .target(
             name: "RPC",
-            dependencies: []),
+            dependencies: ["WebSocket"]),
         .testTarget(
             name: "PolkadotTests",
             dependencies: ["Polkadot"]),
@@ -57,13 +58,3 @@ var package = Package(
             dependencies: ["RPC", "Serializable"]),
     ]
 )
-
-#if !os(Linux)
-package.dependencies.append(.package(url: "https://github.com/daltoniam/Starscream.git", from: "4.0.0"))
-for target in package.targets {
-    if target.name == "RPC" {
-        target.dependencies.append("Starscream")
-        break
-    }
-}
-#endif

@@ -20,15 +20,15 @@ public enum SubscribableRpcClientError: Error {
     case malformedSubscriptionData(data: Data, error: RpcClientError)
     case wrongEncoding(value: String)
     case malformedMessage(data: Data, error: RpcClientError)
-    case disconnected(message: String, code: UInt16)
+    case disconnected(code: UInt16)
     case transport(error: Error?)
     case timeout
 }
 
 public protocol SubscribableRpcClient {
     var isConnected: Bool { get }
-    var onConnect: Optional<(Dictionary<String, String>) -> Void> { get set }
-    var onDisconnect: Optional<(String, UInt16) -> Void> { get set }
+    var onConnect: Optional<() -> Void> { get set }
+    var onDisconnect: Optional<(UInt16) -> Void> { get set }
     var onError: Optional<(SubscribableRpcClientError) -> Void> { get set }
     
     func connect()
