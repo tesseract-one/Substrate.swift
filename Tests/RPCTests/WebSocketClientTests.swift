@@ -20,7 +20,7 @@ final class WebSocketClientTests: XCTestCase {
         let disconnect = expectation(description: "Disconnect")
         let client = WebSocketRpcClient(url: URL(string: "wss://rpc.polkadot.io")!)
         
-        client.onDisconnect = { _ in
+        client.onDisconnect = { _, _ in
             disconnect.fulfill()
         }
         
@@ -41,7 +41,7 @@ final class WebSocketClientTests: XCTestCase {
         let disconnect = expectation(description: "Disconnect")
         let client = WebSocketRpcClient(url: URL(string: "wss://rpc.polkadot.io")!)
         
-        client.onDisconnect = { _ in
+        client.onDisconnect = { _, _ in
             disconnect.fulfill()
         }
         
@@ -73,7 +73,7 @@ final class WebSocketClientTests: XCTestCase {
         let disconnect = expectation(description: "Disconnect")
         let client = WebSocketRpcClient(url: URL(string: "wss://rpc.polkadot.io")!)
         
-        client.onDisconnect = { _ in
+        client.onDisconnect = { _, _ in
             disconnect.fulfill()
         }
         

@@ -17,7 +17,6 @@ public class HttpRpcClient: RpcClient {
     public var encoder: JSONEncoder
     public var decoder: JSONDecoder
     public var session: URLSession
-    public var callTimeout: TimeInterval
     
     public init(
         url: URL, responseQueue: DispatchQueue = .main,
@@ -29,10 +28,9 @@ public class HttpRpcClient: RpcClient {
         self.session = session
         self.headers = ["Content-Type": "application/json"]
         self.headers.merge(headers) { (_, new) in new }
-        callTimeout = 60
     }
     
-    public func call<P, R>(method: Method, params: P, response: @escaping RpcClientCallback<R>)
+    public func call<P, R>(method: Method, params: P, timeout: TimeInterval = 60, response: @escaping RpcClientCallback<R>)
         where P: Encodable & Sequence, R: Decodable
     {
         let request = JsonRpcRequest(id: 1, method: method.substrateMethod, params: params)
@@ -40,7 +38,7 @@ public class HttpRpcClient: RpcClient {
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
         req.httpBody = body
-        req.timeoutInterval = callTimeout
+        req.timeoutInterval = timeout
         for (k, v) in headers {
             req.addValue(v, forHTTPHeaderField: k)
         }

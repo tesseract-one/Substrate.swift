@@ -27,9 +27,9 @@ public enum SubscribableRpcClientError: Error {
 
 public protocol SubscribableRpcClient {
     var isConnected: Bool { get }
-    var onConnect: Optional<() -> Void> { get set }
-    var onDisconnect: Optional<(UInt16) -> Void> { get set }
-    var onError: Optional<(SubscribableRpcClientError) -> Void> { get set }
+    var onConnect: Optional<(SubscribableRpcClient) -> Void> { get set }
+    var onDisconnect: Optional<(UInt16, SubscribableRpcClient) -> Void> { get set }
+    var onError: Optional<(SubscribableRpcClientError, SubscribableRpcClient) -> Void> { get set }
     
     func connect()
     func disconnect()
