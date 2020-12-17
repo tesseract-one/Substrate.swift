@@ -12,10 +12,10 @@ var package = Package(
             targets: ["Polkadot"]),
         .library(
             name: "SubstratePrimitives",
-            targets: ["Primitives"]),
+            targets: ["SubstratePrimitives"]),
         .library(
-            name: "SubstrateRPC",
-            targets: ["RPC"]),
+            name: "SubstrateRpc",
+            targets: ["SubstrateRpc"]),
         .library(
             name: "CBlake2b",
             targets: ["CBlake2b"])
@@ -33,28 +33,29 @@ var package = Package(
         // Targets can depend on other targets in this package, and on products in packages which this package depends on.
         .target(
             name: "Polkadot",
-            dependencies: ["Primitives", "RPC"]),
+            dependencies: ["SubstratePrimitives", "SubstrateRpc"]),
         .target(
             name: "CBlake2b",
             dependencies: []),
         .target(
-            name: "Primitives",
+            name: "SubstratePrimitives",
             dependencies: [
                 .product(name: "ScaleCodec", package: "swift-scale-codec"),
                 "xxHash-Swift", "CBlake2b"
-            ]
-        ),
+            ],
+            path: "Sources/Primitives"),
         .target(
-            name: "RPC",
-            dependencies: ["WebSocket"]),
+            name: "SubstrateRpc",
+            dependencies: ["WebSocket"],
+            path: "Sources/RPC"),
         .testTarget(
             name: "PolkadotTests",
             dependencies: ["Polkadot"]),
         .testTarget(
             name: "PrimitivesTests",
-            dependencies: ["Primitives"]),
+            dependencies: ["SubstratePrimitives"]),
         .testTarget(
             name: "RPCTests",
-            dependencies: ["RPC", "Serializable"]),
+            dependencies: ["SubstrateRpc", "Serializable"]),
     ]
 )

@@ -9,7 +9,7 @@ import XCTest
 import Serializable
 
 #if !COCOAPODS
-import RPC
+import SubstrateRpc
 #else
 import Substrate
 #endif
