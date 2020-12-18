@@ -76,7 +76,7 @@ public class WebSocketRpcClient {
         self.headers = headers
         
         _socket = WebSocket(callbackQueue: _internalQueue)
-        _socket.callbackQueue = _internalQueue
+        _socket.pingInterval = .seconds(20)
         _startTimer()
         _addSocketHandlers()
     }
@@ -268,6 +268,7 @@ public class WebSocketRpcClient {
     
     deinit {
         _timer?.cancel()
+        _socket.disconnect()
     }
 }
 
@@ -392,10 +393,6 @@ class WebSocketRpcSubscription: RpcSubscription {
     
     func unsubscribe(response: RpcClientCallback<Bool>? = nil) {
         client?._unsubscribe(subscription: self, cb: response)
-    }
-    
-    deinit {
-        unsubscribe()
     }
 }
 

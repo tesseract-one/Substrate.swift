@@ -16,7 +16,6 @@ import Substrate
 
 final class WebSocketClientTests: XCTestCase {
     func testSimpleRequest() {
-        let expect = expectation(description: "Simple Request")
         let disconnect = expectation(description: "Disconnect")
         let client = WebSocketRpcClient(url: URL(string: "wss://rpc.polkadot.io")!)
         
@@ -27,17 +26,18 @@ final class WebSocketClientTests: XCTestCase {
         client.connect()
         
         client.call(method: "chain_getBlock", params: Array<Int>()) { (result: Result<SerializableValue, RpcClientError>) in
-            expect.fulfill()
+            client.disconnect()
+            if case .failure(let err) = result {
+                XCTFail("Request error: \(err)")
+            }
         }
         
-        wait(for: [expect], timeout: 10)
-        client.disconnect()
-        wait(for: [disconnect], timeout: 2)
+        wait(for: [disconnect], timeout: 10)
     }
     
     func testSubscriptionRequest() {
         var index = 0
-        let expects = (0...1).map { expectation(description: "Head \($0)")}
+        let waitFor = 2
         let disconnect = expectation(description: "Disconnect")
         let client = WebSocketRpcClient(url: URL(string: "wss://rpc.polkadot.io")!)
         
@@ -53,23 +53,24 @@ final class WebSocketClientTests: XCTestCase {
             params: Array<Int>(),
             unsubscribe: "chain_unsubscribeFinalizedHeads"
         ) { (result: Result<SerializableValue, RpcClientError>) in
-            print("Subscription", result)
-            if index < expects.count {
-                expects[index].fulfill()
-                index += 1
-            } else if (index == expects.count) {
-                sub?.unsubscribe()
+            index += 1
+            if index == waitFor {
+                sub?.unsubscribe() { _ in
+                    client.disconnect()
+                }
+            }
+            
+            if case .failure(let err) = result {
+                XCTFail("Request error: \(err)")
             }
         }
         
-        wait(for: expects, timeout: 20)
-        client.disconnect()
-        wait(for: [disconnect], timeout: 2)
+        wait(for: [disconnect], timeout: 20)
     }
     
     func testSendPendingRequests() {
-        var index = 1
-        let expects = (0...2).map { expectation(description: "Expect \($0)")}
+        var index = 0
+        let waitFor = 3
         let disconnect = expectation(description: "Disconnect")
         let client = WebSocketRpcClient(url: URL(string: "wss://rpc.polkadot.io")!)
         
@@ -78,7 +79,14 @@ final class WebSocketClientTests: XCTestCase {
         }
         
         client.call(method: "chain_getBlock", params: Array<Int>()) { (result: Result<SerializableValue, RpcClientError>) in
-            expects[0].fulfill()
+            index += 1
+            if index == waitFor {
+                client.disconnect()
+            }
+            
+            if case .failure(let err) = result {
+                XCTFail("Request error: \(err)")
+            }
         }
         
         var sub: RpcSubscription?
@@ -87,19 +95,20 @@ final class WebSocketClientTests: XCTestCase {
             params: Array<Int>(),
             unsubscribe: "chain_unsubscribeFinalizedHeads"
         ) { (result: Result<SerializableValue, RpcClientError>) in
-            print("Subscription", result)
-            if index < expects.count {
-                expects[index].fulfill()
-                index += 1
-            } else if (index == expects.count) {
-                sub?.unsubscribe()
+            index += 1
+            if index == waitFor {
+                sub?.unsubscribe() { _ in
+                    client.disconnect()
+                }
+            }
+            
+            if case .failure(let err) = result {
+                XCTFail("Request error: \(err)")
             }
         }
         
         client.connect()
         
-        wait(for: expects, timeout: 20)
-        client.disconnect()
-        wait(for: [disconnect], timeout: 2)
+        wait(for: [disconnect], timeout: 20)
     }
 }

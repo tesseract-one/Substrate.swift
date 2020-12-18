@@ -29,7 +29,9 @@ final class HttpClientTests: XCTestCase {
         let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
         
         client.call(method: "chain_getBlock", params: Array<Int>()) { (result: Result<SerializableValue, RpcClientError>) in
-            print("Result: \(result)")
+            if case .failure(let err) = result {
+                XCTFail("Request error: \(err)")
+            }
             expect.fulfill()
         }
         
@@ -41,7 +43,9 @@ final class HttpClientTests: XCTestCase {
         let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
         
         client.call(method: "chain_getBlockHash", params: [1]) { (result: Result<BlockHash, RpcClientError>) in
-            print("Block 1 hash: \(result)")
+            if case .failure(let err) = result {
+                XCTFail("Request error: \(err)")
+            }
             expect.fulfill()
         }
         
