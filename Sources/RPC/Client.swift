@@ -31,6 +31,6 @@ public protocol RpcClient {
     var responseQueue: DispatchQueue { get set }
     
     func call<P: Encodable & Sequence, R: Decodable>(
-        method: Method, params: P, response: @escaping RpcClientCallback<R>
+        method: Method, params: P, timeout: TimeInterval, response: @escaping RpcClientCallback<R>
     )
 }

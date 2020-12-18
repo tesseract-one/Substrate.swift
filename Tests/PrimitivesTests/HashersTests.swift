@@ -8,7 +8,7 @@
 import XCTest
 
 #if !COCOAPODS
-import Primitives
+import SubstratePrimitives
 #else
 import Substrate
 #endif

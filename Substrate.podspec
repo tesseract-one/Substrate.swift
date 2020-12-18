@@ -53,7 +53,7 @@ Pod::Spec.new do |s|
   s.subspec 'RPC' do |ss|
     ss.source_files = 'Sources/RPC/**/*.swift'
 
-    ss.dependency 'Starscream', '~> 4.0'
+    ss.dependency 'TesseractWebSocket', '~> 0.0.1'
     
     ss.test_spec 'RPCTests' do |test_spec|
       test_spec.dependency 'Serializable.swift', '~> 0.2'
