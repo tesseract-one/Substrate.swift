@@ -347,17 +347,19 @@ extension WebSocketRpcClient {
             sself.responseQueue.async { sself.onDisconnect?(c, sself) }
         }
         _socket.onData = { [weak self] data, socket in
-            self?._onData(data: data)
-        }
-        _socket.onText = { [weak self] text, socket in
             guard let sself = self else { return }
-            if let data = text.data(using: .utf8) {
-                sself._onData(data: data)
-            } else {
-                sself.responseQueue.async {
-                    sself.onError?(.wrongEncoding(value: text), sself)
+            switch data {
+            case .binary(let d): sself._onData(data: d)
+            case .text(let text):
+                if let data = text.data(using: .utf8) {
+                    sself._onData(data: data)
+                } else {
+                    sself.responseQueue.async {
+                        sself.onError?(.wrongEncoding(value: text), sself)
+                    }
                 }
             }
+            
         }
         _socket.onError = { [weak self] error, socket in
             guard let sself = self else { return }
