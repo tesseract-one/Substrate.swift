@@ -13,8 +13,4 @@ final class PolkadotTests: XCTestCase {
         // results.
         XCTAssertEqual(Polkadot().text, "Hello, World!")
     }
-
-    static var allTests = [
-        ("testExample", testExample),
-    ]
 }

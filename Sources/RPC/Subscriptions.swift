@@ -25,7 +25,7 @@ public enum SubscribableRpcClientError: Error {
     case timeout
 }
 
-public protocol SubscribableRpcClient {
+public protocol SubscribableRpcClient: RpcClient {
     var isConnected: Bool { get }
     var onConnect: Optional<(SubscribableRpcClient) -> Void> { get set }
     var onDisconnect: Optional<(UInt16, SubscribableRpcClient) -> Void> { get set }

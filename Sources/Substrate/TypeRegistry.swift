@@ -6,19 +6,22 @@
 //
 
 import Foundation
-import Primitives
+import SubstratePrimitives
 import ScaleCodec
 
 
-public class TypeRegistry: Primitives.TypeRegistry {
+public class TypeRegistry: SubstratePrimitives.TypeRegistry {
     private var _events: Dictionary<String, Event.Type>
     private var _calls: Dictionary<String, Call.Type>
     private var _types: Dictionary<SType, ScaleRegistryDecodable.Type>
     
-    public let metadata: Primitives.Metadata
+    public let metadata: SubstratePrimitives.Metadata
     
-    public required init(metadata: Primitives.Metadata) throws {
+    public required init(metadata: SubstratePrimitives.Metadata) throws {
         self.metadata = metadata
+        _events = [:]
+        _calls = [:]
+        _types = [:]
     }
     
     public func registerEvent<E>(_ t: E.Type) throws where E : Event {
@@ -34,11 +37,11 @@ public class TypeRegistry: Primitives.TypeRegistry {
     }
     
     public func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent {
-        
+        fatalError("Not implemented")
     }
     
     public func encode<V>(value: V, type: SType, in encoder: ScaleEncoder) throws where V : ScaleRegistryEncodable {
-        <#code#>
+        fatalError("Not implemented")
     }
     
     public func decodeValue(type: SType, from decoder: ScaleDecoder) throws -> ScaleRegistryDecodable {
@@ -50,10 +53,10 @@ public class TypeRegistry: Primitives.TypeRegistry {
     }
     
     public func encode<C>(call: C, in encoder: ScaleEncoder) throws where C : AnyCall {
-        <#code#>
+        fatalError("Not implemented")
     }
     
     public func decodeCall(from decoder: ScaleDecoder) throws -> AnyCall {
-        <#code#>
+        fatalError("Not implemented")
     }
 }

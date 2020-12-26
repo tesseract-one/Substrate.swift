@@ -58,6 +58,9 @@ var package = Package(
             name: "PolkadotTests",
             dependencies: ["Polkadot"]),
         .testTarget(
+            name: "SubstrateTests",
+            dependencies: ["Substrate"]),
+        .testTarget(
             name: "PrimitivesTests",
             dependencies: ["SubstratePrimitives"]),
         .testTarget(
