@@ -21,10 +21,10 @@ public enum TypeRegistryError: Error {
     case metadataError(metadata: Metadata, message: String)
 }
 
-public protocol TypeRegistry {
-    var metadata: Metadata { get }
+public protocol TypeRegistry: class {
+    var metadata: Metadata! { get set }
     
-    init(metadata: Metadata) throws
+    func initialize() throws
     
     func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent
     func registerEvent<E: Event>(_ t: E.Type) throws

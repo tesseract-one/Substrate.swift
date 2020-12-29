@@ -359,7 +359,6 @@ extension WebSocketRpcClient {
                     }
                 }
             }
-            
         }
         _socket.onError = { [weak self] error, socket in
             guard let sself = self else { return }

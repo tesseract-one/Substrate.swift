@@ -33,9 +33,11 @@ public indirect enum SType: Equatable, Hashable {
 }
 
 extension SType {
-    // Will be implemented with Metadata implementation
-    // This constructor should clean type and map it to one of the options
-    // init(_ string: String) throws
+    public init(_ string: String) throws {
+        fatalError("Not implemented")
+    }
+    
+//    func clean
 }
 
 extension SType: CustomStringConvertible {

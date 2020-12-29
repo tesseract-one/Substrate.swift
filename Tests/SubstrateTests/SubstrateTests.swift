@@ -15,13 +15,13 @@ final class SubstrateTests: XCTestCase {
         let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
         
         let parse = { (data: Data) in
-            let metadata: Metadata = try! SCALE.default.decode(from: data)
+            let metadata: RuntimeVersionedMetadata = try! SCALE.default.decode(from: data)
             print("Metadata", metadata)
         }
         
-        client.call(method: "state_getMetadata", params: Array<Int>()) { (res: Result<String, RpcClientError>) in
+        client.call(method: "state_getMetadata", params: Array<Int>()) { (res: Result<HexData, RpcClientError>) in
             switch res {
-            case .success(let str): parse(Data(hex: str)!)
+            case .success(let hd): parse(hd.data)
             case .failure(let err): print("Erorr", err)
             }
             disconnected.fulfill()

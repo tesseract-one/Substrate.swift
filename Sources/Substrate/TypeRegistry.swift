@@ -11,17 +11,14 @@ import ScaleCodec
 
 
 public class TypeRegistry: SubstratePrimitives.TypeRegistry {
-    private var _events: Dictionary<String, Event.Type>
-    private var _calls: Dictionary<String, Call.Type>
-    private var _types: Dictionary<SType, ScaleRegistryDecodable.Type>
+    private var _events: Dictionary<String, Event.Type> = [:]
+    private var _calls: Dictionary<String, Call.Type> = [:]
+    private var _types: Dictionary<SType, ScaleRegistryDecodable.Type> = [:]
     
-    public let metadata: SubstratePrimitives.Metadata
+    public var metadata: SubstratePrimitives.Metadata! = nil
     
-    public required init(metadata: SubstratePrimitives.Metadata) throws {
-        self.metadata = metadata
-        _events = [:]
-        _calls = [:]
-        _types = [:]
+    public func initialize() throws {
+        
     }
     
     public func registerEvent<E>(_ t: E.Type) throws where E : Event {

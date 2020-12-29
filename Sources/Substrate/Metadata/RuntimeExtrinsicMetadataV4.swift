@@ -1,14 +1,15 @@
 //
-//  File.swift
+//  RuntimeExtrinsicMetadataV4.swift
 //  
 //
-//  Created by Yehor Popovych on 12/25/20.
+//  Created by Yehor Popovych on 12/29/20.
 //
 
 import Foundation
 import ScaleCodec
+import SubstratePrimitives
 
-public struct ExtrinsicMetadata: ScaleDecodable {
+public struct RuntimeExtrinsicMetadataV4: ScaleDecodable, RuntimeExtrinsicMetadata {
     public let version: UInt8
     public let signedExtensions: [String]
     
