@@ -22,8 +22,9 @@ public class MetadataConstant {
         documentation = runtime.documentation.joined(separator: "\n")
     }
     
-    public func parsed<T: ScaleDecodable>(_ t: T.Type) throws -> T {
-        return try T(from: SCALE.default.decoder(data: value))
+    public func parsed<T: ScaleRegistryDecodable>(_ t: T.Type, with registry: TypeRegistry) throws -> T {
+        try registry.hasValueType(t, for: type)
+        return try T(from: SCALE.default.decoder(data: value), with: registry)
     }
     
     public func get(with registry: TypeRegistry) throws -> ScaleRegistryDecodable {

@@ -34,7 +34,7 @@ public indirect enum SType: Equatable, Hashable {
 
 extension SType {
     public init(_ string: String) throws {
-        fatalError("Not implemented")
+        self = .plain(name: string)
     }
     
 //    func clean

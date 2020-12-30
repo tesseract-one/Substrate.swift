@@ -36,13 +36,25 @@ public class MetadataStorageItem {
         return data
     }
     
-    public func parsedDefault<T: ScaleDecodable>(_ t: T.Type) throws -> T {
-        return try T(from: SCALE.default.decoder(data: defaultValue))
+    public func parseDefault<T: ScaleRegistryDecodable>(_ t: T.Type, with registry: TypeRegistry) throws -> T {
+        return try parseValue(t, from: defaultValue, with: registry)
     }
     
     public func getDefault(with registry: TypeRegistry) throws -> ScaleRegistryDecodable {
-        let decoder = SCALE.default.decoder(data: defaultValue)
-        return try registry.metadata.decode(type: valueType, from: decoder, with: registry)
+        return try getValue(from: defaultValue, with: registry)
+    }
+    
+    public func parseValue<T: ScaleRegistryDecodable>(
+        _ t: T.Type, from data: Data, with registry: TypeRegistry
+    ) throws -> T {
+        try registry.hasValueType(t, for: valueType)
+        return try T(from: SCALE.default.decoder(data: data), with: registry)
+    }
+    
+    public func getValue(from data: Data, with registry: TypeRegistry) throws -> ScaleRegistryDecodable {
+        return try registry.metadata.decode(
+            type: valueType, from: SCALE.default.decoder(data: data), with: registry
+        )
     }
     
     public func key(path: [ScaleRegistryEncodable], with registry: TypeRegistry) throws -> Data {

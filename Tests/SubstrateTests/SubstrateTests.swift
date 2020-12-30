@@ -15,7 +15,9 @@ final class SubstrateTests: XCTestCase {
         let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
         
         let parse = { (data: Data) in
-            let metadata: RuntimeVersionedMetadata = try! SCALE.default.decode(from: data)
+            let rmetadata: RuntimeVersionedMetadata = try! SCALE.default.decode(from: data)
+            print("Runtime Metadata", rmetadata)
+            let metadata = try! Metadata(runtime: rmetadata.metadata)
             print("Metadata", metadata)
         }
         

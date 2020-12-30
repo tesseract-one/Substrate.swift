@@ -9,7 +9,6 @@ import Foundation
 import SubstratePrimitives
 import ScaleCodec
 
-
 public class TypeRegistry: SubstratePrimitives.TypeRegistry {
     private var _events: Dictionary<String, Event.Type> = [:]
     private var _calls: Dictionary<String, Call.Type> = [:]
@@ -31,6 +30,17 @@ public class TypeRegistry: SubstratePrimitives.TypeRegistry {
     
     public func registerCall<C>(_ t: C.Type) throws where C : Call {
         _calls["\(C.MODULE).\(C.FUNCTION)"] = t
+    }
+    
+    public func hasEventType<E>(_ t: E.Type) throws where E : Event {
+        
+    }
+       
+    public func hasValueType<T>(_ t: T.Type, for type: SType) throws where T : ScaleRegistryDecodable {
+        
+    }
+       
+    public func hasCallType<C>(_ t: C.Type) throws where C : ScaleRegistryDecodable {
     }
     
     public func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent {

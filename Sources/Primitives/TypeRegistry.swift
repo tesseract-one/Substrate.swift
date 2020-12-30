@@ -28,14 +28,17 @@ public protocol TypeRegistry: class {
     
     func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent
     func registerEvent<E: Event>(_ t: E.Type) throws
+    func hasEventType<E: Event>(_ t: E.Type) throws
     
     func encode<V: ScaleRegistryEncodable>(value: V, type: SType, in encoder: ScaleEncoder) throws
     func decodeValue(type: SType, from decoder: ScaleDecoder) throws -> ScaleRegistryDecodable
     func registerType<T: ScaleRegistryDecodable>(_ t: T.Type, as type: SType) throws
+    func hasValueType<T: ScaleRegistryDecodable>(_ t: T.Type, for type: SType) throws
     
     func encode<C: AnyCall>(call: C, in encoder: ScaleEncoder) throws
     func decodeCall(from decoder: ScaleDecoder) throws -> AnyCall
     func registerCall<C: Call>(_ t: C.Type) throws
+    func hasCallType<C: ScaleRegistryDecodable>(_ t: C.Type) throws
 }
 
 public typealias ScaleRegistryCodable = ScaleRegistryEncodable & ScaleRegistryDecodable
