@@ -36,4 +36,4 @@ extension MultiSignature: ScaleCodable {
     }
 }
 
-extension MultiSignature: ScaleRegistryCodable {}
+extension MultiSignature: ScaleDynamicCodable {}

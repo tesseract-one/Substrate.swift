@@ -26,4 +26,4 @@ extension ExtrinsicExtra: ScaleCodable {
       }
 }
 
-extension ExtrinsicExtra: ScaleRegistryCodable {}
+extension ExtrinsicExtra: ScaleDynamicCodable {}

@@ -26,4 +26,4 @@ extension AccountInfo: ScaleCodable {
     }
 }
 
-extension AccountInfo: ScaleRegistryCodable {}
+extension AccountInfo: ScaleDynamicCodable {}

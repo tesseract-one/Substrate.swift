@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import SubstratePrimitives
 
-public class MetadataStorageItem {
+public class MetadataStorageItemInfo {
     public let prefix: String
     public let name: String
     public let modifier: StorageEntryModifier
@@ -36,49 +36,57 @@ public class MetadataStorageItem {
         return data
     }
     
-    public func parseDefault<T: ScaleRegistryDecodable>(_ t: T.Type, with registry: TypeRegistry) throws -> T {
-        return try parseValue(t, from: defaultValue, with: registry)
+    public func parseDefault<T: ScaleDynamicDecodable>(_ t: T.Type, meta: MetadataProtocol) throws -> T {
+        return try parseValue(t, from: defaultValue, meta: meta)
     }
     
-    public func getDefault(with registry: TypeRegistry) throws -> ScaleRegistryDecodable {
-        return try getValue(from: defaultValue, with: registry)
+    public func getDefault(meta: MetadataProtocol) throws -> ScaleDynamicDecodable {
+        return try getValue(from: defaultValue, meta: meta)
     }
     
-    public func parseValue<T: ScaleRegistryDecodable>(
-        _ t: T.Type, from data: Data, with registry: TypeRegistry
+    public func parseValue<T: ScaleDynamicDecodable>(
+        _ t: T.Type, from data: Data, meta: MetadataProtocol
     ) throws -> T {
-        try registry.hasValueType(t, for: valueType)
-        return try T(from: SCALE.default.decoder(data: data), with: registry)
+        guard meta.registry.hasValueType(t, for: valueType) else {
+            throw TypeRegistryError.typeNotFound(valueType)
+        }
+        return try T(from: SCALE.default.decoder(data: data), meta: meta)
     }
     
-    public func getValue(from data: Data, with registry: TypeRegistry) throws -> ScaleRegistryDecodable {
-        return try registry.metadata.decode(
-            type: valueType, from: SCALE.default.decoder(data: data), with: registry
+    public func getValue(from data: Data, meta: MetadataProtocol) throws -> ScaleDynamicDecodable {
+        return try meta.decode(
+            type: valueType, from: SCALE.default.decoder(data: data)
         )
     }
     
-    public func key(path: [ScaleRegistryEncodable], with registry: TypeRegistry) throws -> Data {
+    public func key(path: [ScaleDynamicEncodable], meta: MetadataProtocol) throws -> Data {
         switch type {
         case .plain(_):
-//            guard path.count == 0 else {
-//                throw TypeRegistryError.
-//            }
+            guard path.count == 0 else {
+                throw MetadataError.storageItemBadPathTypes(
+                    prefix: prefix, item: name, path: path, expected: pathTypes
+                )
+            }
             return prefixHash()
         case .map(hasher: let hasher, key: _, value: _, unused: _):
-            //            guard path.count == 1 else {
-            //                throw TypeRegistryError.
-            //            }
+            guard path.count == 1 else {
+                throw MetadataError.storageItemBadPathTypes(
+                    prefix: prefix, item: name, path: path, expected: pathTypes
+                )
+            }
             let encoder = SCALE.default.encoder()
-            try registry.metadata.encode(value: path[0], type: pathTypes[0], in: encoder, with: registry)
+            try meta.encode(value: path[0], type: pathTypes[0], in: encoder)
             return prefixHash() + hasher.hasher.hash(data: encoder.output)
         case .doubleMap(hasher: let hasher1, key1: _, key2: _, value: _, key2_hasher: let hasher2):
-            //            guard path.count == 2 else {
-            //                throw TypeRegistryError.
-            //            }
+            guard path.count == 2 else {
+                throw MetadataError.storageItemBadPathTypes(
+                    prefix: prefix, item: name, path: path, expected: pathTypes
+                )
+            }
             let encoder1 = SCALE.default.encoder()
-            try registry.metadata.encode(value: path[0], type: pathTypes[0], in: encoder1, with: registry)
+            try meta.encode(value: path[0], type: pathTypes[0], in: encoder1)
             let encoder2 = SCALE.default.encoder()
-            try registry.metadata.encode(value: path[1], type: pathTypes[1], in: encoder2, with: registry)
+            try meta.encode(value: path[1], type: pathTypes[1], in: encoder2)
             return prefixHash() + hasher1.hasher.hash(data: encoder1.output) + hasher2.hasher.hash(data: encoder2.output)
         }
     }

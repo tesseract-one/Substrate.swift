@@ -85,7 +85,7 @@ extension ExtrinsicEra: ScaleCodable {
     }
 }
 
-extension ExtrinsicEra: ScaleRegistryCodable {}
+extension ExtrinsicEra: ScaleDynamicCodable {}
 
 extension UInt64 {
     fileprivate var _nextPowerOfTwo: UInt64? {

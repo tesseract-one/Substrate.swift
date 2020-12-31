@@ -32,4 +32,4 @@ extension AccountId: ScaleFixedData {
     public static var fixedBytesCount: Int = 32
 }
 
-extension AccountId: ScaleRegistryCodable {}
+extension AccountId: ScaleDynamicCodable {}

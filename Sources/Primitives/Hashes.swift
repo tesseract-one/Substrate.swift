@@ -76,6 +76,6 @@ public struct Hash512: ScaleFixedData {
     public static var fixedBytesCount: Int = 64
 }
 
-extension Hash160: ScaleRegistryCodable {}
-extension Hash256: ScaleRegistryCodable {}
-extension Hash512: ScaleRegistryCodable {}
+extension Hash160: ScaleDynamicCodable {}
+extension Hash256: ScaleDynamicCodable {}
+extension Hash512: ScaleDynamicCodable {}

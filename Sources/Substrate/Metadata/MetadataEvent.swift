@@ -8,7 +8,7 @@
 import Foundation
 import SubstratePrimitives
 
-public class MetadataEvent {
+public class MetadataEventInfo {
     public let name: String
     public let arguments: [SType]
     public let documentation: String

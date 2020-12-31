@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import SubstratePrimitives
 
-public class MetadataConstant {
+public class MetadataConstantInfo {
     public let name: String
     public let type: SType
     public let value: Data
@@ -22,13 +22,15 @@ public class MetadataConstant {
         documentation = runtime.documentation.joined(separator: "\n")
     }
     
-    public func parsed<T: ScaleRegistryDecodable>(_ t: T.Type, with registry: TypeRegistry) throws -> T {
-        try registry.hasValueType(t, for: type)
-        return try T(from: SCALE.default.decoder(data: value), with: registry)
+    public func parsed<T: ScaleDynamicDecodable>(_ t: T.Type, meta: MetadataProtocol) throws -> T {
+        guard meta.registry.hasValueType(t, for: type) else {
+            throw TypeRegistryError.typeNotFound(type)
+        }
+        return try T(from: SCALE.default.decoder(data: value), meta: meta)
     }
     
-    public func get(with registry: TypeRegistry) throws -> ScaleRegistryDecodable {
+    public func get(meta: MetadataProtocol) throws -> ScaleDynamicDecodable {
         let decoder = SCALE.default.decoder(data: value)
-        return try registry.metadata.decode(type: type, from: decoder, with: registry)
+        return try meta.decode(type: type, from: decoder)
     }
 }

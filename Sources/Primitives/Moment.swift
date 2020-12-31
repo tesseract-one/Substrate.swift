@@ -35,4 +35,4 @@ public struct Moment: ScaleCodable {
     }
 }
 
-extension Moment: ScaleRegistryCodable {}
+extension Moment: ScaleDynamicCodable {}

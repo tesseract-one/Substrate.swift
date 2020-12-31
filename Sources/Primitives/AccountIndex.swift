@@ -56,4 +56,4 @@ extension AccountIndex: ScaleCodable {
     }
 }
 
-extension AccountIndex: ScaleRegistryCodable {}
+extension AccountIndex: ScaleDynamicCodable {}

@@ -8,7 +8,7 @@
 import Foundation
 import SubstratePrimitives
 
-public class MetadataError: Error {
+public class MetadataDynamicError: Error {
     public let name: String
     public let description: String
     

@@ -14,4 +14,4 @@ public struct SNull: ScaleCodable, Equatable, Hashable {
     public func encode(in encoder: ScaleEncoder) throws {}
 }
 
-extension SNull: ScaleRegistryCodable {}
+extension SNull: ScaleDynamicCodable {}

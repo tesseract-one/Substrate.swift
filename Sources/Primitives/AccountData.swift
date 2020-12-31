@@ -30,4 +30,4 @@ extension AccountData: ScaleCodable {
     }
 }
 
-extension AccountData: ScaleRegistryCodable {}
+extension AccountData: ScaleDynamicCodable {}

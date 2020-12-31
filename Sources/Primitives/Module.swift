@@ -10,5 +10,5 @@ import Foundation
 public protocol Module {
     static var NAME: String { get }
     
-    func registerEventsCallsAndTypes<R: TypeRegistry>(in registry: inout R) throws
+    func registerEventsCallsAndTypes<R: TypeRegistryProtocol>(in registry: inout R) throws
 }

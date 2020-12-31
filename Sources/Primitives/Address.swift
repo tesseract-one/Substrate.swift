@@ -55,4 +55,4 @@ extension Address: ScaleCodable {
     }
 }
 
-extension Address: ScaleRegistryCodable {}
+extension Address: ScaleDynamicCodable {}

@@ -62,4 +62,4 @@ extension Origin: ScaleCodable {
     }
 }
 
-extension Origin: ScaleRegistryCodable {}
+extension Origin: ScaleDynamicCodable {}

@@ -26,4 +26,4 @@ extension ExtrinsicSignature: ScaleCodable {
     }
 }
 
-extension ExtrinsicSignature: ScaleRegistryCodable {}
+extension ExtrinsicSignature: ScaleDynamicCodable {}

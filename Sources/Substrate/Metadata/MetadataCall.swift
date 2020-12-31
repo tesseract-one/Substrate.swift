@@ -8,7 +8,7 @@
 import Foundation
 import SubstratePrimitives
 
-public class MetadataCall {
+public class MetadataCallInfo {
     public let name: String
     public let arguments: [String]
     public let types: Dictionary<String, SType>

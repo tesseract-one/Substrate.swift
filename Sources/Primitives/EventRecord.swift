@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct EventRecord: ScaleRegistryDecodable {
+public struct EventRecord: ScaleDynamicDecodable {
     public enum Phase {
         // Applying an extrinsic.
         case applyExtrinsic(UInt32)
@@ -35,9 +35,9 @@ extension EventRecord.Phase: ScaleDecodable {
 }
 
 extension EventRecord {
-    public init(from decoder: ScaleDecoder, with registry: TypeRegistry) throws {
+    public init(from decoder: ScaleDecoder, meta: MetadataProtocol) throws {
         self.phase = try decoder.decode()
-        self.event = try registry.decodeEvent(from: decoder)
+        self.event = try meta.decode(eventFrom: decoder)
         self.topics = try decoder.decode()
     }
 }

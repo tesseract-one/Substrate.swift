@@ -32,4 +32,4 @@ public struct BitVec: ScaleCodable {
     }
 }
 
-extension BitVec: ScaleRegistryCodable {}
+extension BitVec: ScaleDynamicCodable {}
