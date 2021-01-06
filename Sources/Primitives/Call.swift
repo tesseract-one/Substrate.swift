@@ -27,7 +27,7 @@ extension Call {
 }
 
 // Generic call
-public struct SCall: AnyCall {
+public struct DCall: AnyCall {
     public let module: String
     public let function: String
     public let params: [ScaleDynamicCodable]

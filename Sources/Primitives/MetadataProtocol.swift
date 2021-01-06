@@ -9,13 +9,17 @@ import Foundation
 import ScaleCodec
 
 public enum MetadataError: Error {
-    case typeNotFound(SType)
+    case typeNotFound(DType)
     case moduleNotFound(name: String)
     case moduleNotFound(index: UInt8)
     case eventNotFound(module: String, event: String)
     case callNotFound(module: String, function: String)
+    case encodingNotSupported(for: DType)
+    case expectedCollection(found: ScaleDynamicEncodable)
+    case expectedMap(found: ScaleDynamicEncodable)
+    case wrongElementCount(in: ScaleDynamicEncodable, expected: Int)
     case storageItemNotFound(prefix: String, item: String)
-    case storageItemBadPathTypes(prefix: String, item: String, path: [ScaleDynamicEncodable], expected: [SType])
+    case storageItemBadPathTypes(prefix: String, item: String, path: [ScaleDynamicEncodable], expected: [DType])
 }
 
 public protocol MetadataProtocol: class {
@@ -39,8 +43,8 @@ public protocol MetadataProtocol: class {
     func find(event: Int, module: Int) -> (module: String, event: String)?
 
     // Generic Values
-    func encode(value: ScaleDynamicEncodable, type: SType, in encoder: ScaleEncoder) throws
-    func decode(type: SType, from decoder: ScaleDecoder) throws -> ScaleDynamicDecodable
+    func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws
+    func decode(type: DType, from decoder: ScaleDecoder) throws -> DValue
 }
 
 public typealias ScaleDynamicCodable = ScaleDynamicEncodable & ScaleDynamicDecodable

@@ -41,7 +41,7 @@ extension StorageKey {
 }
 
 // Generic storage key
-public struct SStorageKey: AnyStorageKey {
+public struct DStorageKey: AnyStorageKey {
     public let module: String
     public let field: String
     public let path: [ScaleDynamicEncodable]

@@ -14,8 +14,8 @@ public class MetadataStorageItemInfo {
     public let name: String
     public let modifier: StorageEntryModifier
     public let type: StorageEntryType
-    public let valueType: SType
-    public let pathTypes: [SType]
+    public let valueType: DType
+    public let pathTypes: [DType]
     public let defaultValue: Data
     public let documentation: String
     
@@ -23,8 +23,8 @@ public class MetadataStorageItemInfo {
         self.prefix = prefix
         name = runtime.name
         type = runtime.type
-        valueType = try SType(runtime.type.value)
-        pathTypes = try runtime.type.path.map { try SType($0) }
+        valueType = try DType(runtime.type.value)
+        pathTypes = try runtime.type.path.map { try DType($0) }
         defaultValue = runtime.defaultValue
         modifier = runtime.modifier
         documentation = runtime.documentation.joined(separator: "\n")
@@ -40,7 +40,7 @@ public class MetadataStorageItemInfo {
         return try parseValue(t, from: defaultValue, meta: meta)
     }
     
-    public func getDefault(meta: MetadataProtocol) throws -> ScaleDynamicDecodable {
+    public func getDefault(meta: MetadataProtocol) throws -> DValue {
         return try getValue(from: defaultValue, meta: meta)
     }
     
@@ -53,7 +53,7 @@ public class MetadataStorageItemInfo {
         return try T(from: SCALE.default.decoder(data: data), meta: meta)
     }
     
-    public func getValue(from data: Data, meta: MetadataProtocol) throws -> ScaleDynamicDecodable {
+    public func getValue(from data: Data, meta: MetadataProtocol) throws -> DValue {
         return try meta.decode(
             type: valueType, from: SCALE.default.decoder(data: data)
         )

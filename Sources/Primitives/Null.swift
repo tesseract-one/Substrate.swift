@@ -8,10 +8,10 @@
 import Foundation
 import ScaleCodec
 
-public struct SNull: ScaleCodable, Equatable, Hashable {
+public struct DNull: ScaleCodable, Equatable, Hashable {
     public init() {}
     public init(from decoder: ScaleDecoder) throws {}
     public func encode(in encoder: ScaleEncoder) throws {}
 }
 
-extension SNull: ScaleDynamicCodable {}
+extension DNull: ScaleDynamicCodable {}

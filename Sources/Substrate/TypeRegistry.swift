@@ -12,7 +12,7 @@ import ScaleCodec
 public class TypeRegistry: TypeRegistryProtocol {
     private var _events: Dictionary<String, Event.Type> = [:]
     private var _calls: Dictionary<String, Call.Type> = [:]
-    private var _types: Dictionary<SType, ScaleDynamicDecodable.Type> = [:]
+    private var _types: Dictionary<DType, ScaleDynamicDecodable.Type> = [:]
     
     public func check(meta: MetadataProtocol) throws {
         
@@ -22,7 +22,7 @@ public class TypeRegistry: TypeRegistryProtocol {
         _events["\(E.MODULE).\(E.EVENT)"] = t
     }
     
-    public func registerType<T>(_ t: T.Type, as type: SType) throws where T : ScaleDynamicDecodable {
+    public func registerType<T>(_ t: T.Type, as type: DType) throws where T : ScaleDynamicDecodable {
         _types[type] = t
     }
     
@@ -34,7 +34,7 @@ public class TypeRegistry: TypeRegistryProtocol {
         return false
     }
        
-    public func hasValueType<T>(_ t: T.Type, for type: SType) -> Bool where T : ScaleDynamicDecodable {
+    public func hasValueType<T>(_ t: T.Type, for type: DType) -> Bool where T : ScaleDynamicDecodable {
         return false
     }
        
@@ -46,11 +46,11 @@ public class TypeRegistry: TypeRegistryProtocol {
         fatalError("Not implemented")
     }
     
-    public func encode<V>(value: V, type: SType, in encoder: ScaleEncoder, with meta: MetadataProtocol) throws where V : ScaleDynamicEncodable {
+    public func encode<V>(value: V, type: DType, in encoder: ScaleEncoder, with meta: MetadataProtocol) throws where V : ScaleDynamicEncodable {
         fatalError("Not implemented")
     }
     
-    public func decodeValue(type: SType, from decoder: ScaleDecoder, with meta: MetadataProtocol) throws -> ScaleDynamicDecodable {
+    public func decodeValue(type: DType, from decoder: ScaleDecoder, with meta: MetadataProtocol) throws -> ScaleDynamicDecodable {
         guard let vtype = _types[type] else {
             throw TypeRegistryError.typeNotFound(type)
         }

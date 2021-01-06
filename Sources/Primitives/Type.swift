@@ -8,15 +8,15 @@
 import Foundation
 import ScaleCodec
 
-public indirect enum SType: Equatable, Hashable {
+public indirect enum DType: Equatable, Hashable {
     case null
     case plain(name: String)
-    case collection(name: String, element: SType)
-    case fixed(type: SType, count: Int)
-    case optional(element: SType)
-    case map(name: String, key: SType, value: SType)
-    case result(success: SType, error: SType)
-    case tuple(elements: [SType])
+    case collection(name: String, element: DType)
+    case fixed(type: DType, count: Int)
+    case optional(element: DType)
+    case map(name: String, key: DType, value: DType)
+    case result(success: DType, error: DType)
+    case tuple(elements: [DType])
     
     var name: String {
         switch self {
@@ -32,7 +32,7 @@ public indirect enum SType: Equatable, Hashable {
     }
 }
 
-extension SType {
+extension DType {
     public init(_ string: String) throws {
         self = .plain(name: string)
     }
@@ -40,7 +40,7 @@ extension SType {
 //    func clean
 }
 
-extension SType: CustomStringConvertible {
+extension DType: CustomStringConvertible {
     public var description: String {
         switch self {
         case .null: return "Null"
@@ -57,7 +57,7 @@ extension SType: CustomStringConvertible {
     }
 }
 
-extension SType: CustomDebugStringConvertible {
+extension DType: CustomDebugStringConvertible {
     public var debugDescription: String {
         return self.description
     }

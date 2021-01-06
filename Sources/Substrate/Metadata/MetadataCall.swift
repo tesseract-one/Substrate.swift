@@ -11,10 +11,10 @@ import SubstratePrimitives
 public class MetadataCallInfo {
     public let name: String
     public let arguments: [String]
-    public let types: Dictionary<String, SType>
+    public let types: Dictionary<String, DType>
     public let documentation: String
     
-    public var argumentsList: [(String, SType)] {
+    public var argumentsList: [(String, DType)] {
         arguments.map { ($0, self.types[$0]!) }
     }
     
@@ -22,7 +22,7 @@ public class MetadataCallInfo {
         name = runtime.name
         documentation = runtime.documentation.joined(separator: "\n")
         arguments = runtime.arguments.map { $0.name }
-        let typesList = try runtime.arguments.map { try ($0.name, SType($0.type)) }
+        let typesList = try runtime.arguments.map { try ($0.name, DType($0.type)) }
         types = Dictionary(uniqueKeysWithValues: typesList)
     }
 }

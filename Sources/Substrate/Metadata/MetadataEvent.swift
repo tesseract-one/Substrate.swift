@@ -10,12 +10,12 @@ import SubstratePrimitives
 
 public class MetadataEventInfo {
     public let name: String
-    public let arguments: [SType]
+    public let arguments: [DType]
     public let documentation: String
     
     public init(runtime: RuntimeEventMetadata) throws {
         name = runtime.name
         documentation = runtime.documentation.joined(separator: "\n")
-        arguments = try runtime.arguments.map { try SType($0) }
+        arguments = try runtime.arguments.map { try DType($0) }
     }
 }
