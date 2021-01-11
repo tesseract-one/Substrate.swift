@@ -14,12 +14,10 @@ final class SubstrateTests: XCTestCase {
         let disconnected = expectation(description: "Disconnected")
         let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
         
-        let registry = TypeRegistry()
-        
         let parse = { (data: Data) in
             let rmetadata: RuntimeVersionedMetadata = try! SCALE.default.decode(from: data)
             print("Runtime Metadata", rmetadata)
-            let metadata = try! Metadata(runtime: rmetadata.metadata, registry: registry)
+            let metadata = try! Metadata(runtime: rmetadata.metadata)
             print("Metadata", metadata)
         }
         

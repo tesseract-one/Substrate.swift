@@ -14,7 +14,7 @@ public struct Extrinsic<Call: AnyCall> {
 }
 
 extension Extrinsic: ScaleDynamicEncodable {
-    public init(from decoder: ScaleDecoder, meta: MetadataProtocol) throws {
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         let data: Data = try decoder.decode()
         let dec = SCALE.default.decoder(data: data)
         let info: UInt8 = try dec.decode()
@@ -26,7 +26,7 @@ extension Extrinsic: ScaleDynamicEncodable {
             ))
         }
         signature = signed ? try dec.decode(ExtrinsicSignature.self) : nil
-        let _call = try meta.decode(callFrom: dec)
+        let _call = try registry.decodeCall(from: dec)
         guard let call = _call as? Call else {
             throw SDecodingError.typeMismatch(
                 type(of: _call),
@@ -39,14 +39,14 @@ extension Extrinsic: ScaleDynamicEncodable {
         self.call = call
     }
     
-    public func encode(in encoder: ScaleEncoder, meta: MetadataProtocol) throws {
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         let enc = SCALE.default.encoder()
         let info = (0b01111111 & 4) + (self.signature != nil ? 0b10000000 : 0)
         try enc.encode(UInt8(info))
         if let sign = signature {
             try enc.encode(sign)
         }
-        try meta.encode(call: call, in: enc)
+        try registry.encode(call: call, in: enc)
         try encoder.encode(enc.output)
     }
 }

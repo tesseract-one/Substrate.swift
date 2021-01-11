@@ -35,9 +35,9 @@ extension EventRecord.Phase: ScaleDecodable {
 }
 
 extension EventRecord {
-    public init(from decoder: ScaleDecoder, meta: MetadataProtocol) throws {
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         self.phase = try decoder.decode()
-        self.event = try meta.decode(eventFrom: decoder)
+        self.event = try registry.decodeEvent(from: decoder)
         self.topics = try decoder.decode()
     }
 }

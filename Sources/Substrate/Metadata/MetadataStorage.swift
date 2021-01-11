@@ -36,30 +36,29 @@ public class MetadataStorageItemInfo {
         return data
     }
     
-    public func parseDefault<T: ScaleDynamicDecodable>(_ t: T.Type, meta: MetadataProtocol) throws -> T {
-        return try parseValue(t, from: defaultValue, meta: meta)
+    public func parseDefault<T: ScaleDynamicDecodable>(_ t: T.Type, registry: TypeRegistryProtocol) throws -> T {
+        return try parseValue(t, from: defaultValue, registry: registry)
     }
     
-    public func getDefault(meta: MetadataProtocol) throws -> DValue {
-        return try getValue(from: defaultValue, meta: meta)
+    public func getDefault(registry: TypeRegistryProtocol) throws -> DValue {
+        return try getValue(from: defaultValue, registry: registry)
     }
     
     public func parseValue<T: ScaleDynamicDecodable>(
-        _ t: T.Type, from data: Data, meta: MetadataProtocol
+        _ t: T.Type, from data: Data, registry: TypeRegistryProtocol
     ) throws -> T {
-        guard meta.registry.hasValueType(t, for: valueType) else {
-            throw TypeRegistryError.typeNotFound(valueType)
-        }
-        return try T(from: SCALE.default.decoder(data: data), meta: meta)
-    }
-    
-    public func getValue(from data: Data, meta: MetadataProtocol) throws -> DValue {
-        return try meta.decode(
-            type: valueType, from: SCALE.default.decoder(data: data)
+        return try registry.decode(
+            static: t, as: valueType, from: SCALE.default.decoder(data: data)
         )
     }
     
-    public func key(path: [ScaleDynamicEncodable], meta: MetadataProtocol) throws -> Data {
+    public func getValue(from data: Data, registry: TypeRegistryProtocol) throws -> DValue {
+        return try registry.decode(
+            dynamic: valueType, from: SCALE.default.decoder(data: data)
+        )
+    }
+    
+    public func key(path: [ScaleDynamicEncodable], registry: TypeRegistryProtocol) throws -> Data {
         switch type {
         case .plain(_):
             guard path.count == 0 else {
@@ -75,7 +74,7 @@ public class MetadataStorageItemInfo {
                 )
             }
             let encoder = SCALE.default.encoder()
-            try meta.encode(value: path[0], type: pathTypes[0], in: encoder)
+            try registry.encode(value: path[0], type: pathTypes[0], in: encoder)
             return prefixHash() + hasher.hasher.hash(data: encoder.output)
         case .doubleMap(hasher: let hasher1, key1: _, key2: _, value: _, key2_hasher: let hasher2):
             guard path.count == 2 else {
@@ -84,9 +83,9 @@ public class MetadataStorageItemInfo {
                 )
             }
             let encoder1 = SCALE.default.encoder()
-            try meta.encode(value: path[0], type: pathTypes[0], in: encoder1)
+            try registry.encode(value: path[0], type: pathTypes[0], in: encoder1)
             let encoder2 = SCALE.default.encoder()
-            try meta.encode(value: path[1], type: pathTypes[1], in: encoder2)
+            try registry.encode(value: path[1], type: pathTypes[1], in: encoder2)
             return prefixHash() + hasher1.hasher.hash(data: encoder1.output) + hasher2.hasher.hash(data: encoder2.output)
         }
     }

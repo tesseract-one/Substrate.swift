@@ -18,7 +18,7 @@ public protocol Call: AnyCall {
     static var MODULE: Module.Type { get }
     static var FUNCTION: String { get }
     
-    init(decodingParamsFrom decoder: ScaleDecoder, meta: MetadataProtocol) throws
+    init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws
 }
 
 extension Call {

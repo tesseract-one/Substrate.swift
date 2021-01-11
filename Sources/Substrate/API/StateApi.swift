@@ -26,10 +26,7 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
     }
     
     public func metadata(_ cb: @escaping (Result<Metadata, Error>) -> Void) {
-        Self.metadata(
-            client: substrate.client,
-            timeout: substrate.callTimeout,
-            registry: substrate.metadata.registry, cb)
+        Self.metadata(client: substrate.client, timeout: substrate.callTimeout, cb)
     }
     
     public static func runtimeVersion(
@@ -45,7 +42,7 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
     }
     
     public static func metadata(
-        client: RpcClient, timeout: TimeInterval, registry: TypeRegistryProtocol,
+        client: RpcClient, timeout: TimeInterval,
         _ cb: @escaping (Result<Metadata, Error>) -> Void
     ) {
         client.call(
@@ -59,7 +56,7 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
                 do {
                     let decoder = SCALE.default.decoder(data: data.data)
                     let versioned = try decoder.decode(RuntimeVersionedMetadata.self)
-                    let metadata = try Metadata(runtime: versioned.metadata, registry: registry)
+                    let metadata = try Metadata(runtime: versioned.metadata)
                     cb(.success(metadata))
                 } catch {
                     cb(.failure(error))

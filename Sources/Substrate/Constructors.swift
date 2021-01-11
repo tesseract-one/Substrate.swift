@@ -8,44 +8,37 @@
 import Foundation
 import SubstrateRpc
 
-extension SubstrateProtocol {
+
+extension Substrate {
     public static func create<R: Runtime, C: RpcClient>(
-        rpc: C, runtime: R, _ cb: @escaping (Result<Substrate<R>, Error>) -> Void
+        client: C, runtime: R, _ cb: @escaping (Result<Substrate<R>, Error>) -> Void
     ) {
-        let registry = TypeRegistry()
-        do {
-            try runtime.registerTypes(registry: registry)
-        } catch {
-            cb(.failure(error))
-            return
-        }
-        _getRuntimeInfo(client: rpc, registry: registry, subs: Substrate<R>.self) { res in
-            let result = res.map { (meta, hash, version, props) in
-                Substrate<R>(
-                    metadata: meta, genesisHash: hash,
-                    runtimeVersion: version, properties: props,
-                    client: rpc)
+        _getRuntimeInfo(client: client, subs: Substrate<R>.self) { res in
+            let result = res.flatMap { (meta, hash, version, props) in
+               _createRegistry(meta: meta, runtime: runtime).map { registry in
+                    Substrate<R>(
+                        registry: registry, genesisHash: hash,
+                        runtimeVersion: version, properties: props,
+                        client: client)
+                }
             }
             cb(result)
         }
     }
-    
+}
+
+extension SubscribableSubstrate {
     public static func create<R: Runtime, C: SubscribableRpcClient>(
-        subRpc: C, runtime: R, _ cb: @escaping (Result<SubscribableSubstrate<R>, Error>) -> Void
+        client: C, runtime: R, _ cb: @escaping (Result<SubscribableSubstrate<R>, Error>) -> Void
     ) {
-        let registry = TypeRegistry()
-        do {
-            try runtime.registerTypes(registry: registry)
-        } catch {
-            cb(.failure(error))
-            return
-        }
-        _getRuntimeInfo(client: subRpc, registry: registry, subs: SubscribableSubstrate<R>.self) { res in
-            let result = res.map { (meta, hash, version, props) in
-                SubscribableSubstrate<R>(
-                    metadata: meta, genesisHash: hash,
-                    runtimeVersion: version, properties: props,
-                    client: subRpc)
+        _getRuntimeInfo(client: client, subs: Substrate<R>.self) { res in
+            let result = res.flatMap { (meta, hash, version, props) in
+               _createRegistry(meta: meta, runtime: runtime).map { registry in
+                    SubscribableSubstrate<R>(
+                        registry: registry, genesisHash: hash,
+                        runtimeVersion: version, properties: props,
+                        client: client)
+                }
             }
             cb(result)
         }
@@ -53,11 +46,20 @@ extension SubstrateProtocol {
 }
 
 private extension SubstrateProtocol {
+    static func _createRegistry<R: Runtime>(meta: Metadata, runtime: R) -> Result<TypeRegistry, Error> {
+        return Result {
+            let registry = TypeRegistry(metadata: meta)
+            try runtime.registerTypes(registry: registry)
+            try registry.validate()
+            return registry
+        }
+    }
+    
     static func _getRuntimeInfo<S: SubstrateProtocol>(
-        client: RpcClient, registry: TypeRegistryProtocol, subs: S.Type,
+        client: RpcClient, subs: S.Type,
         cb: @escaping (Result<(Metadata, S.R.Hash, RuntimeVersion, SystemProperties), Error>) -> Void
     ) {
-        _getRuntimeVersionInfo(client: client, registry: registry, subs: subs) { res in
+        _getRuntimeVersionInfo(client: client, subs: subs) { res in
             switch res {
             case .failure(let err): cb(.failure(err))
             case .success((let meta, let hash, let version)):
@@ -73,10 +75,10 @@ private extension SubstrateProtocol {
     }
     
     static func _getRuntimeVersionInfo<S: SubstrateProtocol>(
-        client: RpcClient, registry: TypeRegistryProtocol, subs: S.Type,
+        client: RpcClient, subs: S.Type,
         cb: @escaping (Result<(Metadata, S.R.Hash, RuntimeVersion), Error>) -> Void
     ) {
-        _getRuntimeHashInfo(client: client, registry: registry, subs: subs) { res in
+        _getRuntimeHashInfo(client: client, subs: subs) { res in
             switch res {
             case .failure(let err): cb(.failure(err))
             case .success((let meta, let hash)):
@@ -92,10 +94,10 @@ private extension SubstrateProtocol {
     }
     
     static func _getRuntimeHashInfo<S: SubstrateProtocol>(
-        client: RpcClient, registry: TypeRegistryProtocol, subs: S.Type,
+        client: RpcClient, subs: S.Type,
         cb: @escaping (Result<(Metadata, S.R.Hash), Error>) -> Void
     ) {
-        _getRuntimeMetaInfo(client: client, registry: registry, subs: subs) { res in
+        _getRuntimeMetaInfo(client: client, subs: subs) { res in
             switch res {
             case .failure(let err): cb(.failure(err))
             case .success(let meta):
@@ -111,9 +113,9 @@ private extension SubstrateProtocol {
     }
     
     static func _getRuntimeMetaInfo<S: SubstrateProtocol>(
-        client: RpcClient, registry: TypeRegistryProtocol, subs: S.Type,
+        client: RpcClient, subs: S.Type,
         cb: @escaping (Result<Metadata, Error>) -> Void
     ) {
-        SubstrateStateApi<S>.metadata(client: client, timeout: 60, registry: registry, cb)
+        SubstrateStateApi<S>.metadata(client: client, timeout: 60, cb)
     }
 }

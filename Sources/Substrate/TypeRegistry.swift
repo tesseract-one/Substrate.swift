@@ -10,58 +10,69 @@ import SubstratePrimitives
 import ScaleCodec
 
 public class TypeRegistry: TypeRegistryProtocol {
+    private let metadata: Metadata
+    
     private var _events: Dictionary<String, Event.Type> = [:]
     private var _calls: Dictionary<String, Call.Type> = [:]
     private var _types: Dictionary<DType, ScaleDynamicDecodable.Type> = [:]
     
-    public func check(meta: MetadataProtocol) throws {
+    public init(metadata: Metadata) {
+        self.metadata = metadata
+    }
+    
+    public func validate() throws {
         
     }
     
-    public func registerEvent<E>(_ t: E.Type) throws where E : Event {
-        _events["\(E.MODULE).\(E.EVENT)"] = t
-    }
-    
-    public func registerType<T>(_ t: T.Type, as type: DType) throws where T : ScaleDynamicDecodable {
-        _types[type] = t
-    }
-    
-    public func registerCall<C>(_ t: C.Type) throws where C : Call {
-        _calls["\(C.MODULE).\(C.FUNCTION)"] = t
-    }
-    
-    public func hasEventType<E>(_ t: E.Type) -> Bool where E : Event {
-        return false
-    }
-       
-    public func hasValueType<T>(_ t: T.Type, for type: DType) -> Bool where T : ScaleDynamicDecodable {
-        return false
-    }
-       
-    public func hasCallType<C>(_ t: C.Type) -> Bool where C : Call {
-        return false
-    }
-    
-    public func decodeEvent(event: String, module: String, from decoder: ScaleDecoder, with meta: MetadataProtocol) throws -> AnyEvent {
+    public func key<K>(for key: K) throws -> Data where K : AnyStorageKey {
         fatalError("Not implemented")
     }
     
-    public func encode<V>(value: V, type: DType, in encoder: ScaleEncoder, with meta: MetadataProtocol) throws where V : ScaleDynamicEncodable {
+    public func prefix<K>(for key: K) throws -> Data where K : AnyStorageKey {
         fatalError("Not implemented")
     }
     
-    public func decodeValue(type: DType, from decoder: ScaleDecoder, with meta: MetadataProtocol) throws -> ScaleDynamicDecodable {
-        guard let vtype = _types[type] else {
-            throw TypeRegistryError.typeNotFound(type)
-        }
-        return try vtype.init(from: decoder, meta: meta)
-    }
-    
-    public func encode<C>(call: C, in encoder: ScaleEncoder, with meta: MetadataProtocol) throws where C : AnyCall {
+    public func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent {
         fatalError("Not implemented")
     }
     
-    public func decodeCall(event: String, module: String, from decoder: ScaleDecoder, with meta: MetadataProtocol) throws -> AnyCall {
+    public func decode(event: String, module: String, from decoder: ScaleDecoder) throws -> AnyEvent {
         fatalError("Not implemented")
+    }
+    
+    public func register<E>(event: E.Type) throws where E : Event {
+        _events["\(E.MODULE).\(E.EVENT)"] = event
+    }
+    
+    public func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws {
+        fatalError("Not implemented")
+    }
+    
+    public func decode<V>(static: V.Type, as type: DType, from decoder: ScaleDecoder) throws -> V where V : ScaleDynamicDecodable {
+        fatalError("Not implemented")
+    }
+    
+    public func decode(dynamic: DType, from decoder: ScaleDecoder) throws -> DValue {
+        fatalError("Not implemented")
+    }
+    
+    public func register<T>(type: T.Type, as dynamic: DType) throws where T : ScaleDynamicDecodable {
+        _types[dynamic] = type
+    }
+    
+    public func encode<C>(call: C, in encoder: ScaleEncoder) throws where C : AnyCall {
+        fatalError("Not implemented")
+    }
+    
+    public func decodeCall(from decoder: ScaleDecoder) throws -> AnyCall {
+        fatalError("Not implemented")
+    }
+    
+    public func decode(call: String, module: String, from decoder: ScaleDecoder) throws -> AnyCall {
+        fatalError("Not implemented")
+    }
+    
+    public func register<C>(call: C.Type) throws where C : Call {
+        _calls["\(C.MODULE).\(C.FUNCTION)"] = call
     }
 }

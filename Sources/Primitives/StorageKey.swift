@@ -14,8 +14,8 @@ public protocol AnyStorageKey {
     
     var path: [ScaleDynamicEncodable] { get }
     
-    func prefix(meta: MetadataProtocol) throws -> Data
-    func key(meta: MetadataProtocol) throws -> Data
+    func prefix(registry: TypeRegistryProtocol) throws -> Data
+    func key(registry: TypeRegistryProtocol) throws -> Data
 }
 
 public protocol StorageKey: AnyStorageKey {
@@ -26,12 +26,12 @@ public protocol StorageKey: AnyStorageKey {
 }
 
 extension AnyStorageKey {
-    public func prefix(meta: MetadataProtocol) throws -> Data {
-        return try meta.prefix(for: self)
+    public func prefix(registry: TypeRegistryProtocol) throws -> Data {
+        return try registry.prefix(for: self)
     }
     
-    public func key(meta: MetadataProtocol) throws -> Data {
-        return try meta.key(for: self)
+    public func key(registry: TypeRegistryProtocol) throws -> Data {
+        return try registry.key(for: self)
     }
 }
 

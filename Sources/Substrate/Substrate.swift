@@ -12,7 +12,7 @@ public protocol SubstrateProtocol: class {
     associatedtype R: Runtime
     
     var client: RpcClient { get }
-    var metadata: Metadata { get }
+    var registry: TypeRegistry { get }
     var genesisHash: R.Hash { get }
     var runtimeVersion: RuntimeVersion { get }
     var properties: SystemProperties { get }
@@ -30,7 +30,7 @@ public protocol SubscribableSubstrateProtocol: SubstrateProtocol {
 public class SubstrateBase<R: Runtime> {
     fileprivate var _apis: [String: Any] = [:]
     
-    public let metadata: Metadata
+    public let registry: TypeRegistry
     public let genesisHash: R.Hash
     public let runtimeVersion: RuntimeVersion
     public let properties: SystemProperties
@@ -39,9 +39,9 @@ public class SubstrateBase<R: Runtime> {
     public var callTimeout: TimeInterval = 60
     
     public init(
-        metadata: Metadata, genesisHash: R.Hash, runtimeVersion: RuntimeVersion, properties: SystemProperties
+        registry: TypeRegistry, genesisHash: R.Hash, runtimeVersion: RuntimeVersion, properties: SystemProperties
     ) {
-        self.metadata = metadata
+        self.registry = registry
         self.genesisHash = genesisHash
         self.runtimeVersion = runtimeVersion
         self.properties = properties
@@ -52,11 +52,11 @@ final public class Substrate<R: Runtime>: SubstrateBase<R>, SubstrateProtocol {
     public let client: RpcClient
     
     public init(
-        metadata: Metadata, genesisHash: R.Hash, runtimeVersion: RuntimeVersion,
+        registry: TypeRegistry, genesisHash: R.Hash, runtimeVersion: RuntimeVersion,
         properties: SystemProperties, client: RpcClient
     ) {
         self.client = client
-        super.init(metadata: metadata, genesisHash: genesisHash, runtimeVersion: runtimeVersion, properties: properties)
+        super.init(registry: registry, genesisHash: genesisHash, runtimeVersion: runtimeVersion, properties: properties)
     }
     
     public func getApi<A>(_ t: A.Type) -> A where A: SubstrateApi, A.S == Substrate<R> {
@@ -74,12 +74,12 @@ final public class SubscribableSubstrate<R: Runtime>: SubstrateBase<R>, Subscrib
     public let subscribableClient: SubscribableRpcClient
     
     public init(
-        metadata: Metadata, genesisHash: R.Hash, runtimeVersion: RuntimeVersion,
+        registry: TypeRegistry, genesisHash: R.Hash, runtimeVersion: RuntimeVersion,
         properties: SystemProperties, client: SubscribableRpcClient
     ) {
         self.subscribableClient = client
         super.init(
-            metadata: metadata, genesisHash: genesisHash,
+            registry: registry, genesisHash: genesisHash,
             runtimeVersion: runtimeVersion, properties: properties)
     }
     

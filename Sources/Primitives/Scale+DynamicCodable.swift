@@ -28,93 +28,93 @@ extension SCompact: ScaleDynamicCodable {}
 extension String: ScaleDynamicCodable {}
 
 extension CaseIterable where Self: Equatable & ScaleEncodable, Self.AllCases.Index == Int {
-    public func encode(in encoder: ScaleEncoder, meta: MetadataProtocol) throws {
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         try encode(in: encoder)
     }
 }
 
 extension CaseIterable where Self: Equatable & ScaleDecodable, Self.AllCases.Index == Int {
-    public init(from decoder: ScaleDecoder, meta: MetadataProtocol) throws {
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         try self.init(from: decoder)
     }
 }
 
 extension Optional: ScaleDynamicEncodable where Wrapped: ScaleDynamicEncodable {
-    public func encode(in encoder: ScaleEncoder, meta: MetadataProtocol) throws {
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         try encode(in: encoder) { val, enc in
-            try val.encode(in: enc, meta: meta)
+            try val.encode(in: enc, registry: registry)
         }
     }
 }
 
 extension Optional: ScaleDynamicDecodable where Wrapped: ScaleDynamicDecodable {
-    public init(from decoder: ScaleDecoder, meta: MetadataProtocol) throws {
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         self = try Optional<Wrapped>(from: decoder) { dec in
-             try Wrapped(from: dec, meta: meta)
+             try Wrapped(from: dec, registry: registry)
         }
     }
 }
 
 extension Array: ScaleDynamicEncodable where Element: ScaleDynamicEncodable {
-    public func encode(in encoder: ScaleEncoder, meta: MetadataProtocol) throws {
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         try encode(in: encoder) { val, enc in
-            try val.encode(in: enc, meta: meta)
+            try val.encode(in: enc, registry: registry)
         }
     }
 }
 
 extension Array: ScaleDynamicDecodable where Element: ScaleDynamicDecodable {
-    public init(from decoder: ScaleDecoder, meta: MetadataProtocol) throws {
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         try self.init(from: decoder) { dec in
-            try Element(from: dec, meta: meta)
+            try Element(from: dec, registry: registry)
         }
     }
 }
 
 extension Set: ScaleDynamicEncodable where Element: ScaleDynamicEncodable {
-    public func encode(in encoder: ScaleEncoder, meta: MetadataProtocol) throws {
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         try encode(in: encoder) { val, enc in
-            try val.encode(in: enc, meta: meta)
+            try val.encode(in: enc, registry: registry)
         }
     }
 }
 
 extension Set: ScaleDynamicDecodable where Element: ScaleDynamicDecodable {
-    public init(from decoder: ScaleDecoder, meta: MetadataProtocol) throws {
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         try self.init(from: decoder) { dec in
-            try Element(from: dec, meta: meta)
+            try Element(from: dec, registry: registry)
         }
     }
 }
 
 extension Dictionary: ScaleDynamicEncodable where Key: ScaleDynamicEncodable, Value: ScaleDynamicEncodable {
-    public func encode(in encoder: ScaleEncoder, meta: MetadataProtocol) throws {
-        try encode(in: encoder, lwriter: { try $0.encode(in: $1, meta: meta) }) { val, enc in
-            try val.encode(in: enc, meta: meta)
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try encode(in: encoder, lwriter: { try $0.encode(in: $1, registry: registry) }) { val, enc in
+            try val.encode(in: enc, registry: registry)
         }
     }
 }
 
 extension Dictionary: ScaleDynamicDecodable where Key: ScaleDynamicDecodable, Value: ScaleDynamicDecodable {
-    public init(from decoder: ScaleDecoder, meta: MetadataProtocol) throws {
-        try self.init(from: decoder, lreader: { try Key(from: $0, meta: meta) }) { dec in
-            try Value(from: dec, meta: meta)
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
+        try self.init(from: decoder, lreader: { try Key(from: $0, registry: registry) }) { dec in
+            try Value(from: dec, registry: registry)
         }
     }
 }
 
 extension Result: ScaleDynamicEncodable where Success: ScaleDynamicEncodable, Failure: ScaleDynamicEncodable {
-    public func encode(in encoder: ScaleEncoder, meta: MetadataProtocol) throws {
-        try encode(in: encoder, lwriter: { try $0.encode(in: $1, meta: meta) }) { err, enc in
-            try err.encode(in: enc, meta: meta)
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try encode(in: encoder, lwriter: { try $0.encode(in: $1, registry: registry) }) { err, enc in
+            try err.encode(in: enc, registry: registry)
         }
     }
 }
 
 extension Result: ScaleDynamicDecodable where Success: ScaleDynamicDecodable, Failure: ScaleDynamicDecodable {
-    public init(from decoder: ScaleDecoder, meta: MetadataProtocol) throws {
-        try self.init(from: decoder, lreader: { try Success(from: $0, meta: meta) }) { dec in
-            try Failure(from: dec, meta: meta)
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
+        try self.init(from: decoder, lreader: { try Success(from: $0, registry: registry) }) { dec in
+            try Failure(from: dec, registry: registry)
         }
     }
 }

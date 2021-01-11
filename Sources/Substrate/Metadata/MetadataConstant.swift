@@ -22,15 +22,11 @@ public class MetadataConstantInfo {
         documentation = runtime.documentation.joined(separator: "\n")
     }
     
-    public func parsed<T: ScaleDynamicDecodable>(_ t: T.Type, meta: MetadataProtocol) throws -> T {
-        guard meta.registry.hasValueType(t, for: type) else {
-            throw TypeRegistryError.typeNotFound(type)
-        }
-        return try T(from: SCALE.default.decoder(data: value), meta: meta)
+    public func parsed<T: ScaleDynamicDecodable>(_ t: T.Type, registry: TypeRegistryProtocol) throws -> T {
+        return try registry.decode(static: t, as: type, from: SCALE.default.decoder(data: value))
     }
     
-    public func get(meta: MetadataProtocol) throws -> DValue {
-        let decoder = SCALE.default.decoder(data: value)
-        return try meta.decode(type: type, from: decoder)
+    public func get(registry: TypeRegistryProtocol) throws -> DValue {
+        return try registry.decode(dynamic: type, from: SCALE.default.decoder(data: value))
     }
 }

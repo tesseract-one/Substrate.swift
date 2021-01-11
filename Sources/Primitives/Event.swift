@@ -18,7 +18,7 @@ public protocol Event: AnyEvent {
     static var MODULE: Module.Type { get }
     static var EVENT: String { get }
     
-    init(decodingDataFrom decoder: ScaleDecoder, meta: MetadataProtocol) throws
+    init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws
 }
 
 extension Event {
