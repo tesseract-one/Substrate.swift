@@ -8,25 +8,25 @@
 import Foundation
 import ScaleCodec
 
-public struct AccountData: Equatable, Hashable {
-    public let fee: BigUInt
-    public let reserved: BigUInt
-    public let miscFrozen: BigUInt
-    public let feeFrozen: BigUInt
+public struct AccountData<Balance: ScaleCodable & BinaryInteger> {
+    public let free: Balance
+    public let reserved: Balance
+    public let miscFrozen: Balance
+    public let feeFrozen: Balance
 }
 
 extension AccountData: ScaleCodable {
     public init(from decoder: ScaleDecoder) throws {
-        fee = try decoder.decode(.b128)
-        reserved = try decoder.decode(.b128)
-        miscFrozen = try decoder.decode(.b128)
-        feeFrozen = try decoder.decode(.b128)
+        free = try decoder.decode()
+        reserved = try decoder.decode()
+        miscFrozen = try decoder.decode()
+        feeFrozen = try decoder.decode()
     }
     
     public func encode(in encoder: ScaleEncoder) throws {
         try encoder
-            .encode(b128: fee).encode(b128: reserved)
-            .encode(b128: miscFrozen).encode(b128: feeFrozen)
+            .encode(free).encode(reserved)
+            .encode(miscFrozen).encode(feeFrozen)
     }
 }
 

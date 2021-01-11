@@ -8,10 +8,10 @@
 import Foundation
 import ScaleCodec
 
-public struct AccountInfo {
+public struct AccountInfo<Balance: ScaleCodable & BinaryInteger> {
     let nonce: UInt32
     let refCount: UInt32
-    let data: AccountData
+    let data: AccountData<Balance>
 }
 
 extension AccountInfo: ScaleCodable {
