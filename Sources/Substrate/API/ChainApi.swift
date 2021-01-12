@@ -9,11 +9,13 @@ import Foundation
 import SubstrateRpc
 import ScaleCodec
 
-public protocol SubstrateChainApiCommon: SubstrateApi {
-    var substrate: S! { get }
-}
-
-extension SubstrateChainApiCommon {
+public struct SubstrateChainApi<S: SubstrateProtocol>: SubstrateApi {
+    public weak var substrate: S!
+    
+    public init(substrate: S) {
+        self.substrate = substrate
+    }
+    
     public func genesisHash(_ cb: @escaping (Result<S.R.Hash, RpcClientError>) -> Void) {
         Self.genesisHash(client: substrate.client, timeout: substrate.callTimeout, cb)
     }
@@ -30,28 +32,11 @@ extension SubstrateChainApiCommon {
     }
 }
 
-public struct SubstrateChainApi<S: SubstrateProtocol>: SubstrateChainApiCommon {
-    public weak var substrate: S!
-    
-    public init(substrate: S) {
-        self.substrate = substrate
-    }
-}
-
-public struct SubstrateChainApiSubscribable<S: SubscribableSubstrateProtocol>: SubstrateChainApiCommon {
-    public weak var substrate: S!
-    
-    public init(substrate: S) {
-        self.substrate = substrate
-    }
+// SubscribableTest
+extension SubstrateChainApi where S.C: SubscribableRpcClient {
+    public func testSubs(text:  String) {}
 }
 
 extension Substrate {
-    public var chain: SubstrateChainApi<Substrate<R>> { getApi(SubstrateChainApi<Substrate<R>>.self) }
-}
-
-extension SubscribableSubstrate {
-    public var chain: SubstrateChainApiSubscribable<SubscribableSubstrate<R>> {
-        getApi(SubstrateChainApiSubscribable<SubscribableSubstrate<R>>.self)
-    }
+    public var chain: SubstrateChainApi<Substrate<R, C>> { getApi(SubstrateChainApi<Substrate<R, C>>.self) }
 }

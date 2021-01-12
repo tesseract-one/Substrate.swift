@@ -67,9 +67,6 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
 }
 
 extension Substrate {
-    public var state: SubstrateStateApi<Substrate<R>> { getApi(SubstrateStateApi<Substrate<R>>.self) }
+    public var state: SubstrateStateApi<Substrate<R, C>> { getApi(SubstrateStateApi<Substrate<R, C>>.self) }
 }
 
-extension SubscribableSubstrate {
-    public var state: SubstrateStateApi<SubscribableSubstrate<R>> { getApi(SubstrateStateApi<SubscribableSubstrate<R>>.self) }
-}

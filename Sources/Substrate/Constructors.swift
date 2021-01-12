@@ -11,12 +11,12 @@ import SubstrateRpc
 
 extension Substrate {
     public static func create<R: Runtime, C: RpcClient>(
-        client: C, runtime: R, _ cb: @escaping (Result<Substrate<R>, Error>) -> Void
+        client: C, runtime: R, _ cb: @escaping (Result<Substrate<R, C>, Error>) -> Void
     ) {
-        _getRuntimeInfo(client: client, subs: Substrate<R>.self) { res in
+        _getRuntimeInfo(client: client, subs: Substrate<R, C>.self) { res in
             let result = res.flatMap { (meta, hash, version, props) in
                _createRegistry(meta: meta, runtime: runtime).map { registry in
-                    Substrate<R>(
+                    Substrate<R, C>(
                         registry: registry, genesisHash: hash,
                         runtimeVersion: version, properties: props,
                         client: client)
@@ -27,25 +27,7 @@ extension Substrate {
     }
 }
 
-extension SubscribableSubstrate {
-    public static func create<R: Runtime, C: SubscribableRpcClient>(
-        client: C, runtime: R, _ cb: @escaping (Result<SubscribableSubstrate<R>, Error>) -> Void
-    ) {
-        _getRuntimeInfo(client: client, subs: Substrate<R>.self) { res in
-            let result = res.flatMap { (meta, hash, version, props) in
-               _createRegistry(meta: meta, runtime: runtime).map { registry in
-                    SubscribableSubstrate<R>(
-                        registry: registry, genesisHash: hash,
-                        runtimeVersion: version, properties: props,
-                        client: client)
-                }
-            }
-            cb(result)
-        }
-    }
-}
-
-private extension SubstrateProtocol {
+private extension Substrate {
     static func _createRegistry<R: Runtime>(meta: Metadata, runtime: R) -> Result<TypeRegistry, Error> {
         return Result {
             let registry = TypeRegistry(metadata: meta)

@@ -10,9 +10,10 @@ import SubstrateRpc
 
 public protocol SubstrateProtocol: class {
     associatedtype R: Runtime
+    associatedtype C: RpcClient
     
-    var client: RpcClient { get }
-    var registry: TypeRegistry { get }
+    var client: C { get }
+    var registry: TypeRegistryProtocol { get }
     var genesisHash: R.Hash { get }
     var runtimeVersion: RuntimeVersion { get }
     var properties: SystemProperties { get }
@@ -23,14 +24,11 @@ public protocol SubstrateProtocol: class {
     func getApi<A>(_ t: A.Type) -> A where A: SubstrateApi, A.S == Self
 }
 
-public protocol SubscribableSubstrateProtocol: SubstrateProtocol {
-    var subscribableClient: SubscribableRpcClient { get }
-}
-
-public class SubstrateBase<R: Runtime> {
-    fileprivate var _apis: [String: Any] = [:]
+public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
+    private var _apis: [String: Any] = [:]
     
-    public let registry: TypeRegistry
+    public let client: C
+    public let registry: TypeRegistryProtocol
     public let genesisHash: R.Hash
     public let runtimeVersion: RuntimeVersion
     public let properties: SystemProperties
@@ -39,51 +37,18 @@ public class SubstrateBase<R: Runtime> {
     public var callTimeout: TimeInterval = 60
     
     public init(
-        registry: TypeRegistry, genesisHash: R.Hash, runtimeVersion: RuntimeVersion, properties: SystemProperties
+        registry: TypeRegistryProtocol, genesisHash: R.Hash,
+        runtimeVersion: RuntimeVersion, properties: SystemProperties,
+        client: C
     ) {
         self.registry = registry
         self.genesisHash = genesisHash
         self.runtimeVersion = runtimeVersion
         self.properties = properties
-    }
-}
-
-final public class Substrate<R: Runtime>: SubstrateBase<R>, SubstrateProtocol {
-    public let client: RpcClient
-    
-    public init(
-        registry: TypeRegistry, genesisHash: R.Hash, runtimeVersion: RuntimeVersion,
-        properties: SystemProperties, client: RpcClient
-    ) {
         self.client = client
-        super.init(registry: registry, genesisHash: genesisHash, runtimeVersion: runtimeVersion, properties: properties)
     }
     
-    public func getApi<A>(_ t: A.Type) -> A where A: SubstrateApi, A.S == Substrate<R> {
-        if let api = _apis[A.id] as? A {
-            return api
-        }
-        let api = A(substrate: self)
-        _apis[A.id] = api
-        return api
-    }
-}
-
-final public class SubscribableSubstrate<R: Runtime>: SubstrateBase<R>, SubscribableSubstrateProtocol {
-    public var client: RpcClient { subscribableClient }
-    public let subscribableClient: SubscribableRpcClient
-    
-    public init(
-        registry: TypeRegistry, genesisHash: R.Hash, runtimeVersion: RuntimeVersion,
-        properties: SystemProperties, client: SubscribableRpcClient
-    ) {
-        self.subscribableClient = client
-        super.init(
-            registry: registry, genesisHash: genesisHash,
-            runtimeVersion: runtimeVersion, properties: properties)
-    }
-    
-    public func getApi<A>(_ t: A.Type) -> A where A: SubstrateApi, A.S == SubscribableSubstrate<R> {
+    public func getApi<A>(_ t: A.Type) -> A where A : SubstrateApi, A.S == Substrate<R, C> {
         if let api = _apis[A.id] as? A {
             return api
         }

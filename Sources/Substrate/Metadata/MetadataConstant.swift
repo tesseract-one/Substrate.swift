@@ -17,7 +17,7 @@ public class MetadataConstantInfo {
     
     public init(runtime: RuntimeConstantMetadata) throws {
         name = runtime.name
-        type = try DType(runtime.type)
+        type = try DType(parse: runtime.type)
         value = runtime.value
         documentation = runtime.documentation.joined(separator: "\n")
     }

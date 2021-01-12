@@ -19,6 +19,15 @@ public enum TypeRegistryError: Error {
     case eventRegistrationError(event: Event, message: String)
     // Meta
     case metadata(error: MetadataError)
+    // Value Encoding
+    case encodingNotSupported(for: DType)
+    case encodingValueIsNotCompactCodable(value: ScaleDynamicEncodable)
+    case encodingError(error: SEncodingError, value: ScaleDynamicEncodable)
+    case encodingExpectedCollection(found: ScaleDynamicEncodable)
+    case encodingExpectedMap(found: ScaleDynamicEncodable)
+    case encodingWrongElementCount(in: ScaleDynamicEncodable, expected: Int)
+    // Unknown
+    case unknown(error: Error)
 }
 
 public protocol TypeRegistryProtocol: class {

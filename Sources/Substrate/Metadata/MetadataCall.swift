@@ -22,7 +22,7 @@ public class MetadataCallInfo {
         name = runtime.name
         documentation = runtime.documentation.joined(separator: "\n")
         arguments = runtime.arguments.map { $0.name }
-        let typesList = try runtime.arguments.map { try ($0.name, DType($0.type)) }
+        let typesList = try runtime.arguments.map { try ($0.name, DType(parse: $0.type)) }
         types = Dictionary(uniqueKeysWithValues: typesList)
     }
 }

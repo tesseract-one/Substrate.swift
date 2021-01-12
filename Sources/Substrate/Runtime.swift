@@ -51,27 +51,27 @@ public protocol Runtime: System {
 
 extension System {
     public func registerSystemTypes(registry: TypeRegistryProtocol) throws {
-        try registry.register(type: Index.self, as: DType("Index"))
+        try registry.register(type: Index.self, as: .type(name: "Index"))
     }
 }
 
 extension Session {
     public func registerSessionTypes(registry: TypeRegistryProtocol) throws {
-        try registry.register(type: ValidatorId.self, as: DType("ValidatorId"))
-        try registry.register(type: Keys.self, as: DType("Vec<Key>"))
+        try registry.register(type: ValidatorId.self, as: .type(name: "ValidatorId"))
+        try registry.register(type: Keys.self, as: .collection(element: .type(name: "Key")))
     }
 }
 
 extension Balances {
     public func registerBalancesTypes(registry: TypeRegistryProtocol) throws {
-        try registry.register(type: Balance.self, as: DType("Balance"))
+        try registry.register(type: Balance.self, as: .type(name: "Balance"))
     }
 }
 
 
 extension Runtime {
     public func registerRuntimeTypes(registry: TypeRegistryProtocol) throws {
-        try registry.register(type: Signature.self, as: DType("Signature"))
-        try registry.register(type: Extra.self, as: DType("Extra"))
+        try registry.register(type: Signature.self, as: .type(name: "Signature"))
+        try registry.register(type: Extra.self, as: .type(name: "Extra"))
     }
 }

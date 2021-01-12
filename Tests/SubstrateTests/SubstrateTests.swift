@@ -10,7 +10,7 @@ import ScaleCodec
 @testable import Substrate
 
 final class SubstrateTests: XCTestCase {
-    func testMetadataParsoing() {
+    func testMetadataParsing() {
         let disconnected = expectation(description: "Disconnected")
         let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
         
