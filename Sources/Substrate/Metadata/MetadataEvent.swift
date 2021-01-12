@@ -16,6 +16,6 @@ public class MetadataEventInfo {
     public init(runtime: RuntimeEventMetadata) throws {
         name = runtime.name
         documentation = runtime.documentation.joined(separator: "\n")
-        arguments = try runtime.arguments.map { try DType(parse: $0) }
+        arguments = try runtime.arguments.map { try DType.fromMeta(type: $0) }
     }
 }

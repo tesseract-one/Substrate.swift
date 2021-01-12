@@ -23,8 +23,8 @@ public class MetadataStorageItemInfo {
         self.prefix = prefix
         name = runtime.name
         type = runtime.type
-        valueType = try DType(parse: runtime.type.value)
-        pathTypes = try runtime.type.path.map { try DType(parse: $0) }
+        valueType = try DType.fromMeta(type: runtime.type.value)
+        pathTypes = try runtime.type.path.map { try DType.fromMeta(type: $0) }
         defaultValue = runtime.defaultValue
         modifier = runtime.modifier
         documentation = runtime.documentation.joined(separator: "\n")
