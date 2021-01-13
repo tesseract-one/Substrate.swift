@@ -14,7 +14,8 @@ public struct SetCodeCall<S: System> {
 }
 
 extension SetCodeCall: Call {
-    public static var MODULE: Module.Type { SystemModule<S>.self }
+    public typealias Module = SystemModule<S>
+    
     public static var FUNCTION: String { "SetCode" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
@@ -30,7 +31,8 @@ public struct SetCodeWithoutChecksCall<S: System> {
 }
 
 extension SetCodeWithoutChecksCall: Call {
-    public static var MODULE: Module.Type { SystemModule<S>.self }
+    public typealias Module = SystemModule<S>
+    
     public static var FUNCTION: String { "SetCodeWithoutChecks" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {

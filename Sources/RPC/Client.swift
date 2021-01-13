@@ -25,7 +25,8 @@ public enum RpcClientError: Error {
     case unknown(error: Error?)
 }
 
-public typealias RpcClientCallback<R> = (Result<R, RpcClientError>) -> Void
+public typealias RpcClientResult<R> = Result<R, RpcClientError>
+public typealias RpcClientCallback<R> = (RpcClientResult<R>) -> Void
 
 public protocol RpcClient {
     var responseQueue: DispatchQueue { get set }

@@ -12,7 +12,9 @@ public protocol Balances: System {
     associatedtype TBalance: ScaleDynamicCodable & CompactCodable
 }
 
-open class BalancesModule<B: Balances>: Module {
+open class BalancesModule<B: Balances>: ModuleProtocol {
+    public typealias Frame = B
+    
     public static var NAME: String { "Balances" }
     
     open func registerEventsCallsAndTypes<R>(in registry: R) throws where R : TypeRegistryProtocol {

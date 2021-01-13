@@ -16,7 +16,7 @@ public enum TypeRegistryError: Error {
     // Events
     case eventNotFound(module: String, event: String)
     case eventDecodingError(module: String, event: String, error: SDecodingError)
-    case eventRegistrationError(event: Event, message: String)
+    case eventRegistrationError(event: AnyEvent, message: String)
     // Meta
     case metadata(error: MetadataError)
     // Value Encoding

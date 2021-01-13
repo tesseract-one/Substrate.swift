@@ -18,7 +18,8 @@ public struct TransferEvent<B: Balances> {
 }
 
 extension TransferEvent: Event {
-    public static var MODULE: Module.Type { BalancesModule<B>.self }
+    public typealias Module = BalancesModule<B>
+    
     public static var EVENT: String { "Transfer" }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {

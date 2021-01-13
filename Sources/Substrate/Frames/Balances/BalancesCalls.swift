@@ -16,7 +16,8 @@ public struct TransferCall<B: Balances> {
 }
 
 extension TransferCall: Call {
-    public static var MODULE: Module.Type { BalancesModule<B>.self }
+    public typealias Module = BalancesModule<B>
+    
     public static var FUNCTION: String { "Transfer" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {

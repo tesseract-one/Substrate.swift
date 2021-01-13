@@ -12,8 +12,8 @@ import ScaleCodec
 public class TypeRegistry {
     private let metadata: Metadata
     
-    private var _events: Dictionary<String, Event.Type> = [:]
-    private var _calls: Dictionary<String, Call.Type> = [:]
+    private var _events: Dictionary<String, AnyEvent.Type> = [:]
+    private var _calls: Dictionary<String, AnyCall.Type> = [:]
     private var _types: Dictionary<DType, ScaleDynamicDecodable.Type> = [:]
     
     public init(metadata: Metadata) {

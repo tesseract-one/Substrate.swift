@@ -20,7 +20,9 @@ public protocol System {
     associatedtype TAccountData: ScaleDynamicCodable
 }
 
-open class SystemModule<S: System>: Module {
+open class SystemModule<S: System>: ModuleProtocol {
+    public typealias Frame = S
+    
     public static var NAME: String { "System" }
     
     public init() {}

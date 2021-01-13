@@ -14,7 +14,8 @@ public struct ExtrinsicSuccessEvent<S: System> {
 }
 
 extension ExtrinsicSuccessEvent: Event {
-    public static var MODULE: Module.Type { SystemModule<S>.self }
+    public typealias Module = SystemModule<S>
+    
     public static var EVENT: String { "ExtrinsicSuccess" }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
@@ -33,7 +34,8 @@ public struct ExtrinsicFailedEvent<S: System> {
 }
 
 extension ExtrinsicFailedEvent: Event {
-    public static var MODULE: Module.Type { SystemModule<S>.self }
+    public typealias Module = SystemModule<S>
+    
     public static var EVENT: String { "ExtrinsicFailed" }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
@@ -47,7 +49,8 @@ extension ExtrinsicFailedEvent: Event {
 public struct CodeUpdatedEvent<S: System> {}
 
 extension CodeUpdatedEvent: Event {
-    public static var MODULE: Module.Type { SystemModule<S>.self }
+    public typealias Module = SystemModule<S>
+    
     public static var EVENT: String { "CodeUpdated" }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {}
@@ -61,7 +64,8 @@ public struct NewAccountEvent<S: System> {
 }
 
 extension NewAccountEvent: Event {
-    public static var MODULE: Module.Type { SystemModule<S>.self }
+    public typealias Module = SystemModule<S>
+    
     public static var EVENT: String { "NewAccount" }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
@@ -77,7 +81,8 @@ public struct KilledAccountEvent<S: System> {
 }
 
 extension KilledAccountEvent: Event {
-    public static var MODULE: Module.Type { SystemModule<S>.self }
+    public typealias Module = SystemModule<S>
+    
     public static var EVENT: String { "KilledAccount" }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {

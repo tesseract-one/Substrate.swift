@@ -11,8 +11,8 @@ public struct TotalIssuanceStorageKey<B: Balances> {}
 
 extension TotalIssuanceStorageKey: StorageKey {
     public typealias Value = B.TBalance
+    public typealias Module = BalancesModule<B>
     
-    public static var MODULE: Module.Type { BalancesModule<B>.self }
     public static var FIELD: String { "TotalIssuance" }
     
     public var path: [ScaleDynamicEncodable] { [] }

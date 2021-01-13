@@ -8,30 +8,30 @@
 import Foundation
 import ScaleCodec
 
-public struct Digest<Hash: ScaleFixedData>: ScaleDynamicCodable {
-    public let logs: Array<Hash>
+public struct Digest<H: Hash>: ScaleCodable, ScaleDynamicCodable {
+    public let logs: Array<DigestItem<H>>
     
-    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
-        logs = try Array<Hash>(from: decoder, registry: registry)
+    public init(from decoder: ScaleDecoder) throws {
+        logs = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
-        try logs.encode(in: encoder, registry: registry)
+    public func encode(in encoder: ScaleEncoder) throws {
+        try encoder.encode(logs)
     }
 }
 
-public enum DigestItem<Hash: ScaleDynamicCodable>: ScaleDynamicCodable {
-    case changesTrieRoot(Hash)
+public enum DigestItem<H: Hash>: ScaleCodable, ScaleDynamicCodable {
+    case changesTrieRoot(H)
     case preRuntime(ConsensusEngineId, Data)
     case consensus(ConsensusEngineId, Data)
     case seal(ConsensusEngineId, Data)
     case changesTrieSignal(ChangesTrieSignal)
     case other(Data)
     
-    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
+    public init(from decoder: ScaleDecoder) throws {
         let id = try decoder.decode(.enumCaseId)
         switch id {
-        case 0: self = try .changesTrieRoot(Hash(from: decoder, registry: registry))
+        case 0: self = try .changesTrieRoot(decoder.decode())
         case 1: self = try .preRuntime(decoder.decode(), decoder.decode())
         case 2: self = try .consensus(decoder.decode(), decoder.decode())
         case 3: self = try .seal(decoder.decode(), decoder.decode())
@@ -41,9 +41,9 @@ public enum DigestItem<Hash: ScaleDynamicCodable>: ScaleDynamicCodable {
         }
     }
     
-    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+    public func encode(in encoder: ScaleEncoder) throws {
         switch self {
-        case .changesTrieRoot(let hash): try hash.encode(in: encoder.encode(0, .enumCaseId), registry: registry)
+        case .changesTrieRoot(let hash): try encoder.encode(0, .enumCaseId).encode(hash)
         case .preRuntime(let id, let d): try encoder.encode(1, .enumCaseId).encode(id).encode(d)
         case .consensus(let id, let d): try encoder.encode(2, .enumCaseId).encode(id).encode(d)
         case .seal(let id, let d): try encoder.encode(3, .enumCaseId).encode(id).encode(d)

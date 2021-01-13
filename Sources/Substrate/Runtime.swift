@@ -18,17 +18,15 @@ public protocol Stacking: Balances {}
 public protocol Contracts: Balances {}
 public protocol Sudo: System {}
 
-public protocol Runtime: System {
+public protocol Runtime: System, TypeRegistrator {
     associatedtype TSignature: ScaleDynamicCodable
     associatedtype TExtra: ScaleDynamicCodable
     
-    var modules: [Module] { get }
-    
-    func register<R: TypeRegistryProtocol>(in registry: R) throws
+    var modules: [TypeRegistrator] { get }
 }
 
 extension Runtime {
-    public func register<R: TypeRegistryProtocol>(in registry: R) throws {
+    public func registerEventsCallsAndTypes<R: TypeRegistryProtocol>(in registry: R) throws {
         try registry.register(type: TSignature.self, as: .type(name: "Signature"))
         try registry.register(type: TExtra.self, as: .type(name: "Extra"))
         for module in modules {
@@ -36,16 +34,3 @@ extension Runtime {
         }
     }
 }
-//
-//extension Session {
-//    public func registerEventsCallsAndTypes<R: TypeRegistryProtocol>(in registry: R) throws {
-//        try registry.register(type: TValidatorId.self, as: .type(name: "ValidatorId"))
-//        try registry.register(type: TKeys.self, as: .collection(element: .type(name: "Key")))
-//    }
-//}
-//
-//extension Balances {
-//    public func registerEventsCallsAndTypes<R: TypeRegistryProtocol>(in registry: R) throws {
-//        try registry.register(type: TBalance.self, as: .type(name: "Balance"))
-//    }
-//}

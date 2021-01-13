@@ -1,5 +1,5 @@
 //
-//  Constructors.swift
+//  Substrate+Constructors.swift
 //  
 //
 //  Created by Yehor Popovych on 1/11/21.
@@ -11,7 +11,7 @@ import SubstrateRpc
 
 extension Substrate {
     public static func create<R: Runtime, C: RpcClient>(
-        client: C, runtime: R, _ cb: @escaping (Result<Substrate<R, C>, Error>) -> Void
+        client: C, runtime: R, _ cb: @escaping SApiCallback<Substrate<R, C>>
     ) {
         _getRuntimeInfo(client: client, subs: Substrate<R, C>.self) { res in
             let result = res.flatMap { (meta, hash, version, props) in
@@ -28,29 +28,25 @@ extension Substrate {
 }
 
 private extension Substrate {
-    static func _createRegistry<R: Runtime>(meta: Metadata, runtime: R) -> Result<TypeRegistry, Error> {
+    static func _createRegistry<R: Runtime>(meta: Metadata, runtime: R) -> SApiResult<TypeRegistry> {
         return Result {
             let registry = TypeRegistry(metadata: meta)
-            try runtime.register(in: registry)
+            try runtime.registerEventsCallsAndTypes(in: registry)
             try registry.validate()
             return registry
-        }
+        }.mapError(SubstrateApiError.from)
     }
     
     static func _getRuntimeInfo<S: SubstrateProtocol>(
         client: RpcClient, subs: S.Type,
-        cb: @escaping (Result<(Metadata, S.R.THash, RuntimeVersion, SystemProperties), Error>) -> Void
+        cb: @escaping SApiCallback<(Metadata, S.R.THash, RuntimeVersion, SystemProperties)>
     ) {
         _getRuntimeVersionInfo(client: client, subs: subs) { res in
             switch res {
             case .failure(let err): cb(.failure(err))
             case .success((let meta, let hash, let version)):
                 SubstrateSystemApi<S>.properties(client: client, timeout: 60) { res in
-                    switch res {
-                    case .failure(let err): cb(.failure(err))
-                    case .success(let props):
-                        cb(.success((meta, hash, version, props)))
-                    }
+                    cb(res.map {(meta, hash, version, $0)})
                 }
             }
         }
@@ -58,18 +54,14 @@ private extension Substrate {
     
     static func _getRuntimeVersionInfo<S: SubstrateProtocol>(
         client: RpcClient, subs: S.Type,
-        cb: @escaping (Result<(Metadata, S.R.THash, RuntimeVersion), Error>) -> Void
+        cb: @escaping SApiCallback<(Metadata, S.R.THash, RuntimeVersion)>
     ) {
         _getRuntimeHashInfo(client: client, subs: subs) { res in
             switch res {
             case .failure(let err): cb(.failure(err))
             case .success((let meta, let hash)):
                 SubstrateStateApi<S>.runtimeVersion(at: nil, with: client, timeout: 60) { res in
-                    switch res {
-                    case .failure(let err): cb(.failure(err))
-                    case .success(let version):
-                        cb(.success((meta, hash, version)))
-                    }
+                    cb(res.map {(meta, hash, $0)})
                 }
             }
         }
@@ -77,18 +69,14 @@ private extension Substrate {
     
     static func _getRuntimeHashInfo<S: SubstrateProtocol>(
         client: RpcClient, subs: S.Type,
-        cb: @escaping (Result<(Metadata, S.R.THash), Error>) -> Void
+        cb: @escaping SApiCallback<(Metadata, S.R.THash)>
     ) {
         _getRuntimeMetaInfo(client: client, subs: subs) { res in
             switch res {
             case .failure(let err): cb(.failure(err))
             case .success(let meta):
                 SubstrateChainApi<S>.genesisHash(client: client, timeout: 60) { res in
-                    switch res {
-                    case .failure(let err): cb(.failure(err))
-                    case .success(let hash):
-                        cb(.success((meta, hash)))
-                    }
+                    cb(res.map {(meta, $0)})
                 }
             }
         }
@@ -96,7 +84,7 @@ private extension Substrate {
     
     static func _getRuntimeMetaInfo<S: SubstrateProtocol>(
         client: RpcClient, subs: S.Type,
-        cb: @escaping (Result<Metadata, Error>) -> Void
+        cb: @escaping SApiCallback<Metadata>
     ) {
         SubstrateStateApi<S>.metadata(client: client, timeout: 60, cb)
     }

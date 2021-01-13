@@ -15,14 +15,17 @@ public protocol AnyEvent {
 }
 
 public protocol Event: AnyEvent {
-    static var MODULE: Module.Type { get }
+    associatedtype Module: ModuleProtocol
+    
+    static var MODULE: String { get }
     static var EVENT: String { get }
     
     init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws
 }
 
 extension Event {
-    public var module: String { return Self.MODULE.NAME }
+    public static var MODULE: String { return Module.NAME }
+    public var module: String { return Self.MODULE }
     public var event: String { return Self.EVENT }
 }
 

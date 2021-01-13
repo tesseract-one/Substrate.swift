@@ -8,15 +8,20 @@
 import Foundation
 import ScaleCodec
 
-public protocol Module {
-    static var NAME: String { get }
-    
+public protocol TypeRegistrator {
     func registerEventsCallsAndTypes<R: TypeRegistryProtocol>(in registry: R) throws
 }
 
+public protocol ModuleProtocol: TypeRegistrator {
+    associatedtype Frame
+    
+    static var NAME: String { get }
+}
 
-open class PrimitivesModule: Module {
-    public static let NAME: String = "_Primitives"
+open class PrimitivesModule<S>: ModuleProtocol {
+    public typealias Frame = S
+    
+    public static var NAME: String { "_Primitives" }
     
     public init() {}
     

@@ -15,14 +15,17 @@ public protocol AnyCall {
 }
 
 public protocol Call: AnyCall {
-    static var MODULE: Module.Type { get }
+    associatedtype Module: ModuleProtocol
+    
+    static var MODULE: String { get }
     static var FUNCTION: String { get }
     
     init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws
 }
 
 extension Call {
-    public var module: String { return Self.MODULE.NAME }
+    public static var MODULE: String { return Module.NAME }
+    public var module: String { return Self.MODULE }
     public var function: String { return Self.FUNCTION }
 }
 

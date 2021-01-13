@@ -13,9 +13,9 @@ public struct AccountStorageKey<S: System> {
 }
 
 extension AccountStorageKey: StorageKey {
+    public typealias Module = SystemModule<S>
     public typealias Value = AccountInfo<S>
     
-    public static var MODULE: Module.Type { SystemModule<S>.self }
     public static var FIELD: String { "Account" }
     
     public var path: [ScaleDynamicEncodable] { return [accountId] }

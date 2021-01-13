@@ -10,25 +10,27 @@ import SubstrateRpc
 import ScaleCodec
 
 public struct SubstrateSystemApi<S: SubstrateProtocol>: SubstrateApi {
-    private weak var substrate: S!
+    public weak var substrate: S!
     
     public init(substrate: S) {
         self.substrate = substrate
     }
     
-    public func properties(_ cb: @escaping (Result<SystemProperties, RpcClientError>) -> Void) {
+    public func properties(_ cb: @escaping SApiCallback<SystemProperties>) {
         Self.properties(client: substrate.client, timeout: substrate.callTimeout, cb)
     }
     
     public static func properties(
         client: RpcClient, timeout: TimeInterval,
-        _ cb: @escaping (Result<SystemProperties, RpcClientError>) -> Void
+        _ cb: @escaping SApiCallback<SystemProperties>
     ) {
         client.call(
             method: "system_properties",
             params: Array<Int>(),
-            timeout: timeout,
-            response: cb)
+            timeout: timeout
+        ) { (res: RpcClientResult<SystemProperties>) in
+            cb(res.mapError(SubstrateApiError.rpc))
+        }
     }
 }
 

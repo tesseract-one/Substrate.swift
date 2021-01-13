@@ -10,13 +10,13 @@ import SubstrateRpc
 import ScaleCodec
 
 public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
-    private weak var substrate: S!
+    public weak var substrate: S!
     
     public init(substrate: S) {
         self.substrate = substrate
     }
     
-    public func runtimeVersion(at hash: S.R.THash? = nil, _ cb: @escaping (Result<RuntimeVersion, RpcClientError>) -> Void) {
+    public func runtimeVersion(at hash: S.R.THash? = nil, _ cb: @escaping SApiCallback<RuntimeVersion>) {
         Self.runtimeVersion(
             at: hash,
             with: substrate.client,
@@ -25,48 +25,45 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
         )
     }
     
-    public func metadata(_ cb: @escaping (Result<Metadata, Error>) -> Void) {
+    public func metadata(_ cb: @escaping SApiCallback<Metadata>) {
         Self.metadata(client: substrate.client, timeout: substrate.callTimeout, cb)
     }
     
     public static func runtimeVersion(
         at hash: S.R.THash?, with client: RpcClient, timeout: TimeInterval,
-        _ cb: @escaping (Result<RuntimeVersion, RpcClientError>) -> Void
+        _ cb: @escaping SApiCallback<RuntimeVersion>
     ) {
         do {
             let data = (try hash?.encode()).map(HexData.init)
             client.call(
                 method: "state_getRuntimeVersion",
                 params: [data],
-                timeout: timeout,
-                response: cb
-            )
+                timeout: timeout
+            ) { (res: RpcClientResult<RuntimeVersion>) in
+                cb(res.mapError(SubstrateApiError.rpc))
+            }
         } catch {
-            cb(.failure(.unknown(error: error)))
+            cb(.failure(.from(error: error)))
         }
     }
     
     public static func metadata(
         client: RpcClient, timeout: TimeInterval,
-        _ cb: @escaping (Result<Metadata, Error>) -> Void
+        _ cb: @escaping SApiCallback<Metadata>
     ) {
         client.call(
             method: "state_getMetadata",
             params: Array<Int>(),
             timeout: timeout
-        ) { (res: Result<HexData, RpcClientError>) in
-            switch res {
-            case .failure(let err): cb(.failure(err))
-            case .success(let data):
-                do {
+        ) { (res: RpcClientResult<HexData>) in
+            let response: SApiResult<Metadata> = res.mapError(SubstrateApiError.rpc).flatMap { data in
+                Result {
                     let decoder = SCALE.default.decoder(data: data.data)
                     let versioned = try decoder.decode(RuntimeVersionedMetadata.self)
-                    let metadata = try Metadata(runtime: versioned.metadata)
-                    cb(.success(metadata))
-                } catch {
-                    cb(.failure(error))
-                }
+                    return try Metadata(runtime: versioned.metadata)
+                }.mapError(SubstrateApiError.from)
             }
+            cb(response)
         }
     }
 }

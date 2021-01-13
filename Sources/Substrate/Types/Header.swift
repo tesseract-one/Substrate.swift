@@ -8,19 +8,19 @@
 import Foundation
 import ScaleCodec
 
-public struct Header<Number: ScaleDynamicCodable, Hash: ScaleFixedData>: ScaleDynamicCodable {
-    public let parentHash: Hash
+public struct Header<Number: ScaleDynamicCodable, H: Hash>: ScaleDynamicCodable {
+    public let parentHash: H
     public let number: Number
-    public let stateRoot: Hash
-    public let extrinsicRoot: Hash
-    public let digest: Digest<Hash>
+    public let stateRoot: H
+    public let extrinsicRoot: H
+    public let digest: Digest<H>
     
     public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
-        parentHash = try Hash(from: decoder, registry: registry)
+        parentHash = try decoder.decode()
         number = try Number(from: decoder, registry: registry)
-        stateRoot = try Hash(from: decoder, registry: registry)
-        extrinsicRoot = try Hash(from: decoder, registry: registry)
-        digest = try Digest<Hash>(from: decoder, registry: registry)
+        stateRoot = try decoder.decode()
+        extrinsicRoot = try decoder.decode()
+        digest = try decoder.decode()
     }
     
     public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {

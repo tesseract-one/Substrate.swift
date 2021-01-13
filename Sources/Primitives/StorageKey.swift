@@ -20,8 +20,9 @@ public protocol AnyStorageKey {
 
 public protocol StorageKey: AnyStorageKey {
     associatedtype Value: ScaleDynamicDecodable
+    associatedtype Module: ModuleProtocol
     
-    static var MODULE: Module.Type { get }
+    static var MODULE: String { get }
     static var FIELD: String { get }
 }
 
@@ -36,7 +37,8 @@ extension AnyStorageKey {
 }
 
 extension StorageKey {
-    public var module: String { return Self.MODULE.NAME }
+    public static var MODULE: String { return Module.NAME }
+    public var module: String { return Self.MODULE }
     public var field: String { return Self.FIELD }
 }
 

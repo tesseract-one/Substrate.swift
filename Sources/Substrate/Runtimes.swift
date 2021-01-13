@@ -33,5 +33,7 @@ extension DefaultNodeRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtra = Data
     
-    public var modules: [Module] { [PrimitivesModule(), SystemModule<Self>()] }
+    public var modules: [TypeRegistrator] {
+        [PrimitivesModule<Self>(), SystemModule<Self>(), BalancesModule<Self>()]
+    }
 }
