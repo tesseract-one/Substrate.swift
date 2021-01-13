@@ -8,10 +8,10 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicSignature {
+public struct ExtrinsicSignature<Address: ScaleCodable, Index: ScaleDynamicCodable & CompactCodable>  {
     public let sender: Address
     public let signature: SSignature
-    public let extra: ExtrinsicExtra
+    public let extra: ExtrinsicExtra<Index>
 }
 
 extension ExtrinsicSignature: ScaleCodable {

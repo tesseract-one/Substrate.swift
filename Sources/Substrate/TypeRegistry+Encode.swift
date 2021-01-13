@@ -7,6 +7,7 @@
 
 import Foundation
 import ScaleCodec
+import BigInt
 
 extension TypeRegistry {
     func _encode(
@@ -35,7 +36,11 @@ extension TypeRegistry {
         guard let val = value as? CompactConvertible else {
             throw TypeRegistryError.encodingValueIsNotCompactCodable(value: value)
         }
-        try _typeEncodingError(value) { try encoder.encode(val.compact) }
+        
+        try _typeEncodingError(value) {
+            let compact: SCompact<BigUInt> = try val.compact()
+            try encoder.encode(compact)
+        }
     }
     
     private func _encodeFixed(type: DType, val: ScaleDynamicEncodable, count: Int, encoder: ScaleEncoder) throws {

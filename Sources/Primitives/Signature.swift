@@ -29,9 +29,9 @@ extension MultiSignature: ScaleCodable {
     
     public func encode(in encoder: ScaleEncoder) throws {
         switch self {
-        case .ed25519(let s): try encoder.encode(enumCaseId: 0).encode(s)
-        case .sr25519(let s): try encoder.encode(enumCaseId: 1).encode(s)
-        case .ecdsa(let s): try encoder.encode(enumCaseId: 2).encode(s, fixed: 65)
+        case .ed25519(let s): try encoder.encode(0, .enumCaseId).encode(s)
+        case .sr25519(let s): try encoder.encode(1, .enumCaseId).encode(s)
+        case .ecdsa(let s): try encoder.encode(2, .enumCaseId).encode(s, .fixed(65))
         }
     }
 }

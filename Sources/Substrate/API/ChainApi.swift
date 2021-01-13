@@ -16,19 +16,24 @@ public struct SubstrateChainApi<S: SubstrateProtocol>: SubstrateApi {
         self.substrate = substrate
     }
     
-    public func genesisHash(_ cb: @escaping (Result<S.R.Hash, RpcClientError>) -> Void) {
+    public func genesisHash(_ cb: @escaping (Result<S.R.THash, RpcClientError>) -> Void) {
         Self.genesisHash(client: substrate.client, timeout: substrate.callTimeout, cb)
     }
     
     public static func genesisHash(
         client: RpcClient, timeout: TimeInterval,
-        _ cb: @escaping (Result<S.R.Hash, RpcClientError>) -> Void
+        _ cb: @escaping (Result<S.R.THash, RpcClientError>) -> Void
     ) {
         client.call(
             method: "chain_getBlockHash",
             params: [0],
-            timeout: timeout,
-            response: cb)
+            timeout: timeout
+        ) { (res: Result<HexData, RpcClientError>) in
+            let response = res.flatMap { data in
+                Result { try S.R.THash(decoding: data.data) }.mapError(RpcClientError.unknown)
+            }
+            cb(response)
+        }
     }
 }
 

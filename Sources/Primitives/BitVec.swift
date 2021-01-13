@@ -27,8 +27,8 @@ public struct BitVec: ScaleCodable {
     
     public func encode(in encoder: ScaleEncoder) throws {
         try encoder
-            .encode(compact: UInt32(values.count * 8))
-            .encode(Data(values), fixed: UInt(values.count))
+            .encode(UInt32(values.count * 8), .compact)
+            .encode(Data(values), .fixed(UInt(values.count)))
     }
 }
 

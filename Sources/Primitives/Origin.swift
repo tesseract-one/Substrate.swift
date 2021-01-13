@@ -55,9 +55,9 @@ extension Origin: ScaleCodable {
     
     public func encode(in encoder: ScaleEncoder) throws {
         switch self {
-        case .root: try encoder.encode(enumCaseId: 0)
-        case .signed(let id): try encoder.encode(enumCaseId: 1).encode(id)
-        case .none: try encoder.encode(enumCaseId: 2)
+        case .root: try encoder.encode(0, .enumCaseId)
+        case .signed(let id): try encoder.encode(1, .enumCaseId).encode(id)
+        case .none: try encoder.encode(2, .enumCaseId)
         }
     }
 }

@@ -31,7 +31,7 @@ private extension Substrate {
     static func _createRegistry<R: Runtime>(meta: Metadata, runtime: R) -> Result<TypeRegistry, Error> {
         return Result {
             let registry = TypeRegistry(metadata: meta)
-            try runtime.registerTypes(registry: registry)
+            try runtime.register(in: registry)
             try registry.validate()
             return registry
         }
@@ -39,7 +39,7 @@ private extension Substrate {
     
     static func _getRuntimeInfo<S: SubstrateProtocol>(
         client: RpcClient, subs: S.Type,
-        cb: @escaping (Result<(Metadata, S.R.Hash, RuntimeVersion, SystemProperties), Error>) -> Void
+        cb: @escaping (Result<(Metadata, S.R.THash, RuntimeVersion, SystemProperties), Error>) -> Void
     ) {
         _getRuntimeVersionInfo(client: client, subs: subs) { res in
             switch res {
@@ -58,7 +58,7 @@ private extension Substrate {
     
     static func _getRuntimeVersionInfo<S: SubstrateProtocol>(
         client: RpcClient, subs: S.Type,
-        cb: @escaping (Result<(Metadata, S.R.Hash, RuntimeVersion), Error>) -> Void
+        cb: @escaping (Result<(Metadata, S.R.THash, RuntimeVersion), Error>) -> Void
     ) {
         _getRuntimeHashInfo(client: client, subs: subs) { res in
             switch res {
@@ -77,7 +77,7 @@ private extension Substrate {
     
     static func _getRuntimeHashInfo<S: SubstrateProtocol>(
         client: RpcClient, subs: S.Type,
-        cb: @escaping (Result<(Metadata, S.R.Hash), Error>) -> Void
+        cb: @escaping (Result<(Metadata, S.R.THash), Error>) -> Void
     ) {
         _getRuntimeMetaInfo(client: client, subs: subs) { res in
             switch res {

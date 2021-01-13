@@ -8,9 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public typealias Hash = Hash256
+public protocol Hash: ScaleFixedData, ScaleDynamicCodable {}
 
-public struct Hash160: ScaleFixedData {
+public struct Hash160: Hash {
     let data: Data
     
     public init(_ data: Data) {
@@ -32,7 +32,7 @@ public struct Hash160: ScaleFixedData {
     public static var fixedBytesCount: Int = 20
 }
 
-public struct Hash256: ScaleFixedData {
+public struct Hash256: Hash {
     let data: Data
     
     public init(_ data: Data) {
@@ -54,7 +54,7 @@ public struct Hash256: ScaleFixedData {
     public static var fixedBytesCount: Int = 32
 }
 
-public struct Hash512: ScaleFixedData {
+public struct Hash512: Hash {
     let data: Data
     
     public init(_ data: Data) {
@@ -75,7 +75,3 @@ public struct Hash512: ScaleFixedData {
     
     public static var fixedBytesCount: Int = 64
 }
-
-extension Hash160: ScaleDynamicCodable {}
-extension Hash256: ScaleDynamicCodable {}
-extension Hash512: ScaleDynamicCodable {}

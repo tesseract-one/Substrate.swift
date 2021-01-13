@@ -11,7 +11,7 @@ import ScaleCodec
 public protocol AnyEvent {
     var module: String { get }
     var event: String { get }
-    var data: ScaleDynamicDecodable { get }
+    var data: DValue { get }
 }
 
 public protocol Event: AnyEvent {
@@ -30,9 +30,9 @@ extension Event {
 public struct SEvent: AnyEvent {
     public let module: String
     public let event: String
-    public let data: ScaleDynamicDecodable
+    public let data: DValue
     
-    public init(module: String, event: String, data: ScaleDynamicDecodable) {
+    public init(module: String, event: String, data: DValue) {
         self.module = module
         self.data = data
         self.event = event

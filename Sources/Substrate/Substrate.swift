@@ -14,7 +14,7 @@ public protocol SubstrateProtocol: class {
     
     var client: C { get }
     var registry: TypeRegistryProtocol { get }
-    var genesisHash: R.Hash { get }
+    var genesisHash: R.THash { get }
     var runtimeVersion: RuntimeVersion { get }
     var properties: SystemProperties { get }
     
@@ -29,7 +29,7 @@ public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
     
     public let client: C
     public let registry: TypeRegistryProtocol
-    public let genesisHash: R.Hash
+    public let genesisHash: R.THash
     public let runtimeVersion: RuntimeVersion
     public let properties: SystemProperties
     
@@ -37,7 +37,7 @@ public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
     public var callTimeout: TimeInterval = 60
     
     public init(
-        registry: TypeRegistryProtocol, genesisHash: R.Hash,
+        registry: TypeRegistryProtocol, genesisHash: R.THash,
         runtimeVersion: RuntimeVersion, properties: SystemProperties,
         client: C
     ) {

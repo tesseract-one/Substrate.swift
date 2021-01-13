@@ -8,9 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public enum Address: Equatable, Hashable {
-    case id(AccountId)
-    case index(AccountIndex)
+public enum Address<Id: ScaleCodable & Hashable, Index: ScaleCodable & Hashable>: Equatable, Hashable {
+    case id(Id)
+    case index(Index)
     
     public var isId: Bool {
         guard case .id(_) = self else {
@@ -19,20 +19,12 @@ public enum Address: Equatable, Hashable {
         return true
     }
     
-    public init(id: AccountId) {
+    public init(id: Id) {
         self = .id(id)
     }
     
-    public init(index: AccountIndex) {
+    public init(index: Index) {
         self = .index(index)
-    }
-    
-    public init(key: Data) {
-        self = .id(AccountId(key: key))
-    }
-    
-    public init(index: UInt64) {
-        self = .index(AccountIndex(index))
     }
 }
 

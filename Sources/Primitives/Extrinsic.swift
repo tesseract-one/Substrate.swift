@@ -8,8 +8,8 @@
 import Foundation
 import ScaleCodec
 
-public struct Extrinsic<Call: AnyCall> {
-    public let signature: ExtrinsicSignature?
+public struct Extrinsic<Call: AnyCall, Address: ScaleCodable, Index: ScaleDynamicCodable & CompactCodable> {
+    public let signature: ExtrinsicSignature<Address, Index>?
     public let call: Call
 }
 

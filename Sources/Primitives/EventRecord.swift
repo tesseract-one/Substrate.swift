@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct EventRecord: ScaleDynamicDecodable {
+public struct EventRecord<H: Hash>: ScaleDynamicDecodable {
     public enum Phase {
         // Applying an extrinsic.
         case applyExtrinsic(UInt32)
@@ -19,7 +19,7 @@ public struct EventRecord: ScaleDynamicDecodable {
     }
     let phase: Phase
     let event: AnyEvent
-    let topics: [Hash]
+    let topics: [H]
 }
 
 extension EventRecord.Phase: ScaleDecodable {

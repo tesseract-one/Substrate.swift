@@ -16,7 +16,7 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
         self.substrate = substrate
     }
     
-    public func runtimeVersion(at hash: S.R.Hash? = nil, _ cb: @escaping (Result<RuntimeVersion, RpcClientError>) -> Void) {
+    public func runtimeVersion(at hash: S.R.THash? = nil, _ cb: @escaping (Result<RuntimeVersion, RpcClientError>) -> Void) {
         Self.runtimeVersion(
             at: hash,
             with: substrate.client,
@@ -30,15 +30,20 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
     }
     
     public static func runtimeVersion(
-        at hash: S.R.Hash?, with client: RpcClient, timeout: TimeInterval,
+        at hash: S.R.THash?, with client: RpcClient, timeout: TimeInterval,
         _ cb: @escaping (Result<RuntimeVersion, RpcClientError>) -> Void
     ) {
-        client.call(
-            method: "state_getRuntimeVersion",
-            params: [hash],
-            timeout: timeout,
-            response: cb
-        )
+        do {
+            let data = (try hash?.encode()).map(HexData.init)
+            client.call(
+                method: "state_getRuntimeVersion",
+                params: [data],
+                timeout: timeout,
+                response: cb
+            )
+        } catch {
+            cb(.failure(.unknown(error: error)))
+        }
     }
     
     public static func metadata(

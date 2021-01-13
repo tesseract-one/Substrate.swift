@@ -8,9 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicExtra {
+public struct ExtrinsicExtra<Index: ScaleDynamicCodable & CompactCodable> {
     let era: ExtrinsicEra
-    let nonce: SIndex
+    let nonce: Index
     let tip: BigUInt
 }
 
@@ -22,7 +22,7 @@ extension ExtrinsicExtra: ScaleCodable {
     }
     
     public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(era).encode(compact: nonce).encode(compact: tip)
+        try encoder.encode(era).encode(nonce, .compact).encode(tip, .compact)
       }
 }
 
