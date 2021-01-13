@@ -11,6 +11,8 @@ import ScaleCodec
 public struct SystemExtrinsicSuccessEvent<S: System> {
     /// The dispatch info.
     public let info: DispatchInfo
+    // dynamic type of value
+    private let type: DType
 }
 
 extension SystemExtrinsicSuccessEvent: Event {
@@ -20,9 +22,10 @@ extension SystemExtrinsicSuccessEvent: Event {
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         info = try decoder.decode()
+        type = try registry.type(of: DispatchInfo.self)
     }
     
-    public var data: DValue { DValue(info) }
+    public var data: DValue { .native(type: type, value: info) }
 }
 
 
@@ -31,6 +34,8 @@ public struct SystemExtrinsicFailedEvent<S: System> {
     public let error: DispatchError
     /// The dispatch info.
     public let info: DispatchInfo
+    /// dynamic types
+    private let types: (error: DType, info: DType)
 }
 
 extension SystemExtrinsicFailedEvent: Event {
@@ -41,9 +46,15 @@ extension SystemExtrinsicFailedEvent: Event {
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         error = try decoder.decode()
         info = try decoder.decode()
+        types = try (error: registry.type(of: DispatchError.self), info: registry.type(of: DispatchInfo.self))
     }
     
-    public var data: DValue { .collection(values: [DValue(error), DValue(info)]) }
+    public var data: DValue {
+        .collection(values: [
+            .native(type: types.error, value: error),
+            .native(type: types.info, value: info)
+        ])
+    }
 }
 
 public struct SystemCodeUpdatedEvent<S: System> {}
@@ -61,6 +72,8 @@ extension SystemCodeUpdatedEvent: Event {
 public struct SystemNewAccountEvent<S: System> {
     /// Created account id.
     public let accountId: S.TAccountId
+    /// dynamic type
+    private let type: DType
 }
 
 extension SystemNewAccountEvent: Event {
@@ -70,14 +83,17 @@ extension SystemNewAccountEvent: Event {
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         accountId = try S.TAccountId(from: decoder, registry: registry)
+        type = try registry.type(of: S.TAccountId.self)
     }
     
-    public var data: DValue { DValue(accountId) }
+    public var data: DValue { .native(type: type, value: accountId) }
 }
 
 public struct SystemKilledAccountEvent<S: System> {
     /// Killed account id.
     public let accountId: S.TAccountId
+    /// dynamic type
+    private let type: DType
 }
 
 extension SystemKilledAccountEvent: Event {
@@ -87,7 +103,8 @@ extension SystemKilledAccountEvent: Event {
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         accountId = try S.TAccountId(from: decoder, registry: registry)
+        type = try registry.type(of: S.TAccountId.self)
     }
     
-    public var data: DValue { DValue(accountId) }
+    public var data: DValue { .native(type: type, value: accountId) }
 }

@@ -12,6 +12,7 @@ public enum TypeRegistryError: Error {
     // Types
     case typeNotFound(DType)
     case typeDecodingError(type: DType, error: SDecodingError)
+    case unknownType(ScaleDynamicDecodable.Type)
     case typeRegistrationError(type: ScaleDynamicDecodable, as: DType, message: String)
     // Events
     case eventNotFound(module: String, event: String)
@@ -34,10 +35,12 @@ public protocol TypeRegistryProtocol: class {
     // Storage
     func key(for key: AnyStorageKey) throws -> Data
     func prefix(for key: AnyStorageKey) throws -> Data
+    func valueType(for key: AnyStorageKey) throws -> DType
     func defaultValue(for key: AnyStorageKey) throws -> DValue
     func defaultValue<K: StorageKey>(parsed key: K) throws -> K.Value
     
     // Constants
+    func valueType(of constant: AnyConstant) throws -> DType
     func value(of constant: AnyConstant) throws -> DValue
     func value<C: Constant>(parsed constant: C) throws -> C.Value
     
@@ -47,6 +50,7 @@ public protocol TypeRegistryProtocol: class {
     func register<E: Event>(event: E.Type) throws
     
     // Values
+    func type<T: ScaleDynamicDecodable>(of t: T.Type) throws -> DType
     func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws
     func decode<V: ScaleDynamicDecodable>(static: V.Type, as type: DType, from decoder: ScaleDecoder) throws -> V
     func decode(dynamic: DType, from decoder: ScaleDecoder) throws -> DValue

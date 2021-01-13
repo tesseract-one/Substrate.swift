@@ -15,6 +15,7 @@ public class TypeRegistry {
     private var _events: Dictionary<String, AnyEvent.Type> = [:]
     private var _calls: Dictionary<String, AnyCall.Type> = [:]
     private var _types: Dictionary<DType, ScaleDynamicDecodable.Type> = [:]
+    private var _reverseTypes: Dictionary<String, DType> = [:]
     
     public init(metadata: Metadata) {
         self.metadata = metadata
@@ -35,6 +36,7 @@ public class TypeRegistry {
 extension TypeRegistry: TypeRegistryProtocol {
     public func register<T>(type: T.Type, as dynamic: DType) throws where T : ScaleDynamicDecodable {
         _types[dynamic] = type
+        _reverseTypes[String(describing: type)] = dynamic
     }
     
     public func register<C>(call: C.Type) throws where C : Call {
@@ -43,6 +45,13 @@ extension TypeRegistry: TypeRegistryProtocol {
     
     public func register<E>(event: E.Type) throws where E : Event {
         _events["\(E.MODULE).\(E.EVENT)"] = event
+    }
+    
+    public func type<T>(of t: T.Type) throws -> DType where T : ScaleDynamicDecodable {
+        guard let type = _reverseTypes[String(describing: t)] else {
+            throw TypeRegistryError.unknownType(t)
+        }
+        return type
     }
     
     public func key(for key: AnyStorageKey) throws -> Data {
@@ -61,12 +70,20 @@ extension TypeRegistry: TypeRegistryProtocol {
         try _metaError { try self.metadata.defaultValue(parsed: key, registry: self) }
     }
     
+    public func valueType(for key: AnyStorageKey) throws -> DType {
+        try _metaError { try self.metadata.valueType(for: key) }
+    }
+    
     public func value(of constant: AnyConstant) throws -> DValue {
         try _metaError { try self.metadata.value(of: constant, registry: self) }
     }
     
     public func value<C>(parsed constant: C) throws -> C.Value where C : Constant {
         try _metaError { try self.metadata.value(parsed: constant, registry: self) }
+    }
+    
+    public func valueType(of constant: AnyConstant) throws -> DType {
+        try _metaError { try self.metadata.valueType(of: constant) }
     }
     
     public func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent {

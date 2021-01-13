@@ -51,6 +51,10 @@ extension Metadata {
     public func defaultValue<K: StorageKey>(parsed key: K, registry: TypeRegistryProtocol) throws -> K.Value {
         return try _getStorageInfo(for: key).parseDefault(K.Value.self, registry: registry)
     }
+    
+    public func valueType(for key: AnyStorageKey) throws -> DType {
+        return try _getStorageInfo(for: key).valueType
+    }
 }
 
 // Constants
@@ -71,5 +75,9 @@ extension Metadata {
     
     public func value<C: Constant>(parsed constant: C, registry: TypeRegistryProtocol) throws -> C.Value {
         return try _getConstantInfo(for: constant).parsed(C.Value.self, registry: registry)
+    }
+    
+    public func valueType(of constant: AnyConstant) throws -> DType {
+        return try _getConstantInfo(for: constant).type
     }
 }

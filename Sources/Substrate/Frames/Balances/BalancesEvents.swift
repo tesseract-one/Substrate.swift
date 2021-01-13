@@ -15,6 +15,8 @@ public struct BalancesTransferEvent<B: Balances> {
     public let to: B.TAccountId
     /// Amount of balance that was transfered.
     public let amount: B.TBalance
+    // Store dynamic types from registry
+    private let types: (from: DType, to: DType, amount: DType)
 }
 
 extension BalancesTransferEvent: Event {
@@ -26,9 +28,16 @@ extension BalancesTransferEvent: Event {
         from = try B.TAccountId(from: decoder, registry: registry)
         to = try B.TAccountId(from: decoder, registry: registry)
         amount = try B.TBalance(from: decoder, registry: registry)
+        let accIdType = try registry.type(of: B.TAccountId.self)
+        let balType = try registry.type(of: B.TBalance.self)
+        types = (from: accIdType, to: accIdType, amount: balType)
     }
     
     public var data: DValue {
-        .collection(values: [DValue(from), DValue(to), DValue(amount)])
+        .collection(values: [
+            .native(type: types.from, value: from),
+            .native(type: types.to, value: to),
+            .native(type: types.amount, value: amount)
+        ])
     }
 }

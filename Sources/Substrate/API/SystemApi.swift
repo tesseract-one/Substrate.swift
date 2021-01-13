@@ -34,7 +34,7 @@ public struct SubstrateSystemApi<S: SubstrateProtocol>: SubstrateApi {
     }
 }
 
-extension Substrate {
-    public var system: SubstrateSystemApi<Substrate<R, C>> { getApi(SubstrateSystemApi<Substrate<R, C>>.self) }
+extension SubstrateProtocol {
+    public var system: SubstrateSystemApi<Self> { getApi(SubstrateSystemApi<Self>.self) }
 }
 

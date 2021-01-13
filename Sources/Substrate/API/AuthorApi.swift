@@ -30,6 +30,6 @@ public struct SubstrateAuthorApi<S: SubstrateProtocol>: SubstrateApi {
     }
 }
 
-extension Substrate {
-    public var author: SubstrateAuthorApi<Substrate<R, C>> { getApi(SubstrateAuthorApi<Substrate<R, C>>.self) }
+extension SubstrateProtocol {
+    public var author: SubstrateAuthorApi<Self> { getApi(SubstrateAuthorApi<Self>.self) }
 }
