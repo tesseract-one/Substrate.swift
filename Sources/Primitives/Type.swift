@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public indirect enum DType: Equatable, Hashable {
+public indirect enum DType: Equatable, Hashable, Encodable {
     case null
     case doNotConstruct(type: DType)
     case type(name: String)
@@ -34,13 +34,18 @@ public indirect enum DType: Equatable, Hashable {
         case .result(success: _, error: _): return "Result"
         }
     }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(description)
+    }
 }
 
 extension DType: CustomStringConvertible {
     public var description: String {
         switch self {
         case .null: return "Null"
-        case .doNotConstruct: return "DoNotConstruct"
+        case .doNotConstruct(let t): return "DoNotConstruct<\(t)>"
         case .type(name: let name): return name
         case .compact(type: let type): return "Compact<\(type)>"
         case .collection(element: let element): return "Array<\(element)>"

@@ -16,9 +16,12 @@ final class SubstrateTests: XCTestCase {
         
         let parse = { (data: Data) in
             let rmetadata: RuntimeVersionedMetadata = try! SCALE.default.decode(from: data)
-            print("Runtime Metadata", rmetadata)
-            let metadata = try! Metadata(runtime: rmetadata.metadata)
-            print("Metadata", metadata)
+            let _ = try! Metadata(runtime: rmetadata.metadata)
+            
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let json = try! encoder.encode(rmetadata.metadata as! RuntimeMetadataV12)
+            print("Metadata", String(data: json, encoding: .utf8)!)
         }
         
         client.call(method: "state_getMetadata", params: Array<Int>()) { (res: Result<HexData, RpcClientError>) in
@@ -31,5 +34,11 @@ final class SubstrateTests: XCTestCase {
         
         wait(for: [disconnected], timeout: 30.0)
     }
+    
+//    func testSubstrateCreation() {
+//        let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
+//
+//        Substrate.create(client: client, runtime: , <#T##cb: (Result<Substrate<Runtime, RpcClient>, Error>) -> Void##(Result<Substrate<Runtime, RpcClient>, Error>) -> Void#>)
+//    }
 }
 

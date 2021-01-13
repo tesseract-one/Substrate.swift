@@ -45,27 +45,35 @@ extension TypeRegistry: TypeRegistryProtocol {
         _events["\(E.MODULE).\(E.EVENT)"] = event
     }
     
-    public func key<K>(for key: K) throws -> Data where K : AnyStorageKey {
+    public func key(for key: AnyStorageKey) throws -> Data {
         try _metaError { try self.metadata.key(for: key, registry: self) }
     }
     
-    public func prefix<K>(for key: K) throws -> Data where K : AnyStorageKey {
+    public func prefix(for key: AnyStorageKey) throws -> Data {
         try _metaError { try self.metadata.prefix(for: key) }
     }
     
-    public func defaultValue<K: AnyStorageKey>(for key: K) throws -> DValue {
+    public func defaultValue(for key: AnyStorageKey) throws -> DValue {
         try _metaError { try self.metadata.defaultValue(for: key, registry: self) }
     }
     
-    public func defaultParsedValue<K: StorageKey>(for key: K) throws -> K.Value {
-        try _metaError { try self.metadata.defaultParsedValue(for: key, registry: self) }
+    public func defaultValue<K: StorageKey>(parsed key: K) throws -> K.Value {
+        try _metaError { try self.metadata.defaultValue(parsed: key, registry: self) }
+    }
+    
+    public func value(of constant: AnyConstant) throws -> DValue {
+        try _metaError { try self.metadata.value(of: constant, registry: self) }
+    }
+    
+    public func value<C>(parsed constant: C) throws -> C.Value where C : Constant {
+        try _metaError { try self.metadata.value(parsed: constant, registry: self) }
     }
     
     public func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent {
         fatalError("Not implemented")
     }
     
-    public func decode(event: String, module: String, from decoder: ScaleDecoder) throws -> AnyEvent {
+    public func decode<E>(event: E.Type, from decoder: ScaleDecoder) throws -> E where E: Event {
         fatalError("Not implemented")
     }
     
@@ -84,7 +92,7 @@ extension TypeRegistry: TypeRegistryProtocol {
         return try _typeDecodingError(dynamic) { try self._decode(type: dynamic, from: decoder) }
     }
     
-    public func encode<C>(call: C, in encoder: ScaleEncoder) throws where C : AnyCall {
+    public func encode(call: AnyCall, in encoder: ScaleEncoder) throws {
         fatalError("Not implemented")
     }
     
@@ -92,7 +100,7 @@ extension TypeRegistry: TypeRegistryProtocol {
         fatalError("Not implemented")
     }
     
-    public func decode(call: String, module: String, from decoder: ScaleDecoder) throws -> AnyCall {
+    public func decode<C>(call: C.Type, from decoder: ScaleDecoder) throws -> C where C: Call {
         fatalError("Not implemented")
     }
 }

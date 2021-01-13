@@ -37,7 +37,7 @@ public struct SessionSetKeysCall<S: Session> {
 extension SessionSetKeysCall: Call {
     public typealias Module = SessionModule<S>
     
-    public static var FUNCTION: String { "SetKeys" }
+    public static var FUNCTION: String { "set_keys" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         keys = try S.TKeys(from: decoder, registry: registry)

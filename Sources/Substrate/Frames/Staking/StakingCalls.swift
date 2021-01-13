@@ -17,7 +17,7 @@ public struct StakingSetPayeeCall<S: Staking> {
 extension StakingSetPayeeCall: Call {
     public typealias Module = StakingModule<S>
     
-    public static var FUNCTION: String { "SetPayee" }
+    public static var FUNCTION: String { "set_payee" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         payee = try RewardDestination<S.TAccountId>(from: decoder, registry: registry)
@@ -37,7 +37,7 @@ public struct StakingChillCall<S: Staking> {}
 extension StakingChillCall: Call {
     public typealias Module = StakingModule<S>
     
-    public static var FUNCTION: String { "Chill" }
+    public static var FUNCTION: String { "chill" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
     }
@@ -59,7 +59,7 @@ public struct StakingValidateCall<S: Staking> {
 extension StakingValidateCall: Call {
     public typealias Module = StakingModule<S>
     
-    public static var FUNCTION: String { "Validate" }
+    public static var FUNCTION: String { "validate" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         prefs = try decoder.decode()
@@ -82,7 +82,7 @@ public struct StakingNominateCall<S: Staking> {
 extension StakingNominateCall: Call {
     public typealias Module = StakingModule<S>
     
-    public static var FUNCTION: String { "Nominate" }
+    public static var FUNCTION: String { "nominate" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         targets = try Array<S.TAddress>(from: decoder, registry: registry)

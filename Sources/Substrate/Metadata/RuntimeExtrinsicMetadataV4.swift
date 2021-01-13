@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import SubstratePrimitives
 
-public struct RuntimeExtrinsicMetadataV4: ScaleDecodable, RuntimeExtrinsicMetadata {
+public struct RuntimeExtrinsicMetadataV4: ScaleDecodable, RuntimeExtrinsicMetadata, Encodable {
     public let version: UInt8
     public let signedExtensions: [String]
     

@@ -18,7 +18,7 @@ public struct BalancesTransferCall<B: Balances> {
 extension BalancesTransferCall: Call {
     public typealias Module = BalancesModule<B>
     
-    public static var FUNCTION: String { "Transfer" }
+    public static var FUNCTION: String { "transfer" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         to = try B.TAddress(from: decoder, registry: registry)

@@ -13,7 +13,7 @@ public protocol Contracts: Balances {}
 open class ContractsModule<C: Contracts>: ModuleProtocol {
     public typealias Frame = C
     
-    public static var NAME: String { "Session" }
+    public static var NAME: String { "Contracts" }
     
     public init() {}
     
@@ -42,7 +42,7 @@ public struct ContractsPutCodeCall<C: Contracts> {
 extension ContractsPutCodeCall: Call {
     public typealias Module = ContractsModule<C>
     
-    public static var FUNCTION: String { "PutCode" }
+    public static var FUNCTION: String { "put_code" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         code = try decoder.decode()
@@ -78,7 +78,7 @@ public struct ContractsInstantiateCall<C: Contracts> {
 extension ContractsInstantiateCall: Call {
     public typealias Module = ContractsModule<C>
     
-    public static var FUNCTION: String { "Instantiate" }
+    public static var FUNCTION: String { "instantiate" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         endowment = try decoder.decode(.compact)
@@ -112,7 +112,7 @@ public struct ConstractsCallCall<C: Contracts> {
 extension ConstractsCallCall: Call {
     public typealias Module = ContractsModule<C>
     
-    public static var FUNCTION: String { "Call" }
+    public static var FUNCTION: String { "call" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         destination = try C.TAddress(from: decoder, registry: registry)

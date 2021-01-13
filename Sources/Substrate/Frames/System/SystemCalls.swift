@@ -16,7 +16,7 @@ public struct SystemSetCodeCall<S: System> {
 extension SystemSetCodeCall: Call {
     public typealias Module = SystemModule<S>
     
-    public static var FUNCTION: String { "SetCode" }
+    public static var FUNCTION: String { "set_code" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         code = try decoder.decode()
@@ -33,7 +33,7 @@ public struct SystemSetCodeWithoutChecksCall<S: System> {
 extension SystemSetCodeWithoutChecksCall: Call {
     public typealias Module = SystemModule<S>
     
-    public static var FUNCTION: String { "SetCodeWithoutChecks" }
+    public static var FUNCTION: String { "set_code_without_checks" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         code = try decoder.decode()

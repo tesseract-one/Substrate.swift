@@ -23,7 +23,7 @@ public protocol StorageKey: AnyStorageKey {
     associatedtype Value: ScaleDynamicDecodable
     associatedtype Module: ModuleProtocol
     
-    func defaultParsedValue(registry: TypeRegistryProtocol) throws -> Value
+    func defaultValue(parsed registry: TypeRegistryProtocol) throws -> Value
     
     static var MODULE: String { get }
     static var FIELD: String { get }
@@ -48,8 +48,8 @@ extension StorageKey {
     public var module: String { return Self.MODULE }
     public var field: String { return Self.FIELD }
     
-    public func defaultParsedValue(registry: TypeRegistryProtocol) throws -> Value {
-        return try registry.defaultParsedValue(for: self)
+    public func defaultValue(parsed registry: TypeRegistryProtocol) throws -> Value {
+        return try registry.defaultValue(parsed: self)
     }
 }
 

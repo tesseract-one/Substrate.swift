@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import SubstratePrimitives
 
-struct RuntimeMetadataV12: ScaleDecodable, RuntimeMetadata {
+struct RuntimeMetadataV12: ScaleDecodable, RuntimeMetadata, Encodable {
     var version: UInt8 { 12  }
     let modules: [RuntimeModuleMetadata]
     let extrinsic: RuntimeExtrinsicMetadata
@@ -18,9 +18,23 @@ struct RuntimeMetadataV12: ScaleDecodable, RuntimeMetadata {
         modules = try decoder.decode([RuntimeModuleMetadataV12].self)
         extrinsic = try decoder.decode(RuntimeExtrinsicMetadataV4.self)
     }
+    
+    // Encodable
+    enum CodingKeys: String, CodingKey {
+        case version
+        case modules
+        case extrinsic
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(version, forKey: .version)
+        try container.encode(modules as! [RuntimeModuleMetadataV12], forKey: .modules)
+        try container.encode(extrinsic as! RuntimeExtrinsicMetadataV4, forKey: .extrinsic)
+    }
 }
 
-struct RuntimeModuleMetadataV12: ScaleDecodable, RuntimeModuleMetadata {
+struct RuntimeModuleMetadataV12: ScaleDecodable, RuntimeModuleMetadata, Encodable {
     public let name: String
     public let storage: Optional<RuntimeStorageMetadata>
     public let calls: Optional<[RuntimeCallMetadata]>
@@ -38,9 +52,31 @@ struct RuntimeModuleMetadataV12: ScaleDecodable, RuntimeModuleMetadata {
         errors = try decoder.decode([RuntimeErrorMetadataV12].self)
         index = try decoder.decode()
     }
+    
+    // Encodable
+    enum CodingKeys: String, CodingKey {
+        case name
+        case storage
+        case calls
+        case events
+        case constants
+        case errors
+        case index
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encode(storage as! Optional<RuntimeStorageMetadataV12>, forKey: .storage)
+        try container.encode(calls as! Optional<[RuntimeCallMetadataV12]>, forKey: .calls)
+        try container.encode(events as! Optional<[RuntimeEventMetadataV12]>, forKey: .events)
+        try container.encode(constants as! [RuntimeConstantMetadataV12], forKey: .constants)
+        try container.encode(errors as! [RuntimeErrorMetadataV12], forKey: .errors)
+        try container.encode(index, forKey: .index)
+    }
 }
 
-struct RuntimeStorageItemMetadataV12: ScaleDecodable, RuntimeStorageItemMetadata {
+struct RuntimeStorageItemMetadataV12: ScaleDecodable, RuntimeStorageItemMetadata, Encodable {
     public let name: String
     public let modifier: StorageEntryModifier
     public let type: StorageEntryType
@@ -56,7 +92,7 @@ struct RuntimeStorageItemMetadataV12: ScaleDecodable, RuntimeStorageItemMetadata
     }
 }
 
-struct RuntimeStorageMetadataV12: ScaleDecodable, RuntimeStorageMetadata {
+struct RuntimeStorageMetadataV12: ScaleDecodable, RuntimeStorageMetadata, Encodable {
     public let prefix: String
     public let items: [RuntimeStorageItemMetadata]
     
@@ -64,9 +100,21 @@ struct RuntimeStorageMetadataV12: ScaleDecodable, RuntimeStorageMetadata {
         prefix = try decoder.decode()
         items = try decoder.decode([RuntimeStorageItemMetadataV12].self)
     }
+    
+    // Encodable
+    enum CodingKeys: String, CodingKey {
+        case prefix
+        case items
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(prefix, forKey: .prefix)
+        try container.encode(items as! [RuntimeStorageItemMetadataV12], forKey: .items)
+    }
 }
 
-struct RuntimeCallArgumentsMetadataV12: ScaleDecodable, RuntimeCallArgumentsMetadata {
+struct RuntimeCallArgumentsMetadataV12: ScaleDecodable, RuntimeCallArgumentsMetadata, Encodable {
     public let name: String
     public let type: String
     
@@ -76,7 +124,7 @@ struct RuntimeCallArgumentsMetadataV12: ScaleDecodable, RuntimeCallArgumentsMeta
     }
 }
 
-struct RuntimeCallMetadataV12: ScaleDecodable, RuntimeCallMetadata {
+struct RuntimeCallMetadataV12: ScaleDecodable, RuntimeCallMetadata, Encodable {
     public let name: String
     public let arguments: [RuntimeCallArgumentsMetadata]
     public let documentation: [String]
@@ -86,9 +134,23 @@ struct RuntimeCallMetadataV12: ScaleDecodable, RuntimeCallMetadata {
         arguments = try decoder.decode([RuntimeCallArgumentsMetadataV12].self)
         documentation = try decoder.decode()
     }
+    
+    // Encodable
+    enum CodingKeys: String, CodingKey {
+        case name
+        case arguments
+        case documentation
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encode(arguments as! [RuntimeCallArgumentsMetadataV12], forKey: .arguments)
+        try container.encode(documentation, forKey: .documentation)
+    }
 }
 
-struct RuntimeEventMetadataV12: ScaleDecodable, RuntimeEventMetadata {
+struct RuntimeEventMetadataV12: ScaleDecodable, RuntimeEventMetadata, Encodable {
     public let name: String
     public let arguments: [String]
     public let documentation: [String]
@@ -100,7 +162,7 @@ struct RuntimeEventMetadataV12: ScaleDecodable, RuntimeEventMetadata {
     }
 }
 
-struct RuntimeConstantMetadataV12: ScaleDecodable, RuntimeConstantMetadata {
+struct RuntimeConstantMetadataV12: ScaleDecodable, RuntimeConstantMetadata, Encodable {
     public let name: String
     public let type: String
     public let value: Data
@@ -114,7 +176,7 @@ struct RuntimeConstantMetadataV12: ScaleDecodable, RuntimeConstantMetadata {
     }
 }
 
-struct RuntimeErrorMetadataV12: ScaleDecodable, RuntimeErrorMetadata {
+struct RuntimeErrorMetadataV12: ScaleDecodable, RuntimeErrorMetadata, Encodable {
     public let name: String
     public let documentation: [String]
     

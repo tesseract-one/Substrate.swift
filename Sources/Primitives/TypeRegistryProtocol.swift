@@ -32,14 +32,18 @@ public enum TypeRegistryError: Error {
 
 public protocol TypeRegistryProtocol: class {
     // Storage
-    func key<K: AnyStorageKey>(for key: K) throws -> Data
-    func prefix<K: AnyStorageKey>(for key: K) throws -> Data
-    func defaultValue<K: AnyStorageKey>(for key: K) throws -> DValue
-    func defaultParsedValue<K: StorageKey>(for key: K) throws -> K.Value
+    func key(for key: AnyStorageKey) throws -> Data
+    func prefix(for key: AnyStorageKey) throws -> Data
+    func defaultValue(for key: AnyStorageKey) throws -> DValue
+    func defaultValue<K: StorageKey>(parsed key: K) throws -> K.Value
+    
+    // Constants
+    func value(of constant: AnyConstant) throws -> DValue
+    func value<C: Constant>(parsed constant: C) throws -> C.Value
     
     // Events
     func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent
-    func decode(event: String, module: String, from decoder: ScaleDecoder) throws -> AnyEvent
+    func decode<E: Event>(event: E.Type, from decoder: ScaleDecoder) throws -> E
     func register<E: Event>(event: E.Type) throws
     
     // Values
@@ -49,9 +53,9 @@ public protocol TypeRegistryProtocol: class {
     func register<T: ScaleDynamicDecodable>(type: T.Type, as dynamic: DType) throws
     
     // Calls
-    func encode<C: AnyCall>(call: C, in encoder: ScaleEncoder) throws
+    func encode(call: AnyCall, in encoder: ScaleEncoder) throws
     func decodeCall(from decoder: ScaleDecoder) throws -> AnyCall
-    func decode(call: String, module: String, from decoder: ScaleDecoder) throws -> AnyCall
+    func decode<C: Call>(call: C.Type, from decoder: ScaleDecoder) throws -> C
     func register<C: Call>(call: C.Type) throws
 }
 

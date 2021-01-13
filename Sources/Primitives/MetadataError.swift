@@ -15,6 +15,7 @@ public enum MetadataError: Error {
     case eventNotFound(module: String, event: String)
     case callNotFound(module: String, function: String)
     case storageItemNotFound(prefix: String, item: String)
+    case constantNotFound(module: String, name: String)
     case storageItemBadPathTypes(prefix: String, item: String, path: [ScaleDynamicEncodable], expected: [DType])
 }
 

@@ -36,6 +36,9 @@ open class SystemModule<S: System>: ModuleProtocol {
         try registry.register(type: S.TAddress.self, as: .type(name: "Address"))
         try registry.register(type: S.THeader.self, as: .type(name: "Header"))
         try registry.register(type: S.TAccountData.self, as: .type(name: "AccountData"))
+        try registry.register(type: RuntimeDbWeight.self, as: .type(name: "RuntimeDbWeight"))
+        try registry.register(type: RefCount.self, as: .type(name: "RefCount"))
+        try registry.register(type: SCompact<RefCount>.self, as: .compact(type: .type(name: "RefCount")))
         // System calls
         try registry.register(call: SystemSetCodeCall<S>.self)
         try registry.register(call: SystemSetCodeWithoutChecksCall<S>.self)
@@ -45,5 +48,20 @@ open class SystemModule<S: System>: ModuleProtocol {
         try registry.register(event: SystemCodeUpdatedEvent<S>.self)
         try registry.register(event: SystemNewAccountEvent<S>.self)
         try registry.register(event: SystemKilledAccountEvent<S>.self)
+    }
+}
+
+
+public struct RuntimeDbWeight: ScaleCodable, ScaleDynamicCodable {
+    public let read: Weight
+    public let write: Weight
+    
+    public init(from decoder: ScaleDecoder) throws {
+        read = try decoder.decode()
+        write = try decoder.decode()
+    }
+    
+    public func encode(in encoder: ScaleEncoder) throws {
+        try encoder.encode(read).encode(write)
     }
 }

@@ -8,18 +8,18 @@
 import Foundation
 import ScaleCodec
 
-public protocol RuntimeMetadata {
+public protocol RuntimeMetadata: Encodable {
     var version: UInt8 { get }
     var modules: [RuntimeModuleMetadata] { get }
     var extrinsic: RuntimeExtrinsicMetadata { get }
 }
 
-public protocol RuntimeExtrinsicMetadata {
+public protocol RuntimeExtrinsicMetadata: Encodable {
     var version: UInt8 { get }
     var signedExtensions: [String] { get }
 }
 
-public protocol RuntimeModuleMetadata {
+public protocol RuntimeModuleMetadata: Encodable {
     var index: UInt8 { get }
     var name: String { get }
     var storage: Optional<RuntimeStorageMetadata> { get }
@@ -29,7 +29,7 @@ public protocol RuntimeModuleMetadata {
     var errors: [RuntimeErrorMetadata] { get }
 }
 
-public enum StorageHasher: CaseIterable, ScaleDecodable {
+public enum StorageHasher: CaseIterable, ScaleDecodable, Encodable, CustomStringConvertible {
     case blake2b128
     case blake2b256
     case blake2b128concat
@@ -49,14 +49,43 @@ public enum StorageHasher: CaseIterable, ScaleDecodable {
         case .identity: return HIdentity.hasher
         }
     }
+    
+    public var description: String {
+        switch self {
+        case .blake2b128: return "Blake2b128"
+        case .blake2b256: return "Blake2b256"
+        case .blake2b128concat: return "Blake2b128.Concat"
+        case .xx128: return "TwoX128"
+        case .xx256: return "TwoX256"
+        case .xx64concat: return "TwoX64.Concat"
+        case .identity: return "Identity"
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(description)
+    }
 }
 
-public enum StorageEntryModifier: CaseIterable, ScaleDecodable {
+public enum StorageEntryModifier: CaseIterable, ScaleDecodable, Encodable, CustomStringConvertible {
     case optional
     case `default`
+    
+    public var description: String {
+        switch self {
+        case .optional: return "Optional"
+        case .default: return "Default"
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(description)
+    }
 }
 
-public enum StorageEntryType: ScaleDecodable {
+public enum StorageEntryType: ScaleDecodable, Encodable, CustomStringConvertible {
     case plain(String)
     case map(
         hasher: StorageHasher, key: String, value: String,
@@ -102,9 +131,23 @@ public enum StorageEntryType: ScaleDecodable {
         case .doubleMap(hasher: _, key1: _, key2: _, value: let t, key2_hasher: _): return t
         }
     }
+    
+    public var description: String {
+        switch self {
+        case .plain(let t): return t
+        case .map(hasher: let h, key: let k, value: let v, unused: _): return "Map<\(h)(\(k)), \(v)>"
+        case .doubleMap(hasher: let h1, key1: let k1, key2: let k2, value: let v, key2_hasher: let h2):
+            return "Map<\(h1)(\(k1)), Map<\(h2)(\(k2)), \(v)>>"
+        }
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(description)
+    }
 }
 
-public protocol RuntimeStorageItemMetadata {
+public protocol RuntimeStorageItemMetadata: Encodable {
     var name: String { get }
     var modifier: StorageEntryModifier { get }
     var type: StorageEntryType { get }
@@ -112,36 +155,36 @@ public protocol RuntimeStorageItemMetadata {
     var documentation: [String] { get }
 }
 
-public protocol RuntimeStorageMetadata {
+public protocol RuntimeStorageMetadata: Encodable {
     var prefix: String { get }
     var items: [RuntimeStorageItemMetadata] { get }
 }
 
-public protocol RuntimeCallArgumentsMetadata {
+public protocol RuntimeCallArgumentsMetadata: Encodable {
     var name: String { get }
     var type: String { get }
 }
 
-public protocol RuntimeCallMetadata {
+public protocol RuntimeCallMetadata: Encodable {
     var name: String { get }
     var arguments: [RuntimeCallArgumentsMetadata] { get }
     var documentation: [String] { get }
 }
 
-public protocol RuntimeEventMetadata {
+public protocol RuntimeEventMetadata: Encodable {
     var name: String { get }
     var arguments: [String] { get }
     var documentation: [String] { get }
 }
 
-public protocol RuntimeConstantMetadata {
+public protocol RuntimeConstantMetadata: Encodable {
     var name: String { get }
     var type: String { get }
     var value: Data { get }
     var documentation: [String] { get }
 }
 
-public protocol RuntimeErrorMetadata {
+public protocol RuntimeErrorMetadata: Encodable {
     var name: String { get }
     var documentation: [String] { get }
 }

@@ -26,7 +26,7 @@ public class Metadata {
 
 // StorageKey
 extension Metadata {
-    private func _getStorage<K: AnyStorageKey>(for key: K) throws -> MetadataStorageItemInfo {
+    private func _getStorageInfo(for key: AnyStorageKey) throws -> MetadataStorageItemInfo {
         guard let module = modulesByName[key.module] else {
             throw MetadataError.moduleNotFound(name: key.module)
         }
@@ -36,19 +36,40 @@ extension Metadata {
         return storage
     }
     
-    public func prefix<K: AnyStorageKey>(for key: K) throws -> Data {
-        return try _getStorage(for: key).prefixHash()
+    public func prefix(for key: AnyStorageKey) throws -> Data {
+        return try _getStorageInfo(for: key).prefixHash()
     }
 
-    public func key<K: AnyStorageKey>(for key: K, registry: TypeRegistryProtocol) throws -> Data {
-        return try _getStorage(for: key).key(path: key.path, registry: registry)
+    public func key(for key: AnyStorageKey, registry: TypeRegistryProtocol) throws -> Data {
+        return try _getStorageInfo(for: key).key(path: key.path, registry: registry)
     }
     
-    public func defaultValue<K: AnyStorageKey>(for key: K, registry: TypeRegistryProtocol) throws -> DValue {
-        return try _getStorage(for: key).getDefault(registry: registry)
+    public func defaultValue(for key: AnyStorageKey, registry: TypeRegistryProtocol) throws -> DValue {
+        return try _getStorageInfo(for: key).getDefault(registry: registry)
     }
     
-    public func defaultParsedValue<K: StorageKey>(for key: K, registry: TypeRegistryProtocol) throws -> K.Value {
-        return try _getStorage(for: key).parseDefault(K.Value.self, registry: registry)
+    public func defaultValue<K: StorageKey>(parsed key: K, registry: TypeRegistryProtocol) throws -> K.Value {
+        return try _getStorageInfo(for: key).parseDefault(K.Value.self, registry: registry)
+    }
+}
+
+// Constants
+extension Metadata {
+    private func _getConstantInfo(for constant: AnyConstant) throws -> MetadataConstantInfo {
+        guard let module = modulesByName[constant.module] else {
+            throw MetadataError.moduleNotFound(name: constant.module)
+        }
+        guard let info = module.constants[constant.name] else {
+            throw MetadataError.constantNotFound(module: constant.module, name: constant.name)
+        }
+        return info
+    }
+    
+    public func value(of constant: AnyConstant, registry: TypeRegistryProtocol) throws -> DValue {
+        return try _getConstantInfo(for: constant).get(registry: registry)
+    }
+    
+    public func value<C: Constant>(parsed constant: C, registry: TypeRegistryProtocol) throws -> C.Value {
+        return try _getConstantInfo(for: constant).parsed(C.Value.self, registry: registry)
     }
 }

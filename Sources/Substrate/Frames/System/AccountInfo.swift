@@ -8,9 +8,11 @@
 import Foundation
 import ScaleCodec
 
+public typealias RefCount = UInt32
+
 public struct AccountInfo<S: System> {
     let nonce: S.TIndex
-    let refCount: UInt32
+    let refCount: RefCount
     let data: S.TAccountData
 }
 
