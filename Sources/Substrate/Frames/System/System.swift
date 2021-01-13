@@ -13,7 +13,7 @@ public protocol System {
     associatedtype TBlockNumber: ScaleDynamicCodable
     associatedtype THash: Hash
     associatedtype THasher: Hasher
-    associatedtype TAccountId: ScaleDynamicCodable
+    associatedtype TAccountId: ScaleDynamicCodable & Hashable
     associatedtype TAddress: ScaleDynamicCodable
     associatedtype THeader: ScaleDynamicCodable
     //associatedtype TExtrinsic: ScaleDynamicCodable
@@ -37,13 +37,13 @@ open class SystemModule<S: System>: ModuleProtocol {
         try registry.register(type: S.THeader.self, as: .type(name: "Header"))
         try registry.register(type: S.TAccountData.self, as: .type(name: "AccountData"))
         // System calls
-        try registry.register(call: SetCodeCall<S>.self)
-        try registry.register(call: SetCodeWithoutChecksCall<S>.self)
+        try registry.register(call: SystemSetCodeCall<S>.self)
+        try registry.register(call: SystemSetCodeWithoutChecksCall<S>.self)
         // System events
-        try registry.register(event: ExtrinsicSuccessEvent<S>.self)
-        try registry.register(event: ExtrinsicFailedEvent<S>.self)
-        try registry.register(event: CodeUpdatedEvent<S>.self)
-        try registry.register(event: NewAccountEvent<S>.self)
-        try registry.register(event: KilledAccountEvent<S>.self)
+        try registry.register(event: SystemExtrinsicSuccessEvent<S>.self)
+        try registry.register(event: SystemExtrinsicFailedEvent<S>.self)
+        try registry.register(event: SystemCodeUpdatedEvent<S>.self)
+        try registry.register(event: SystemNewAccountEvent<S>.self)
+        try registry.register(event: SystemKilledAccountEvent<S>.self)
     }
 }

@@ -53,6 +53,14 @@ extension TypeRegistry: TypeRegistryProtocol {
         try _metaError { try self.metadata.prefix(for: key) }
     }
     
+    public func defaultValue<K: AnyStorageKey>(for key: K) throws -> DValue {
+        try _metaError { try self.metadata.defaultValue(for: key, registry: self) }
+    }
+    
+    public func defaultParsedValue<K: StorageKey>(for key: K) throws -> K.Value {
+        try _metaError { try self.metadata.defaultParsedValue(for: key, registry: self) }
+    }
+    
     public func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent {
         fatalError("Not implemented")
     }

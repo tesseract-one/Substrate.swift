@@ -34,6 +34,8 @@ public protocol TypeRegistryProtocol: class {
     // Storage
     func key<K: AnyStorageKey>(for key: K) throws -> Data
     func prefix<K: AnyStorageKey>(for key: K) throws -> Data
+    func defaultValue<K: AnyStorageKey>(for key: K) throws -> DValue
+    func defaultParsedValue<K: StorageKey>(for key: K) throws -> K.Value
     
     // Events
     func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent

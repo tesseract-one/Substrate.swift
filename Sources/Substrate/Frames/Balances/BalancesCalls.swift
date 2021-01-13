@@ -8,14 +8,14 @@
 import Foundation
 import ScaleCodec
 
-public struct TransferCall<B: Balances> {
+public struct BalancesTransferCall<B: Balances> {
     /// Destination of the transfer.
     public let to: B.TAddress
     /// Amount to transfer.
     public let amount: B.TBalance
 }
 
-extension TransferCall: Call {
+extension BalancesTransferCall: Call {
     public typealias Module = BalancesModule<B>
     
     public static var FUNCTION: String { "Transfer" }

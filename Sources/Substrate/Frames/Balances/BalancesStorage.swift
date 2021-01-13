@@ -7,9 +7,9 @@
 
 import Foundation
 
-public struct TotalIssuanceStorageKey<B: Balances> {}
+public struct BalancesTotalIssuanceStorageKey<B: Balances> {}
 
-extension TotalIssuanceStorageKey: StorageKey {
+extension BalancesTotalIssuanceStorageKey: StorageKey {
     public typealias Value = B.TBalance
     public typealias Module = BalancesModule<B>
     

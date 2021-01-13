@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct TransferEvent<B: Balances> {
+public struct BalancesTransferEvent<B: Balances> {
     /// Account balance was transfered from.
     public let from: B.TAccountId
     /// Account balance was transfered to.
@@ -17,7 +17,7 @@ public struct TransferEvent<B: Balances> {
     public let amount: B.TBalance
 }
 
-extension TransferEvent: Event {
+extension BalancesTransferEvent: Event {
     public typealias Module = BalancesModule<B>
     
     public static var EVENT: String { "Transfer" }

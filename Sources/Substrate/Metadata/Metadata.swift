@@ -26,23 +26,29 @@ public class Metadata {
 
 // StorageKey
 extension Metadata {
-    public func prefix<K: AnyStorageKey>(for key: K) throws -> Data {
+    private func _getStorage<K: AnyStorageKey>(for key: K) throws -> MetadataStorageItemInfo {
         guard let module = modulesByName[key.module] else {
             throw MetadataError.moduleNotFound(name: key.module)
         }
         guard let storage = module.storage[key.field] else {
             throw MetadataError.storageItemNotFound(prefix: key.module, item: key.field)
         }
-        return storage.prefixHash()
+        return storage
+    }
+    
+    public func prefix<K: AnyStorageKey>(for key: K) throws -> Data {
+        return try _getStorage(for: key).prefixHash()
     }
 
     public func key<K: AnyStorageKey>(for key: K, registry: TypeRegistryProtocol) throws -> Data {
-        guard let module = modulesByName[key.module] else {
-            throw MetadataError.moduleNotFound(name: key.module)
-        }
-        guard let storage = module.storage[key.field] else {
-            throw MetadataError.storageItemNotFound(prefix: key.module, item: key.field)
-        }
-        return try storage.key(path: key.path, registry: registry)
+        return try _getStorage(for: key).key(path: key.path, registry: registry)
+    }
+    
+    public func defaultValue<K: AnyStorageKey>(for key: K, registry: TypeRegistryProtocol) throws -> DValue {
+        return try _getStorage(for: key).getDefault(registry: registry)
+    }
+    
+    public func defaultParsedValue<K: StorageKey>(for key: K, registry: TypeRegistryProtocol) throws -> K.Value {
+        return try _getStorage(for: key).parseDefault(K.Value.self, registry: registry)
     }
 }

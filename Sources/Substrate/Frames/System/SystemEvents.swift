@@ -8,12 +8,12 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicSuccessEvent<S: System> {
+public struct SystemExtrinsicSuccessEvent<S: System> {
     /// The dispatch info.
     public let info: DispatchInfo
 }
 
-extension ExtrinsicSuccessEvent: Event {
+extension SystemExtrinsicSuccessEvent: Event {
     public typealias Module = SystemModule<S>
     
     public static var EVENT: String { "ExtrinsicSuccess" }
@@ -26,14 +26,14 @@ extension ExtrinsicSuccessEvent: Event {
 }
 
 
-public struct ExtrinsicFailedEvent<S: System> {
+public struct SystemExtrinsicFailedEvent<S: System> {
     /// The dispatch error.
     public let error: DispatchError
     /// The dispatch info.
     public let info: DispatchInfo
 }
 
-extension ExtrinsicFailedEvent: Event {
+extension SystemExtrinsicFailedEvent: Event {
     public typealias Module = SystemModule<S>
     
     public static var EVENT: String { "ExtrinsicFailed" }
@@ -46,9 +46,9 @@ extension ExtrinsicFailedEvent: Event {
     public var data: DValue { .collection(values: [DValue(error), DValue(info)]) }
 }
 
-public struct CodeUpdatedEvent<S: System> {}
+public struct SystemCodeUpdatedEvent<S: System> {}
 
-extension CodeUpdatedEvent: Event {
+extension SystemCodeUpdatedEvent: Event {
     public typealias Module = SystemModule<S>
     
     public static var EVENT: String { "CodeUpdated" }
@@ -58,12 +58,12 @@ extension CodeUpdatedEvent: Event {
     public var data: DValue { .null }
 }
 
-public struct NewAccountEvent<S: System> {
+public struct SystemNewAccountEvent<S: System> {
     /// Created account id.
     public let accountId: S.TAccountId
 }
 
-extension NewAccountEvent: Event {
+extension SystemNewAccountEvent: Event {
     public typealias Module = SystemModule<S>
     
     public static var EVENT: String { "NewAccount" }
@@ -75,12 +75,12 @@ extension NewAccountEvent: Event {
     public var data: DValue { DValue(accountId) }
 }
 
-public struct KilledAccountEvent<S: System> {
+public struct SystemKilledAccountEvent<S: System> {
     /// Killed account id.
     public let accountId: S.TAccountId
 }
 
-extension KilledAccountEvent: Event {
+extension SystemKilledAccountEvent: Event {
     public typealias Module = SystemModule<S>
     
     public static var EVENT: String { "KilledAccount" }

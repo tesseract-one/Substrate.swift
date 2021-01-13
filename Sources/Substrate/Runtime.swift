@@ -9,15 +9,6 @@ import Foundation
 import ScaleCodec
 import SubstratePrimitives
 
-public protocol Session: System {
-    associatedtype TValidatorId: ScaleDynamicCodable
-    associatedtype TKeys: ScaleDynamicCodable
-}
-
-public protocol Stacking: Balances {}
-public protocol Contracts: Balances {}
-public protocol Sudo: System {}
-
 public protocol Runtime: System, TypeRegistrator {
     associatedtype TSignature: ScaleDynamicCodable
     associatedtype TExtra: ScaleDynamicCodable

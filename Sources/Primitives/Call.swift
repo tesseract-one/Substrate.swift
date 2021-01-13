@@ -30,7 +30,7 @@ extension Call {
 }
 
 // Generic call
-public struct DCall: AnyCall {
+public struct DCall: AnyCall, ScaleDynamicCodable {
     public let module: String
     public let function: String
     public let params: [ScaleDynamicCodable]
@@ -39,5 +39,16 @@ public struct DCall: AnyCall {
         self.module = module
         self.function = function
         self.params = params
+    }
+    
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
+        let call = try registry.decodeCall(from: decoder)
+        module = call.module
+        function = call.function
+        params = call.params
+    }
+    
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try registry.encode(call: self, in: encoder)
     }
 }

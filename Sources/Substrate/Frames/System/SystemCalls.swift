@@ -8,12 +8,12 @@
 import Foundation
 import ScaleCodec
 
-public struct SetCodeCall<S: System> {
+public struct SystemSetCodeCall<S: System> {
     /// Runtime wasm blob.
     public let code: Data
 }
 
-extension SetCodeCall: Call {
+extension SystemSetCodeCall: Call {
     public typealias Module = SystemModule<S>
     
     public static var FUNCTION: String { "SetCode" }
@@ -25,12 +25,12 @@ extension SetCodeCall: Call {
     public var params: [ScaleDynamicCodable] { [code] }
 }
 
-public struct SetCodeWithoutChecksCall<S: System> {
+public struct SystemSetCodeWithoutChecksCall<S: System> {
     /// Runtime wasm blob.
     public let code: Data
 }
 
-extension SetCodeWithoutChecksCall: Call {
+extension SystemSetCodeWithoutChecksCall: Call {
     public typealias Module = SystemModule<S>
     
     public static var FUNCTION: String { "SetCodeWithoutChecks" }

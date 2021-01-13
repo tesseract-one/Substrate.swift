@@ -27,13 +27,14 @@ extension DefaultNodeRuntime: System {
     public typealias TAccountData = AccountData<TBalance>
 }
 
-extension DefaultNodeRuntime: Stacking {}
+extension DefaultNodeRuntime: Staking {}
 
 extension DefaultNodeRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtra = Data
     
     public var modules: [TypeRegistrator] {
-        [PrimitivesModule<Self>(), SystemModule<Self>(), BalancesModule<Self>()]
+        [PrimitivesModule<Self>(), SystemModule<Self>(),
+         BalancesModule<Self>(), StakingModule<Self>()]
     }
 }

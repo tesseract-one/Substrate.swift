@@ -7,12 +7,12 @@
 
 import Foundation
 
-public struct AccountStorageKey<S: System> {
+public struct SystemAccountStorageKey<S: System> {
     /// Account to retrieve the `AccountInfo<S>` for.
     public let accountId: S.TAccountId
 }
 
-extension AccountStorageKey: StorageKey {
+extension SystemAccountStorageKey: StorageKey {
     public typealias Module = SystemModule<S>
     public typealias Value = AccountInfo<S>
     
