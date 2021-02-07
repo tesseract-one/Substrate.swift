@@ -15,12 +15,14 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
         self.substrate = substrate
     }
     
-    public func submit<E: ScaleDynamicEncodable>(extrinsic: E, _ cb: @escaping SRpcApiCallback<S.R.THash>) {
+    public func submit<E: ScaleDynamicEncodable>(
+        extrinsic: E, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THash>
+    ) {
         guard let data = encode(value: extrinsic, cb) else { return }
         substrate.client.call(
             method: "author_submitExtrinsic",
             params: [HexData(data)],
-            timeout: substrate.callTimeout
+            timeout: timeout ?? substrate.callTimeout
         ) { (res: RpcClientResult<HexData>) in
             let response = res.mapError(SubstrateRpcApiError.rpc).flatMap { data in
                 Result { try S.R.THash(decoding: data.data) }.mapError(SubstrateRpcApiError.from)

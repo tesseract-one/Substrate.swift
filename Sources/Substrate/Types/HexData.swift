@@ -1,5 +1,5 @@
 //
-//  File.swift
+//  HexData.swift
 //  
 //
 //  Created by Yehor Popovych on 12/27/20.

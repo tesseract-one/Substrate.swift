@@ -16,8 +16,8 @@ public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
         self.substrate = substrate
     }
     
-    public func genesisHash(_ cb: @escaping SRpcApiCallback<S.R.THash>) {
-        Self.genesisHash(client: substrate.client, timeout: substrate.callTimeout, cb)
+    public func genesisHash(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THash>) {
+        Self.genesisHash(client: substrate.client, timeout: timeout ?? substrate.callTimeout, cb)
     }
     
     public static func genesisHash(

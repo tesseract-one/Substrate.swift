@@ -16,8 +16,8 @@ public struct SubstrateRpcSystemApi<S: SubstrateProtocol>: SubstrateRpcApi {
         self.substrate = substrate
     }
     
-    public func properties(_ cb: @escaping SRpcApiCallback<SystemProperties>) {
-        Self.properties(client: substrate.client, timeout: substrate.callTimeout, cb)
+    public func properties(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<SystemProperties>) {
+        Self.properties(client: substrate.client, timeout: timeout ?? substrate.callTimeout, cb)
     }
     
     public static func properties(
