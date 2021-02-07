@@ -17,6 +17,7 @@ public enum MetadataError: Error {
     case storageItemNotFound(prefix: String, item: String)
     case constantNotFound(module: String, name: String)
     case storageItemBadPathTypes(prefix: String, item: String, path: [ScaleDynamicEncodable], expected: [DType])
+    case unknown(error: Error)
 }
 
 
@@ -28,7 +29,7 @@ extension DType {
         } catch let e as DTypeParsingError {
             throw MetadataError.typeParsingError(error: e)
         } catch {
-            fatalError("Unknown error: \(error)")
+            throw MetadataError.unknown(error: error)
         }
     }
 }

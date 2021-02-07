@@ -9,14 +9,14 @@ import Foundation
 import ScaleCodec
 
 public protocol System {
-    associatedtype TIndex: ScaleDynamicCodable
+    associatedtype TIndex: ScaleDynamicCodable & ScaleCodable & CompactCodable
     associatedtype TBlockNumber: ScaleDynamicCodable
     associatedtype THash: Hash
     associatedtype THasher: Hasher
     associatedtype TAccountId: ScaleDynamicCodable & Hashable
     associatedtype TAddress: ScaleDynamicCodable
     associatedtype THeader: ScaleDynamicCodable
-    //associatedtype TExtrinsic: ScaleDynamicCodable
+    associatedtype TExtrinsic: ExtrinsicProtocol
     associatedtype TAccountData: ScaleDynamicCodable
 }
 

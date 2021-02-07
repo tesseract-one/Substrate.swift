@@ -30,7 +30,7 @@ extension Event {
 }
 
 // Generic event type
-public struct SEvent: AnyEvent {
+public struct DEvent: AnyEvent {
     public let module: String
     public let event: String
     public let data: DValue

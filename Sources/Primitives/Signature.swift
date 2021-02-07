@@ -8,12 +8,24 @@
 import Foundation
 import ScaleCodec
 
-public typealias SSignature = MultiSignature
+public struct EcdsaSignature: ScaleFixedData {
+    public let signature: Data
+    
+    public static let fixedBytesCount: Int = 65
+    
+    public init(decoding data: Data) throws {
+        signature = data
+    }
+    
+    public func encode() throws -> Data {
+        return signature
+    }
+}
 
 public enum MultiSignature {
     case ed25519(Hash512)
     case sr25519(Hash512)
-    case ecdsa(Data) // 65 bytes
+    case ecdsa(EcdsaSignature)
 }
 
 extension MultiSignature: ScaleCodable {
@@ -22,7 +34,7 @@ extension MultiSignature: ScaleCodable {
         switch opt {
         case 0: self = try .ed25519(decoder.decode())
         case 1: self = try .sr25519(decoder.decode())
-        case 2: self = try .ecdsa(decoder.decode(.fixed(65)))
+        case 2: self = try .ecdsa(decoder.decode())
         default: throw decoder.enumCaseError(for: opt)
         }
     }
@@ -31,7 +43,7 @@ extension MultiSignature: ScaleCodable {
         switch self {
         case .ed25519(let s): try encoder.encode(0, .enumCaseId).encode(s)
         case .sr25519(let s): try encoder.encode(1, .enumCaseId).encode(s)
-        case .ecdsa(let s): try encoder.encode(2, .enumCaseId).encode(s, .fixed(65))
+        case .ecdsa(let s): try encoder.encode(2, .enumCaseId).encode(s)
         }
     }
 }

@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol Balances: System {
-    associatedtype TBalance: ScaleDynamicCodable & CompactCodable
+    associatedtype TBalance: ScaleDynamicCodable & ScaleCodable & CompactCodable
 }
 
 open class BalancesModule<B: Balances>: ModuleProtocol {

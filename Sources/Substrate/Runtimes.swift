@@ -23,7 +23,7 @@ extension DefaultNodeRuntime: System {
     public typealias TAccountId = AccountId
     public typealias TAddress = Address<TAccountId, UInt32>
     public typealias THeader = Header<TBlockNumber, THash>
-    //public typealias Extrinsic = OpaqueExtrinsic;
+    public typealias TExtrinsic = OpaqueExtrinsic
     public typealias TAccountData = AccountData<TBalance>
 }
 
@@ -31,7 +31,7 @@ extension DefaultNodeRuntime: Staking {}
 
 extension DefaultNodeRuntime: Runtime {
     public typealias TSignature = MultiSignature
-    public typealias TExtra = Data
+    public typealias TExtrinsicExtra = DefaultExtrinsicExtra<Self>
     
     public var modules: [TypeRegistrator] {
         [PrimitivesModule<Self>(), SystemModule<Self>(),

@@ -8,22 +8,29 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicSignature<Address: ScaleCodable, Index: ScaleDynamicCodable & CompactCodable>  {
+public struct ExtrinsicSignature<Address: ScaleDynamicCodable, Signature: ScaleDynamicCodable, Extra: SignedExtension>  {
     public let sender: Address
-    public let signature: SSignature
-    public let extra: ExtrinsicExtra<Index>
+    public let signature: Signature
+    public let extra: Extra
+    
+    public init(sender: Address, signature: Signature, extra: Extra) {
+        self.sender = sender
+        self.signature = signature
+        self.extra = extra
+    }
 }
 
-extension ExtrinsicSignature: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
-        sender = try decoder.decode()
-        signature = try decoder.decode()
-        extra = try decoder.decode()
+extension ExtrinsicSignature: ScaleDynamicCodable {
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
+        sender = try Address(from: decoder, registry: registry)
+        signature = try Signature(from: decoder, registry: registry)
+        extra = try Extra(from: decoder, registry: registry)
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(sender).encode(signature).encode(extra)
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try sender.encode(in: encoder, registry: registry)
+        try signature.encode(in: encoder, registry: registry)
+        try extra.encode(in: encoder, registry: registry)
     }
 }
 
-extension ExtrinsicSignature: ScaleDynamicCodable {}
