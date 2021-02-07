@@ -31,10 +31,11 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         Self.metadata(client: substrate.client, timeout: timeout ?? substrate.callTimeout, cb)
     }
     
-    public func getStorage(hash: Data, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
+    public func getStorage(keyHash: Data, hash: S.R.THash? = nil, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
+        let hashData = try! hash.map { try HexData($0.encode()) } // Hash doesn't throw errors
         substrate.client.call(
             method: "state_getStorage",
-            params: [HexData(hash)],
+            params: [HexData(keyHash), hashData],
             timeout: timeout ?? substrate.callTimeout
         ) { (res: RpcClientResult<HexData>) in
             cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.data})
@@ -42,14 +43,14 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
     }
     
     public func getStorage<K: StorageKey>(
-        for key: K, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<K.Value>
+        for key: K, hash: S.R.THash? = nil, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<K.Value>
     ) {
         do {
             let registry = substrate.registry
             let prefix = try registry.prefix(for: key)
             let hkey = try registry.key(for: key)
             let vtype = try registry.valueType(for: key)
-            getStorage(hash: prefix+hkey, timeout: timeout) { res in
+            getStorage(keyHash: prefix+hkey, hash: hash, timeout: timeout) { res in
                 let response = res.flatMap { data in
                     Result {
                         try registry.decode(
@@ -66,14 +67,15 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
     }
     
     public func getStorage(
-        dynamic key: AnyStorageKey, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<DValue>
+        dynamic key: AnyStorageKey, hash: S.R.THash? = nil, timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<DValue>
     ) {
         do {
             let registry = substrate.registry
             let prefix = try registry.prefix(for: key)
             let hkey = try registry.key(for: key)
             let vtype = try registry.valueType(for: key)
-            getStorage(hash: prefix+hkey, timeout: timeout) { res in
+            getStorage(keyHash: prefix+hkey, hash: hash, timeout: timeout) { res in
                 let response = res.flatMap { data in
                     Result {
                         try registry.decode(dynamic: vtype, from: SCALE.default.decoder(data: data))

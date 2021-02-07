@@ -7,6 +7,9 @@
 
 import Foundation
 
+public typealias SExtrinsicApiResult<V, R: Runtime> = Result<V, SubstrateExtrinsicApiError<R>>
+public typealias SExtrinsicApiCallback<V, R: Runtime> = (SExtrinsicApiResult<V, R>) -> Void
+
 public protocol SubstrateExtrinsicApi {
     associatedtype S: SubstrateProtocol
     
@@ -19,6 +22,35 @@ public protocol SubstrateExtrinsicApi {
 
 extension SubstrateExtrinsicApi {
     public static var id: String { String(describing: self) }
+    
+    public func nonce(
+        accountId: S.R.TAccountId, timeout: TimeInterval? = nil, _ cb: @escaping SExtrinsicApiCallback<S.R.TIndex, S.R>
+    ) {
+        substrate.query.system.accountInfo(accountId: accountId) { result in
+            let res = result
+                .map { $0.nonce }
+                .mapError(SubstrateExtrinsicApiError<S.R>.rpc)
+            cb(res)
+        }
+    }
+    
+    public func submit<C: AnyCall>(
+        unsgined call: C, timeout: TimeInterval? = nil,
+        _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
+    ) {
+        substrate.rpc.author.submit(extrinsic: SExtrinsic<C, S.R>(call: call)) {
+            cb($0.mapError(SubstrateExtrinsicApiError<S.R>.rpc))
+        }
+    }
+    
+    public func submit<E: ExtrinsicProtocol>(
+        extrinsic: E, timeout: TimeInterval? = nil,
+        _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
+    ) {
+        substrate.rpc.author.submit(extrinsic: extrinsic, timeout: timeout) {
+            cb($0.mapError(SubstrateExtrinsicApiError<S.R>.rpc))
+        }
+    }
 }
 
 public final class SubstrateExtrinsicApiRegistry<S: SubstrateProtocol> {
@@ -33,4 +65,20 @@ public final class SubstrateExtrinsicApiRegistry<S: SubstrateProtocol> {
         _apis[A.id] = api
         return api
     }
+    
+    public func submit<E: ExtrinsicProtocol>(
+        extrinsic: E, timeout: TimeInterval? = nil,
+        _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
+    ) {
+        substrate.rpc.author.submit(extrinsic: extrinsic, timeout: timeout) {
+            cb($0.mapError(SubstrateExtrinsicApiError<S.R>.rpc))
+        }
+    }
+}
+
+public enum SubstrateExtrinsicApiError<R: Runtime>: Error {
+    case rpc(error: SubstrateRpcApiError)
+    case signer(error: SubstrateSignerError<R>)
+    case payload(error: Error)
+    case dontHaveSigner
 }

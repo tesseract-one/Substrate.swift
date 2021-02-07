@@ -52,5 +52,7 @@ open class PrimitivesModule<S>: ModuleProtocol {
         try registry.register(type: DNull.self, as: .type(name: "Null"))
         try registry.register(type: Moment.self, as: .type(name: "Moment"))
         try registry.register(type: BitVec.self, as: .type(name: "BitVec"))
+        try registry.register(type: DispatchInfo.self, as: .type(name: "DispatchInfo"))
+        try registry.register(type: DispatchError.self, as: .type(name: "DispatchError"))
     }
 }

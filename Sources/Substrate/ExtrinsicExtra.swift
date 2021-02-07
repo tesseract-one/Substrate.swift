@@ -14,7 +14,7 @@ public protocol SignedExtrinsicExtra: SignedExtension {
     
     var extra: ExtrinsicExtra { get }
     
-    init(specVersion: UInt32, txVersion: UInt32, nonce: S.TIndex, genesisHash: S.THash)
+    static func create(specVersion: UInt32, txVersion: UInt32, nonce: S.TIndex, genesisHash: S.THash) -> Self
 }
 
 /// Default `SignedExtrinsicExtra` for substrate runtimes.
@@ -78,6 +78,15 @@ extension DefaultExtrinsicExtra: SignedExtrinsicExtra {
             CheckNonceSignedExtension(nonce: nonce),
             CheckWeightSignedExtension(),
             ChargeTransactionPaymentSignedExtension(payment: S.TBalance(uintValue: S.TBalance.compactMax))
+        )
+    }
+    
+    public static func create(
+        specVersion: UInt32, txVersion: UInt32, nonce: S.TIndex, genesisHash: S.THash
+    ) -> DefaultExtrinsicExtra<S> {
+        DefaultExtrinsicExtra<S>(
+            specVersion: specVersion, txVersion: txVersion,
+            nonce: nonce, genesisHash: genesisHash
         )
     }
 }

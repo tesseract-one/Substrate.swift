@@ -8,9 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public enum Origin {
+public enum Origin<Id: ScaleDynamicCodable & Hashable> {
     case root
-    case signed(AccountId)
+    case signed(Id)
     case none
     
     var isSigned: Bool {
@@ -34,7 +34,7 @@ public enum Origin {
         }
     }
     
-    var signer: AccountId? {
+    var signer: Id? {
         switch self {
         case .signed(let s): return s
         default: return nil
@@ -42,24 +42,22 @@ public enum Origin {
     }
 }
 
-extension Origin: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension Origin: ScaleDynamicCodable {
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         let opt = try decoder.decode(.enumCaseId)
         switch opt {
         case 0: self = .root
-        case 1: self = try .signed(decoder.decode())
+        case 1: self = try .signed(Id(from: decoder, registry: registry))
         case 2: self = .none
         default: throw decoder.enumCaseError(for: opt)
         }
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         switch self {
         case .root: try encoder.encode(0, .enumCaseId)
-        case .signed(let id): try encoder.encode(1, .enumCaseId).encode(id)
+        case .signed(let id): try id.encode(in: encoder.encode(1, .enumCaseId), registry: registry)
         case .none: try encoder.encode(2, .enumCaseId)
         }
     }
 }
-
-extension Origin: ScaleDynamicCodable {}

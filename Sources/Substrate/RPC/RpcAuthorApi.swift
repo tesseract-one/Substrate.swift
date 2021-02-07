@@ -15,7 +15,7 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
         self.substrate = substrate
     }
     
-    public func submit<E: ScaleDynamicEncodable>(
+    public func submit<E: ExtrinsicProtocol>(
         extrinsic: E, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THash>
     ) {
         guard let data = encode(value: extrinsic, cb) else { return }
