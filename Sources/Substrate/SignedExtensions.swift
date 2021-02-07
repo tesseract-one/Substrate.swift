@@ -23,7 +23,6 @@ public struct CheckSpecVersionSignedExtension<S: System>: ScaleCodable, ScaleDyn
 }
 
 extension CheckSpecVersionSignedExtension: SignedExtension {
-//    public typealias AccountId = S.TAccountId
     public typealias AdditionalSignedPayload = UInt32
     
     public static var IDENTIFIER: String { "CheckSpecVersion" }
@@ -44,7 +43,6 @@ public struct CheckTxVersionSignedExtension<S: System>: ScaleCodable, ScaleDynam
 }
 
 extension CheckTxVersionSignedExtension: SignedExtension {
-//    public typealias AccountId = S.TAccountId
     public typealias AdditionalSignedPayload = UInt32
     
     public static var IDENTIFIER: String { "CheckTxVersion" }
@@ -65,7 +63,6 @@ public struct CheckGenesisSignedExtension<S: System>: ScaleCodable, ScaleDynamic
 }
 
 extension CheckGenesisSignedExtension: SignedExtension {
-//    public typealias AccountId = S.TAccountId
     public typealias AdditionalSignedPayload = S.THash
     
     public static var IDENTIFIER: String { "CheckGenesis" }
@@ -93,7 +90,6 @@ public struct CheckEraSignedExtension<S: System>: ScaleCodable, ScaleDynamicCoda
 }
 
 extension CheckEraSignedExtension: SignedExtension {
-//    public typealias AccountId = S.TAccountId
     public typealias AdditionalSignedPayload = S.THash
     
     public static var IDENTIFIER: String { "CheckEra" }
@@ -118,7 +114,6 @@ public struct CheckNonceSignedExtension<S: System>: ScaleCodable, ScaleDynamicCo
 }
 
 extension CheckNonceSignedExtension: SignedExtension {
-//    public typealias AccountId = S.TAccountId
     public typealias AdditionalSignedPayload = DNull
     
     public static var IDENTIFIER: String { "CheckNonce" }
@@ -135,7 +130,6 @@ public struct CheckWeightSignedExtension<S: System>: ScaleCodable, ScaleDynamicC
 }
 
 extension CheckWeightSignedExtension: SignedExtension {
-//    public typealias AccountId = S.TAccountId
     public typealias AdditionalSignedPayload = DNull
     
     public static var IDENTIFIER: String { "CheckWeight" }
@@ -161,7 +155,6 @@ public struct ChargeTransactionPaymentSignedExtension<B: Balances>: ScaleCodable
 }
 
 extension ChargeTransactionPaymentSignedExtension: SignedExtension {
-//    public typealias AccountId = B.TAccountId
     public typealias AdditionalSignedPayload = DNull
     
     public static var IDENTIFIER: String { "ChargeTransactionPayment" }

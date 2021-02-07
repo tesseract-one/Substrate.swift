@@ -1,5 +1,5 @@
 //
-//  ExtrinsicSignedPayload.swift
+//  ExtrinsicSigningPayload.swift
 //  
 //
 //  Created by Yehor Popovych on 2/6/21.
@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicSignedPayload<Call: AnyCall, Extra: SignedExtension> {
+public struct ExtrinsicSigningPayload<Call: AnyCall, Extra: SignedExtension> {
     public let call: Call
     public let extra: Extra
     public let payload: Extra.AdditionalSignedPayload
@@ -20,7 +20,7 @@ public struct ExtrinsicSignedPayload<Call: AnyCall, Extra: SignedExtension> {
     }
 }
 
-extension ExtrinsicSignedPayload: ScaleDynamicEncodable {
+extension ExtrinsicSigningPayload: ScaleDynamicEncodable {
     public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         let enc = SCALE.default.encoder()
         try registry.encode(call: call, in: enc)

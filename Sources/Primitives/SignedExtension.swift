@@ -9,12 +9,6 @@ import Foundation
 import ScaleCodec
 
 public protocol SignedExtension: ScaleDynamicCodable {
-//    /// The type which encodes the sender identity.
-//    associatedtype AccountId: ScaleDynamicCodable
-
-//    /// The type which encodes the call to be dispatched.
-//    associatedtype Call: AnyCall
-
     /// Any additional data that will go into the signed payload. This may be created dynamically
     /// from the transaction using the `additionalSignedPayload` function.
     associatedtype AdditionalSignedPayload: ScaleDynamicCodable
@@ -39,17 +33,6 @@ public protocol SignedExtension: ScaleDynamicCodable {
     static var IDENTIFIER: String { get }
 }
 
-
 extension SignedExtension {
     public var identifier: [String] { [Self.IDENTIFIER] }
-}
-
-extension DNull: SignedExtension {
-//    public typealias AccountId = UInt64
-//    public typealias Call = DCall
-    public typealias AdditionalSignedPayload = DNull
-    
-    public func additionalSignedPayload() throws -> DNull { DNull() }
-    
-    public static var IDENTIFIER: String { "NullSignedExtension" }
 }

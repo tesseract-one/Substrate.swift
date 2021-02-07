@@ -33,7 +33,6 @@ public struct DefaultExtrinsicExtra<S: System & Balances> {
 }
 
 extension DefaultExtrinsicExtra: SignedExtension {
-    //public typealias AccountId = S.TAccountId
     public typealias AdditionalSignedPayload = Self.ExtrinsicExtra.AdditionalSignedPayload
     
     public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {

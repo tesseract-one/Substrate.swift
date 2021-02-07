@@ -11,7 +11,7 @@ import SubstrateRpc
 
 extension Substrate {
     public static func create<R: Runtime, C: RpcClient>(
-        client: C, runtime: R, _ cb: @escaping SRpcApiCallback<Substrate<R, C>>
+        client: C, runtime: R, signer: SubstrateSigner? = nil, _ cb: @escaping SRpcApiCallback<Substrate<R, C>>
     ) {
         _getRuntimeInfo(client: client, subs: Substrate<R, C>.self) { res in
             let result = res.flatMap { (meta, hash, version, props) in
@@ -19,7 +19,7 @@ extension Substrate {
                     Substrate<R, C>(
                         registry: registry, genesisHash: hash,
                         runtimeVersion: version, properties: props,
-                        client: client)
+                        client: client, signer: signer)
                 }
             }
             cb(result)
