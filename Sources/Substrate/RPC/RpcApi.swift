@@ -1,5 +1,5 @@
 //
-//  Api.swift
+//  RpcApi.swift
 //  
 //
 //  Created by Yehor Popovych on 1/11/21.
@@ -9,7 +9,7 @@ import Foundation
 import SubstrateRpc
 import ScaleCodec
 
-public protocol SubstrateApi {
+public protocol SubstrateRpcApi {
     associatedtype S: SubstrateProtocol
     
     static var id: String { get }
@@ -19,10 +19,10 @@ public protocol SubstrateApi {
     init(substrate: S)
 }
 
-extension SubstrateApi {
+extension SubstrateRpcApi {
     public static var id: String { String(describing: self) }
     
-    public func encode<V: ScaleDynamicEncodable, R>(value: V, _ errcb: SApiCallback<R>) -> Data? {
+    public func encode<V: ScaleDynamicEncodable, R>(value: V, _ errcb: SRpcApiCallback<R>) -> Data? {
         do {
             let encoder = SCALE.default.encoder()
             try value.encode(in: encoder, registry: substrate.registry)
@@ -33,7 +33,7 @@ extension SubstrateApi {
         }
     }
     
-    public func decode<V: ScaleDynamicDecodable, R>(_ t: V.Type, from data: Data, _ errcb: SApiCallback<R>) -> V? {
+    public func decode<V: ScaleDynamicDecodable, R>(_ t: V.Type, from data: Data, _ errcb: SRpcApiCallback<R>) -> V? {
         do {
             let decoder = SCALE.default.decoder(data: data)
             return try V(from: decoder, registry: substrate.registry)
@@ -44,10 +44,10 @@ extension SubstrateApi {
     }
 }
 
-public typealias SApiResult<R> = Result<R, SubstrateApiError>
-public typealias SApiCallback<R> = (SApiResult<R>) -> Void
+public typealias SRpcApiResult<R> = Result<R, SubstrateRpcApiError>
+public typealias SRpcApiCallback<R> = (SRpcApiResult<R>) -> Void
 
-public enum SubstrateApiError: Error {
+public enum SubstrateRpcApiError: Error {
     case encoding(error: SEncodingError)
     case decoding(error: SDecodingError)
     case type(error: DTypeParsingError)
@@ -55,7 +55,7 @@ public enum SubstrateApiError: Error {
     case rpc(error: RpcClientError)
     case unknown(error: Error)
     
-    public static func from(error: Error) -> SubstrateApiError {
+    public static func from(error: Error) -> SubstrateRpcApiError {
         switch error {
         case let e as SEncodingError: return .encoding(error: e)
         case let e as SDecodingError: return .decoding(error: e)
@@ -64,5 +64,19 @@ public enum SubstrateApiError: Error {
         case let e as TypeRegistryError: return .registry(error: e)
         default: return .unknown(error: error)
         }
+    }
+}
+
+public final class SubstrateRpcApiRegistry<S: SubstrateProtocol> {
+    private var _apis: [String: Any] = [:]
+    public internal(set) weak var substrate: S!
+    
+    public func getRpcApi<A>(_ t: A.Type) -> A where A: SubstrateRpcApi, A.S == S {
+        if let api = _apis[A.id] as? A {
+            return api
+        }
+        let api = A(substrate: substrate)
+        _apis[A.id] = api
+        return api
     }
 }

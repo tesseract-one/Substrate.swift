@@ -1,5 +1,5 @@
 //
-//  StateApi.swift
+//  RpcStateApi.swift
 //  
 //
 //  Created by Yehor Popovych on 1/11/21.
@@ -9,14 +9,14 @@ import Foundation
 import SubstrateRpc
 import ScaleCodec
 
-public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
+public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public weak var substrate: S!
     
     public init(substrate: S) {
         self.substrate = substrate
     }
     
-    public func runtimeVersion(at hash: S.R.THash? = nil, _ cb: @escaping SApiCallback<RuntimeVersion>) {
+    public func runtimeVersion(at hash: S.R.THash? = nil, _ cb: @escaping SRpcApiCallback<RuntimeVersion>) {
         Self.runtimeVersion(
             at: hash,
             with: substrate.client,
@@ -25,21 +25,21 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
         )
     }
     
-    public func metadata(_ cb: @escaping SApiCallback<Metadata>) {
+    public func metadata(_ cb: @escaping SRpcApiCallback<Metadata>) {
         Self.metadata(client: substrate.client, timeout: substrate.callTimeout, cb)
     }
     
-    public func getStorage(hash: Data, _ cb: @escaping SApiCallback<Data>) {
+    public func getStorage(hash: Data, _ cb: @escaping SRpcApiCallback<Data>) {
         substrate.client.call(
             method: "state_getStorage",
             params: [HexData(hash)],
             timeout: substrate.callTimeout
         ) { (res: RpcClientResult<HexData>) in
-            cb(res.mapError(SubstrateApiError.rpc).map{$0.data})
+            cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.data})
         }
     }
     
-    public func getStorage<K: StorageKey>(for key: K, _ cb: @escaping SApiCallback<K.Value>) {
+    public func getStorage<K: StorageKey>(for key: K, _ cb: @escaping SRpcApiCallback<K.Value>) {
         do {
             let registry = substrate.registry
             let prefix = try registry.prefix(for: key)
@@ -52,7 +52,7 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
                             static: K.Value.self, as: vtype,
                             from: SCALE.default.decoder(data: data)
                         )
-                    }.mapError(SubstrateApiError.from)
+                    }.mapError(SubstrateRpcApiError.from)
                 }
                 cb(response)
             }
@@ -61,7 +61,7 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
         }
     }
     
-    public func getStorage(dynamic key: AnyStorageKey, _ cb: @escaping SApiCallback<DValue>) {
+    public func getStorage(dynamic key: AnyStorageKey, _ cb: @escaping SRpcApiCallback<DValue>) {
         do {
             let registry = substrate.registry
             let prefix = try registry.prefix(for: key)
@@ -71,7 +71,7 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
                 let response = res.flatMap { data in
                     Result {
                         try registry.decode(dynamic: vtype, from: SCALE.default.decoder(data: data))
-                    }.mapError(SubstrateApiError.from)
+                    }.mapError(SubstrateRpcApiError.from)
                 }
                 cb(response)
             }
@@ -82,7 +82,7 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
     
     public static func runtimeVersion(
         at hash: S.R.THash?, with client: RpcClient, timeout: TimeInterval,
-        _ cb: @escaping SApiCallback<RuntimeVersion>
+        _ cb: @escaping SRpcApiCallback<RuntimeVersion>
     ) {
         do {
             let data = (try hash?.encode()).map(HexData.init)
@@ -91,7 +91,7 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
                 params: [data],
                 timeout: timeout
             ) { (res: RpcClientResult<RuntimeVersion>) in
-                cb(res.mapError(SubstrateApiError.rpc))
+                cb(res.mapError(SubstrateRpcApiError.rpc))
             }
         } catch {
             cb(.failure(.from(error: error)))
@@ -100,26 +100,26 @@ public struct SubstrateStateApi<S: SubstrateProtocol>: SubstrateApi {
     
     public static func metadata(
         client: RpcClient, timeout: TimeInterval,
-        _ cb: @escaping SApiCallback<Metadata>
+        _ cb: @escaping SRpcApiCallback<Metadata>
     ) {
         client.call(
             method: "state_getMetadata",
             params: Array<Int>(),
             timeout: timeout
         ) { (res: RpcClientResult<HexData>) in
-            let response: SApiResult<Metadata> = res.mapError(SubstrateApiError.rpc).flatMap { data in
+            let response: SRpcApiResult<Metadata> = res.mapError(SubstrateRpcApiError.rpc).flatMap { data in
                 Result {
                     let decoder = SCALE.default.decoder(data: data.data)
                     let versioned = try decoder.decode(RuntimeVersionedMetadata.self)
                     return try Metadata(runtime: versioned.metadata)
-                }.mapError(SubstrateApiError.from)
+                }.mapError(SubstrateRpcApiError.from)
             }
             cb(response)
         }
     }
 }
 
-extension SubstrateProtocol {
-    public var state: SubstrateStateApi<Self> { getApi(SubstrateStateApi<Self>.self) }
+extension SubstrateRpcApiRegistry {
+    public var state: SubstrateRpcStateApi<S> { getRpcApi(SubstrateRpcStateApi<S>.self) }
 }
 

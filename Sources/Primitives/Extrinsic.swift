@@ -129,19 +129,3 @@ public struct OpaqueExtrinsic: ExtrinsicProtocol, ScaleDynamicCodable {
         self
     }
 }
-
-// TODO: Implement. Will be implemented with signing in next milestones.
-//public struct ExtrinsicSignPayload {
-//    public let blockHash: Hash
-//    public let era: ExtrinsicEra
-//    public let genesisHash: Hash
-//    public let method: AnyCall
-//    public let nonce: SIndex
-//    public let specVersion: UInt32
-//    public let transactionVersion: UInt32
-//
-//    public func data() -> Data {
-//
-//    }
-//}
-

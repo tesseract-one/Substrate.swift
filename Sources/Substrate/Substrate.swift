@@ -21,17 +21,23 @@ public protocol SubstrateProtocol: class {
     var pageSize: UInt { get set }
     var callTimeout: TimeInterval { get set }
     
-    func getApi<A>(_ t: A.Type) -> A where A: SubstrateApi, A.S == Self
+    var rpc: SubstrateRpcApiRegistry<Self> { get }
+    var query: SubstrateStorageApiRegistry<Self> { get }
+    var consts: SubstrateConstantApiRegistry<Self> { get }
+    var tx: SubstrateExtrinsicApiRegistry<Self> { get }
 }
 
 public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
-    private var _apis: [String: Any] = [:]
-    
     public let client: C
     public let registry: TypeRegistryProtocol
     public let genesisHash: R.THash
     public let runtimeVersion: RuntimeVersion
     public let properties: SystemProperties
+    
+    public let rpc: SubstrateRpcApiRegistry<Substrate<R, C>>
+    public let query: SubstrateStorageApiRegistry<Substrate<R, C>>
+    public let consts: SubstrateConstantApiRegistry<Substrate<R, C>>
+    public let tx: SubstrateExtrinsicApiRegistry<Substrate<R, C>>
     
     public var pageSize: UInt = 10
     public var callTimeout: TimeInterval = 60
@@ -46,14 +52,14 @@ public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
         self.runtimeVersion = runtimeVersion
         self.properties = properties
         self.client = client
-    }
-    
-    public func getApi<A>(_ t: A.Type) -> A where A : SubstrateApi, A.S == Substrate<R, C> {
-        if let api = _apis[A.id] as? A {
-            return api
-        }
-        let api = A(substrate: self)
-        _apis[A.id] = api
-        return api
+        self.rpc = SubstrateRpcApiRegistry()
+        self.query = SubstrateStorageApiRegistry()
+        self.consts = SubstrateConstantApiRegistry()
+        self.tx = SubstrateExtrinsicApiRegistry()
+        
+        rpc.substrate = self
+        query.substrate = self
+        consts.substrate = self
+        tx.substrate = self
     }
 }
