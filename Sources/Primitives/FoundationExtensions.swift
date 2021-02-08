@@ -76,7 +76,7 @@ extension NSArray: ScaleDynamicEncodable {
         throw SEncodingError.invalidValue(
             self,
             SEncodingError.Context(
-                path: encoder.path, description: "NSArray should not be encoded directly"
+                path: encoder.path, description: "NSArray should not be encoded directly. Allowed only as dynamic value"
             )
         )
     }
@@ -92,5 +92,16 @@ extension NSArray: ScaleDynamicEncodableArrayMaybeConvertible {
             res.append(el)
         }
         return res
+    }
+}
+
+extension NSDictionary: ScaleDynamicEncodable {
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        throw SEncodingError.invalidValue(
+            self,
+            SEncodingError.Context(
+                path: encoder.path, description: "NSDictionary should not be encoded directly.Allowed only as dynamic value"
+            )
+        )
     }
 }
