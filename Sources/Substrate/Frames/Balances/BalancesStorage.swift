@@ -9,11 +9,9 @@ import Foundation
 
 public struct BalancesTotalIssuanceStorageKey<B: Balances> {}
 
-extension BalancesTotalIssuanceStorageKey: StorageKey {
+extension BalancesTotalIssuanceStorageKey: PlainStorageKey {
     public typealias Value = B.TBalance
     public typealias Module = BalancesModule<B>
     
     public static var FIELD: String { "TotalIssuance" }
-    
-    public var path: [ScaleDynamicEncodable] { [] }
 }

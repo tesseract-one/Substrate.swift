@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ScaleCodec
 
 /// Rewards for the last `HISTORY_DEPTH` eras.
 /// If reward hasn't been set or has been removed then 0 reward is returned.
@@ -14,13 +15,15 @@ public struct StakingErasRewardPointsStorageKey<S: Staking> {
     public let index: EraIndex
 }
 
-extension StakingErasRewardPointsStorageKey: StorageKey {
+extension StakingErasRewardPointsStorageKey: MapStorageKey {
     public typealias Value = S.TAccountId
     public typealias Module = StakingModule<S>
     
     public static var FIELD: String { "ErasRewardPoints" }
     
-    public var path: [ScaleDynamicEncodable] { [index] }
+    public func encodeKey(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try index.encode(in: encoder, registry: registry)
+    }
 }
 
 /// Number of eras to keep in history.
@@ -32,13 +35,11 @@ extension StakingErasRewardPointsStorageKey: StorageKey {
 /// I.e. `active_era > current_era - history_depth` must be guaranteed.
 public struct StakingHistoryDepthStorageKey<S: Staking> {}
 
-extension StakingHistoryDepthStorageKey: StorageKey {
+extension StakingHistoryDepthStorageKey: PlainStorageKey {
     public typealias Value = UInt32
     public typealias Module = StakingModule<S>
     
     public static var FIELD: String { "HistoryDepth" }
-    
-    public var path: [ScaleDynamicEncodable] { [] }
 }
 
 /// Map from all locked "stash" accounts to the controller account.
@@ -47,13 +48,15 @@ public struct StakingBondedStorageKey<S: Staking> {
     public let stash: S.TAccountId
 }
 
-extension StakingBondedStorageKey: StorageKey {
+extension StakingBondedStorageKey: MapStorageKey {
     public typealias Value = Optional<S.TAccountId>
     public typealias Module = StakingModule<S>
     
     public static var FIELD: String { "Bonded" }
     
-    public var path: [ScaleDynamicEncodable] { [stash] }
+    public func encodeKey(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try stash.encode(in: encoder, registry: registry)
+    }
 }
 
 /// Map from all (unlocked) "controller" accounts to the info regarding the staking.
@@ -62,13 +65,15 @@ public struct StakingLedgerStorageKey<S: Staking> {
     public let controller: S.TAccountId
 }
 
-extension StakingLedgerStorageKey: StorageKey {
+extension StakingLedgerStorageKey: MapStorageKey {
     public typealias Value = StakingLedger<S.TAccountId, S.TBalance>
     public typealias Module = StakingModule<S>
     
     public static var FIELD: String { "Ledger" }
     
-    public var path: [ScaleDynamicEncodable] { [controller] }
+    public func encodeKey(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try controller.encode(in: encoder, registry: registry)
+    }
 }
 
 /// Where the reward payment should be made. Keyed by stash.
@@ -77,13 +82,15 @@ public struct StakingPayeeStorageKey<S: Staking> {
     public let stash: S.TAccountId
 }
 
-extension StakingPayeeStorageKey: StorageKey {
+extension StakingPayeeStorageKey: MapStorageKey {
     public typealias Value = RewardDestination<S.TAccountId>
     public typealias Module = StakingModule<S>
     
     public static var FIELD: String { "Payee" }
     
-    public var path: [ScaleDynamicEncodable] { [stash] }
+    public func encodeKey(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try stash.encode(in: encoder, registry: registry)
+    }
 }
 
 /// The map from (wannabe) validator stash key to the preferences of that validator.
@@ -92,13 +99,15 @@ public struct StakingValidatorsStorageKey<S: Staking> {
     public let stash: S.TAccountId
 }
 
-extension StakingValidatorsStorageKey: StorageKey {
+extension StakingValidatorsStorageKey: MapStorageKey {
     public typealias Value = ValidatorPrefs
     public typealias Module = StakingModule<S>
     
     public static var FIELD: String { "Validators" }
     
-    public var path: [ScaleDynamicEncodable] { [stash] }
+    public func encodeKey(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try stash.encode(in: encoder, registry: registry)
+    }
 }
 
 /// The map from nominator stash key to the set of stash keys of all validators to nominate.
@@ -107,13 +116,15 @@ public struct StakingNominatorsStorageKey<S: Staking> {
     public let stash: S.TAccountId
 }
 
-extension StakingNominatorsStorageKey: StorageKey {
+extension StakingNominatorsStorageKey: MapStorageKey {
     public typealias Value = Optional<Nominations<S.TAccountId>>
     public typealias Module = StakingModule<S>
     
     public static var FIELD: String { "Nominators" }
     
-    public var path: [ScaleDynamicEncodable] { [stash] }
+    public func encodeKey(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try stash.encode(in: encoder, registry: registry)
+    }
 }
 
 /// The current era index.
@@ -122,12 +133,10 @@ extension StakingNominatorsStorageKey: StorageKey {
 /// set, it might be active or not.
 public struct StakingCurrentEraStorageKey<S: Staking> {}
 
-extension StakingCurrentEraStorageKey: StorageKey {
+extension StakingCurrentEraStorageKey: PlainStorageKey {
     public typealias Value = Optional<EraIndex>
     public typealias Module = StakingModule<S>
     
     public static var FIELD: String { "CurrentEra" }
-    
-    public var path: [ScaleDynamicEncodable] { [] }
 }
 

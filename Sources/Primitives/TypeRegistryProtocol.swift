@@ -34,20 +34,25 @@ public enum TypeRegistryError: Error {
     case encodingExpectedCollection(found: ScaleDynamicEncodable)
     case encodingExpectedMap(found: ScaleDynamicEncodable)
     case encodingWrongElementCount(in: ScaleDynamicEncodable, expected: Int)
+    // Storage
+    case storageItemBadPathTypes(module: String, field: String, path: [ScaleDynamicEncodable], expected: [DType])
+    case storageItemBadItemType(module: String, field: String, type: String, expected: String)
     // Unknown
     case unknown(error: Error)
 }
 
 public protocol TypeRegistryProtocol: class {
     // Storage
-    func key(for key: AnyStorageKey) throws -> Data
-    func prefix(for key: AnyStorageKey) throws -> Data
-    func valueType(for key: AnyStorageKey) throws -> DType
-    func defaultValue(for key: AnyStorageKey) throws -> DValue
-    func defaultValue<K: StorageKey>(parsed key: K) throws -> K.Value
+    func hash<K: DynamicStorageKey>(of key: K) throws -> Data
+    func hash<K: StaticStorageKey>(of key: K) throws -> Data
+    func hash<K: DynamicStorageKey>(iteratorOf key: K) throws -> Data
+    func hash<K: StaticStorageKey>(iteratorOf key: K) throws -> Data
+    func type<K: AnyStorageKey>(valueOf key: K) throws -> DType
+    func value<K: DynamicStorageKey>(defaultOf key: K) throws -> DValue
+    func value<K: StaticStorageKey>(defaultOf key: K) throws -> K.Value
     
     // Constants
-    func valueType<C: AnyConstant>(of constant: C) throws -> DType
+    func type<C: AnyConstant>(of constant: C) throws -> DType
     func value<C: DynamicConstant>(of constant: C) throws -> DValue
     func value<C: Constant>(of constant: C) throws -> C.Value
     

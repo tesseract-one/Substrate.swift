@@ -17,7 +17,6 @@ public enum MetadataError: Error {
     case callNotFound(module: String, index: UInt8)
     case storageItemNotFound(prefix: String, item: String)
     case constantNotFound(module: String, name: String)
-    case storageItemBadPathTypes(prefix: String, item: String, path: [ScaleDynamicEncodable], expected: [DType])
     case unknown(error: Error)
 }
 

@@ -52,11 +52,9 @@ extension SessionSetKeysCall: Call {
 
 public struct SessionValidatorsStorageKey<S: Session> {}
 
-extension SessionValidatorsStorageKey: StorageKey {
+extension SessionValidatorsStorageKey: PlainStorageKey {
     public typealias Value = S.TValidatorId
     public typealias Module = SessionModule<S>
     
     public static var FIELD: String { "Validators" }
-    
-    public var path: [ScaleDynamicEncodable] { [] }
 }

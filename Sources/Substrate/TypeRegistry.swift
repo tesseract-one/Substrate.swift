@@ -54,24 +54,32 @@ extension TypeRegistry: TypeRegistryProtocol {
         return type
     }
     
-    public func key(for key: AnyStorageKey) throws -> Data {
-        try _metaError { try self.metadata.key(for: key, registry: self) }
+    public func hash<K: DynamicStorageKey>(of key: K) throws -> Data {
+        try _metaError { try self.metadata.hash(of: key, registry: self) }
     }
     
-    public func prefix(for key: AnyStorageKey) throws -> Data {
-        try _metaError { try self.metadata.prefix(for: key) }
+    public func hash<K: StaticStorageKey>(of key: K) throws -> Data  {
+         try _metaError { try self.metadata.hash(of: key, registry: self) }
     }
     
-    public func defaultValue(for key: AnyStorageKey) throws -> DValue {
-        try _metaError { try self.metadata.defaultValue(for: key, registry: self) }
+    public func hash<K: DynamicStorageKey>(iteratorOf key: K) throws -> Data {
+         try _metaError { try self.metadata.hash(iteratorOf: key, registry: self) }
     }
     
-    public func defaultValue<K: StorageKey>(parsed key: K) throws -> K.Value {
-        try _metaError { try self.metadata.defaultValue(parsed: key, registry: self) }
+    public func hash<K: StaticStorageKey>(iteratorOf key: K) throws -> Data {
+        try _metaError { try self.metadata.hash(iteratorOf: key, registry: self) }
     }
     
-    public func valueType(for key: AnyStorageKey) throws -> DType {
-        try _metaError { try self.metadata.valueType(for: key) }
+    public func value<K: DynamicStorageKey>(defaultOf key: K) throws -> DValue {
+        try _metaError { try self.metadata.value(defaultOf: key, registry: self) }
+    }
+    
+    public func value<K: StaticStorageKey>(defaultOf key: K) throws -> K.Value {
+        try _metaError { try self.metadata.value(defaultOf: key, registry: self) }
+    }
+    
+    public func type<K: AnyStorageKey>(valueOf key: K) throws -> DType {
+        try _metaError { try self.metadata.type(valueOf: key) }
     }
     
     public func value<C: DynamicConstant>(of constant: C) throws -> DValue {
@@ -82,8 +90,8 @@ extension TypeRegistry: TypeRegistryProtocol {
         try _metaError { try self.metadata.value(of: constant, registry: self) }
     }
     
-    public func valueType<C: AnyConstant>(of constant: C) throws -> DType {
-        try _metaError { try self.metadata.valueType(of: constant) }
+    public func type<C: AnyConstant>(of constant: C) throws -> DType {
+        try _metaError { try self.metadata.type(of: constant) }
     }
     
     public func decode(eventFrom decoder: ScaleDecoder) throws -> AnyEvent {

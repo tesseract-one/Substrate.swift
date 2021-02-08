@@ -42,15 +42,14 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         }
     }
     
-    public func getStorage<K: StorageKey>(
+    public func getStorage<K: StaticStorageKey>(
         for key: K, hash: S.R.THash? = nil, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<K.Value>
     ) {
         do {
             let registry = substrate.registry
-            let prefix = try registry.prefix(for: key)
-            let hkey = try registry.key(for: key)
-            let vtype = try registry.valueType(for: key)
-            getStorage(keyHash: prefix+hkey, hash: hash, timeout: timeout) { res in
+            let keyHash = try registry.hash(of: key)
+            let vtype = try registry.type(valueOf: key)
+            getStorage(keyHash: keyHash, hash: hash, timeout: timeout) { res in
                 let response = res.flatMap { data in
                     Result {
                         try registry.decode(
@@ -66,16 +65,15 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         }
     }
     
-    public func getStorage(
-        dynamic key: AnyStorageKey, hash: S.R.THash? = nil, timeout: TimeInterval? = nil,
+    public func getStorage<K: DynamicStorageKey>(
+        for key: K, hash: S.R.THash? = nil, timeout: TimeInterval? = nil,
         _ cb: @escaping SRpcApiCallback<DValue>
     ) {
         do {
             let registry = substrate.registry
-            let prefix = try registry.prefix(for: key)
-            let hkey = try registry.key(for: key)
-            let vtype = try registry.valueType(for: key)
-            getStorage(keyHash: prefix+hkey, hash: hash, timeout: timeout) { res in
+            let keyHash = try registry.hash(of: key)
+            let vtype = try registry.type(valueOf: key)
+            getStorage(keyHash: keyHash, hash: hash, timeout: timeout) { res in
                 let response = res.flatMap { data in
                     Result {
                         try registry.decode(dynamic: vtype, from: SCALE.default.decoder(data: data))

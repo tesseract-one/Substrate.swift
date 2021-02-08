@@ -36,57 +36,59 @@ public class MetadataStorageItemInfo {
         return data
     }
     
-    public func parseDefault<T: ScaleDynamicDecodable>(_ t: T.Type, registry: TypeRegistryProtocol) throws -> T {
-        return try parseValue(t, from: defaultValue, registry: registry)
+    public func defaultValue(registry: TypeRegistryProtocol) throws -> DValue {
+        try registry.decode(dynamic: valueType, from: SCALE.default.decoder(data: defaultValue))
     }
     
-    public func getDefault(registry: TypeRegistryProtocol) throws -> DValue {
-        return try getValue(from: defaultValue, registry: registry)
+    public func defaultValue<T: ScaleDynamicDecodable>(_ t: T.Type, registry: TypeRegistryProtocol) throws -> T {
+        try registry.decode(static: t, as: valueType, from: SCALE.default.decoder(data: defaultValue))
     }
     
-    public func parseValue<T: ScaleDynamicDecodable>(
-        _ t: T.Type, from data: Data, registry: TypeRegistryProtocol
-    ) throws -> T {
-        return try registry.decode(
-            static: t, as: valueType, from: SCALE.default.decoder(data: data)
-        )
-    }
-    
-    public func getValue(from data: Data, registry: TypeRegistryProtocol) throws -> DValue {
-        return try registry.decode(
-            dynamic: valueType, from: SCALE.default.decoder(data: data)
-        )
-    }
-    
-    public func key(path: [ScaleDynamicEncodable], registry: TypeRegistryProtocol) throws -> Data {
+    public func hash<K: DynamicStorageKey>(of key: K, registry: TypeRegistryProtocol) throws -> Data {
+        let prefix = prefixHash()
         switch type {
         case .plain(_):
-            guard path.count == 0 else {
-                throw MetadataError.storageItemBadPathTypes(
-                    prefix: prefix, item: name, path: path, expected: pathTypes
-                )
-            }
-            return prefixHash()
-        case .map(hasher: let hasher, key: _, value: _, unused: _):
-            guard path.count == 1 else {
-                throw MetadataError.storageItemBadPathTypes(
-                    prefix: prefix, item: name, path: path, expected: pathTypes
-                )
-            }
-            let encoder = SCALE.default.encoder()
-            try registry.encode(value: path[0], type: pathTypes[0], in: encoder)
-            return prefixHash() + hasher.hasher.hash(data: encoder.output)
-        case .doubleMap(hasher: let hasher1, key1: _, key2: _, value: _, key2_hasher: let hasher2):
-            guard path.count == 2 else {
-                throw MetadataError.storageItemBadPathTypes(
-                    prefix: prefix, item: name, path: path, expected: pathTypes
-                )
-            }
-            let encoder1 = SCALE.default.encoder()
-            try registry.encode(value: path[0], type: pathTypes[0], in: encoder1)
-            let encoder2 = SCALE.default.encoder()
-            try registry.encode(value: path[1], type: pathTypes[1], in: encoder2)
-            return prefixHash() + hasher1.hasher.hash(data: encoder1.output) + hasher2.hasher.hash(data: encoder2.output)
+            return try prefix + key.key(h1: nil, h2: nil, types: pathTypes, registry: registry)
+        case .map(hasher: let h1, key: _, value: _, unused: _):
+            return try prefix + key.key(h1: h1.hasher, h2: nil, types: pathTypes, registry: registry)
+        case .doubleMap(hasher: let h1 , key1: _, key2: _, value: _, key2_hasher: let h2):
+            return try prefix + key.key(h1: h1.hasher, h2: h2.hasher, types: pathTypes, registry: registry)
+        }
+    }
+    
+    public func hash<K: StaticStorageKey>(of key: K, registry: TypeRegistryProtocol) throws -> Data {
+        let prefix = prefixHash()
+        switch type {
+        case .plain(_):
+            return try prefix + key.key(h1: nil, h2: nil, registry: registry)
+        case .map(hasher: let h1, key: _, value: _, unused: _):
+            return try prefix + key.key(h1: h1.hasher, h2: nil, registry: registry)
+        case .doubleMap(hasher: let h1 , key1: _, key2: _, value: _, key2_hasher: let h2):
+            return try prefix + key.key(h1: h1.hasher, h2: h2.hasher, registry: registry)
+        }
+    }
+    
+    public func hash<K: DynamicStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
+        let prefix = prefixHash()
+        switch type {
+        case .plain(_):
+            return try prefix + key.iteratorKey(h1: nil, type: nil, registry: registry)
+        case .map(hasher: _, key: _, value: _, unused: _):
+            return try prefix + key.iteratorKey(h1: nil, type: nil, registry: registry)
+        case .doubleMap(hasher: let h1 , key1: _, key2: _, value: _, key2_hasher: _):
+            return try prefix + key.iteratorKey(h1: h1.hasher, type: pathTypes[0], registry: registry)
+        }
+    }
+    
+    public func hash<K: StaticStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
+        let prefix = prefixHash()
+        switch type {
+        case .plain(_):
+            return try prefix + key.iteratorKey(h1: nil, registry: registry)
+        case .map(hasher: _, key: _, value: _, unused: _):
+            return try prefix + key.iteratorKey(h1: nil, registry: registry)
+        case .doubleMap(hasher: let h1 , key1: _, key2: _, value: _, key2_hasher: _):
+            return try prefix + key.iteratorKey(h1: h1.hasher, registry: registry)
         }
     }
 }

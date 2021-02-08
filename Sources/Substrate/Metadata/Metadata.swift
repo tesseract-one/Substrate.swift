@@ -43,7 +43,7 @@ extension Metadata {
 
 // StorageKey
 extension Metadata {
-    private func _getStorageInfo(for key: AnyStorageKey) throws -> MetadataStorageItemInfo {
+    private func _getStorageInfo<K: AnyStorageKey>(for key: K) throws -> MetadataStorageItemInfo {
         guard let module = modulesByName[key.module] else {
             throw MetadataError.moduleNotFound(name: key.module)
         }
@@ -53,24 +53,32 @@ extension Metadata {
         return storage
     }
     
-    public func prefix(for key: AnyStorageKey) throws -> Data {
-        return try _getStorageInfo(for: key).prefixHash()
-    }
-
-    public func key(for key: AnyStorageKey, registry: TypeRegistryProtocol) throws -> Data {
-        return try _getStorageInfo(for: key).key(path: key.path, registry: registry)
+    public func hash<K: DynamicStorageKey>(of key: K, registry: TypeRegistryProtocol) throws -> Data {
+        try _getStorageInfo(for: key).hash(of: key, registry: registry)
     }
     
-    public func defaultValue(for key: AnyStorageKey, registry: TypeRegistryProtocol) throws -> DValue {
-        return try _getStorageInfo(for: key).getDefault(registry: registry)
+    public func hash<K: StaticStorageKey>(of key: K, registry: TypeRegistryProtocol) throws -> Data {
+        try _getStorageInfo(for: key).hash(of: key, registry: registry)
     }
     
-    public func defaultValue<K: StorageKey>(parsed key: K, registry: TypeRegistryProtocol) throws -> K.Value {
-        return try _getStorageInfo(for: key).parseDefault(K.Value.self, registry: registry)
+    public func hash<K: DynamicStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
+        try _getStorageInfo(for: key).hash(iteratorOf: key, registry: registry)
     }
     
-    public func valueType(for key: AnyStorageKey) throws -> DType {
-        return try _getStorageInfo(for: key).valueType
+    public func hash<K: StaticStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
+        try _getStorageInfo(for: key).hash(iteratorOf: key, registry: registry)
+    }
+    
+    public func type<K: AnyStorageKey>(valueOf key: K) throws -> DType {
+        try _getStorageInfo(for: key).valueType
+    }
+    
+    public func value<K: DynamicStorageKey>(defaultOf key: K, registry: TypeRegistryProtocol) throws -> DValue {
+        try _getStorageInfo(for: key).defaultValue(registry: registry)
+    }
+    
+    public func value<K: StaticStorageKey>(defaultOf key: K, registry: TypeRegistryProtocol) throws -> K.Value {
+        try _getStorageInfo(for: key).defaultValue(K.Value.self, registry: registry)
     }
 }
 
@@ -94,7 +102,7 @@ extension Metadata {
         return try _getConstantInfo(for: constant).parsed(C.Value.self, registry: registry)
     }
     
-    public func valueType<C: AnyConstant>(of constant: C) throws -> DType {
+    public func type<C: AnyConstant>(of constant: C) throws -> DType {
         return try _getConstantInfo(for: constant).type
     }
 }
