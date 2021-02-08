@@ -23,7 +23,9 @@ extension StakingSetPayeeCall: Call {
         payee = try RewardDestination<S.TAccountId>(from: decoder, registry: registry)
     }
     
-    public var params: [ScaleDynamicCodable] { [payee] }
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try payee.encode(in: encoder, registry: registry)
+    }
 }
 
 /// Declare no desire to either validate or nominate.
@@ -42,7 +44,8 @@ extension StakingChillCall: Call {
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
     }
     
-    public var params: [ScaleDynamicCodable] { [] }
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+    }
 }
 
 /// Declare the desire to validate for the origin controller.
@@ -63,6 +66,10 @@ extension StakingValidateCall: Call {
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         prefs = try decoder.decode()
+    }
+    
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try prefs.encode(in: encoder, registry: registry)
     }
     
     public var params: [ScaleDynamicCodable] { [prefs] }
@@ -88,5 +95,7 @@ extension StakingNominateCall: Call {
         targets = try Array<S.TAddress>(from: decoder, registry: registry)
     }
     
-    public var params: [ScaleDynamicCodable] { [targets] }
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try targets.encode(in: encoder, registry: registry)
+    }
 }

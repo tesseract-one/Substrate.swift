@@ -48,7 +48,7 @@ extension Extrinsic: ExtrinsicProtocol {
             ))
         }
         signature = signed ? try ExtrinsicSignature(from: dec, registry: registry) : nil
-        let _call = try registry.decodeCall(from: dec)
+        let _call = try registry.decode(callFrom: dec)
         guard let call = _call as? Call else {
             throw SDecodingError.typeMismatch(
                 type(of: _call),

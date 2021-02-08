@@ -25,5 +25,8 @@ extension BalancesTransferCall: Call {
         amount = try decoder.decode(.compact)
     }
     
-    public var params: [ScaleDynamicCodable] { [to, SCompact(amount)] }
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try to.encode(in: encoder, registry: registry)
+        try amount.encode(in: encoder, registry: registry)
+    }
 }

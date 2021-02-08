@@ -12,9 +12,9 @@ import ScaleCodec
 public class TypeRegistry {
     private let metadata: Metadata
     
-    private var _events: Dictionary<String, AnyEvent.Type> = [:]
-    private var _calls: Dictionary<String, AnyCall.Type> = [:]
-    private var _types: Dictionary<DType, ScaleDynamicDecodable.Type> = [:]
+    private var _events: Dictionary<String, StaticEvent.Type> = [:]
+    private var _calls: Dictionary<String, StaticCall.Type> = [:]
+    private var _types: Dictionary<DType, ScaleDynamicCodable.Type> = [:]
     private var _reverseTypes: Dictionary<String, DType> = [:]
     
     public init(metadata: Metadata) {
@@ -25,7 +25,7 @@ public class TypeRegistry {
         
     }
     
-    func decode(static: DType, from decoder: ScaleDecoder) throws -> ScaleDynamicDecodable {
+    func decode(static: DType, from decoder: ScaleDecoder) throws -> ScaleDynamicCodable {
         guard let T = _types[`static`] else {
             throw TypeRegistryError.typeNotFound(`static`)
         }
@@ -34,7 +34,7 @@ public class TypeRegistry {
 }
 
 extension TypeRegistry: TypeRegistryProtocol {
-    public func register<T>(type: T.Type, as dynamic: DType) throws where T : ScaleDynamicDecodable {
+    public func register<T>(type: T.Type, as dynamic: DType) throws where T : ScaleDynamicCodable {
         _types[dynamic] = type
         _reverseTypes[String(describing: type)] = dynamic
     }
@@ -47,7 +47,7 @@ extension TypeRegistry: TypeRegistryProtocol {
         _events["\(E.MODULE).\(E.EVENT)"] = event
     }
     
-    public func type<T>(of t: T.Type) throws -> DType where T : ScaleDynamicDecodable {
+    public func type<T>(of t: T.Type) throws -> DType where T : ScaleDynamicCodable {
         guard let type = _reverseTypes[String(describing: t)] else {
             throw TypeRegistryError.unknownType(t)
         }
@@ -74,24 +74,41 @@ extension TypeRegistry: TypeRegistryProtocol {
         try _metaError { try self.metadata.valueType(for: key) }
     }
     
-    public func value(of constant: AnyConstant) throws -> DValue {
+    public func value<C: DynamicConstant>(of constant: C) throws -> DValue {
         try _metaError { try self.metadata.value(of: constant, registry: self) }
     }
     
-    public func value<C>(parsed constant: C) throws -> C.Value where C : Constant {
-        try _metaError { try self.metadata.value(parsed: constant, registry: self) }
+    public func value<C: Constant>(of constant: C) throws -> C.Value {
+        try _metaError { try self.metadata.value(of: constant, registry: self) }
     }
     
-    public func valueType(of constant: AnyConstant) throws -> DType {
+    public func valueType<C: AnyConstant>(of constant: C) throws -> DType {
         try _metaError { try self.metadata.valueType(of: constant) }
     }
     
-    public func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent {
-        fatalError("Not implemented")
+    public func decode(eventFrom decoder: ScaleDecoder) throws -> AnyEvent {
+        let (module, info) = try _decodeEventHeader(from: decoder)
+        if let event = _events["\(module).\(info.name)"] {
+            return try _eventDecodingError(module: module, event: info.name) {
+                try event.init(decodingDataFrom: decoder, registry: self)
+            }
+        } else {
+            let args = try info.arguments.map { try self._decode(type: $0, from: decoder) }
+            let data = args.count == 1 ? args.first! : .collection(values: args)
+            return DEvent(module: module, event: info.name, data: data)
+        }
     }
     
     public func decode<E>(event: E.Type, from decoder: ScaleDecoder) throws -> E where E: Event {
-        fatalError("Not implemented")
+        let (module, info) = try _decodeEventHeader(from: decoder)
+        guard event.MODULE == module, event.EVENT == info.name else {
+            throw TypeRegistryError.eventFoundWrongEvent(
+                module: module, event: info.name, exmodule: event.MODULE, exevent: event.EVENT
+            )
+        }
+        return try _eventDecodingError(module: module, event: info.name) {
+            try event.init(decodingDataFrom: decoder, registry: self)
+        }
     }
     
     public func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws {
@@ -110,19 +127,83 @@ extension TypeRegistry: TypeRegistryProtocol {
     }
     
     public func encode(call: AnyCall, in encoder: ScaleEncoder) throws {
-        fatalError("Not implemented")
+        if let call = call as? DynamicCall {
+            try _encodeCallHeader(call: call, in: encoder)
+            try _encodeDynamicCallParams(call: call, in: encoder)
+        } else if let call = call as? StaticCall {
+            try _encodeCallHeader(call: call, in: encoder)
+            try _callEncodingError(call) { try call.encode(paramsIn: encoder, registry: self) }
+        } else {
+            throw TypeRegistryError.callEncodingUnknownCallType(call: call)
+        }
     }
     
-    public func decodeCall(from decoder: ScaleDecoder) throws -> AnyCall {
-        fatalError("Not implemented")
+    public func decode(callFrom decoder: ScaleDecoder) throws -> AnyCall {
+        let (module, info) = try _decodeCallHeader(from: decoder)
+        if let call = _calls["\(module).\(info.name)"] {
+            return try _callDecodingError(module: module, funct: info.name) {
+                try call.init(decodingParamsFrom: decoder, registry: self)
+            }
+        } else {
+            let args = try info.argumentsList.map { try self._decode(type: $0.1, from: decoder) }
+            return DCall(module: module, function: info.name, params: args)
+        }
     }
     
     public func decode<C>(call: C.Type, from decoder: ScaleDecoder) throws -> C where C: Call {
-        fatalError("Not implemented")
+        let (module, info) = try _decodeEventHeader(from: decoder)
+        guard call.MODULE == module, call.FUNCTION == info.name else {
+            throw TypeRegistryError.callFoundWrongCall(
+                module: module, function: info.name,
+                exmodule: call.MODULE, exfunction: call.FUNCTION
+            )
+        }
+        return try _callDecodingError(module: module, funct: info.name) {
+            try call.init(decodingParamsFrom: decoder, registry: self)
+        }
     }
 }
 
 extension TypeRegistry {
+    var meta: Metadata { metadata }
+    
+    func _eventDecodingError<T>(module: String, event: String, _ f: @escaping () throws -> T) throws -> T {
+        do {
+            return try f()
+        } catch let e as TypeRegistryError {
+            throw e
+        } catch let e as SDecodingError {
+            throw TypeRegistryError.eventDecodingError(module: module, event: event, error: e)
+        } catch {
+            throw TypeRegistryError.unknown(error: error)
+        }
+    }
+    
+    func _callDecodingError<T>(module: String, funct: String, _ f: @escaping () throws -> T) throws -> T {
+        do {
+            return try f()
+        } catch let e as TypeRegistryError {
+            throw e
+        } catch let e as SDecodingError {
+            throw TypeRegistryError.callDecodingError(module: module, function: funct, error: e)
+        } catch {
+            throw TypeRegistryError.unknown(error: error)
+        }
+    }
+    
+    @discardableResult
+    func _callEncodingError<T>(_ call: AnyCall, _ f: @escaping () throws -> T) throws -> T {
+        do {
+            return try f()
+        } catch let e as TypeRegistryError {
+            throw e
+        } catch let e as SEncodingError {
+            throw TypeRegistryError.callEncodingError(call: call, error: e)
+        } catch {
+            throw TypeRegistryError.unknown(error: error)
+        }
+    }
+    
     @discardableResult
     func _metaError<T>(_ f: @escaping () throws -> T) throws -> T {
         do {

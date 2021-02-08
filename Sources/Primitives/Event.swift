@@ -11,26 +11,34 @@ import ScaleCodec
 public protocol AnyEvent {
     var module: String { get }
     var event: String { get }
+}
+
+public protocol DynamicEvent: AnyEvent {
     var data: DValue { get }
 }
 
-public protocol Event: AnyEvent {
-    associatedtype Module: ModuleProtocol
-    
+public protocol StaticEvent: AnyEvent {
     static var MODULE: String { get }
     static var EVENT: String { get }
     
     init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws
 }
 
-extension Event {
-    public static var MODULE: String { return Module.NAME }
+extension StaticEvent {
     public var module: String { return Self.MODULE }
     public var event: String { return Self.EVENT }
 }
 
-// Generic event type
-public struct DEvent: AnyEvent {
+public protocol Event: StaticEvent {
+    associatedtype Module: ModuleProtocol
+}
+
+extension Event {
+    public static var MODULE: String { return Module.NAME }
+}
+
+// Dynamic event type
+public struct DEvent: DynamicEvent {
     public let module: String
     public let event: String
     public let data: DValue

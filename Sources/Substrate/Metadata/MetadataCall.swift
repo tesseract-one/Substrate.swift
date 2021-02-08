@@ -9,6 +9,7 @@ import Foundation
 import SubstratePrimitives
 
 public class MetadataCallInfo {
+    public let index: UInt8
     public let name: String
     public let arguments: [String]
     public let types: Dictionary<String, DType>
@@ -18,7 +19,8 @@ public class MetadataCallInfo {
         arguments.map { ($0, self.types[$0]!) }
     }
     
-    public init(runtime: RuntimeCallMetadata) throws {
+    public init(runtime: RuntimeCallMetadata, index: UInt8) throws {
+        self.index = index
         name = runtime.name
         documentation = runtime.documentation.joined(separator: "\n")
         arguments = runtime.arguments.map { $0.name }

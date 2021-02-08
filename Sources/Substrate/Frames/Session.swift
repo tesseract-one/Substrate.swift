@@ -44,7 +44,10 @@ extension SessionSetKeysCall: Call {
         proof = try decoder.decode()
     }
     
-    public var params: [ScaleDynamicCodable] { [keys, proof] }
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try keys.encode(in: encoder, registry: registry)
+        try proof.encode(in: encoder, registry: registry)
+    }
 }
 
 public struct SessionValidatorsStorageKey<S: Session> {}

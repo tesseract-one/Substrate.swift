@@ -24,6 +24,23 @@ public class Metadata {
     }
 }
 
+// Modules
+extension Metadata {
+    public func module(index: UInt8) throws -> MetadataModuleInfo {
+        guard let module = modulesByIndex[index] else {
+            throw MetadataError.moduleNotFound(index: index)
+        }
+        return module
+    }
+    
+    public func module(name: String) throws -> MetadataModuleInfo {
+        guard let module = modulesByName[name] else {
+            throw MetadataError.moduleNotFound(name: name)
+        }
+        return module
+    }
+}
+
 // StorageKey
 extension Metadata {
     private func _getStorageInfo(for key: AnyStorageKey) throws -> MetadataStorageItemInfo {
@@ -59,7 +76,7 @@ extension Metadata {
 
 // Constants
 extension Metadata {
-    private func _getConstantInfo(for constant: AnyConstant) throws -> MetadataConstantInfo {
+    private func _getConstantInfo<C: AnyConstant>(for constant: C) throws -> MetadataConstantInfo {
         guard let module = modulesByName[constant.module] else {
             throw MetadataError.moduleNotFound(name: constant.module)
         }
@@ -69,15 +86,15 @@ extension Metadata {
         return info
     }
     
-    public func value(of constant: AnyConstant, registry: TypeRegistryProtocol) throws -> DValue {
+    public func value<C: DynamicConstant>(of constant: C, registry: TypeRegistryProtocol) throws -> DValue {
         return try _getConstantInfo(for: constant).get(registry: registry)
     }
     
-    public func value<C: Constant>(parsed constant: C, registry: TypeRegistryProtocol) throws -> C.Value {
+    public func value<C: Constant>(of constant: C, registry: TypeRegistryProtocol) throws -> C.Value {
         return try _getConstantInfo(for: constant).parsed(C.Value.self, registry: registry)
     }
     
-    public func valueType(of constant: AnyConstant) throws -> DType {
+    public func valueType<C: AnyConstant>(of constant: C) throws -> DType {
         return try _getConstantInfo(for: constant).type
     }
 }

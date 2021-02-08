@@ -15,9 +15,16 @@ public enum TypeRegistryError: Error {
     case unknownType(ScaleDynamicDecodable.Type)
     case typeRegistrationError(type: ScaleDynamicDecodable, as: DType, message: String)
     // Events
-    case eventNotFound(module: String, event: String)
+    case eventFoundWrongEvent(module: String, event: String, exmodule: String, exevent: String)
     case eventDecodingError(module: String, event: String, error: SDecodingError)
     case eventRegistrationError(event: AnyEvent, message: String)
+    // Calls
+    case callFoundWrongCall(module: String, function: String, exmodule: String, exfunction: String)
+    case callDecodingError(module: String, function: String, error: SDecodingError)
+    case callRegistrationError(event: AnyEvent, message: String)
+    case callEncodingError(call: AnyCall, error: SEncodingError)
+    case callEncodingWrongParametersCount(call: DynamicCall, count: Int, expected: Int)
+    case callEncodingUnknownCallType(call: AnyCall)
     // Meta
     case metadata(error: MetadataError)
     // Value Encoding
@@ -40,25 +47,25 @@ public protocol TypeRegistryProtocol: class {
     func defaultValue<K: StorageKey>(parsed key: K) throws -> K.Value
     
     // Constants
-    func valueType(of constant: AnyConstant) throws -> DType
-    func value(of constant: AnyConstant) throws -> DValue
-    func value<C: Constant>(parsed constant: C) throws -> C.Value
+    func valueType<C: AnyConstant>(of constant: C) throws -> DType
+    func value<C: DynamicConstant>(of constant: C) throws -> DValue
+    func value<C: Constant>(of constant: C) throws -> C.Value
     
     // Events
-    func decodeEvent(from decoder: ScaleDecoder) throws -> AnyEvent
+    func decode(eventFrom decoder: ScaleDecoder) throws -> AnyEvent
     func decode<E: Event>(event: E.Type, from decoder: ScaleDecoder) throws -> E
     func register<E: Event>(event: E.Type) throws
     
     // Values
-    func type<T: ScaleDynamicDecodable>(of t: T.Type) throws -> DType
+    func type<T: ScaleDynamicCodable>(of t: T.Type) throws -> DType
     func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws
     func decode<V: ScaleDynamicDecodable>(static: V.Type, as type: DType, from decoder: ScaleDecoder) throws -> V
     func decode(dynamic: DType, from decoder: ScaleDecoder) throws -> DValue
-    func register<T: ScaleDynamicDecodable>(type: T.Type, as dynamic: DType) throws
+    func register<T: ScaleDynamicCodable>(type: T.Type, as dynamic: DType) throws
     
     // Calls
     func encode(call: AnyCall, in encoder: ScaleEncoder) throws
-    func decodeCall(from decoder: ScaleDecoder) throws -> AnyCall
+    func decode(callFrom decoder: ScaleDecoder) throws -> AnyCall
     func decode<C: Call>(call: C.Type, from decoder: ScaleDecoder) throws -> C
     func register<C: Call>(call: C.Type) throws
 }

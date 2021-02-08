@@ -20,8 +20,8 @@ public protocol SubstrateConstantApi {
 extension SubstrateConstantApi {
     public static var id: String { String(describing: self) }
     
-    public func value<C: Constant>(for const: C) throws -> C.Value {
-        try substrate.registry.value(parsed: const)
+    public func value<C: Constant>(for constant: C) throws -> C.Value {
+        try substrate.registry.value(of: constant)
     }
 }
 
@@ -38,11 +38,11 @@ public final class SubstrateConstantApiRegistry<S: SubstrateProtocol> {
         return api
     }
     
-    public func value<C: Constant>(for const: C) throws -> C.Value {
-        try substrate.registry.value(parsed: const)
+    public func value<C: Constant>(for constant: C) throws -> C.Value {
+        try substrate.registry.value(of: constant)
     }
     
-    public func value(dynamic const: AnyConstant) throws -> DValue {
-        try substrate.registry.value(of: const)
+    public func value<C: DynamicConstant>(for constant: C) throws -> DValue {
+        try substrate.registry.value(of: constant)
     }
 }

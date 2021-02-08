@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ScaleCodec
 
 extension NSRegularExpression {
     public func replacingMatches(
@@ -67,5 +68,16 @@ extension String {
             return nil
         }
         return self[self.index(startIndex, offsetBy: index)]
+    }
+}
+
+extension NSArray: ScaleDynamicEncodable {
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        throw SEncodingError.invalidValue(
+            self,
+            SEncodingError.Context(
+                path: encoder.path, description: "NSArray should not be encoded directly"
+            )
+        )
     }
 }

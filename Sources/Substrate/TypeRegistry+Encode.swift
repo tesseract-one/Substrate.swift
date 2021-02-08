@@ -9,6 +9,20 @@ import Foundation
 import ScaleCodec
 import BigInt
 
+private extension DValue {
+    func encodable() -> ScaleDynamicEncodable {
+        switch self {
+        case .null: return DNull()
+        case .native(type: _, value: let v): return v
+        case .collection(values: let values):
+            return (values.map { $0.encodable() }) as NSArray
+        case .map(values: let values):
+            return (values.map { (key: $0.key.encodable(), value: $0.value.encodable()) }) as NSArray
+        case .result(res: _): return DNull() // Encoding isn't supported anyway.
+        }
+    }
+}
+
 extension TypeRegistry {
     func _encode(
         value: ScaleDynamicEncodable, type: DType,
@@ -29,6 +43,27 @@ extension TypeRegistry {
             try _encodeMap(kt: kt, vt: vt, val: value, encoder: encoder)
         case .result: throw TypeRegistryError.encodingNotSupported(for: type)
         case .doNotConstruct: throw TypeRegistryError.encodingNotSupported(for: type)
+        }
+    }
+    
+    func _encodeCallHeader(call: AnyCall, in encoder: ScaleEncoder) throws {
+        let module = try _metaError { try self.meta.module(name: call.module) }
+        let info = try _metaError { try module.call(name: call.function) }
+        try _callEncodingError(call) { try encoder.encode(module.index) }
+        try _callEncodingError(call) { try encoder.encode(info.index) }
+    }
+    
+    func _encodeDynamicCallParams(call: DynamicCall, in encoder: ScaleEncoder) throws {
+        let module = try _metaError { try self.meta.module(name: call.module) }
+        let info = try _metaError { try module.call(name: call.function) }
+        let types = info.argumentsList.map { $0.1 }
+        guard types.count == call.params.count else {
+            throw TypeRegistryError.callEncodingWrongParametersCount(
+                call: call, count: call.params.count, expected: types.count
+            )
+        }
+        for (t, p) in zip(types, call.params) {
+            try _encode(value: p.encodable(), type: t, in: encoder)
         }
     }
     
@@ -56,17 +91,31 @@ extension TypeRegistry {
     }
 
     private func _encodeMap(kt: DType, vt: DType, val: ScaleDynamicEncodable, encoder: ScaleEncoder) throws {
-        guard let map = val as? NSDictionary else {
+        var tuples: Array<(key: ScaleDynamicEncodable, value: ScaleDynamicEncodable)>
+        if let array = val as? NSArray {
+            tuples = try array.map {
+                guard let tuple = $0 as? (key: ScaleDynamicEncodable, value: ScaleDynamicEncodable) else {
+                    throw TypeRegistryError.encodingExpectedMap(found: val)
+                }
+                return tuple
+            }
+        } else if let dict = val as? NSDictionary {
+            tuples = try Array(dict).map {
+                guard let tuple = $0 as? (key: ScaleDynamicEncodable, value: ScaleDynamicEncodable) else {
+                    throw TypeRegistryError.encodingExpectedMap(found: val)
+                }
+                return tuple
+            }
+        } else {
             throw TypeRegistryError.encodingExpectedMap(found: val)
         }
-        let tuples = Array(map)
         let dictionary = Dictionary(
-            uniqueKeysWithValues: tuples.enumerated().map { ($0.0, $0.1.value as! ScaleDynamicEncodable) }
+            uniqueKeysWithValues: tuples.enumerated().map { ($0.0, $0.1.value) }
         )
         try dictionary.encode(
             in: encoder,
             lwriter: { idx, encoder in
-                let key = tuples[idx].key as! ScaleDynamicEncodable
+                let key = tuples[idx].key
                 try self._encode(value: key, type: kt, in: encoder)
             },
             rwriter: { val, encoder in try self._encode(value: val, type: vt, in: encoder)}

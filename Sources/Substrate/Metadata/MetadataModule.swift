@@ -26,15 +26,21 @@ public class MetadataModuleInfo {
         name = runtime.name
         index = runtime.index
         
-        let eTuples = runtime.errors.enumerated().map { ($0, $1.name, MetadataDynamicError(runtime: $1)) }
+        let eTuples = runtime.errors.enumerated().map {
+            ($0, $1.name, MetadataDynamicError(runtime: $1, index: UInt8($0)))
+        }
         errorsByName = Dictionary(uniqueKeysWithValues: eTuples.map { ($1, $2) })
         errorsByIndex = Dictionary(uniqueKeysWithValues: eTuples.map { (UInt8($0), $2) })
         
-        let cTuples = try (runtime.calls ?? []).enumerated().map { ($0, $1.name, try MetadataCallInfo(runtime: $1)) }
+        let cTuples = try (runtime.calls ?? []).enumerated().map {
+            ($0, $1.name, try MetadataCallInfo(runtime: $1, index: UInt8($0)))
+        }
         callsByName = Dictionary(uniqueKeysWithValues: cTuples.map { ($1, $2) })
         callsByIndex = Dictionary(uniqueKeysWithValues: cTuples.map { (UInt8($0), $2) })
         
-        let evTuples = try (runtime.events ?? []).enumerated().map { ($0, $1.name, try MetadataEventInfo(runtime: $1)) }
+        let evTuples = try (runtime.events ?? []).enumerated().map {
+            ($0, $1.name, try MetadataEventInfo(runtime: $1, index: UInt8($0)))
+        }
         eventsByName = Dictionary(uniqueKeysWithValues: evTuples.map { ($1, $2) })
         eventsByIndex = Dictionary(uniqueKeysWithValues: evTuples.map { (UInt8($0), $2) })
         
@@ -49,5 +55,28 @@ public class MetadataModuleInfo {
         } else {
             storage = [:]
         }
+    }
+}
+
+extension MetadataModuleInfo {
+    public func event(index: UInt8) throws -> MetadataEventInfo {
+        guard let event = eventsByIndex[index] else {
+            throw MetadataError.eventNotFound(module: name, index: index)
+        }
+        return event
+    }
+    
+    public func call(index: UInt8) throws -> MetadataCallInfo {
+        guard let call = callsByIndex[index] else {
+            throw MetadataError.callNotFound(module: name, index: index)
+        }
+        return call
+    }
+    
+    public func call(name: String) throws -> MetadataCallInfo {
+        guard let call = callsByName[name] else {
+            throw MetadataError.callNotFound(module: name, function: name)
+        }
+        return call
     }
 }

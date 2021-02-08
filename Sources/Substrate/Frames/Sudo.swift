@@ -38,11 +38,11 @@ extension SudoCall: Call {
     public static var FUNCTION: String { "Sudo" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
-        call = try registry.decodeCall(from: decoder)
+        call = try registry.decode(callFrom: decoder)
     }
     
-    public var params: [ScaleDynamicCodable] {
-        [DCall(module: call.module, function: call.function, params: call.params)]
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try registry.encode(call: call, in: encoder)
     }
 }
 
@@ -63,11 +63,12 @@ extension SudoUncheckedWeightCall: Call {
     public static var FUNCTION: String { "SudoUncheckedWeight" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
-        call = try registry.decodeCall(from: decoder)
+        call = try registry.decode(callFrom: decoder)
         weight = try decoder.decode()
     }
     
-    public var params: [ScaleDynamicCodable] {
-        [DCall(module: call.module, function: call.function, params: call.params), weight]
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try registry.encode(call: call, in: encoder)
+        try weight.encode(in: encoder, registry: registry)
     }
 }

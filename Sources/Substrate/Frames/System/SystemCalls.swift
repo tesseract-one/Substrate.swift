@@ -22,7 +22,9 @@ extension SystemSetCodeCall: Call {
         code = try decoder.decode()
     }
     
-    public var params: [ScaleDynamicCodable] { [code] }
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try code.encode(in: encoder, registry: registry)
+    }
 }
 
 public struct SystemSetCodeWithoutChecksCall<S: System> {
@@ -39,5 +41,7 @@ extension SystemSetCodeWithoutChecksCall: Call {
         code = try decoder.decode()
     }
     
-    public var params: [ScaleDynamicCodable] { [code] }
+    public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try code.encode(in: encoder, registry: registry)
+    }
 }
