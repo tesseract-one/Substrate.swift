@@ -139,14 +139,25 @@ extension TypeRegistry {
     }
 
     private func _encodeTuple(types: [DType], val: ScaleDynamicEncodable, encoder: ScaleEncoder) throws {
-        guard let array = val as? NSArray else {
+        var array: Array<ScaleDynamicEncodable>
+        if let arrEnc = val as? ScaleDynamicEncodableArrayMaybeConvertible { // STuple or NSArray
+            guard let arr = arrEnc.encodableArray else {
+                throw TypeRegistryError.encodingExpectedCollection(found: val)
+            }
+            array = arr
+        } else if let nsarr = val as? NSArray { // array
+            guard let arr = nsarr.encodableArray else {
+                throw TypeRegistryError.encodingExpectedCollection(found: val)
+            }
+            array = arr
+        } else {
             throw TypeRegistryError.encodingExpectedCollection(found: val)
         }
         guard array.count == types.count else {
             throw TypeRegistryError.encodingWrongElementCount(in: val, expected: types.count)
         }
         for (t, v) in zip(types, array) {
-            try _encode(value: v as! ScaleDynamicEncodable, type: t, in: encoder)
+            try _encode(value: v, type: t, in: encoder)
         }
     }
 }

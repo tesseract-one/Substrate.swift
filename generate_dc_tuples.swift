@@ -7,12 +7,12 @@ let TAB_SIZE: Int = 4
 func generate_struct_name(for size: Int) -> String {
     return "STuple\(size)"
 }
-//
-//func generate_list(for size: Int, prefix: String, inc: Int) -> String {
-//    return stride(from: 0, to: size, by: 1)
-//        .map { "\(prefix)\($0 + inc)" }
-//        .joined(separator: ", ")
-//}
+
+func generate_list(for size: Int, prefix: String, inc: Int) -> String {
+    return stride(from: 0, to: size, by: 1)
+        .map { "\(prefix)\($0 + inc)" }
+        .joined(separator: ", ")
+}
 
 func generate_where_type_list(for size: Int, proto: String, tab: Int) -> String {
     let prefix = String(repeating: " ", count: tab * TAB_SIZE)
@@ -56,13 +56,23 @@ func generate_storage_vars(for size: Int, tab: Int) -> String {
 
 func generate_tuple(for size: Int) -> String {
     let name = generate_struct_name(for: size)
+    let encWhereList = generate_where_type_list(for: size, proto: "ScaleDynamicEncodable", tab: 2)
     return """
     extension \(name): ScaleDynamicEncodable
         where
-            \(generate_where_type_list(for: size, proto: "ScaleDynamicEncodable", tab: 2))
+            \(encWhereList)
     {
         public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
             \(generate_encode_calls(for: size, encVar: "encoder", regVar: "registry", tab: 2))
+        }
+    }
+    
+    extension \(name): ScaleDynamicEncodableArrayMaybeConvertible
+        where
+            \(encWhereList)
+    {
+        public var encodableArray: Array<ScaleDynamicEncodable>? {
+            [\(generate_list(for: size, prefix: "_", inc: 0))]
         }
     }
 

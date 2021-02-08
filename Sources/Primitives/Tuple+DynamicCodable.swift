@@ -1,5 +1,5 @@
 //
-// Generated '2021-02-06 23:24:58 +0000' with 'generate_dc_tuples.swift'
+// Generated '2021-02-08 11:14:44 +0000' with 'generate_dc_tuples.swift'
 //
 import Foundation
 import ScaleCodec
@@ -10,6 +10,15 @@ extension STuple2: ScaleDynamicEncodable
 {
     public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         try _0.encode(in: encoder, registry: registry); try _1.encode(in: encoder, registry: registry)
+    }
+}
+
+extension STuple2: ScaleDynamicEncodableArrayMaybeConvertible
+    where
+        T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable
+{
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        [_0, _1]
     }
 }
 
@@ -34,6 +43,15 @@ extension STuple3: ScaleDynamicEncodable
     }
 }
 
+extension STuple3: ScaleDynamicEncodableArrayMaybeConvertible
+    where
+        T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable
+{
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        [_0, _1, _2]
+    }
+}
+
 extension STuple3: ScaleDynamicDecodable
     where
         T1: ScaleDynamicDecodable, T2: ScaleDynamicDecodable, T3: ScaleDynamicDecodable
@@ -52,6 +70,15 @@ extension STuple4: ScaleDynamicEncodable
     public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         try _0.encode(in: encoder, registry: registry); try _1.encode(in: encoder, registry: registry)
         try _2.encode(in: encoder, registry: registry); try _3.encode(in: encoder, registry: registry)
+    }
+}
+
+extension STuple4: ScaleDynamicEncodableArrayMaybeConvertible
+    where
+        T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable
+{
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        [_0, _1, _2, _3]
     }
 }
 
@@ -79,6 +106,16 @@ extension STuple5: ScaleDynamicEncodable
     }
 }
 
+extension STuple5: ScaleDynamicEncodableArrayMaybeConvertible
+    where
+        T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
+        T5: ScaleDynamicEncodable
+{
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        [_0, _1, _2, _3, _4]
+    }
+}
+
 extension STuple5: ScaleDynamicDecodable
     where
         T1: ScaleDynamicDecodable, T2: ScaleDynamicDecodable, T3: ScaleDynamicDecodable, T4: ScaleDynamicDecodable,
@@ -101,6 +138,16 @@ extension STuple6: ScaleDynamicEncodable
         try _0.encode(in: encoder, registry: registry); try _1.encode(in: encoder, registry: registry)
         try _2.encode(in: encoder, registry: registry); try _3.encode(in: encoder, registry: registry)
         try _4.encode(in: encoder, registry: registry); try _5.encode(in: encoder, registry: registry)
+    }
+}
+
+extension STuple6: ScaleDynamicEncodableArrayMaybeConvertible
+    where
+        T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
+        T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable
+{
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        [_0, _1, _2, _3, _4, _5]
     }
 }
 
@@ -130,6 +177,16 @@ extension STuple7: ScaleDynamicEncodable
     }
 }
 
+extension STuple7: ScaleDynamicEncodableArrayMaybeConvertible
+    where
+        T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
+        T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable, T7: ScaleDynamicEncodable
+{
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        [_0, _1, _2, _3, _4, _5, _6]
+    }
+}
+
 extension STuple7: ScaleDynamicDecodable
     where
         T1: ScaleDynamicDecodable, T2: ScaleDynamicDecodable, T3: ScaleDynamicDecodable, T4: ScaleDynamicDecodable,
@@ -154,6 +211,16 @@ extension STuple8: ScaleDynamicEncodable
         try _2.encode(in: encoder, registry: registry); try _3.encode(in: encoder, registry: registry)
         try _4.encode(in: encoder, registry: registry); try _5.encode(in: encoder, registry: registry)
         try _6.encode(in: encoder, registry: registry); try _7.encode(in: encoder, registry: registry)
+    }
+}
+
+extension STuple8: ScaleDynamicEncodableArrayMaybeConvertible
+    where
+        T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
+        T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable, T7: ScaleDynamicEncodable, T8: ScaleDynamicEncodable
+{
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        [_0, _1, _2, _3, _4, _5, _6, _7]
     }
 }
 
@@ -186,6 +253,17 @@ extension STuple9: ScaleDynamicEncodable
     }
 }
 
+extension STuple9: ScaleDynamicEncodableArrayMaybeConvertible
+    where
+        T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
+        T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable, T7: ScaleDynamicEncodable, T8: ScaleDynamicEncodable,
+        T9: ScaleDynamicEncodable
+{
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        [_0, _1, _2, _3, _4, _5, _6, _7, _8]
+    }
+}
+
 extension STuple9: ScaleDynamicDecodable
     where
         T1: ScaleDynamicDecodable, T2: ScaleDynamicDecodable, T3: ScaleDynamicDecodable, T4: ScaleDynamicDecodable,
@@ -213,6 +291,17 @@ extension STuple10: ScaleDynamicEncodable
         try _4.encode(in: encoder, registry: registry); try _5.encode(in: encoder, registry: registry)
         try _6.encode(in: encoder, registry: registry); try _7.encode(in: encoder, registry: registry)
         try _8.encode(in: encoder, registry: registry); try _9.encode(in: encoder, registry: registry)
+    }
+}
+
+extension STuple10: ScaleDynamicEncodableArrayMaybeConvertible
+    where
+        T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
+        T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable, T7: ScaleDynamicEncodable, T8: ScaleDynamicEncodable,
+        T9: ScaleDynamicEncodable, T10: ScaleDynamicEncodable
+{
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9]
     }
 }
 

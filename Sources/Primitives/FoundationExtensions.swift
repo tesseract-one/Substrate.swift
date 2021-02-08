@@ -81,3 +81,16 @@ extension NSArray: ScaleDynamicEncodable {
         )
     }
 }
+
+extension NSArray: ScaleDynamicEncodableArrayMaybeConvertible {
+    public var encodableArray: Array<ScaleDynamicEncodable>? {
+        var res = Array<ScaleDynamicEncodable>()
+        for el in self {
+            guard let el = el as? ScaleDynamicEncodable else {
+                return nil
+            }
+            res.append(el)
+        }
+        return res
+    }
+}
