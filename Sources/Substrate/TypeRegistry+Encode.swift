@@ -123,10 +123,21 @@ extension TypeRegistry {
     }
 
     private func _encodeCollection(type: DType, val: ScaleDynamicEncodable, encoder: ScaleEncoder) throws {
-        guard let array = val as? NSArray else {
+        var array: Array<ScaleDynamicEncodable>
+        if let arrEnc = val as? ScaleDynamicEncodableArrayMaybeConvertible { // STuple or NSArray
+            guard let arr = arrEnc.encodableArray else {
+                throw TypeRegistryError.encodingExpectedCollection(found: val)
+            }
+            array = arr
+        } else if let nsarr = val as? NSArray { // array
+            guard let arr = nsarr.encodableArray else {
+                throw TypeRegistryError.encodingExpectedCollection(found: val)
+            }
+            array = arr
+        } else {
             throw TypeRegistryError.encodingExpectedCollection(found: val)
         }
-        try array.map { $0 as! ScaleDynamicEncodable }.encode(in: encoder) { val, encoder in
+        try array.encode(in: encoder) { val, encoder in
             try self._encode(value: val, type: type, in: encoder)
         }
     }
