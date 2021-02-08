@@ -70,4 +70,10 @@ public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
         consts.substrate = self
         tx.substrate = self
     }
+    
+    deinit {
+        if let client = client as? WebSocketRpcClient {
+            client.disconnect()
+        }
+    }
 }

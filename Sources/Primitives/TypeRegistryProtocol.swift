@@ -35,8 +35,11 @@ public enum TypeRegistryError: Error {
     case encodingExpectedMap(found: ScaleDynamicEncodable)
     case encodingWrongElementCount(in: ScaleDynamicEncodable, expected: Int)
     // Storage
-    case storageItemBadPathTypes(module: String, field: String, path: [ScaleDynamicEncodable], expected: [DType])
+    case storageItemBadPathTypesCount(module: String, field: String, count: Int, expected: Int)
     case storageItemBadItemType(module: String, field: String, type: String, expected: String)
+    case storageItemEmptyItem(module: String, field: String)
+    case storageItemDecodingError(module: String, field: String, error: SDecodingError)
+    case storageItemDecodingBadPrefix(module: String, field: String, prefix: Data, expected: Data)
     // Unknown
     case unknown(error: Error)
 }
@@ -46,10 +49,12 @@ public protocol TypeRegistryProtocol: class {
     func hash<K: DynamicStorageKey>(of key: K) throws -> Data
     func hash<K: StaticStorageKey>(of key: K) throws -> Data
     func hash<K: DynamicStorageKey>(iteratorOf key: K) throws -> Data
-    func hash<K: StaticStorageKey>(iteratorOf key: K) throws -> Data
+    func hash<K: IterableStaticStorageKey>(iteratorOf key: K) throws -> Data
     func type<K: AnyStorageKey>(valueOf key: K) throws -> DType
     func value<K: DynamicStorageKey>(defaultOf key: K) throws -> DValue
     func value<K: StaticStorageKey>(defaultOf key: K) throws -> K.Value
+    func decode<K: DynamicStorageKey>(key: K.Type, module: String, field: String, from data: Data) throws -> K
+    func decode<K: StaticStorageKey>(key: K.Type, from data: Data) throws -> K
     
     // Constants
     func type<C: AnyConstant>(of constant: C) throws -> DType
@@ -63,7 +68,9 @@ public protocol TypeRegistryProtocol: class {
     
     // Values
     func type<T: ScaleDynamicCodable>(of t: T.Type) throws -> DType
+    func value<T: ScaleDynamicCodable>(dynamic val: T) throws -> DValue
     func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws
+    func encode(dynamic: DValue, type: DType, in encoder: ScaleEncoder) throws
     func decode<V: ScaleDynamicDecodable>(static: V.Type, as type: DType, from decoder: ScaleDecoder) throws -> V
     func decode(dynamic: DType, from decoder: ScaleDecoder) throws -> DValue
     func register<T: ScaleDynamicCodable>(type: T.Type, as dynamic: DType) throws

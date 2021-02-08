@@ -9,6 +9,7 @@ import Foundation
 import SubstrateRpc
 import ScaleCodec
 
+
 public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public weak var substrate: S!
     
@@ -31,58 +32,118 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         Self.metadata(client: substrate.client, timeout: timeout ?? substrate.callTimeout, cb)
     }
     
-    public func getStorage(keyHash: Data, hash: S.R.THash? = nil, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
-        let hashData = try! hash.map { try HexData($0.encode()) } // Hash doesn't throw errors
+    public func getStorage(
+        keyHash: Data, at: S.R.THash? = nil, timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<Data>
+    ) {
+        let atData = (try! at?.encode()).map(HexData.init) // Hash doesn't throw errors
         substrate.client.call(
             method: "state_getStorage",
-            params: [HexData(keyHash), hashData],
+            params: RpcCallParams(HexData(keyHash), atData),
             timeout: timeout ?? substrate.callTimeout
         ) { (res: RpcClientResult<HexData>) in
             cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.data})
         }
     }
     
-    public func getStorage<K: StaticStorageKey>(
-        for key: K, hash: S.R.THash? = nil, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<K.Value>
+    public func getKeysPaged(
+        iteratorHash: Data, count: UInt32? = nil, startKeyHash: Data? = nil,
+        at: S.R.THash? = nil, timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<[Data]>
     ) {
-        do {
-            let registry = substrate.registry
-            let keyHash = try registry.hash(of: key)
-            let vtype = try registry.type(valueOf: key)
-            getStorage(keyHash: keyHash, hash: hash, timeout: timeout) { res in
-                let response = res.flatMap { data in
-                    Result {
-                        try registry.decode(
-                            static: K.Value.self, as: vtype,
-                            from: SCALE.default.decoder(data: data)
-                        )
-                    }.mapError(SubstrateRpcApiError.from)
-                }
-                cb(response)
+        let start = startKeyHash.map(HexData.init)
+        let fcount = count ?? UInt32(substrate.pageSize)
+        let atData = (try! at?.encode()).map(HexData.init) // Hash doesn't throw errors
+        substrate.client.call(
+            method: "state_getKeysPaged",
+            params: RpcCallParams(HexData(iteratorHash), fcount, start, atData),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<[HexData]>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.map{$0.data}})
+        }
+    }
+    
+    public func getKeysPaged<K: DynamicStorageKey>(
+        for key: K, count: UInt32? = nil, startKey: K? = nil,
+        at: S.R.THash? = nil, timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<[K]>
+    ) {
+        let registry = substrate.registry
+        let vals = _try(cb) {
+            (try startKey.map { try registry.hash(of: $0) }, try registry.hash(iteratorOf: key))
+        }
+        guard let (start, iterator) = vals else { return }
+        getKeysPaged(
+            iteratorHash: iterator, count: count,
+            startKeyHash: start, at: at, timeout: timeout
+        ) { result in
+            let response = result.flatMap { keys in
+                Result {
+                    try keys.map {
+                        try registry.decode(key: K.self, module: key.module, field: key.field, from: $0)
+                    }
+                }.mapError(SubstrateRpcApiError.from)
             }
-        } catch {
-            cb(.failure(.from(error: error)))
+            cb(response)
+        }
+    }
+    
+    public func getKeysPaged<K: IterableStaticStorageKey>(
+        for key: K, count: UInt32? = nil, startKey: K? = nil,
+        at: S.R.THash? = nil, timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<[K]>
+    ) {
+        let registry = substrate.registry
+        let vals = _try(cb) {
+            (try startKey.map { try registry.hash(of: $0) }, try registry.hash(iteratorOf: key))
+        }
+        guard let (start, iterator) = vals else { return }
+        getKeysPaged(
+            iteratorHash: iterator, count: count,
+            startKeyHash: start, at: at, timeout: timeout
+        ) { result in
+            let response = result.flatMap { keys in
+                Result {
+                    try keys.map { try registry.decode(key: K.self, from: $0) }
+                }.mapError(SubstrateRpcApiError.from)
+            }
+            cb(response)
+        }
+    }
+    
+    public func getStorage<K: StaticStorageKey>(
+        for key: K, at: S.R.THash? = nil, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<K.Value>
+    ) {
+        let registry = substrate.registry
+        let vals = _try(cb) { try (registry.hash(of: key), registry.type(valueOf: key)) }
+        guard let (keyHash, vtype) = vals else { return }
+        getStorage(keyHash: keyHash, at: at, timeout: timeout) { res in
+            let response = res.flatMap { data in
+                Result {
+                    try registry.decode(
+                        static: K.Value.self, as: vtype,
+                        from: SCALE.default.decoder(data: data)
+                    )
+                }.mapError(SubstrateRpcApiError.from)
+            }
+            cb(response)
         }
     }
     
     public func getStorage<K: DynamicStorageKey>(
-        for key: K, hash: S.R.THash? = nil, timeout: TimeInterval? = nil,
+        for key: K, at: S.R.THash? = nil, timeout: TimeInterval? = nil,
         _ cb: @escaping SRpcApiCallback<DValue>
     ) {
-        do {
-            let registry = substrate.registry
-            let keyHash = try registry.hash(of: key)
-            let vtype = try registry.type(valueOf: key)
-            getStorage(keyHash: keyHash, hash: hash, timeout: timeout) { res in
-                let response = res.flatMap { data in
-                    Result {
-                        try registry.decode(dynamic: vtype, from: SCALE.default.decoder(data: data))
-                    }.mapError(SubstrateRpcApiError.from)
-                }
-                cb(response)
+        let registry = substrate.registry
+        let vals = _try(cb) { try (registry.hash(of: key), registry.type(valueOf: key)) }
+        guard let (keyHash, vtype) = vals else { return }
+        getStorage(keyHash: keyHash, at: at, timeout: timeout) { res in
+            let response = res.flatMap { data in
+                Result {
+                    try registry.decode(dynamic: vtype, from: SCALE.default.decoder(data: data))
+                }.mapError(SubstrateRpcApiError.from)
             }
-        } catch {
-            cb(.failure(.from(error: error)))
+            cb(response)
         }
     }
     
@@ -90,17 +151,18 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         at hash: S.R.THash?, with client: RpcClient, timeout: TimeInterval,
         _ cb: @escaping SRpcApiCallback<RuntimeVersion>
     ) {
+        let data: HexData?
         do {
-            let data = (try hash?.encode()).map(HexData.init)
-            client.call(
-                method: "state_getRuntimeVersion",
-                params: [data],
-                timeout: timeout
-            ) { (res: RpcClientResult<RuntimeVersion>) in
-                cb(res.mapError(SubstrateRpcApiError.rpc))
-            }
+            data = (try hash?.encode()).map(HexData.init)
         } catch {
-            cb(.failure(.from(error: error)))
+            cb(.failure(.from(error: error))); return
+        }
+        client.call(
+            method: "state_getRuntimeVersion",
+            params: RpcCallParams(data),
+            timeout: timeout
+        ) { (res: RpcClientResult<RuntimeVersion>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
     
@@ -110,7 +172,7 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
     ) {
         client.call(
             method: "state_getMetadata",
-            params: Array<Int>(),
+            params: RpcCallParams(),
             timeout: timeout
         ) { (res: RpcClientResult<HexData>) in
             let response: SRpcApiResult<Metadata> = res.mapError(SubstrateRpcApiError.rpc).flatMap { data in

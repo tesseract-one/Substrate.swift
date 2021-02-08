@@ -66,7 +66,7 @@ extension TypeRegistry: TypeRegistryProtocol {
          try _metaError { try self.metadata.hash(iteratorOf: key, registry: self) }
     }
     
-    public func hash<K: StaticStorageKey>(iteratorOf key: K) throws -> Data {
+    public func hash<K: IterableStaticStorageKey>(iteratorOf key: K) throws -> Data {
         try _metaError { try self.metadata.hash(iteratorOf: key, registry: self) }
     }
     
@@ -94,6 +94,49 @@ extension TypeRegistry: TypeRegistryProtocol {
         try _metaError { try self.metadata.type(of: constant) }
     }
     
+    public func decode<K: DynamicStorageKey>(
+        key: K.Type, module: String, field: String, from data: Data
+    ) throws -> K {
+        let decoder = SCALE.default.decoder(data: data)
+        let info = try _decodeStorageItemHeader(module: module, field: field, from: decoder)
+        return try _storageKeyDecodingError(module: module, field: field) {
+            switch info.type {
+            case .plain(_):
+                return try key.init(
+                    module: module, field: field, types: info.pathTypes,
+                    h1: nil, h2: nil, decoder: decoder, registry: self
+                )
+            case .map(hasher: let h1, key: _, value: _, unused: _):
+                return try key.init(
+                    module: module, field: field, types: info.pathTypes,
+                    h1: h1.hasher, h2: nil, decoder: decoder, registry: self
+                )
+            case .doubleMap(hasher: let h1, key1: _, key2: _, value: _, key2_hasher: let h2):
+                return try key.init(
+                    module: module, field: field, types: info.pathTypes,
+                    h1: h1.hasher, h2: h2.hasher, decoder: decoder, registry: self
+                )
+            }
+            
+        }
+    }
+    
+    public func decode<K: StaticStorageKey>(key: K.Type, from data: Data) throws -> K {
+        let decoder = SCALE.default.decoder(data: data)
+        let info = try _decodeStorageItemHeader(module: key.MODULE, field: key.FIELD, from: decoder)
+        return try _storageKeyDecodingError(module: key.MODULE, field: key.FIELD) {
+            switch info.type {
+            case .plain(_):
+                return try key.init(h1: nil, h2: nil, from: decoder, registry: self)
+            case .map(hasher: let hasher, key: _, value: _, unused: _):
+                return try key.init(h1: hasher.hasher, h2: nil, from: decoder, registry: self)
+            case .doubleMap(hasher: let h1, key1: _, key2: _, value: _, key2_hasher: let h2):
+                return try key.init(h1: h1.hasher, h2: h2.hasher, from: decoder, registry: self)
+            }
+        }
+        
+    }
+    
     public func decode(eventFrom decoder: ScaleDecoder) throws -> AnyEvent {
         let (module, info) = try _decodeEventHeader(from: decoder)
         if let event = _events["\(module).\(info.name)"] {
@@ -119,8 +162,16 @@ extension TypeRegistry: TypeRegistryProtocol {
         }
     }
     
+    public func value<T: ScaleDynamicCodable>(dynamic val: T) throws -> DValue {
+        return .native(type: try type(of: T.self), value: val)
+    }
+    
     public func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws {
         try _typeEncodingError(value) { try self._encode(value: value, type: type, in: encoder) }
+    }
+    
+    public func encode(dynamic: DValue, type: DType, in encoder: ScaleEncoder) throws {
+        try _encode(dynamic: dynamic, type: type, in: encoder)
     }
     
     public func decode<V>(static: V.Type, as type: DType, from decoder: ScaleDecoder) throws -> V where V : ScaleDynamicDecodable {
@@ -182,6 +233,18 @@ extension TypeRegistry {
             throw e
         } catch let e as SDecodingError {
             throw TypeRegistryError.eventDecodingError(module: module, event: event, error: e)
+        } catch {
+            throw TypeRegistryError.unknown(error: error)
+        }
+    }
+    
+    func _storageKeyDecodingError<T>(module: String, field: String, _ f: @escaping () throws -> T) throws -> T {
+        do {
+            return try f()
+        } catch let e as TypeRegistryError {
+            throw e
+        } catch let e as SDecodingError {
+            throw TypeRegistryError.storageItemDecodingError(module: module, field: field, error: e)
         } catch {
             throw TypeRegistryError.unknown(error: error)
         }

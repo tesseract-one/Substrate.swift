@@ -14,11 +14,18 @@ import CBlake2b
 #endif
 
 public protocol Hasher {
-    static var byteLength: Int { get }
+    static var hashPartByteLength: Int { get }
     static var isConcat: Bool { get }
     static var hasher: Hasher { get }
     
+    var hashPartByteLength: Int { get }
+    var isConcat: Bool { get }
     func hash(data: Data) -> Data
+}
+
+extension Hasher {
+    public var hashPartByteLength: Int { Self.hashPartByteLength }
+    public var isConcat: Bool { Self.isConcat }
 }
 
 public protocol NormalHasher: Hasher {
@@ -27,7 +34,7 @@ public protocol NormalHasher: Hasher {
 
 extension NormalHasher {
     public static var isConcat: Bool { return false }
-    public static var byteLength: Int { return bitWidth / 8 }
+    public static var hashPartByteLength: Int { return bitWidth / 8 }
 }
 
 public protocol ConcatHasher: Hasher {
@@ -36,7 +43,7 @@ public protocol ConcatHasher: Hasher {
 
 extension ConcatHasher {
     public static var isConcat: Bool { return true }
-    public static var byteLength: Int { return hashPartBitWidth / 8 }
+    public static var hashPartByteLength: Int { return hashPartBitWidth / 8 }
 }
 
 public struct HBlake2b128: NormalHasher {

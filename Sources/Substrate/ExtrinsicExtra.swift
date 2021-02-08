@@ -77,7 +77,7 @@ extension DefaultExtrinsicExtra: SignedExtrinsicExtra {
             CheckEraSignedExtension(era: .immortal, genesisHash: genesisHash),
             CheckNonceSignedExtension(nonce: nonce),
             CheckWeightSignedExtension(),
-            ChargeTransactionPaymentSignedExtension(payment: S.TBalance(uintValue: S.TBalance.compactMax))
+            ChargeTransactionPaymentSignedExtension(payment: .default())
         )
     }
     

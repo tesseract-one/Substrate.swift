@@ -27,6 +27,24 @@ extension TypeRegistry {
         return (module: module.name, call: call)
     }
     
+    func _decodeStorageItemHeader(
+        module: String, field: String, from decoder: ScaleDecoder
+    ) throws -> MetadataStorageItemInfo {
+        let mod = try _metaError { try self.meta.module(name: module) }
+        let info = try _metaError { try mod.storageItem(name: field) }
+        return try _storageKeyDecodingError(module: module, field: field) {
+            let prefixLength = info.prefixHashLength()
+            let parsedPrefix: Data = try decoder.decode(.fixed(UInt(prefixLength)))
+            let prefix = info.prefixHash()
+            guard parsedPrefix == prefix else {
+                throw TypeRegistryError.storageItemDecodingBadPrefix(
+                    module: module, field: field, prefix: parsedPrefix, expected: prefix
+                )
+            }
+            return info
+        }
+    }
+    
     func _decode(
         type: DType, from decoder: ScaleDecoder
     ) throws -> DValue {
@@ -45,7 +63,7 @@ extension TypeRegistry {
             case .tuple(elements: let types):
                 return try _decodeTuple(types: types, decoder: decoder)
             case .fixed(type: let type, count: let count):
-                return try _decodeTuple(types: Array(repeating: type, count: count), decoder: decoder)
+                return try _decodeFixed(type: type, size: count, decoder: decoder)
             case .collection(element: let t):
                 return try _decodeCollection(type: t, decoder: decoder)
             case .map(key: let kt, value: let vt):
@@ -80,6 +98,11 @@ extension TypeRegistry {
         let values = try types.map { type in
             try self._decode(type: type, from: decoder)
         }
+        return .collection(values: values)
+    }
+    
+    private func _decodeFixed(type: DType, size: Int, decoder: ScaleDecoder) throws -> DValue {
+        let values = try (0..<size).map { _ in try self._decode(type: type, from: decoder) }
         return .collection(values: values)
     }
 

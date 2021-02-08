@@ -36,6 +36,10 @@ public class MetadataStorageItemInfo {
         return data
     }
     
+    public func prefixHashLength() -> Int {
+        return 2 * HXX128.hashPartByteLength
+    }
+    
     public func defaultValue(registry: TypeRegistryProtocol) throws -> DValue {
         try registry.decode(dynamic: valueType, from: SCALE.default.decoder(data: defaultValue))
     }
@@ -80,7 +84,7 @@ public class MetadataStorageItemInfo {
         }
     }
     
-    public func hash<K: StaticStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
+    public func hash<K: IterableStaticStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
         let prefix = prefixHash()
         switch type {
         case .plain(_):

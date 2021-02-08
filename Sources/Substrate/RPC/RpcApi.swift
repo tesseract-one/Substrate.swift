@@ -22,7 +22,7 @@ public protocol SubstrateRpcApi {
 extension SubstrateRpcApi {
     public static var id: String { String(describing: self) }
     
-    public func encode<V: ScaleDynamicEncodable, R>(value: V, _ errcb: SRpcApiCallback<R>) -> Data? {
+    func _encode<V: ScaleDynamicEncodable, R>(value: V, _ errcb: @escaping SRpcApiCallback<R>) -> Data? {
         do {
             let encoder = SCALE.default.encoder()
             try value.encode(in: encoder, registry: substrate.registry)
@@ -33,15 +33,24 @@ extension SubstrateRpcApi {
         }
     }
     
-    public func decode<V: ScaleDynamicDecodable, R>(_ t: V.Type, from data: Data, _ errcb: SRpcApiCallback<R>) -> V? {
+    func _try<T, R>(_ errcb: @escaping SRpcApiCallback<R>, f: @escaping () throws -> T) -> T? {
         do {
-            let decoder = SCALE.default.decoder(data: data)
-            return try V(from: decoder, registry: substrate.registry)
+            return try f()
         } catch {
             errcb(.failure(.from(error: error)))
             return nil
         }
     }
+    
+//    public func decode<V: ScaleDynamicDecodable, R>(_ t: V.Type, from data: Data, _ errcb: SRpcApiCallback<R>) -> V? {
+//        do {
+//            let decoder = SCALE.default.decoder(data: data)
+//            return try V(from: decoder, registry: substrate.registry)
+//        } catch {
+//            errcb(.failure(.from(error: error)))
+//            return nil
+//        }
+//    }
 }
 
 public typealias SRpcApiResult<R> = Result<R, SubstrateRpcApiError>

@@ -16,6 +16,10 @@ public struct AccountIndex: Equatable, Hashable {
     }
 }
 
+extension AccountIndex: SDefault {
+    public static func `default`() -> AccountIndex { AccountIndex(0) }
+}
+
 extension AccountIndex: ScaleCodable {
     public init(from decoder: ScaleDecoder) throws {
         let byte: UInt8 = try decoder.decode()

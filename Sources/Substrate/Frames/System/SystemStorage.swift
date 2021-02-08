@@ -10,18 +10,28 @@ import ScaleCodec
 
 public struct SystemAccountStorageKey<S: System> {
     /// Account to retrieve the `AccountInfo<S>` for.
-    public let accountId: S.TAccountId
+    public let accountId: S.TAccountId?
+    /// Hash for decoded key
+    private let _hash: Data?
+    
+    public init(accountId: S.TAccountId?) {
+        self.accountId = accountId
+        self._hash = nil
+    }
 }
 
 extension SystemAccountStorageKey: MapStorageKey {
     public typealias Module = SystemModule<S>
+    public typealias K = S.TAccountId
     public typealias Value = AccountInfo<S>
     
     public static var FIELD: String { "Account" }
     
-    public func encodeKey(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
-        try accountId.encode(in: encoder, registry: registry)
-    }
+    public var path: K? { accountId }
+    public var hash: Data? { _hash }
     
-    public var path: [ScaleDynamicEncodable] { return [accountId] }
+    public init(path: S.TAccountId?, hash: Data) {
+        self.accountId = path
+        self._hash = hash
+    }
 }

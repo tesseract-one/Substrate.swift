@@ -18,10 +18,10 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public func submit<E: ExtrinsicProtocol>(
         extrinsic: E, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THash>
     ) {
-        guard let data = encode(value: extrinsic, cb) else { return }
+        guard let data = _encode(value: extrinsic, cb) else { return }
         substrate.client.call(
             method: "author_submitExtrinsic",
-            params: [HexData(data)],
+            params: RpcCallParams(HexData(data)),
             timeout: timeout ?? substrate.callTimeout
         ) { (res: RpcClientResult<HexData>) in
             let response = res.mapError(SubstrateRpcApiError.rpc).flatMap { data in

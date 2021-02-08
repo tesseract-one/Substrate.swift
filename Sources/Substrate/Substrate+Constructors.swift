@@ -75,7 +75,7 @@ private extension Substrate {
             switch res {
             case .failure(let err): cb(.failure(err))
             case .success(let meta):
-                SubstrateRpcChainApi<S>.genesisHash(client: client, timeout: 60) { res in
+                SubstrateRpcChainApi<S>.getBlockHash(block: .firstBlock, client: client, timeout: 60) { res in
                     cb(res.map {(meta, $0)})
                 }
             }

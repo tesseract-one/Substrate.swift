@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol Session: System {
-    associatedtype TValidatorId: ScaleDynamicCodable
+    associatedtype TValidatorId: ScaleDynamicCodable & SDefault
     associatedtype TKeys: ScaleDynamicCodable
 }
 
@@ -50,7 +50,9 @@ extension SessionSetKeysCall: Call {
     }
 }
 
-public struct SessionValidatorsStorageKey<S: Session> {}
+public struct SessionValidatorsStorageKey<S: Session> {
+    public init() {}
+}
 
 extension SessionValidatorsStorageKey: PlainStorageKey {
     public typealias Value = S.TValidatorId

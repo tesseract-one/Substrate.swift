@@ -26,7 +26,7 @@ public struct SubstrateRpcSystemApi<S: SubstrateProtocol>: SubstrateRpcApi {
     ) {
         client.call(
             method: "system_properties",
-            params: Array<Int>(),
+            params: RpcCallParams(),
             timeout: timeout
         ) { (res: RpcClientResult<SystemProperties>) in
             cb(res.mapError(SubstrateRpcApiError.rpc))

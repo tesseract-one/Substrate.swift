@@ -14,9 +14,15 @@ public struct AccountId: Equatable, Hashable {
     public init(key: Data) {
         precondition(
             key.count == AccountId.fixedBytesCount,
-            "Wrong data length: \(key.count) expected \(AccountId.fixedBytesCount)"
+            "Wrong data length: \(key.count) expected \(Self.fixedBytesCount)"
         )
         pubKey = key
+    }
+}
+
+extension AccountId: SDefault {
+    public static func `default`() -> AccountId {
+        AccountId(key: Data(repeating: 0, count: Self.fixedBytesCount))
     }
 }
 

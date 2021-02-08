@@ -35,6 +35,26 @@ final class SubstrateTests: XCTestCase {
         wait(for: [disconnected], timeout: 30.0)
     }
     
+    func testStorageCall() {
+        let disconnected = expectation(description: "Disconnected")
+        let key = SystemAccountStorageKey<DefaultNodeRuntime>(accountId: .default())
+        let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
+        
+        Substrate<DefaultNodeRuntime, HttpRpcClient>.create(client: client, runtime: DefaultNodeRuntime()) { result in
+            switch result {
+            case .failure(let err):
+                XCTFail("\(err)")
+                disconnected.fulfill()
+            case .success(let substrate):
+                let hash = try! substrate.registry.hash(iteratorOf: key)
+                print(hash.hex)
+                disconnected.fulfill()
+            }
+        }
+        
+        wait(for: [disconnected], timeout: 30.0)
+    }
+    
 //    func testSubstrateCreation() {
 //        let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
 //

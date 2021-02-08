@@ -7,7 +7,9 @@
 
 import Foundation
 
-public struct BalancesTotalIssuanceStorageKey<B: Balances> {}
+public struct BalancesTotalIssuanceStorageKey<B: Balances> {
+    public init() {}
+}
 
 extension BalancesTotalIssuanceStorageKey: PlainStorageKey {
     public typealias Value = B.TBalance

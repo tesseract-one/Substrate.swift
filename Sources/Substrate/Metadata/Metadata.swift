@@ -53,6 +53,10 @@ extension Metadata {
         return storage
     }
     
+    public func prefixHashLength<K: AnyStorageKey>(of key: K) throws -> Int {
+        try _getStorageInfo(for: key).prefixHashLength()
+    }
+    
     public func hash<K: DynamicStorageKey>(of key: K, registry: TypeRegistryProtocol) throws -> Data {
         try _getStorageInfo(for: key).hash(of: key, registry: registry)
     }
@@ -65,7 +69,7 @@ extension Metadata {
         try _getStorageInfo(for: key).hash(iteratorOf: key, registry: registry)
     }
     
-    public func hash<K: StaticStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
+    public func hash<K: IterableStaticStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
         try _getStorageInfo(for: key).hash(iteratorOf: key, registry: registry)
     }
     

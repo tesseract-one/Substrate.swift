@@ -30,7 +30,10 @@ public class HttpRpcClient: RpcClient {
         self.headers.merge(headers) { (_, new) in new }
     }
     
-    public func call<P, R>(method: Method, params: P, timeout: TimeInterval = 60, response: @escaping RpcClientCallback<R>)
+    public func call<P, R>(
+        method: Method, params: P, timeout: TimeInterval = 60,
+        response: @escaping RpcClientCallback<R>
+    )
         where P: Encodable & Sequence, R: Decodable
     {
         let request = JsonRpcRequest(id: 1, method: method.substrateMethod, params: params)

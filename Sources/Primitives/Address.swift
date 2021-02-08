@@ -8,7 +8,10 @@
 import Foundation
 import ScaleCodec
 
-public enum Address<Id: ScaleCodable & Hashable, Index: ScaleCodable & Hashable>: Equatable, Hashable {
+public enum Address<Id, Index>: Equatable, Hashable
+    where
+        Id: ScaleCodable & Hashable & SDefault, Index: ScaleCodable & Hashable & SDefault
+{
     case id(Id)
     case index(Index)
     
@@ -25,6 +28,12 @@ public enum Address<Id: ScaleCodable & Hashable, Index: ScaleCodable & Hashable>
     
     public init(index: Index) {
         self = .index(index)
+    }
+}
+
+extension Address: SDefault {
+    public static func `default`() -> Address<Id, Index> {
+        Address(id: .default())
     }
 }
 

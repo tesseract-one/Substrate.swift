@@ -79,4 +79,11 @@ extension MetadataModuleInfo {
         }
         return call
     }
+    
+    public func storageItem(name: String) throws -> MetadataStorageItemInfo {
+        guard let item = storage[name] else {
+            throw MetadataError.storageItemNotFound(prefix: name, item: name)
+        }
+        return item
+    }
 }

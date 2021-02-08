@@ -46,6 +46,10 @@ extension TypeRegistry {
         }
     }
     
+    func _encode(dynamic: DValue, type: DType, in encoder: ScaleEncoder) throws {
+        try _encode(value: dynamic.encodable(), type: type, in: encoder)
+    }
+    
     func _encodeCallHeader(call: AnyCall, in encoder: ScaleEncoder) throws {
         let module = try _metaError { try self.meta.module(name: call.module) }
         let info = try _metaError { try module.call(name: call.function) }
@@ -63,7 +67,7 @@ extension TypeRegistry {
             )
         }
         for (t, p) in zip(types, call.params) {
-            try _encode(value: p.encodable(), type: t, in: encoder)
+            try _encode(dynamic: p, type: t, in: encoder)
         }
     }
     
