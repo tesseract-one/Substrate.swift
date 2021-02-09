@@ -27,6 +27,12 @@ extension SUInt512: ScaleDynamicCodable {}
 extension SCompact: ScaleDynamicCodable {}
 extension String: ScaleDynamicCodable {}
 
+extension Optional: DynamicTypeId {}
+extension Array: DynamicTypeId {}
+extension Set: DynamicTypeId {}
+extension Dictionary: DynamicTypeId {}
+extension Result: DynamicTypeId {}
+
 extension CaseIterable where Self: Equatable & ScaleEncodable, Self.AllCases.Index == Int {
     public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         try encode(in: encoder)
@@ -47,6 +53,12 @@ extension Optional: ScaleDynamicEncodable where Wrapped: ScaleDynamicEncodable {
     }
 }
 
+extension Optional: ScaleDynamicEncodableOptionalConvertible where Wrapped: ScaleDynamicEncodable {
+    public var encodableOptional: DEncodableOptional {
+        DEncodableOptional(self)
+    }
+}
+
 extension Optional: ScaleDynamicDecodable where Wrapped: ScaleDynamicDecodable {
     public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         self = try Optional<Wrapped>(from: decoder) { dec in
@@ -60,6 +72,12 @@ extension Array: ScaleDynamicEncodable where Element: ScaleDynamicEncodable {
         try encode(in: encoder) { val, enc in
             try val.encode(in: enc, registry: registry)
         }
+    }
+}
+
+extension Array: ScaleDynamicEncodableCollectionConvertible where Element: ScaleDynamicEncodable {
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection(self)
     }
 }
 
@@ -79,6 +97,12 @@ extension Set: ScaleDynamicEncodable where Element: ScaleDynamicEncodable {
     }
 }
 
+extension Set: ScaleDynamicEncodableCollectionConvertible where Element: ScaleDynamicEncodable {
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection(Array(self))
+    }
+}
+
 extension Set: ScaleDynamicDecodable where Element: ScaleDynamicDecodable {
     public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         try self.init(from: decoder) { dec in
@@ -95,7 +119,15 @@ extension Dictionary: ScaleDynamicEncodable where Key: ScaleDynamicEncodable, Va
     }
 }
 
-extension Dictionary: ScaleDynamicDecodable where Key: ScaleDynamicDecodable, Value: ScaleDynamicDecodable {
+extension Dictionary: ScaleDynamicEncodableMapConvertible where Key: ScaleDynamicEncodable, Value: ScaleDynamicEncodable {
+    public var encodableMap: DEncodableMap {
+        DEncodableMap(self)
+    }
+}
+
+extension Dictionary: ScaleDynamicDecodable
+    where Key: ScaleDynamicDecodable, Value: ScaleDynamicDecodable
+{
     public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         try self.init(from: decoder, lreader: { try Key(from: $0, registry: registry) }) { dec in
             try Value(from: dec, registry: registry)
@@ -108,6 +140,14 @@ extension Result: ScaleDynamicEncodable where Success: ScaleDynamicEncodable, Fa
         try encode(in: encoder, lwriter: { try $0.encode(in: $1, registry: registry) }) { err, enc in
             try err.encode(in: enc, registry: registry)
         }
+    }
+}
+
+extension Result: ScaleDynamicEncodableEitherConvertible
+    where Success: ScaleDynamicEncodable, Failure: ScaleDynamicEncodable
+{
+    public var encodableEither: DEncodableEither {
+        DEncodableEither(self)
     }
 }
 

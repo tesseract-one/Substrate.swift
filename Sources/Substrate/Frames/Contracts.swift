@@ -156,8 +156,6 @@ public struct ContractsInstantiatedEvent<C: Contracts> {
     public let caller: C.TAccountId
     /// The address of the contract.
     public let contract: C.TAccountId
-    /// dynamic types
-    private let type: DType
 }
 
 extension ContractsInstantiatedEvent: Event {
@@ -168,15 +166,6 @@ extension ContractsInstantiatedEvent: Event {
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         caller = try C.TAccountId(from: decoder, registry: registry)
         contract = try C.TAccountId(from: decoder, registry: registry)
-        type = try registry.type(of: C.TAccountId.self)
-    }
-    
-    public var data: DValue {
-        .collection(values: [
-            .native(type: type, value: caller),
-            .native(type: type, value: contract)
-        ])
-        
     }
 }
 
@@ -188,16 +177,6 @@ public struct ContractsContractExecutionEvent<C: Contracts> {
     public let caller: C.TAccountId
     /// SCALE encoded contract event data.
     public let callData: Data
-    // dynamic types
-    private let types: (caller: DType, data: DType)
-    
-    public func parseStatic<D: ScaleDecodable>(_ t: D.Type) throws -> D {
-        return try SCALE.default.decoder(data: callData).decode()
-    }
-    
-    public func parseDynamic<D: ScaleDynamicDecodable>(_ t: D.Type, with registry: TypeRegistryProtocol) throws -> D {
-        return try D(from: SCALE.default.decoder(data: callData), registry: registry)
-    }
 }
 
 extension ContractsContractExecutionEvent: Event {
@@ -208,13 +187,5 @@ extension ContractsContractExecutionEvent: Event {
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         caller = try C.TAccountId(from: decoder, registry: registry)
         callData = try decoder.decode()
-        types = try (caller: registry.type(of: C.TAccountId.self), data: registry.type(of: Data.self))
-    }
-    
-    public var data: DValue {
-        .collection(values: [
-            .native(type: types.caller, value: caller),
-            .native(type: types.data, value: callData)
-        ])
     }
 }

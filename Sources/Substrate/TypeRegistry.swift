@@ -36,7 +36,7 @@ public class TypeRegistry {
 extension TypeRegistry: TypeRegistryProtocol {
     public func register<T>(type: T.Type, as dynamic: DType) throws where T : ScaleDynamicCodable {
         _types[dynamic] = type
-        _reverseTypes[String(describing: type)] = dynamic
+        _reverseTypes[type.id] = dynamic
     }
     
     public func register<C>(call: C.Type) throws where C : Call {
@@ -47,8 +47,8 @@ extension TypeRegistry: TypeRegistryProtocol {
         _events["\(E.MODULE).\(E.EVENT)"] = event
     }
     
-    public func type<T>(of t: T.Type) throws -> DType where T : ScaleDynamicCodable {
-        guard let type = _reverseTypes[String(describing: t)] else {
+    public func type<T>(of t: T.Type) throws -> DType where T : DynamicTypeId {
+        guard let type = _reverseTypes[t.id] else {
             throw TypeRegistryError.unknownType(t)
         }
         return type
@@ -160,10 +160,6 @@ extension TypeRegistry: TypeRegistryProtocol {
         return try _eventDecodingError(module: module, event: info.name) {
             try event.init(decodingDataFrom: decoder, registry: self)
         }
-    }
-    
-    public func value<T: ScaleDynamicCodable>(dynamic val: T) throws -> DValue {
-        return .native(type: try type(of: T.self), value: val)
     }
     
     public func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws {

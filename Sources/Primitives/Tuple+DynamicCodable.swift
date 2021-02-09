@@ -1,8 +1,10 @@
 //
-// Generated '2021-02-08 11:14:44 +0000' with 'generate_dc_tuples.swift'
+// Generated '2021-02-09 01:59:38 +0000' with 'generate_dc_tuples.swift'
 //
 import Foundation
 import ScaleCodec
+
+extension STuple2: DynamicTypeId {}
 
 extension STuple2: ScaleDynamicEncodable
     where
@@ -13,12 +15,12 @@ extension STuple2: ScaleDynamicEncodable
     }
 }
 
-extension STuple2: ScaleDynamicEncodableArrayMaybeConvertible
+extension STuple2: ScaleDynamicEncodableCollectionConvertible
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable
 {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        [_0, _1]
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection([_0, _1])
     }
 }
 
@@ -33,6 +35,8 @@ extension STuple2: ScaleDynamicDecodable
     }
 }
 
+extension STuple3: DynamicTypeId {}
+
 extension STuple3: ScaleDynamicEncodable
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable
@@ -43,12 +47,12 @@ extension STuple3: ScaleDynamicEncodable
     }
 }
 
-extension STuple3: ScaleDynamicEncodableArrayMaybeConvertible
+extension STuple3: ScaleDynamicEncodableCollectionConvertible
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable
 {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        [_0, _1, _2]
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection([_0, _1, _2])
     }
 }
 
@@ -63,6 +67,8 @@ extension STuple3: ScaleDynamicDecodable
     }
 }
 
+extension STuple4: DynamicTypeId {}
+
 extension STuple4: ScaleDynamicEncodable
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable
@@ -73,12 +79,12 @@ extension STuple4: ScaleDynamicEncodable
     }
 }
 
-extension STuple4: ScaleDynamicEncodableArrayMaybeConvertible
+extension STuple4: ScaleDynamicEncodableCollectionConvertible
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable
 {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        [_0, _1, _2, _3]
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection([_0, _1, _2, _3])
     }
 }
 
@@ -94,6 +100,8 @@ extension STuple4: ScaleDynamicDecodable
     }
 }
 
+extension STuple5: DynamicTypeId {}
+
 extension STuple5: ScaleDynamicEncodable
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
@@ -106,13 +114,13 @@ extension STuple5: ScaleDynamicEncodable
     }
 }
 
-extension STuple5: ScaleDynamicEncodableArrayMaybeConvertible
+extension STuple5: ScaleDynamicEncodableCollectionConvertible
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
         T5: ScaleDynamicEncodable
 {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        [_0, _1, _2, _3, _4]
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection([_0, _1, _2, _3, _4])
     }
 }
 
@@ -129,6 +137,8 @@ extension STuple5: ScaleDynamicDecodable
     }
 }
 
+extension STuple6: DynamicTypeId {}
+
 extension STuple6: ScaleDynamicEncodable
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
@@ -141,13 +151,13 @@ extension STuple6: ScaleDynamicEncodable
     }
 }
 
-extension STuple6: ScaleDynamicEncodableArrayMaybeConvertible
+extension STuple6: ScaleDynamicEncodableCollectionConvertible
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
         T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable
 {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        [_0, _1, _2, _3, _4, _5]
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection([_0, _1, _2, _3, _4, _5])
     }
 }
 
@@ -164,6 +174,8 @@ extension STuple6: ScaleDynamicDecodable
     }
 }
 
+extension STuple7: DynamicTypeId {}
+
 extension STuple7: ScaleDynamicEncodable
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
@@ -177,13 +189,13 @@ extension STuple7: ScaleDynamicEncodable
     }
 }
 
-extension STuple7: ScaleDynamicEncodableArrayMaybeConvertible
+extension STuple7: ScaleDynamicEncodableCollectionConvertible
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
         T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable, T7: ScaleDynamicEncodable
 {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        [_0, _1, _2, _3, _4, _5, _6]
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection([_0, _1, _2, _3, _4, _5, _6])
     }
 }
 
@@ -201,6 +213,8 @@ extension STuple7: ScaleDynamicDecodable
     }
 }
 
+extension STuple8: DynamicTypeId {}
+
 extension STuple8: ScaleDynamicEncodable
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
@@ -214,13 +228,13 @@ extension STuple8: ScaleDynamicEncodable
     }
 }
 
-extension STuple8: ScaleDynamicEncodableArrayMaybeConvertible
+extension STuple8: ScaleDynamicEncodableCollectionConvertible
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
         T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable, T7: ScaleDynamicEncodable, T8: ScaleDynamicEncodable
 {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        [_0, _1, _2, _3, _4, _5, _6, _7]
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection([_0, _1, _2, _3, _4, _5, _6, _7])
     }
 }
 
@@ -238,6 +252,8 @@ extension STuple8: ScaleDynamicDecodable
     }
 }
 
+extension STuple9: DynamicTypeId {}
+
 extension STuple9: ScaleDynamicEncodable
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
@@ -253,14 +269,14 @@ extension STuple9: ScaleDynamicEncodable
     }
 }
 
-extension STuple9: ScaleDynamicEncodableArrayMaybeConvertible
+extension STuple9: ScaleDynamicEncodableCollectionConvertible
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
         T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable, T7: ScaleDynamicEncodable, T8: ScaleDynamicEncodable,
         T9: ScaleDynamicEncodable
 {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        [_0, _1, _2, _3, _4, _5, _6, _7, _8]
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection([_0, _1, _2, _3, _4, _5, _6, _7, _8])
     }
 }
 
@@ -279,6 +295,8 @@ extension STuple9: ScaleDynamicDecodable
     }
 }
 
+extension STuple10: DynamicTypeId {}
+
 extension STuple10: ScaleDynamicEncodable
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
@@ -294,14 +312,14 @@ extension STuple10: ScaleDynamicEncodable
     }
 }
 
-extension STuple10: ScaleDynamicEncodableArrayMaybeConvertible
+extension STuple10: ScaleDynamicEncodableCollectionConvertible
     where
         T1: ScaleDynamicEncodable, T2: ScaleDynamicEncodable, T3: ScaleDynamicEncodable, T4: ScaleDynamicEncodable,
         T5: ScaleDynamicEncodable, T6: ScaleDynamicEncodable, T7: ScaleDynamicEncodable, T8: ScaleDynamicEncodable,
         T9: ScaleDynamicEncodable, T10: ScaleDynamicEncodable
 {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9]
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection([_0, _1, _2, _3, _4, _5, _6, _7, _8, _9])
     }
 }
 

@@ -12,7 +12,7 @@ public enum TypeRegistryError: Error {
     // Types
     case typeNotFound(DType)
     case typeDecodingError(type: DType, error: SDecodingError)
-    case unknownType(ScaleDynamicDecodable.Type)
+    case unknownType(DynamicTypeId.Type)
     case typeRegistrationError(type: ScaleDynamicDecodable, as: DType, message: String)
     // Events
     case eventFoundWrongEvent(module: String, event: String, exmodule: String, exevent: String)
@@ -33,6 +33,7 @@ public enum TypeRegistryError: Error {
     case encodingError(error: SEncodingError, value: ScaleDynamicEncodable)
     case encodingExpectedCollection(found: ScaleDynamicEncodable)
     case encodingExpectedMap(found: ScaleDynamicEncodable)
+    case encodingExpectedResult(found: ScaleDynamicEncodable)
     case encodingWrongElementCount(in: ScaleDynamicEncodable, expected: Int)
     // Storage
     case storageItemBadPathTypesCount(module: String, field: String, count: Int, expected: Int)
@@ -67,8 +68,8 @@ public protocol TypeRegistryProtocol: class {
     func register<E: Event>(event: E.Type) throws
     
     // Values
-    func type<T: ScaleDynamicCodable>(of t: T.Type) throws -> DType
-    func value<T: ScaleDynamicCodable>(dynamic val: T) throws -> DValue
+    func type<T: DynamicTypeId>(of t: T.Type) throws -> DType
+//    func value<T: ScaleDynamicCodable>(dynamic val: T) throws -> DValue
     func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws
     func encode(dynamic: DValue, type: DType, in encoder: ScaleEncoder) throws
     func decode<V: ScaleDynamicDecodable>(static: V.Type, as type: DType, from decoder: ScaleDecoder) throws -> V
@@ -84,12 +85,36 @@ public protocol TypeRegistryProtocol: class {
 
 public typealias ScaleDynamicCodable = ScaleDynamicEncodable & ScaleDynamicDecodable
 
-public protocol ScaleDynamicEncodable {
+public protocol DynamicTypeId {
+    static var id: String { get }
+}
+
+public protocol ScaleDynamicEncodable: DynamicTypeId {
     func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws
 }
 
-public protocol ScaleDynamicDecodable {
+public protocol ScaleDynamicDecodable: DynamicTypeId {
     init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws
+}
+
+public protocol ScaleDynamicEncodableCollectionConvertible {
+    var encodableCollection: DEncodableCollection { get }
+}
+
+public protocol ScaleDynamicEncodableMapConvertible {
+    var encodableMap: DEncodableMap { get }
+}
+
+public protocol ScaleDynamicEncodableEitherConvertible {
+    var encodableEither: DEncodableEither { get }
+}
+
+public protocol ScaleDynamicEncodableOptionalConvertible {
+    var encodableOptional: DEncodableOptional { get }
+}
+
+extension DynamicTypeId {
+    public static var id: String { return String(describing: Self.self) }
 }
 
 extension ScaleEncodable {

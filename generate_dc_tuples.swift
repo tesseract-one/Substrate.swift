@@ -58,6 +58,8 @@ func generate_tuple(for size: Int) -> String {
     let name = generate_struct_name(for: size)
     let encWhereList = generate_where_type_list(for: size, proto: "ScaleDynamicEncodable", tab: 2)
     return """
+    extension \(name): DynamicTypeId {}
+    
     extension \(name): ScaleDynamicEncodable
         where
             \(encWhereList)
@@ -67,12 +69,12 @@ func generate_tuple(for size: Int) -> String {
         }
     }
     
-    extension \(name): ScaleDynamicEncodableArrayMaybeConvertible
+    extension \(name): ScaleDynamicEncodableCollectionConvertible
         where
             \(encWhereList)
     {
-        public var encodableArray: Array<ScaleDynamicEncodable>? {
-            [\(generate_list(for: size, prefix: "_", inc: 0))]
+        public var encodableCollection: DEncodableCollection {
+            DEncodableCollection([\(generate_list(for: size, prefix: "_", inc: 0))])
         }
     }
 

@@ -70,38 +70,3 @@ extension String {
         return self[self.index(startIndex, offsetBy: index)]
     }
 }
-
-extension NSArray: ScaleDynamicEncodable {
-    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
-        throw SEncodingError.invalidValue(
-            self,
-            SEncodingError.Context(
-                path: encoder.path, description: "NSArray should not be encoded directly. Allowed only as dynamic value"
-            )
-        )
-    }
-}
-
-extension NSArray: ScaleDynamicEncodableArrayMaybeConvertible {
-    public var encodableArray: Array<ScaleDynamicEncodable>? {
-        var res = Array<ScaleDynamicEncodable>()
-        for el in self {
-            guard let el = el as? ScaleDynamicEncodable else {
-                return nil
-            }
-            res.append(el)
-        }
-        return res
-    }
-}
-
-extension NSDictionary: ScaleDynamicEncodable {
-    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
-        throw SEncodingError.invalidValue(
-            self,
-            SEncodingError.Context(
-                path: encoder.path, description: "NSDictionary should not be encoded directly.Allowed only as dynamic value"
-            )
-        )
-    }
-}

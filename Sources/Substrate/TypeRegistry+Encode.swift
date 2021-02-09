@@ -9,20 +9,6 @@ import Foundation
 import ScaleCodec
 import BigInt
 
-private extension DValue {
-    func encodable() -> ScaleDynamicEncodable {
-        switch self {
-        case .null: return DNull()
-        case .native(type: _, value: let v): return v
-        case .collection(values: let values):
-            return (values.map { $0.encodable() }) as NSArray
-        case .map(values: let values):
-            return (values.map { (key: $0.key.encodable(), value: $0.value.encodable()) }) as NSArray
-        case .result(res: _): return DNull() // Encoding isn't supported anyway.
-        }
-    }
-}
-
 extension TypeRegistry {
     func _encode(
         value: ScaleDynamicEncodable, type: DType,
@@ -41,13 +27,14 @@ extension TypeRegistry {
             try _encodeCollection(type: t, val: value, encoder: encoder)
         case .map(key: let kt, value: let vt):
             try _encodeMap(kt: kt, vt: vt, val: value, encoder: encoder)
-        case .result: throw TypeRegistryError.encodingNotSupported(for: type)
+        case .result(success: let vt, error: let et):
+            try _encodeResult(vtype: vt, etype: et, val: value, encoder: encoder)
         case .doNotConstruct: throw TypeRegistryError.encodingNotSupported(for: type)
         }
     }
     
     func _encode(dynamic: DValue, type: DType, in encoder: ScaleEncoder) throws {
-        try _encode(value: dynamic.encodable(), type: type, in: encoder)
+        try _encode(value: dynamic.dynamicEncodable, type: type, in: encoder)
     }
     
     func _encodeCallHeader(call: AnyCall, in encoder: ScaleEncoder) throws {
@@ -83,36 +70,23 @@ extension TypeRegistry {
     }
     
     private func _encodeFixed(type: DType, val: ScaleDynamicEncodable, count: Int, encoder: ScaleEncoder) throws {
-        guard let array = val as? NSArray else {
+        guard let enc = val as? ScaleDynamicEncodableCollectionConvertible else {
             throw TypeRegistryError.encodingExpectedCollection(found: val)
         }
+        let array = enc.encodableCollection.array
         guard array.count == count else {
             throw TypeRegistryError.encodingWrongElementCount(in: val, expected: count)
         }
         for v in array {
-            try _encode(value: v as! ScaleDynamicEncodable, type: type, in: encoder)
+            try _encode(value: v, type: type, in: encoder)
         }
     }
 
     private func _encodeMap(kt: DType, vt: DType, val: ScaleDynamicEncodable, encoder: ScaleEncoder) throws {
-        var tuples: Array<(key: ScaleDynamicEncodable, value: ScaleDynamicEncodable)>
-        if let array = val as? NSArray {
-            tuples = try array.map {
-                guard let tuple = $0 as? (key: ScaleDynamicEncodable, value: ScaleDynamicEncodable) else {
-                    throw TypeRegistryError.encodingExpectedMap(found: val)
-                }
-                return tuple
-            }
-        } else if let dict = val as? NSDictionary {
-            tuples = try Array(dict).map {
-                guard let tuple = $0 as? (key: ScaleDynamicEncodable, value: ScaleDynamicEncodable) else {
-                    throw TypeRegistryError.encodingExpectedMap(found: val)
-                }
-                return tuple
-            }
-        } else {
+        guard let enc = val as? ScaleDynamicEncodableMapConvertible else {
             throw TypeRegistryError.encodingExpectedMap(found: val)
         }
+        let tuples = enc.encodableMap.map
         let dictionary = Dictionary(
             uniqueKeysWithValues: tuples.enumerated().map { ($0.0, $0.1.value) }
         )
@@ -125,49 +99,61 @@ extension TypeRegistry {
             rwriter: { val, encoder in try self._encode(value: val, type: vt, in: encoder)}
         )
     }
+    
+    private func _encodeResult(
+        vtype: DType, etype: DType, val: ScaleDynamicEncodable, encoder: ScaleEncoder
+    ) throws {
+        guard let enc = val as? ScaleDynamicEncodableEitherConvertible else {
+            throw TypeRegistryError.encodingExpectedResult(found: val)
+        }
+        let result: Result<DNull, DNull>
+        let value: ScaleDynamicEncodable
+        switch enc.encodableEither {
+        case .left(val: let val):
+            value = val
+            result = .success(DNull())
+        case .right(val: let err):
+            value = err
+            result = .failure(DNull())
+        }
+        try result.encode(
+            in: encoder,
+            lwriter: { _, encoder in
+                try self._encode(value: value, type: vtype, in: encoder)
+            },
+            rwriter: { _, encoder in
+                try self._encode(value: value, type: etype, in: encoder)
+            }
+        )
+    }
 
     private func _encodeCollection(type: DType, val: ScaleDynamicEncodable, encoder: ScaleEncoder) throws {
-        var array: Array<ScaleDynamicEncodable>
-        if let arrEnc = val as? ScaleDynamicEncodableArrayMaybeConvertible { // STuple or NSArray
-            guard let arr = arrEnc.encodableArray else {
-                throw TypeRegistryError.encodingExpectedCollection(found: val)
-            }
-            array = arr
-        } else if let nsarr = val as? NSArray { // array
-            guard let arr = nsarr.encodableArray else {
-                throw TypeRegistryError.encodingExpectedCollection(found: val)
-            }
-            array = arr
-        } else {
+        guard let enc = val as? ScaleDynamicEncodableCollectionConvertible else {
             throw TypeRegistryError.encodingExpectedCollection(found: val)
         }
+        let array = enc.encodableCollection.array
         try array.encode(in: encoder) { val, encoder in
             try self._encode(value: val, type: type, in: encoder)
         }
     }
 
     private func _encodeOptional(type: DType, val: ScaleDynamicEncodable, encoder: ScaleEncoder) throws {
-        let optional: Optional<DNull> = val is DNull ? .none : .some(DNull())
-        try optional.encode(in: encoder) { _, encoder in
-            try self._encode(value: val, type: type, in: encoder)
+        if let enc = val as? ScaleDynamicEncodableOptionalConvertible { // someone passed real optional or DNull
+            try enc.encodableOptional.optional.encode(in: encoder) { val2, encoder in
+                try self.encode(value: val2, type: type, in: encoder)
+            }
+        } else { // Not null. Some value
+            try Optional(DNull()).encode(in: encoder) { _, encoder in
+                try self._encode(value: val, type: type, in: encoder)
+            }
         }
     }
 
     private func _encodeTuple(types: [DType], val: ScaleDynamicEncodable, encoder: ScaleEncoder) throws {
-        var array: Array<ScaleDynamicEncodable>
-        if let arrEnc = val as? ScaleDynamicEncodableArrayMaybeConvertible { // STuple or NSArray
-            guard let arr = arrEnc.encodableArray else {
-                throw TypeRegistryError.encodingExpectedCollection(found: val)
-            }
-            array = arr
-        } else if let nsarr = val as? NSArray { // array
-            guard let arr = nsarr.encodableArray else {
-                throw TypeRegistryError.encodingExpectedCollection(found: val)
-            }
-            array = arr
-        } else {
+        guard let enc = val as? ScaleDynamicEncodableCollectionConvertible else {
             throw TypeRegistryError.encodingExpectedCollection(found: val)
         }
+        let array = enc.encodableCollection.array
         guard array.count == types.count else {
             throw TypeRegistryError.encodingWrongElementCount(in: val, expected: types.count)
         }
