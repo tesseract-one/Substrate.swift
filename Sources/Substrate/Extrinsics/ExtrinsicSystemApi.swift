@@ -23,7 +23,7 @@ public struct SubstrateExtrinsicSystemApi<S: SubstrateProtocol>: SubstrateExtrin
     }
 }
 
-extension SubstrateExtrinsicApi where S.R.TExtrinsicExtra: SignedExtrinsicExtra, S.R.TExtrinsicExtra.S == S.R {
+extension SubstrateExtrinsicSystemApi where S.R.TExtrinsicExtra: SignedExtrinsicExtra, S.R.TExtrinsicExtra.S == S.R {
     public func setCode(
         code: Data, with accountId: S.R.TAccountId, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>

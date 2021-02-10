@@ -33,6 +33,12 @@ extension Set: DynamicTypeId {}
 extension Dictionary: DynamicTypeId {}
 extension Result: DynamicTypeId {}
 
+extension Data: ScaleDynamicEncodableCollectionConvertible {
+    public var encodableCollection: DEncodableCollection {
+        DEncodableCollection(Array(self))
+    }
+}
+
 extension CaseIterable where Self: Equatable & ScaleEncodable, Self.AllCases.Index == Int {
     public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         try encode(in: encoder)

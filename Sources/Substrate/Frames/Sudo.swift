@@ -35,7 +35,7 @@ public struct SudoCall<S: Sudo> {
 extension SudoCall: Call {
     public typealias Module = SudoModule<S>
     
-    public static var FUNCTION: String { "Sudo" }
+    public static var FUNCTION: String { "sudo" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         call = try registry.decode(callFrom: decoder)
@@ -60,7 +60,7 @@ public struct SudoUncheckedWeightCall<S: Sudo> {
 extension SudoUncheckedWeightCall: Call {
     public typealias Module = SudoModule<S>
     
-    public static var FUNCTION: String { "SudoUncheckedWeight" }
+    public static var FUNCTION: String { "sudo_unchecked_weight" }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         call = try registry.decode(callFrom: decoder)
