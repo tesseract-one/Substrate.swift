@@ -22,7 +22,34 @@ public class TypeRegistry {
     }
     
     public func validate() throws {
-        
+        var missing = Set<DType>()
+        let check = { (type: DType) in
+            missing = missing.union(self._checkType(types: self._types, type: type))
+        }
+        for module in metadata.modulesByName.values {
+            for event in module.eventsByName.values {
+                for argument in event.arguments {
+                    check(argument)
+                }
+            }
+            for call in module.callsByName.values {
+                for type in call.types.values {
+                    check(type)
+                }
+            }
+            for constant in module.constants.values {
+                check(constant.type)
+            }
+            for storageItem in module.storage.values {
+                for type in storageItem.pathTypes {
+                    check(type)
+                }
+                check(storageItem.valueType)
+            }
+        }
+        if !missing.isEmpty {
+            throw TypeRegistryError.validationError(missingTypes: missing)
+        }
     }
     
     func decode(static: DType, from decoder: ScaleDecoder) throws -> ScaleDynamicCodable {

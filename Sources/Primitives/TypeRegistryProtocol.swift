@@ -41,6 +41,8 @@ public enum TypeRegistryError: Error {
     case storageItemEmptyItem(module: String, field: String)
     case storageItemDecodingError(module: String, field: String, error: SDecodingError)
     case storageItemDecodingBadPrefix(module: String, field: String, prefix: Data, expected: Data)
+    // Validation
+    case validationError(missingTypes: Set<DType>)
     // Unknown
     case unknown(error: Error)
 }
