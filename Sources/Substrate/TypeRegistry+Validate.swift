@@ -9,10 +9,10 @@ import Foundation
 import SubstratePrimitives
 
 extension TypeRegistry {
-    func _checkType(types: Dictionary<DType, ScaleDynamicCodable.Type>, type: DType) -> Set<DType> {
-        var missing = Set<DType>()
+    func _checkType(types: Dictionary<DType, ScaleDynamicCodable.Type>, type: DType, path: [String]) -> Dictionary<DType, [String]> {
+        var missing = Dictionary<DType, [String]>()
         let check = { (type: DType) in
-            missing = missing.union(self._checkType(types: types, type: type))
+            missing.merge(self._checkType(types: types, type: type, path: path)) { (v1, _) in v1 }
         }
         if types[type] == nil {
             switch type {
@@ -32,7 +32,7 @@ extension TypeRegistry {
                     check(element)
                 }
             default:
-                missing.insert(type)
+                missing.updateValue(path, forKey: type)
             }
         }
         return missing

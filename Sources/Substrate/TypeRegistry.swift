@@ -22,29 +22,30 @@ public class TypeRegistry {
     }
     
     public func validate() throws {
-        var missing = Set<DType>()
-        let check = { (type: DType) in
-            missing = missing.union(self._checkType(types: self._types, type: type))
+        var missing = Dictionary<DType, [String]>()
+        let check = { (type: DType, path: [String]) in
+            missing.merge(self._checkType(types: self._types, type: type, path: path)) { (v1, _) in v1 }
         }
         for module in metadata.modulesByName.values {
+            let modulePart = "module: \(module.name)"
             for event in module.eventsByName.values {
                 for argument in event.arguments {
-                    check(argument)
+                    check(argument, [modulePart, "event: \(event.name)"])
                 }
             }
             for call in module.callsByName.values {
                 for type in call.types.values {
-                    check(type)
+                    check(type, [modulePart, "call: \(call.name)"])
                 }
             }
             for constant in module.constants.values {
-                check(constant.type)
+                check(constant.type, [modulePart, "constant: \(constant.name)"])
             }
             for storageItem in module.storage.values {
                 for type in storageItem.pathTypes {
-                    check(type)
+                    check(type, [modulePart, "storage item path: \(storageItem.name)"])
                 }
-                check(storageItem.valueType)
+                check(storageItem.valueType, [modulePart, "storage item value: \(storageItem.name)"])
             }
         }
         if !missing.isEmpty {
