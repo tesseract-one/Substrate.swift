@@ -15,6 +15,63 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
         self.substrate = substrate
     }
     
+    public func hasKey(publicKey: Data, keyType: String, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Bool>) {
+        substrate.client.call(
+            method: "author_hasKey",
+            params: RpcCallParams(HexData(publicKey), keyType),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<Bool>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
+    }
+    
+    public func hasSessionKeys(sessionKeys: Data, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Bool>) {
+        substrate.client.call(
+            method: "author_hasSessionKeys",
+            params: RpcCallParams(HexData(sessionKeys)),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<Bool>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
+    }
+    
+    public func insertKey(keyType: String, suri: String, publicKey: Data, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
+        substrate.client.call(
+            method: "author_insertKey",
+            params: RpcCallParams(keyType, suri, HexData(publicKey)),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<HexData>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.data})
+        }
+    }
+    
+    public func pendingExtrinsics(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<[S.R.TExtrinsic]>) {
+        substrate.client.call(
+            method: "author_pendingExtrinsics",
+            params: RpcCallParams(),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<[HexData]>) in
+            let response = res.mapError(SubstrateRpcApiError.from).flatMap { dataArray in
+                Result {
+                    try dataArray.map { data in
+                        try S.R.TExtrinsic(data: data.data, registry: substrate.registry)
+                    }
+                }.mapError(SubstrateRpcApiError.from)
+            }
+            cb(response)
+        }
+    }
+
+    public func rotateKeys(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
+        substrate.client.call(
+            method: "author_rotateKeys",
+            params: RpcCallParams(),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<HexData>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.data})
+        }
+    }
+    
     public func submit<E: ExtrinsicProtocol>(
         extrinsic: E, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THash>
     ) {
