@@ -62,6 +62,31 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
         }
     }
 
+    public func removeExtrinsic<H: Hash>(bytesOrHash: [ExtrinsicOrHash<H>], timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<[S.R.THash]>) {
+        var hexArray = [HexData]()
+        for boh in bytesOrHash {
+            switch boh {
+            case .hash(let hash):
+                guard let data = _encode(value: hash, cb) else { return }
+                hexArray.append(HexData(data))
+            case .extrinsic(let data):
+                hexArray.append(HexData(data))
+            }
+        }
+        substrate.client.call(
+            method: "author_removeExtrinsic",
+            params: RpcCallParams(hexArray),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<[HexData]>) in
+            let response = res.mapError(SubstrateRpcApiError.from).flatMap { dataArray in
+                Result {
+                    try dataArray.map { try S.R.THash(decoding: $0.data) }
+                }.mapError(SubstrateRpcApiError.from)
+            }
+            cb(response)
+        }
+    }
+    
     public func rotateKeys(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
         substrate.client.call(
             method: "author_rotateKeys",
@@ -91,4 +116,9 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
 
 extension SubstrateRpcApiRegistry {
     public var author: SubstrateRpcAuthorApi<S> { getRpcApi(SubstrateRpcAuthorApi<S>.self) }
+}
+
+public enum ExtrinsicOrHash<H: Hash> {
+    case hash(H)
+    case extrinsic(Data)
 }
