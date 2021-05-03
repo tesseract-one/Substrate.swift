@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Hash: ScaleFixedData, ScaleDynamicCodable {}
+public protocol Hash: ScaleFixedData, ScaleDynamicCodable, Codable {}
 
 public struct Hash160: Hash {
     let data: Data
@@ -25,10 +25,19 @@ public struct Hash160: Hash {
         self.data = data
     }
     
+    public init(from decoder: Decoder) throws {
+        self.init(try HexData(from: decoder).data)
+    }
+
     public func encode() throws -> Data {
         return self.data
     }
     
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(HexData.toHex(data: data))
+    }
+
     public static var fixedBytesCount: Int = 20
 }
 
@@ -47,10 +56,19 @@ public struct Hash256: Hash {
         self.data = data
     }
     
+    public init(from decoder: Decoder) throws {
+        self.init(try HexData(from: decoder).data)
+    }
+
     public func encode() throws -> Data {
         return self.data
     }
     
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(HexData.toHex(data: data))
+    }
+
     public static var fixedBytesCount: Int = 32
 }
 
@@ -69,9 +87,18 @@ public struct Hash512: Hash {
         self.data = data
     }
     
+    public init(from decoder: Decoder) throws {
+        self.init(try HexData(from: decoder).data)
+    }
+
     public func encode() throws -> Data {
         return self.data
     }
     
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(HexData.toHex(data: data))
+    }
+
     public static var fixedBytesCount: Int = 64
 }
