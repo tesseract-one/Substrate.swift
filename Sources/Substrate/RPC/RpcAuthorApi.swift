@@ -115,15 +115,15 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
 }
 
 extension SubstrateRpcAuthorApi where S.C: SubscribableRpcClient {
-    public func submitAndWatchExtrinsic<E: ExtrinsicProtocol, H: Hash, BH: Hash>(
-        extrinsic: E, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<TransactionStatus<H, BH>>
+    public func submitAndWatchExtrinsic<E: ExtrinsicProtocol>(
+        extrinsic: E, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<TransactionStatus<S.R.THash, S.R.THash>>
     ) -> RpcSubscription? {
         guard let data = _encode(value: extrinsic, cb) else { return nil }
         return substrate.client.subscribe(
             method: "author_submitAndWatchExtrinsic",
             params: RpcCallParams(HexData(data)),
             unsubscribe: "author_unwatchExtrinsic"
-        ) { (res: Result<TransactionStatus<H, BH>, RpcClientError>) in
+        ) { (res: Result<TransactionStatus<S.R.THash, S.R.THash>, RpcClientError>) in
             let response = res.mapError(SubstrateRpcApiError.rpc)
             cb(response)
         }
