@@ -58,7 +58,7 @@ extension ExtrinsicEra: ScaleCodable {
             self = .immortal
         } else {
             let encoded = try UInt64(first) + UInt64(decoder.decode(UInt8.self)) << 8
-            let period = 2 << (encoded % (1 << 4))
+            let period = UInt64(2) << (encoded % (1 << 4))
             let quantize_factor = max((period >> 12), 1)
             let phase = (encoded >> 4) * quantize_factor
             guard period >= 4 && phase < period else {

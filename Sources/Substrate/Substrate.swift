@@ -8,7 +8,7 @@
 import Foundation
 import SubstrateRpc
 
-public protocol SubstrateProtocol: class {
+public protocol SubstrateProtocol: AnyObject {
     associatedtype R: Runtime
     associatedtype C: RpcClient
     

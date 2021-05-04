@@ -15,7 +15,7 @@ public typealias SExtrinsic<C: AnyCall, R: Runtime> = Extrinsic<R.TAddress, C, R
 
 public protocol SubstrateSigner {
     // Get list of accounts
-    func accounts<R: Runtime>(_ cb: @escaping SSignerCallback<[R.TAccountId], R>)
+    func accounts<R: Runtime>(with runtime: R.Type, _ cb: @escaping SSignerCallback<[R.TAccountId], R>)
     
     // Sign extrinsic payload
     func sign<C: AnyCall, R: Runtime>(
@@ -30,4 +30,5 @@ public enum SubstrateSignerError<R: Runtime>: Error {
     case accountNotFound(R.TAccountId)
     case cantBeConnected
     case cancelledByUser
+    case unknown(Error)
 }

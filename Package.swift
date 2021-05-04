@@ -20,6 +20,9 @@ var package = Package(
             name: "SubstrateRpc",
             targets: ["SubstrateRpc"]),
         .library(
+            name: "SubstrateKeychain",
+            targets: ["SubstrateKeychain"]),
+        .library(
             name: "CBlake2b",
             targets: ["CBlake2b"])
     ],
@@ -54,6 +57,10 @@ var package = Package(
             name: "SubstrateRpc",
             dependencies: ["WebSocket"],
             path: "Sources/RPC"),
+        .target(
+            name: "SubstrateKeychain",
+            dependencies: ["Substrate"],
+            path: "Sources/Keychain"),
         .testTarget(
             name: "PolkadotTests",
             dependencies: ["Polkadot"]),

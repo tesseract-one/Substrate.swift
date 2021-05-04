@@ -45,7 +45,7 @@ public enum TypeRegistryError: Error {
     case unknown(error: Error)
 }
 
-public protocol TypeRegistryProtocol: class {
+public protocol TypeRegistryProtocol: AnyObject {
     // Storage
     func hash<K: DynamicStorageKey>(of key: K) throws -> Data
     func hash<K: StaticStorageKey>(of key: K) throws -> Data
