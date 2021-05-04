@@ -20,7 +20,7 @@ extension DefaultNodeRuntime: System {
     public typealias TBlockNumber = UInt32
     public typealias THash = Hash256
     public typealias THasher = HBlake2b256
-    public typealias TAccountId = AccountId
+    public typealias TAccountId = AccountId<Sr25519PublicKey>
     public typealias TAddress = Address<TAccountId, UInt32>
     public typealias THeader = Header<TBlockNumber, THash>
     public typealias TExtrinsic = OpaqueExtrinsic
@@ -28,6 +28,13 @@ extension DefaultNodeRuntime: System {
 }
 
 extension DefaultNodeRuntime: Staking {}
+extension DefaultNodeRuntime: Contracts {}
+extension DefaultNodeRuntime: Sudo {}
+
+extension DefaultNodeRuntime: Session {
+    public typealias TValidatorId = Self.TAccountId
+    public typealias TKeys = BasicSessionKeys
+}
 
 extension DefaultNodeRuntime: Runtime {
     public typealias TSignature = MultiSignature
@@ -35,6 +42,8 @@ extension DefaultNodeRuntime: Runtime {
     
     public var modules: [TypeRegistrator] {
         [PrimitivesModule<Self>(), SystemModule<Self>(),
+         StakingModule<Self>(), ContractsModule<Self>(),
+         SudoModule<Self>(), SessionModule<Self>(),
          BalancesModule<Self>(), StakingModule<Self>()]
     }
 }

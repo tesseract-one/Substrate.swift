@@ -8,34 +8,29 @@
 import Foundation
 import ScaleCodec
 
-public struct AccountId: Equatable, Hashable {
-    public let pubKey: Data
+public struct AccountId<Key: PublicKey>: Equatable, Hashable {
+    public let pubKey: Key
     
-    public init(key: Data) {
-        precondition(
-            key.count == AccountId.fixedBytesCount,
-            "Wrong data length: \(key.count) expected \(Self.fixedBytesCount)"
-        )
+    public init(key: Key) {
         pubKey = key
     }
 }
 
 extension AccountId: SDefault {
     public static func `default`() -> AccountId {
-        AccountId(key: Data(repeating: 0, count: Self.fixedBytesCount))
+        let key = try! Key(bytes: Data(repeating: 0, count: Key.bytesCount))
+        return AccountId(key: key)
     }
 }
 
-extension AccountId: ScaleFixedData {
-    public init(decoding data: Data) throws {
-        pubKey = data
+extension AccountId: ScaleCodable {
+    public init(from decoder: ScaleDecoder) throws {
+        self.init(key: try decoder.decode())
     }
     
-    public func encode() throws -> Data {
-        return self.pubKey
+    public func encode(in encoder: ScaleEncoder) throws {
+        try pubKey.encode(in: encoder)
     }
-    
-    public static var fixedBytesCount: Int = 32
 }
 
 extension AccountId: ScaleDynamicCodable {}

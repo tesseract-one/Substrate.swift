@@ -10,7 +10,7 @@ import ScaleCodec
 import SubstratePrimitives
 
 public protocol Runtime: System, TypeRegistrator {
-    associatedtype TSignature: ScaleDynamicCodable
+    associatedtype TSignature: Signature
     associatedtype TExtrinsicExtra: SignedExtension
     
     var modules: [TypeRegistrator] { get }
