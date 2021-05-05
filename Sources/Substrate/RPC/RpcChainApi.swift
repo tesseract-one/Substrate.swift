@@ -11,9 +11,20 @@ import ScaleCodec
 
 public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public weak var substrate: S!
+    public typealias ChainBlock = SignedBlock<Block<Data, Data>>
     
     public init(substrate: S) {
         self.substrate = substrate
+    }
+    
+    public func getBlock(hash: S.R.THash?, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<ChainBlock>) {
+        substrate.client.call(
+            method: "chain_getBlock",
+            params: RpcCallParams(hash),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<ChainBlock>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
     }
     
     public func getBlockHash(
