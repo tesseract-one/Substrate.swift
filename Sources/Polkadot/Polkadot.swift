@@ -1,43 +1,49 @@
 @_exported import Substrate
 
-public struct KusamaRuntime {}
+public struct PolkadotRuntime {}
 
-extension KusamaRuntime: Balances {
+extension PolkadotRuntime: Balances {
     public typealias TBalance = SUInt128
 }
 
-extension KusamaRuntime: System {
+extension PolkadotRuntime: System {
     public typealias TIndex = UInt32
     public typealias TBlockNumber = UInt32
     public typealias THash = Hash256
     public typealias THasher = HBlake2b256
-    public typealias TAccountId = AccountId
+    public typealias TAccountId = AccountId<Sr25519PublicKey>
     public typealias TAddress = Address<TAccountId, UInt32>
     public typealias THeader = Header<TBlockNumber, THash>
     public typealias TExtrinsic = OpaqueExtrinsic
     public typealias TAccountData = AccountData<TBalance>
 }
 
-extension KusamaRuntime: Staking {}
+extension PolkadotRuntime: Staking {}
 
-extension KusamaRuntime: Runtime {
+extension PolkadotRuntime: Session {
+    public typealias TValidatorId = Self.TAccountId
+    public typealias TKeys = KusamaSessionKeys
+}
+
+extension PolkadotRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtrinsicExtra = DefaultExtrinsicExtra<Self>
     
     public var modules: [TypeRegistrator] {
         [PrimitivesModule<Self>(), SystemModule<Self>(),
-         BalancesModule<Self>(), StakingModule<Self>()]
+         SessionModule<Self>(), BalancesModule<Self>(),
+         StakingModule<Self>()]
     }
 }
 
 
-public typealias Polkadot<C: RpcClient> = Substrate<KusamaRuntime, C>
+public typealias Polkadot<C: RpcClient> = Substrate<PolkadotRuntime, C>
 
 
 extension Polkadot {
     public static func create<C: RpcClient>(
         client: C, signer: SubstrateSigner? = nil, _ cb: @escaping SRpcApiCallback<Polkadot<C>>
     ) {
-        Self.create(client: client, runtime: KusamaRuntime(), signer: signer, cb)
+        Self.create(client: client, runtime: PolkadotRuntime(), signer: signer, cb)
     }
 }

@@ -10,7 +10,7 @@ import ScaleCodec
 
 public protocol Session: System {
     associatedtype TValidatorId: ScaleDynamicCodable & SDefault
-    associatedtype TKeys: ScaleDynamicCodable
+    associatedtype TKeys: SessionKeys
 }
 
 open class SessionModule<S: Session>: ModuleProtocol {
@@ -22,7 +22,7 @@ open class SessionModule<S: Session>: ModuleProtocol {
     
     open func registerEventsCallsAndTypes<R>(in registry: R) throws where R : TypeRegistryProtocol {
         try registry.register(type: S.TValidatorId.self, as: .type(name: "ValidatorId"))
-        try registry.register(type: S.TKeys.self, as: .type(name: "Keys"))
+        try registry.register(type: S.TKeys.self, as: .type(name: "SessionKeys"))
         try registry.register(call: SessionSetKeysCall<S>.self)
     }
 }
