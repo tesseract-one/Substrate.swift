@@ -13,8 +13,8 @@ public protocol System {
     associatedtype TBlockNumber: BlockNumberProtocol
     associatedtype THash: Hash
     associatedtype THasher: Hasher
-    associatedtype TAccountId: ScaleDynamicCodable & Hashable & SDefault
-    associatedtype TAddress: ScaleDynamicCodable & SDefault
+    associatedtype TAccountId: PublicKey & Hashable & SDefault
+    associatedtype TAddress: Address & SDefault
     associatedtype THeader: ScaleDynamicCodable
     associatedtype TExtrinsic: ExtrinsicProtocol
     associatedtype TAccountData: ScaleDynamicCodable

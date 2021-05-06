@@ -9,8 +9,8 @@ import Foundation
 import ScaleCodec
 
 
-public struct Extrinsic<Address: ScaleDynamicCodable, Call: AnyCall, Signature: ScaleDynamicCodable, Extra: SignedExtension> {
-    public let signature: ExtrinsicSignature<Address, Signature, Extra>?
+public struct Extrinsic<Addr: Address, Call: AnyCall, Sign: Signature, Extra: SignedExtension> {
+    public let signature: ExtrinsicSignature<Addr, Sign, Extra>?
     public let call: Call
     
     public init(call: Call) {
@@ -18,14 +18,14 @@ public struct Extrinsic<Address: ScaleDynamicCodable, Call: AnyCall, Signature: 
         self.signature = nil
     }
     
-    public init(call: Call, signed: Address, signature: Signature, extra: Extra) {
+    public init(call: Call, signed: Addr, signature: Sign, extra: Extra) {
         self.call = call
         self.signature = ExtrinsicSignature(sender: signed, signature: signature, extra: extra)
     }
 }
 
 extension Extrinsic: ExtrinsicProtocol {
-    public typealias SignaturePayload = ExtrinsicSignature<Address, Signature, Extra>
+    public typealias SignaturePayload = ExtrinsicSignature<Addr, Sign, Extra>
     
     public var isSigned: Optional<Bool> { self.signature != nil }
     
@@ -75,7 +75,7 @@ extension Extrinsic: ExtrinsicMetadataProtocol {
     public static var VERSION: UInt8 { 4 }
 }
 
-extension Extrinsic: ScaleDynamicEncodable {
+extension Extrinsic: ScaleDynamicCodable {
     public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         let data: Data = try decoder.decode()
         try self.init(data: data, registry: registry)

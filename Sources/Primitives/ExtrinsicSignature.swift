@@ -8,12 +8,12 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicSignature<Address: ScaleDynamicCodable, Signature: ScaleDynamicCodable, Extra: SignedExtension>  {
-    public let sender: Address
-    public let signature: Signature
+public struct ExtrinsicSignature<Addr: Address, Sign: Signature, Extra: SignedExtension>  {
+    public let sender: Addr
+    public let signature: Sign
     public let extra: Extra
     
-    public init(sender: Address, signature: Signature, extra: Extra) {
+    public init(sender: Addr, signature: Sign, extra: Extra) {
         self.sender = sender
         self.signature = signature
         self.extra = extra
@@ -22,8 +22,8 @@ public struct ExtrinsicSignature<Address: ScaleDynamicCodable, Signature: ScaleD
 
 extension ExtrinsicSignature: ScaleDynamicCodable {
     public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
-        sender = try Address(from: decoder, registry: registry)
-        signature = try Signature(from: decoder, registry: registry)
+        sender = try Addr(from: decoder, registry: registry)
+        signature = try Sign(from: decoder, registry: registry)
         extra = try Extra(from: decoder, registry: registry)
     }
     

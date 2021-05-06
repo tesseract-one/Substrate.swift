@@ -69,6 +69,7 @@ public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
         query.substrate = self
         consts.substrate = self
         tx.substrate = self
+        registry.ss58AddressFormat = properties.ss58Format
     }
     
     deinit {

@@ -78,7 +78,8 @@ public final class SubstrateExtrinsicApiRegistry<S: SubstrateProtocol> {
 
 public enum SubstrateExtrinsicApiError<R: Runtime>: Error {
     case rpc(error: SubstrateRpcApiError)
-    case signer(error: SubstrateSignerError<R>)
+    case signer(error: SubstrateSignerError)
     case payload(error: Error)
     case dontHaveSigner
+    case badSs58Format(format: Ss58AddressFormat, expected: Ss58AddressFormat)
 }

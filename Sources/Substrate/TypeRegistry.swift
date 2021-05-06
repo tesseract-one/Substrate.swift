@@ -17,6 +17,8 @@ public class TypeRegistry {
     private var _types: Dictionary<DType, ScaleDynamicCodable.Type> = [:]
     private var _reverseTypes: Dictionary<String, DType> = [:]
     
+    public var ss58AddressFormat: Ss58AddressFormat = .substrate
+    
     public init(metadata: Metadata) {
         self.metadata = metadata
     }

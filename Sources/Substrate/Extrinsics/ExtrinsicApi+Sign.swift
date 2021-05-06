@@ -8,17 +8,31 @@
 import Foundation
 
 extension SubstrateExtrinsicApi {
+    public func accounts(_ cb: @escaping SExtrinsicApiCallback<AccountList<S.R>, S.R>) {
+        guard let signer = substrate.signer else {
+            cb(.failure(.dontHaveSigner))
+            return
+        }
+        signer.accounts(with: S.R.self, format: substrate.properties.ss58Format) {
+            cb($0.mapError(SubstrateExtrinsicApiError<S.R>.signer))
+        }
+    }
+    
     public func sign<C: AnyCall>(
-        call: C, extra: S.R.TExtrinsicExtra, with accountId: S.R.TAccountId,
+        call: C, extra: S.R.TExtrinsicExtra, with account: S.R.TAccountId,
         _ cb: @escaping SExtrinsicApiCallback<SExtrinsic<C, S.R>, S.R>
     ) {
         guard let signer = substrate.signer else {
             cb(.failure(.dontHaveSigner))
             return
         }
+        guard account.format == substrate.properties.ss58Format else {
+            cb(.failure(.badSs58Format(format: account.format, expected: substrate.properties.ss58Format)))
+            return
+        }
         do {
             let payload = try SSigningPayload<C, S.R>(call: call, extra: extra)
-            signer.sign(payload: payload, in: S.R.self, with: accountId) { res in
+            signer.sign(payload: payload, with: account, in: S.R.self, registry: substrate.registry) { res in
                 cb(res.mapError(SubstrateExtrinsicApiError<S.R>.signer))
             }
         } catch {
@@ -27,10 +41,10 @@ extension SubstrateExtrinsicApi {
     }
     
     public func signAndSubmit<C: AnyCall>(
-        call: C, extra: S.R.TExtrinsicExtra, with accountId: S.R.TAccountId,
+        call: C, extra: S.R.TExtrinsicExtra, with account: S.R.TAccountId,
         timeout: TimeInterval? = nil, _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
     ) {
-        self.sign(call: call, extra: extra, with: accountId) {
+        self.sign(call: call, extra: extra, with: account) {
             switch $0 {
             case .failure(let err): cb(.failure(err))
             case .success(let extrinsic): self.submit(extrinsic: extrinsic, timeout: timeout, cb)
@@ -58,13 +72,13 @@ extension SubstrateExtrinsicApi where S.R.TExtrinsicExtra: SignedExtrinsicExtra,
     }
     
     public func signAndSubmit<C: AnyCall>(
-        call: C, with accountId: S.R.TAccountId, timeout: TimeInterval? = nil,
+        call: C, with account: S.R.TAccountId, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
     ) {
-        createExtra(accountId: accountId, timeout: timeout) {
+        createExtra(accountId: account, timeout: timeout) {
             switch $0 {
             case .failure(let err): cb(.failure(err))
-            case .success(let extra): self.signAndSubmit(call: call, extra: extra, with: accountId, cb)
+            case .success(let extra): self.signAndSubmit(call: call, extra: extra, with: account, cb)
             }
         }
     }

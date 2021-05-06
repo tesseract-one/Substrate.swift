@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct Ss58AddressFormat: RawRepresentable {
+public struct Ss58AddressFormat: RawRepresentable, Hashable {
     public typealias RawValue = UInt16
     
     public let id: UInt16
@@ -116,11 +116,19 @@ public struct Ss58AddressFormat: RawRepresentable {
     public static let reserved46 = Self(id: 46)
     /// Reserved for future use (47).
     public static let reserved47 = Self(id: 47)
+    /// Neatcoin Mainnet (*25519)
+    public static let neatcoin = Self(id: 48)
+    /// HydraDX (*25519)
+    public static let hydradx = Self(id: 63)
     /// Aventus Chain mainnet, standard account (*25519).
     public static let aventus = Self(id: 65)
     /// Crust Network, standard account (*25519).
     public static let crust = Self(id: 66)
-    /// Note: 48 and above are reserved.
+    /// SORA Network, standard account (*25519).
+    public static let sora = Self(id: 69)
+    /// Social Network, standard account (*25519).
+    public static let socialNetwork = Self(id: 252)
+    /// Note: 49 and above are reserved.
 }
 
 extension Ss58AddressFormat: Codable {
@@ -200,7 +208,7 @@ public struct Ss58AddressCodec {
     }
     
     public func hash(data: Data) -> Data {
-        HBlake2b256.hasher.hash(data: Self.prefix + data)
+        HBlake2b512.hasher.hash(data: Self.prefix + data)
     }
     
     public func checksumLength(for dataLength: Int, prefix: Int) throws -> Int {

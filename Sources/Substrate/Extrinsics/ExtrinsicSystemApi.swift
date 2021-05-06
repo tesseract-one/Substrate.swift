@@ -16,19 +16,19 @@ public struct SubstrateExtrinsicSystemApi<S: SubstrateProtocol>: SubstrateExtrin
     
     public func setCode(
         code: Data, extra: S.R.TExtrinsicExtra,
-        with accountId: S.R.TAccountId, timeout: TimeInterval? = nil,
+        with account: S.R.TAccountId, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
     ) {
-        signAndSubmit(call: SystemSetCodeCall<S.R>(code: code), extra: extra, with: accountId, timeout: timeout, cb)
+        signAndSubmit(call: SystemSetCodeCall<S.R>(code: code), extra: extra, with: account, timeout: timeout, cb)
     }
 }
 
 extension SubstrateExtrinsicSystemApi where S.R.TExtrinsicExtra: SignedExtrinsicExtra, S.R.TExtrinsicExtra.S == S.R {
     public func setCode(
-        code: Data, with accountId: S.R.TAccountId, timeout: TimeInterval? = nil,
+        code: Data, with account: S.R.TAccountId, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
     ) {
-        signAndSubmit(call: SystemSetCodeCall<S.R>(code: code), with: accountId, timeout: timeout, cb)
+        signAndSubmit(call: SystemSetCodeCall<S.R>(code: code), with: account, timeout: timeout, cb)
     }
 }
 

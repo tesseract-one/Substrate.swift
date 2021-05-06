@@ -48,6 +48,8 @@ public enum TypeRegistryError: Error {
 }
 
 public protocol TypeRegistryProtocol: AnyObject {
+    var ss58AddressFormat: Ss58AddressFormat { get set }
+    
     // Storage
     func hash<K: DynamicStorageKey>(of key: K) throws -> Data
     func hash<K: StaticStorageKey>(of key: K) throws -> Data

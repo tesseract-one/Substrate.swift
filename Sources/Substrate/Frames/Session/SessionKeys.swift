@@ -18,13 +18,23 @@ public protocol SessionKeys: ScaleDynamicCodable {
 
 public protocol SessionPublicKey: ScaleDynamicCodable {
     associatedtype TSignature: Signature
-    associatedtype TPublic: PublicKey
+    associatedtype TPublic: PublicKey & Hashable
     
     init(pubKey: TPublic)
     var pubKey: TPublic { get }
 }
 
-public struct GrandpaSessionKey: SessionPublicKey, ScaleCodable {
+extension SessionPublicKey {
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
+        try self.init(pubKey: TPublic(from: decoder, registry: registry))
+    }
+    
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try pubKey.encode(in: encoder, registry: registry)
+    }
+}
+
+public struct GrandpaSessionKey: SessionPublicKey {
     public typealias TSignature = Ed25519Signature
     public typealias TPublic = Ed25519PublicKey
     
@@ -32,17 +42,9 @@ public struct GrandpaSessionKey: SessionPublicKey, ScaleCodable {
     public init(pubKey: TPublic) {
         self.pubKey = pubKey
     }
-    
-    public init(from decoder: ScaleDecoder) throws {
-        pubKey = try decoder.decode()
-    }
-    
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(pubKey)
-    }
 }
 
-public struct BabeSessionKey: SessionPublicKey, ScaleCodable {
+public struct BabeSessionKey: SessionPublicKey {
     public typealias TSignature = Sr25519Signature
     public typealias TPublic = Sr25519PublicKey
     
@@ -50,17 +52,9 @@ public struct BabeSessionKey: SessionPublicKey, ScaleCodable {
     public init(pubKey: TPublic) {
         self.pubKey = pubKey
     }
-    
-    public init(from decoder: ScaleDecoder) throws {
-        pubKey = try decoder.decode()
-    }
-    
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(pubKey)
-    }
 }
 
-public struct ImOnlineSessionKey: SessionPublicKey, ScaleCodable {
+public struct ImOnlineSessionKey: SessionPublicKey {
     public typealias TSignature = Ed25519Signature
     public typealias TPublic = Ed25519PublicKey
     
@@ -68,17 +62,9 @@ public struct ImOnlineSessionKey: SessionPublicKey, ScaleCodable {
     public init(pubKey: TPublic) {
         self.pubKey = pubKey
     }
-    
-    public init(from decoder: ScaleDecoder) throws {
-        pubKey = try decoder.decode()
-    }
-    
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(pubKey)
-    }
 }
 
-public struct AuthorityDiscoverySessionKey: SessionPublicKey, ScaleCodable {
+public struct AuthorityDiscoverySessionKey: SessionPublicKey {
     public typealias TSignature = Sr25519Signature
     public typealias TPublic = Sr25519PublicKey
     
@@ -86,36 +72,20 @@ public struct AuthorityDiscoverySessionKey: SessionPublicKey, ScaleCodable {
     public init(pubKey: TPublic) {
         self.pubKey = pubKey
     }
-    
-    public init(from decoder: ScaleDecoder) throws {
-        pubKey = try decoder.decode()
-    }
-    
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(pubKey)
-    }
 }
 
-public struct ParachainsSessionKey: SessionPublicKey, ScaleCodable {
+public struct ParachainsSessionKey: SessionPublicKey {
     public typealias TSignature = Ed25519Signature
     public typealias TPublic = Ed25519PublicKey
     
     public let pubKey: TPublic
     public init(pubKey: TPublic) {
         self.pubKey = pubKey
-    }
-    
-    public init(from decoder: ScaleDecoder) throws {
-        pubKey = try decoder.decode()
-    }
-    
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(pubKey)
     }
 }
 
 /// Substrate base runtime keys
-public struct BasicSessionKeys: SessionKeys, ScaleCodable {
+public struct BasicSessionKeys: SessionKeys {
     public typealias TBabe = BabeSessionKey
     public typealias TGrandpa = GrandpaSessionKey
     public typealias TImOnline = ImOnlineSessionKey
@@ -130,23 +100,24 @@ public struct BasicSessionKeys: SessionKeys, ScaleCodable {
     /// AuthorityDiscovery session key
     public let authorityDiscovery: TAuthorityDiscovery
     
-    public init(from decoder: ScaleDecoder) throws {
-        grandpa = try decoder.decode()
-        babe = try decoder.decode()
-        imOnline = try decoder.decode()
-        authorityDiscovery = try decoder.decode()
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
+        grandpa = try TGrandpa(from: decoder, registry: registry)
+        babe = try TBabe(from: decoder, registry: registry)
+        imOnline = try TImOnline(from: decoder, registry: registry)
+        authorityDiscovery = try TAuthorityDiscovery(from: decoder, registry: registry)
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder
-            .encode(grandpa).encode(babe)
-            .encode(imOnline).encode(authorityDiscovery)
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try grandpa.encode(in: encoder, registry: registry)
+        try babe.encode(in: encoder, registry: registry)
+        try imOnline.encode(in: encoder, registry: registry)
+        try authorityDiscovery.encode(in: encoder, registry: registry)
     }
 }
 
 
 /// Substrate base runtime keys
-public struct KusamaSessionKeys: SessionKeys, ScaleCodable {
+public struct KusamaSessionKeys: SessionKeys {
     public typealias TBabe = BabeSessionKey
     public typealias TGrandpa = GrandpaSessionKey
     public typealias TImOnline = ImOnlineSessionKey
@@ -163,17 +134,19 @@ public struct KusamaSessionKeys: SessionKeys, ScaleCodable {
     /// AuthorityDiscovery session key
     public let authorityDiscovery: TAuthorityDiscovery
     
-    public init(from decoder: ScaleDecoder) throws {
-        grandpa = try decoder.decode()
-        babe = try decoder.decode()
-        imOnline = try decoder.decode()
-        parachainValidator = try decoder.decode()
-        authorityDiscovery = try decoder.decode()
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
+        grandpa = try TGrandpa(from: decoder, registry: registry)
+        babe = try TBabe(from: decoder, registry: registry)
+        imOnline = try TImOnline(from: decoder, registry: registry)
+        parachainValidator = try ParachainsSessionKey(from: decoder, registry: registry)
+        authorityDiscovery = try TAuthorityDiscovery(from: decoder, registry: registry)
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder
-            .encode(grandpa).encode(babe).encode(imOnline)
-            .encode(parachainValidator).encode(authorityDiscovery)
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try grandpa.encode(in: encoder, registry: registry)
+        try babe.encode(in: encoder, registry: registry)
+        try imOnline.encode(in: encoder, registry: registry)
+        try parachainValidator.encode(in: encoder, registry: registry)
+        try authorityDiscovery.encode(in: encoder, registry: registry)
     }
 }

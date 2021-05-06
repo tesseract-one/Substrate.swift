@@ -20,8 +20,8 @@ extension DefaultNodeRuntime: System {
     public typealias TBlockNumber = UInt32
     public typealias THash = Hash256
     public typealias THasher = HBlake2b256
-    public typealias TAccountId = AccountId<Sr25519PublicKey>
-    public typealias TAddress = Address<TAccountId, UInt32>
+    public typealias TAccountId = Sr25519PublicKey
+    public typealias TAddress = MultiAddress<TAccountId, TIndex>
     public typealias THeader = Header<TBlockNumber, THash>
     public typealias TExtrinsic = OpaqueExtrinsic
     public typealias TAccountData = AccountData<TBalance>

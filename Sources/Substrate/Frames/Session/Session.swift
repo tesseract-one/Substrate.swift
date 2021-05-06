@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol Session: System {
-    associatedtype TValidatorId: ScaleDynamicCodable & SDefault
+    associatedtype TValidatorId: PublicKey & Hashable //& SDefault
     associatedtype TKeys: SessionKeys
 }
 
