@@ -48,7 +48,7 @@ extension SubstrateRpcApiRegistry where S.R: Session {
 public typealias BabeAutorityId<R: Session> = R.TKeys.TBabe.TPublic
 
 public struct EpochAutorship: Codable {
-    public let primary: HexData
-    public let secondary: HexData
-    public let secondaryVrf: HexData
+    public let primary: Data
+    public let secondary: Data
+    public let secondaryVrf: Data
 }

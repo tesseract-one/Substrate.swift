@@ -27,13 +27,13 @@ public struct Digest<H: Hash>: ScaleCodable, ScaleDynamicCodable {
 extension Digest: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let dataArray = try container.decode([HexData].self, forKey: .logs)
-        logs = try dataArray.map{try SCALE.default.decode(from: $0.data)}
+        let dataArray = try container.decode([Data].self, forKey: .logs)
+        logs = try dataArray.map{try SCALE.default.decode(from: $0)}
     }
     
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        let dataArray = try logs.map{try HexData(SCALE.default.encode($0))}
+        let dataArray = try logs.map{try SCALE.default.encode($0)}
         try container.encode(dataArray, forKey: .logs)
     }
 }

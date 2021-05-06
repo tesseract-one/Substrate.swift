@@ -45,11 +45,8 @@ public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
             method: "chain_getBlockHash",
             params: RpcCallParams(block),
             timeout: timeout
-        ) { (res: RpcClientResult<HexData>) in
-            let response = res.mapError(SubstrateRpcApiError.rpc).flatMap { data in
-                Result { try S.R.THash(decoding: data.data) }.mapError(SubstrateRpcApiError.from)
-            }
-            cb(response)
+        ) { (res: RpcClientResult<S.R.THash>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
 }

@@ -36,13 +36,12 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         keyHash: Data, at: S.R.THash? = nil, timeout: TimeInterval? = nil,
         _ cb: @escaping SRpcApiCallback<Data>
     ) {
-        let atData = (try! at?.encode()).map(HexData.init) // Hash doesn't throw errors
         substrate.client.call(
             method: "state_getStorage",
-            params: RpcCallParams(HexData(keyHash), atData),
+            params: RpcCallParams(keyHash, at),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<HexData>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.data})
+        ) { (res: RpcClientResult<Data>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
     
@@ -51,15 +50,13 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         at: S.R.THash? = nil, timeout: TimeInterval? = nil,
         _ cb: @escaping SRpcApiCallback<[Data]>
     ) {
-        let start = startKeyHash.map(HexData.init)
         let fcount = count ?? UInt32(substrate.pageSize)
-        let atData = (try! at?.encode()).map(HexData.init) // Hash doesn't throw errors
         substrate.client.call(
             method: "state_getKeysPaged",
-            params: RpcCallParams(HexData(iteratorHash), fcount, start, atData),
+            params: RpcCallParams(iteratorHash, fcount, startKeyHash, at),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<[HexData]>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.map{$0.data}})
+        ) { (res: RpcClientResult<[Data]>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
     
@@ -151,15 +148,9 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         at hash: S.R.THash?, with client: RpcClient, timeout: TimeInterval,
         _ cb: @escaping SRpcApiCallback<RuntimeVersion>
     ) {
-        let data: HexData?
-        do {
-            data = (try hash?.encode()).map(HexData.init)
-        } catch {
-            cb(.failure(.from(error: error))); return
-        }
         client.call(
             method: "state_getRuntimeVersion",
-            params: RpcCallParams(data),
+            params: RpcCallParams(hash),
             timeout: timeout
         ) { (res: RpcClientResult<RuntimeVersion>) in
             cb(res.mapError(SubstrateRpcApiError.rpc))
@@ -174,10 +165,10 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
             method: "state_getMetadata",
             params: RpcCallParams(),
             timeout: timeout
-        ) { (res: RpcClientResult<HexData>) in
+        ) { (res: RpcClientResult<Data>) in
             let response: SRpcApiResult<Metadata> = res.mapError(SubstrateRpcApiError.rpc).flatMap { data in
                 Result {
-                    let decoder = SCALE.default.decoder(data: data.data)
+                    let decoder = SCALE.default.decoder(data: data)
                     let versioned = try decoder.decode(RuntimeVersionedMetadata.self)
                     return try Metadata(runtime: versioned.metadata)
                 }.mapError(SubstrateRpcApiError.from)

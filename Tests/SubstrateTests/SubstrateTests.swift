@@ -20,13 +20,15 @@ final class SubstrateTests: XCTestCase {
             
             let encoder = JSONEncoder()
             encoder.outputFormatting = .prettyPrinted
+            encoder.dateEncodingStrategy = .substrate_iso8601millis
+            encoder.dataEncodingStrategy = .substrate_prefixedHex
             let json = try! encoder.encode(rmetadata.metadata as! RuntimeMetadataV12)
             print("Metadata", String(data: json, encoding: .utf8)!)
         }
         
-        client.call(method: "state_getMetadata", params: Array<Int>()) { (res: Result<HexData, RpcClientError>) in
+        client.call(method: "state_getMetadata", params: Array<Int>()) { (res: Result<Data, RpcClientError>) in
             switch res {
-            case .success(let hd): parse(hd.data)
+            case .success(let data): parse(data)
             case .failure(let err): print("Erorr", err)
             }
             disconnected.fulfill()
