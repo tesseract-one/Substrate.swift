@@ -15,8 +15,8 @@ public protocol System {
     associatedtype THasher: Hasher
     associatedtype TAccountId: ScaleDynamicCodable & Hashable & SDefault
     associatedtype TAddress: ScaleDynamicCodable & SDefault
-    associatedtype THeader: ScaleDynamicCodable
-    associatedtype TExtrinsic: ExtrinsicProtocol
+    associatedtype THeader: ScaleDynamicCodable & Codable
+    associatedtype TExtrinsic: ExtrinsicProtocol & Codable
     associatedtype TAccountData: ScaleDynamicCodable
 }
 

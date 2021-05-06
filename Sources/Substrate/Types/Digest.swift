@@ -11,12 +11,30 @@ import ScaleCodec
 public struct Digest<H: Hash>: ScaleCodable, ScaleDynamicCodable {
     public let logs: Array<DigestItem<H>>
     
+    enum CodingKeys: String, CodingKey {
+        case logs
+    }
+    
     public init(from decoder: ScaleDecoder) throws {
         logs = try decoder.decode()
     }
     
     public func encode(in encoder: ScaleEncoder) throws {
         try encoder.encode(logs)
+    }
+}
+
+extension Digest: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let dataArray = try container.decode([HexData].self, forKey: .logs)
+        logs = try dataArray.map{try SCALE.default.decode(from: $0.data)}
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        let dataArray = try logs.map{try HexData(SCALE.default.encode($0))}
+        try container.encode(dataArray, forKey: .logs)
     }
 }
 

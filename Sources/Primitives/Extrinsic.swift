@@ -129,3 +129,16 @@ public struct OpaqueExtrinsic: ExtrinsicProtocol, ScaleDynamicCodable {
         self
     }
 }
+
+extension OpaqueExtrinsic: Codable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        data = try container.decode(Data.self)
+        registry = nil
+    }
+    
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(data)
+    }
+}

@@ -11,7 +11,7 @@ import ScaleCodec
 
 public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public weak var substrate: S!
-    public typealias ChainBlock = SignedBlock<Block<Data, Data>>
+    public typealias ChainBlock = SignedBlock<Block<S.R.THeader, S.R.TExtrinsic>>
     
     public init(substrate: S) {
         self.substrate = substrate
