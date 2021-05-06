@@ -15,13 +15,14 @@ public struct Sr25519KeyPair: KeyPair {
     public var rawPubKey: Data { keyPair.publicKey.key }
     public var typeId: CryptoTypeId { .sr25519 }
     
-    public init(phrase: String, password: String?) throws {
-        let seed = try Mnemonic(phrase: phrase.components(separatedBy: " "), passphrase: password ?? "").seed()
+    public init(phrase: String, password: String? = nil) throws {
+        let entropy = try Mnemonic.toEntropy(phrase.components(separatedBy: " "))
+        let seed = try Mnemonic.seed(bytes: entropy, passphrase: password ?? "")
         try self.init(seed: Data(seed))
     }
     
     public init(seed: Data) throws {
-        try self.init(keyPair: Sr25519.KeyPair(seed: Sr25519.Seed(seed: seed)))
+        try self.init(keyPair: Sr25519.KeyPair(seed: Sr25519.Seed(seed: seed.prefix(Sr25519.Seed.size))))
     }
     
     public func pubKey(format: Ss58AddressFormat) -> PublicKey {

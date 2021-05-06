@@ -65,6 +65,9 @@ var package = Package(
             dependencies: ["Substrate", "Sr25519", "CryptoSwift"],
             path: "Sources/Keychain"),
         .testTarget(
+            name: "KeychainTests",
+            dependencies: ["SubstrateKeychain"]),
+        .testTarget(
             name: "PolkadotTests",
             dependencies: ["Polkadot"]),
         .testTarget(

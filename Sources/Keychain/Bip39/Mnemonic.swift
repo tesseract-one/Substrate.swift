@@ -10,7 +10,7 @@
 import Foundation
 import CryptoSwift
 
-public class Mnemonic {
+public struct Mnemonic {
     public enum Error: Swift.Error {
         case invalidMnemonic
         case invalidEntropy
@@ -18,28 +18,6 @@ public class Mnemonic {
     
     public let phrase: [String]
     let passphrase: String
-    
-//    public init(strength: Int = 128, wordlist: [String] = Wordlists.english) {
-//        precondition(strength % 32 == 0, "Invalid entropy")
-//
-//        // 1.Random Bytes
-//        var bytes = [UInt8](repeating: 0, count: strength / 8)
-//        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
-//
-//        // 2.Entropy -> Mnemonic
-//        let entropyBits = String(bytes.flatMap { ("00000000" + String($0, radix:2)).suffix(8) })
-//        let checksumBits = Mnemonic.deriveChecksumBits(bytes)
-//        let bits = entropyBits + checksumBits
-//
-//        var phrase = [String]()
-//        for i in 0..<(bits.count / 11) {
-//            let wi = Int(bits[bits.index(bits.startIndex, offsetBy: i * 11)..<bits.index(bits.startIndex, offsetBy: (i + 1) * 11)], radix: 2)!
-//            phrase.append(String(wordlist[wi]))
-//        }
-//
-//        self.phrase = phrase
-//        self.passphrase = ""
-//    }
     
     public init(phrase: [String], passphrase: String = "") throws {
         if (!Mnemonic.isValid(phrase: phrase)) {
@@ -49,13 +27,13 @@ public class Mnemonic {
         self.passphrase = passphrase
     }
     
-    public init(entropy: [UInt8], wordlist: [String] = Wordlists.english) throws {
+    public init(entropy: [UInt8], wordlist: Wordlist = .english) throws {
         self.phrase = try Mnemonic.toMnemonic(entropy, wordlist: wordlist)
         self.passphrase = ""
     }
     
     // Entropy -> Mnemonic
-    public static func toMnemonic(_ bytes: [UInt8], wordlist: [String] = Wordlists.english) throws -> [String] {
+    public static func toMnemonic(_ bytes: [UInt8], wordlist: Wordlist = .english) throws -> [String] {
         let entropyBits = String(bytes.flatMap { ("00000000" + String($0, radix:2)).suffix(8) })
         let checksumBits = Mnemonic.deriveChecksumBits(bytes)
         let bits = entropyBits + checksumBits
@@ -63,15 +41,15 @@ public class Mnemonic {
         var phrase = [String]()
         for i in 0..<(bits.count / 11) {
             let wi = Int(bits[bits.index(bits.startIndex, offsetBy: i * 11)..<bits.index(bits.startIndex, offsetBy: (i + 1) * 11)], radix: 2)!
-            phrase.append(String(wordlist[wi]))
+            phrase.append(String(wordlist.words[wi]))
         }
         return phrase
     }
     
     // Mnemonic -> Entropy
-    public static func toEntropy(_ phrase: [String], wordlist: [String] = Wordlists.english) throws -> [UInt8] {
+    public static func toEntropy(_ phrase: [String], wordlist: Wordlist = .english) throws -> [UInt8] {
         let bits = phrase.map { (word) -> String in
-            let index = wordlist.firstIndex(of: word)!
+            let index = wordlist.words.firstIndex(of: word)!
             var str = String(index, radix:2)
             while str.count < 11 {
                 str = "0" + str
@@ -93,10 +71,18 @@ public class Mnemonic {
         return entropyBytes
     }
     
-    public static func isValid(phrase: [String], wordlist: [String] = Wordlists.english) -> Bool {
+    public static func seed(bytes: [UInt8], passphrase: String = "") throws -> [UInt8] {
+        let salt = ("mnemonic" + passphrase)
+        return try PKCS5.PBKDF2(
+            password: bytes, salt: Array(salt.utf8),
+            iterations: 2048, variant: .sha512
+        ).calculate()
+    }
+    
+    public static func isValid(phrase: [String], wordlist: Wordlist = .english) -> Bool {
         var bits = ""
         for word in phrase {
-            guard let i = wordlist.firstIndex(of: word) else { return false }
+            guard let i = wordlist.words.firstIndex(of: word) else { return false }
             bits += ("00000000000" + String(i, radix: 2)).suffix(11)
         }
         
@@ -122,11 +108,7 @@ public class Mnemonic {
     
     public func seed() throws -> [UInt8] {
         let mnemonic = self.phrase.joined(separator: " ")
-        let salt = ("mnemonic" + self.passphrase)
-        return try PKCS5.PBKDF2(
-            password: Array(mnemonic.utf8), salt: Array(salt.utf8),
-            iterations: 2048, variant: .sha512
-        ).calculate()
+        return try Self.seed(bytes: Array(mnemonic.utf8), passphrase: passphrase)
     }
 }
 

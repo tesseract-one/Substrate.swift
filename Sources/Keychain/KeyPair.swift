@@ -24,12 +24,12 @@ public protocol KeyPair {
 }
 
 extension KeyPair where Self: Derivable {
-    public func parse(_ str: String, override password: String? = nil) throws -> Self {
+    public static func parse(_ str: String, override password: String? = nil) throws -> Self {
         guard let match = SeedRegex.firstMatch(in: str, options: [], range: NSRange(location: 0, length: str.count)) else {
             throw SecretParsingError.invalidFormat
         }
         let phrase = Range(match.range(at: 1), in: str).map{String(str[$0])} ?? DEFAULT_DEV_PHRASE
-        let password = password != nil ? password : Range(match.range(at: 3), in: str).map{String(str[$0])}
+        let password = password != nil ? password : Range(match.range(at: 5), in: str).map{String(str[$0])}
         guard let path = Range(match.range(at: 2), in: str).map({String(str[$0])}) else {
             throw SecretParsingError.invalidFormat
         }
@@ -46,7 +46,7 @@ extension KeyPair where Self: Derivable {
         }
         let root: Self
         if phrase.starts(with: "0x") {
-            guard let seed = HexData.fromHex(hex: phrase) else {
+            guard let seed = Hex.decode(hex: phrase) else {
                 throw SecretParsingError.invalidSeed
             }
             do {
