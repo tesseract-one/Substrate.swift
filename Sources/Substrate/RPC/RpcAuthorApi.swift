@@ -18,7 +18,7 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public func hasKey(publicKey: Data, keyType: String, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Bool>) {
         substrate.client.call(
             method: "author_hasKey",
-            params: RpcCallParams(HexData(publicKey), keyType),
+            params: RpcCallParams(publicKey, keyType),
             timeout: timeout ?? substrate.callTimeout
         ) { (res: RpcClientResult<Bool>) in
             cb(res.mapError(SubstrateRpcApiError.rpc))
@@ -28,7 +28,7 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public func hasSessionKeys(sessionKeys: Data, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Bool>) {
         substrate.client.call(
             method: "author_hasSessionKeys",
-            params: RpcCallParams(HexData(sessionKeys)),
+            params: RpcCallParams(sessionKeys),
             timeout: timeout ?? substrate.callTimeout
         ) { (res: RpcClientResult<Bool>) in
             cb(res.mapError(SubstrateRpcApiError.rpc))
@@ -38,10 +38,10 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public func insertKey(keyType: String, suri: String, publicKey: Data, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
         substrate.client.call(
             method: "author_insertKey",
-            params: RpcCallParams(keyType, suri, HexData(publicKey)),
+            params: RpcCallParams(keyType, suri, publicKey),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<HexData>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.data})
+        ) { (res: RpcClientResult<Data>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
     
@@ -50,11 +50,11 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
             method: "author_pendingExtrinsics",
             params: RpcCallParams(),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<[HexData]>) in
+        ) { (res: RpcClientResult<[Data]>) in
             let response = res.mapError(SubstrateRpcApiError.from).flatMap { dataArray in
                 Result {
                     try dataArray.map { data in
-                        try S.R.TExtrinsic(data: data.data, registry: substrate.registry)
+                        try S.R.TExtrinsic(data: data, registry: substrate.registry)
                     }
                 }.mapError(SubstrateRpcApiError.from)
             }
@@ -63,24 +63,24 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
     }
 
     public func removeExtrinsic<H: Hash>(bytesOrHash: [ExtrinsicOrHash<H>], timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<[S.R.THash]>) {
-        var hexArray = [HexData]()
+        var hexArray = [Data]()
         for boh in bytesOrHash {
             switch boh {
             case .hash(let hash):
                 guard let data = _encode(value: hash, cb) else { return }
-                hexArray.append(HexData(data))
+                hexArray.append(data)
             case .extrinsic(let data):
-                hexArray.append(HexData(data))
+                hexArray.append(data)
             }
         }
         substrate.client.call(
             method: "author_removeExtrinsic",
             params: RpcCallParams(hexArray),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<[HexData]>) in
+        ) { (res: RpcClientResult<[Data]>) in
             let response = res.mapError(SubstrateRpcApiError.from).flatMap { dataArray in
                 Result {
-                    try dataArray.map { try S.R.THash(decoding: $0.data) }
+                    try dataArray.map { try S.R.THash(decoding: $0) }
                 }.mapError(SubstrateRpcApiError.from)
             }
             cb(response)
@@ -92,8 +92,8 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
             method: "author_rotateKeys",
             params: RpcCallParams(),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<HexData>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc).map{$0.data})
+        ) { (res: RpcClientResult<Data>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
     
@@ -103,13 +103,10 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
         guard let data = _encode(value: extrinsic, cb) else { return }
         substrate.client.call(
             method: "author_submitExtrinsic",
-            params: RpcCallParams(HexData(data)),
+            params: RpcCallParams(data),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<HexData>) in
-            let response = res.mapError(SubstrateRpcApiError.rpc).flatMap { data in
-                Result { try S.R.THash(decoding: data.data) }.mapError(SubstrateRpcApiError.from)
-            }
-            cb(response)
+        ) { (res: RpcClientResult<S.R.THash>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
 }
@@ -121,7 +118,7 @@ extension SubstrateRpcAuthorApi where S.C: SubscribableRpcClient {
         guard let data = _encode(value: extrinsic, cb) else { return nil }
         return substrate.client.subscribe(
             method: "author_submitAndWatchExtrinsic",
-            params: RpcCallParams(HexData(data)),
+            params: RpcCallParams(data),
             unsubscribe: "author_unwatchExtrinsic"
         ) { (res: Result<TransactionStatus<S.R.THash, S.R.THash>, RpcClientError>) in
             let response = res.mapError(SubstrateRpcApiError.rpc)

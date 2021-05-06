@@ -12,10 +12,11 @@ public protocol Hash: ScaleFixedData, ScaleDynamicCodable, Codable {}
 
 extension Hash {
     public init(from decoder: Decoder) throws {
-        let data = try HexData(from: decoder).data
+        let container = try decoder.singleValueContainer()
+        let data = try container.decode(Data.self)
         guard data.count == Self.fixedBytesCount else {
             throw DecodingError.dataCorruptedError(
-                in: try decoder.singleValueContainer(),
+                in: container,
                 debugDescription: "Wrong data size \(data.count), expected \(Self.fixedBytesCount)"
             )
         }
@@ -23,7 +24,8 @@ extension Hash {
     }
     
     public func encode(to encoder: Encoder) throws {
-        try HexData(encode()).encode(to: encoder)
+        var container = encoder.singleValueContainer()
+        try container.encode(encode())
     }
 }
 

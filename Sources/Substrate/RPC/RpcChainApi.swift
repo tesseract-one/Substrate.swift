@@ -11,9 +11,20 @@ import ScaleCodec
 
 public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public weak var substrate: S!
+    public typealias ChainBlock = SignedBlock<Block<S.R.THeader, S.R.TExtrinsic>>
     
     public init(substrate: S) {
         self.substrate = substrate
+    }
+    
+    public func getBlock(hash: S.R.THash?, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<ChainBlock>) {
+        substrate.client.call(
+            method: "chain_getBlock",
+            params: RpcCallParams(hash),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<ChainBlock>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
     }
     
     public func getBlockHash(
@@ -34,11 +45,8 @@ public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
             method: "chain_getBlockHash",
             params: RpcCallParams(block),
             timeout: timeout
-        ) { (res: RpcClientResult<HexData>) in
-            let response = res.mapError(SubstrateRpcApiError.rpc).flatMap { data in
-                Result { try S.R.THash(decoding: data.data) }.mapError(SubstrateRpcApiError.from)
-            }
-            cb(response)
+        ) { (res: RpcClientResult<S.R.THash>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
 }
