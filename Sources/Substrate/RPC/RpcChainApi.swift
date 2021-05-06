@@ -11,19 +11,32 @@ import ScaleCodec
 
 public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public weak var substrate: S!
-    public typealias ChainBlock = SignedBlock<Block<S.R.THeader, S.R.TExtrinsic>>
+    public typealias ChainBlock<Extrinsic: Codable> = SignedBlock<Block<S.R.THeader, Extrinsic>>
     
     public init(substrate: S) {
         self.substrate = substrate
     }
     
-    public func getBlock(hash: S.R.THash?, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<ChainBlock>) {
+    public func getBlock(hash: S.R.THash?, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<ChainBlock<S.R.TExtrinsic>>) {
         substrate.client.call(
             method: "chain_getBlock",
             params: RpcCallParams(hash),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<ChainBlock>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc))
+        ) { (res: RpcClientResult<ChainBlock<Data>>) in
+            let response = res.mapError(SubstrateRpcApiError.from).flatMap { cbd in
+                Result {
+                    ChainBlock<S.R.TExtrinsic>(
+                        block: Block(
+                            header: cbd.block.header,
+                            extrinsics: try cbd.block.extrinsics.map {
+                                try S.R.TExtrinsic(data: $0, registry: substrate.registry)
+                            }
+                        ),
+                        justification: cbd.justification
+                    )
+                }.mapError(SubstrateRpcApiError.from)
+            }
+            cb(response)
         }
     }
     
