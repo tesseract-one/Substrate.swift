@@ -10,6 +10,7 @@ import Foundation
 public struct Hex {
     public static func decode(hex: String) -> Data? {
         guard let hexData = hex.data(using: .ascii) else { return nil }
+        guard hexData.count % 2 == 0 else { return nil }
         let prefix = hex.hasPrefix("0x") ? 2 : 0
         return hexData.withUnsafeBytes { hex in
             var result = Data()
