@@ -23,7 +23,7 @@ public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
             params: RpcCallParams(hash),
             timeout: timeout ?? substrate.callTimeout
         ) { (res: RpcClientResult<ChainBlock<Data>>) in
-            let response = res.mapError(SubstrateRpcApiError.from).flatMap { cbd in
+            let response = res.mapError(SubstrateRpcApiError.rpc).flatMap { cbd in
                 Result {
                     ChainBlock<S.R.TExtrinsic>(
                         block: Block(
@@ -37,6 +37,26 @@ public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
                 }.mapError(SubstrateRpcApiError.from)
             }
             cb(response)
+        }
+    }
+    
+    public func getFinalizedHead(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THash>) {
+        substrate.client.call(
+            method: "chain_getFinalizedHead",
+            params: RpcCallParams(),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<S.R.THash>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
+    }
+    
+    public func getHeader(hash: S.R.THash?, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THeader>) {
+        substrate.client.call(
+            method: "chain_getHeader",
+            params: RpcCallParams(hash),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<S.R.THeader>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
     
@@ -59,6 +79,38 @@ public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
             params: RpcCallParams(block),
             timeout: timeout
         ) { (res: RpcClientResult<S.R.THash>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
+    }
+}
+
+extension SubstrateRpcChainApi where S.C: SubscribableRpcClient {
+    public func subscribeAllHeads(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THeader>) -> RpcSubscription {
+        return substrate.client.subscribe(
+            method: "chain_subscribeAllHeads",
+            params: RpcCallParams(),
+            unsubscribe: "chain_unsubscribeAllHeads"
+        ) { (res: RpcClientResult<S.R.THeader>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
+    }
+    
+    public func subscribeFinalizedHeads(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THeader>) -> RpcSubscription {
+        return substrate.client.subscribe(
+            method: "chain_subscribeFinalizedHeads",
+            params: RpcCallParams(),
+            unsubscribe: "chain_unsubscribeFinalizedHeads"
+        ) { (res: RpcClientResult<S.R.THeader>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
+    }
+    
+    public func subscribeNewHeads(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THeader>) -> RpcSubscription {
+        return substrate.client.subscribe(
+            method: "chain_subscribeNewHeads",
+            params: RpcCallParams(),
+            unsubscribe: "chain_unsubscribeNewHeads"
+        ) { (res: RpcClientResult<S.R.THeader>) in
             cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
