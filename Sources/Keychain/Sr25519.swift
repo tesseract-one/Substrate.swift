@@ -8,38 +8,47 @@
 import Foundation
 import Substrate
 import Sr25519
+import Bip39
 
-public struct Sr25519KeyPair: KeyPair {    
-    private let keyPair: Sr25519.KeyPair
+private typealias SRKeyPair = Sr25519.Sr25519KeyPair
+private typealias SRSeed = Sr25519.Sr25519Seed
+private typealias SRSignature = Sr25519.Sr25519Signature
+private typealias SRChainCode = Sr25519.Sr25519ChainCode
+private typealias SRPublicKey = Sr25519.Sr25519PublicKey
+
+public typealias SBSRPublicKey = SubstratePrimitives.Sr25519PublicKey
+
+public struct Sr25519KeyPair: KeyPair {
+    private let keyPair: SRKeyPair
     
-    public var rawPubKey: Data { keyPair.publicKey.key }
+    public var rawPubKey: Data { keyPair.publicKey.raw }
     public var typeId: CryptoTypeId { .sr25519 }
     
     public init(phrase: String, password: String? = nil) throws {
-        let entropy = try Mnemonic.toEntropy(phrase.components(separatedBy: " "))
-        let seed = try Mnemonic.seed(bytes: entropy, passphrase: password ?? "")
+        let mnemonic = try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
+        let seed = mnemonic.seed(password: password ?? "", wordlist: .english)
         try self.init(seed: Data(seed))
     }
     
     public init(seed: Data) throws {
-        try self.init(keyPair: Sr25519.KeyPair(seed: Sr25519.Seed(seed: seed.prefix(Sr25519.Seed.size))))
+        try self.init(keyPair: SRKeyPair(seed: SRSeed(raw: seed.prefix(SRSeed.size))))
     }
     
     public func pubKey(format: Ss58AddressFormat) -> PublicKey {
-        try! Sr25519PublicKey(bytes: keyPair.publicKey.key, format: format)
+        try! SBSRPublicKey(bytes: keyPair.publicKey.raw, format: format)
     }
     
     public func sign(message: Data) throws -> Data {
-        keyPair.sign(message: message).data
+        keyPair.sign(message: message).raw
     }
     
     public func verify(message: Data, signature: Data) throws -> Bool {
-        try keyPair.verify(message: message, signature: Sr25519.Signature(signature: signature))
+        try keyPair.verify(message: message, signature: SRSignature(raw: signature))
     }
     
-    public static var seedLength: Int = Seed.size
+    public static var seedLength: Int = SRSeed.size
     
-    private init(keyPair: Sr25519.KeyPair) {
+    private init(keyPair: SRKeyPair) {
         self.keyPair = keyPair
     }
 }
@@ -47,18 +56,18 @@ public struct Sr25519KeyPair: KeyPair {
 extension Sr25519KeyPair: Derivable {
     public func derive(path: [DeriveJunction]) throws -> Sr25519KeyPair {
         let kp = try path.reduce(keyPair) { (pair, cmp) in
-            try pair.derive(chainCode: Sr25519.ChainCode(code: cmp.bytes), hard: cmp.isHard)
+            try pair.derive(chainCode: SRChainCode(raw: cmp.bytes), hard: cmp.isHard)
         }
         return Self(keyPair: kp)
     }
 }
 
-extension Sr25519PublicKey: Derivable {
-    public func derive(path: [DeriveJunction]) throws -> Sr25519PublicKey {
-        let pub = try path.reduce(Sr25519.PublicKey(data: bytes)) { (pub, cmp) in
+extension SBSRPublicKey: Derivable {
+    public func derive(path: [DeriveJunction]) throws -> SBSRPublicKey {
+        let pub = try path.reduce(SRPublicKey(raw: bytes)) { (pub, cmp) in
             guard cmp.isSoft else { throw DeriveError.publicHardPath }
-            return try pub.derive(chainCode: Sr25519.ChainCode(code: cmp.bytes))
+            return try pub.derive(chainCode: SRChainCode(raw: cmp.bytes))
         }
-        return try Sr25519PublicKey(bytes: pub.key, format: format)
+        return try SBSRPublicKey(bytes: pub.raw, format: format)
     }
 }

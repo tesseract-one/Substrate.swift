@@ -84,6 +84,8 @@ extension DeriveJunction {
 
 public enum DeriveError: Error {
     case publicHardPath
+    case publicDeriveIsNotSupported
+    case softDeriveIsNotSupported
 }
 
 public protocol Derivable {

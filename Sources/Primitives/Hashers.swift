@@ -8,10 +8,7 @@
 import Foundation
 import ScaleCodec
 import xxHash_Swift
-
-#if !COCOAPODS
-import CBlake2b
-#endif
+import Blake2
 
 public protocol Hasher {
     static var hashPartByteLength: Int { get }
@@ -48,7 +45,7 @@ extension ConcatHasher {
 
 public struct HBlake2b128: NormalHasher {
     public func hash(data: Data) -> Data {
-        return blake2bHash(data: data, bitWidth: Self.bitWidth)
+        return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
     }
     
     public static let bitWidth: Int = 128
@@ -57,7 +54,7 @@ public struct HBlake2b128: NormalHasher {
 
 public struct HBlake2b128Concat: ConcatHasher {
     public func hash(data: Data) -> Data {
-        return blake2bHash(data: data, bitWidth: Self.hashPartBitWidth) + data
+        return try! Blake2.hash(.b2b, size: Self.hashPartBitWidth / 8, data: data) + data
     }
     
     public static let hashPartBitWidth: Int = 128
@@ -66,7 +63,7 @@ public struct HBlake2b128Concat: ConcatHasher {
 
 public struct HBlake2b256: NormalHasher {
     public func hash(data: Data) -> Data {
-        return blake2bHash(data: data, bitWidth: Self.bitWidth)
+        return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
     }
     
     public static let bitWidth: Int = 256
@@ -75,7 +72,7 @@ public struct HBlake2b256: NormalHasher {
 
 public struct HBlake2b512: NormalHasher {
     public func hash(data: Data) -> Data {
-        return blake2bHash(data: data, bitWidth: Self.bitWidth)
+        return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
     }
     
     public static let bitWidth: Int = 512
@@ -128,31 +125,5 @@ private func xxHash(data: Data, bitWidth: Int) -> Data {
             result.append(contentsOf: bytes)
         }
     }
-    return result
-}
-
-private func blake2bHash(data: Data, bitWidth: Int, key: Data? = nil) -> Data {
-    let count = bitWidth / 8 > BLAKE2B_OUTBYTES.rawValue
-        ? Int(BLAKE2B_OUTBYTES.rawValue)
-        : bitWidth / 8
-    var result = Data(repeating: 0, count: count)
-    
-    let _ = result.withUnsafeMutableBytes { out -> Int32 in
-        data.withUnsafeBytes { dataBytes -> Int32 in
-            if let key = key {
-                return key.withUnsafeBytes { keyBytes -> Int32 in
-                    blake2b(
-                        out.baseAddress, out.count, dataBytes.baseAddress, dataBytes.count,
-                        keyBytes.baseAddress, keyBytes.count
-                    )
-                }
-            } else {
-                return blake2b(
-                    out.baseAddress, out.count, dataBytes.baseAddress, dataBytes.count, nil, 0
-                )
-            }
-        }
-    }
-    
     return result
 }

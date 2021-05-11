@@ -1,5 +1,5 @@
 //
-//  Signer.swift
+//  SubstrateSigner.swift
 //  
 //
 //  Created by Yehor Popovych on 27.04.2021.

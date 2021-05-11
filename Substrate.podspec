@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
   s.osx.deployment_target = '10.12'
   s.tvos.deployment_target = '12.0'
   
-  s.swift_versions = ['5', '5.1', '5.2']
+  s.swift_versions = ['5', '5.1', '5.2', '5.3']
   
   s.module_name = 'Substrate'
   
@@ -41,7 +41,7 @@ Pod::Spec.new do |s|
   s.subspec 'Primitives' do |ss|
     ss.source_files = 'Sources/Primitives/**/*.swift'
 
-    ss.dependency 'Substrate/CBlake2b'
+    ss.dependency 'Blake2', '~> 0.1'
     ss.dependency 'ScaleCodec', '~> 0.1'
     ss.dependency 'xxHash-Swift', '~> 1.1'
     
@@ -59,11 +59,6 @@ Pod::Spec.new do |s|
       test_spec.dependency 'Serializable.swift', '~> 0.2'
       test_spec.source_files = 'Tests/RPCTests/**/*.swift'
     end
-  end
-  
-  s.subspec 'CBlake2b' do |ss|
-    ss.source_files = 'Sources/CBlake2b/**/*.{h,c}'
-    ss.public_header_files = 'Sources/CBlake2b/include/*.h'
   end
 
   s.default_subspecs = 'Polkadot'
