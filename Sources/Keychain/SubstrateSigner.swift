@@ -37,7 +37,7 @@ extension Keychain: SubstrateSigner {
             do {
                 let encoder = SCALE.default.encoder()
                 try payload.encode(in: encoder, registry: registry)
-                data = HBlake2b256.hasher.hash(data: encoder.output)
+                data = encoder.output
             } catch {
                 cb(.failure(.unknown(error)))
                 return

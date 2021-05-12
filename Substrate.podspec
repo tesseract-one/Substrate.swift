@@ -17,6 +17,19 @@ Pod::Spec.new do |s|
   
   s.module_name = 'Substrate'
   
+  s.subspec 'Keychain' do |ss|
+    ss.source_files = 'Sources/Keychain/**/*.swift'
+
+    ss.dependency 'Substrate/Substrate'
+    ss.dependency 'Bip39.swift', '~> 0.1'
+    ss.dependency 'Sr25519', '~> 0.1'
+    ss.dependency 'secp256k1.swift', '~> 0.1'
+    
+    ss.test_spec 'SubstrateTests' do |test_spec|
+      test_spec.source_files = 'Tests/KeychainTests/**/*.swift'
+    end
+  end
+  
   s.subspec 'Substrate' do |ss|
     ss.source_files = 'Sources/Substrate/**/*.swift'
 

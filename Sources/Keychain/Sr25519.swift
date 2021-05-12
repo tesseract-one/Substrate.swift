@@ -16,7 +16,13 @@ private typealias SRSignature = Sr25519.Sr25519Signature
 private typealias SRChainCode = Sr25519.Sr25519ChainCode
 private typealias SRPublicKey = Sr25519.Sr25519PublicKey
 
+#if COCOAPODS
+public typealias SBSRPublicKey = Substrate.Sr25519PublicKey
+public typealias SBSRSignature = Substrate.Sr25519Signature
+#else
 public typealias SBSRPublicKey = SubstratePrimitives.Sr25519PublicKey
+public typealias SBSRSignature = SubstratePrimitives.Sr25519Signature
+#endif
 
 public struct Sr25519KeyPair: KeyPair {
     private let keyPair: SRKeyPair
@@ -34,16 +40,22 @@ public struct Sr25519KeyPair: KeyPair {
         try self.init(keyPair: SRKeyPair(seed: SRSeed(raw: seed.prefix(SRSeed.size))))
     }
     
+    public init() {
+        try! self.init(seed: Data(SubstrateKeychainRandom.bytes(count: SRSeed.size)))
+    }
+    
     public func pubKey(format: Ss58AddressFormat) -> PublicKey {
         try! SBSRPublicKey(bytes: keyPair.publicKey.raw, format: format)
     }
     
     public func sign(message: Data) throws -> Data {
-        keyPair.sign(message: message).raw
+        let hash = HBlake2b256.hasher.hash(data: message)
+        return keyPair.sign(message: hash).raw
     }
     
     public func verify(message: Data, signature: Data) throws -> Bool {
-        try keyPair.verify(message: message, signature: SRSignature(raw: signature))
+        let hash = HBlake2b256.hasher.hash(data: message)
+        return try keyPair.verify(message: hash, signature: SRSignature(raw: signature))
     }
     
     public static var seedLength: Int = SRSeed.size
@@ -69,5 +81,18 @@ extension SBSRPublicKey: Derivable {
             return try pub.derive(chainCode: SRChainCode(raw: cmp.bytes))
         }
         return try SBSRPublicKey(bytes: pub.raw, format: format)
+    }
+}
+
+
+extension SBSRPublicKey {
+    public func verify(signature: SBSRSignature, message: Data) -> Bool {
+        guard let pub = try? SRPublicKey(raw: self.bytes) else {
+            return false
+        }
+        guard let sig = try? SRSignature(raw: signature.signature) else {
+            return false
+        }
+        return pub.verify(message: message, signature: sig)
     }
 }
