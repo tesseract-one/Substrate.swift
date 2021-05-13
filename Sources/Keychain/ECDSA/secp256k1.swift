@@ -36,37 +36,37 @@ class Secp256k1Context {
     }
     
     func sign(hash: [UInt8], privKey: [UInt8]) throws -> secp256k1_ecdsa_recoverable_signature {
-        guard privKey.count == Self.privKeySize else { throw KeyPairError.badPrivateKeyData }
-        guard hash.count == 32 else { throw KeyPairError.badMessageData }
+        guard privKey.count == Self.privKeySize else { throw KeyPairError.native(error: .badPrivateKey) }
+        guard hash.count == 32 else { throw KeyPairError.input(error: .message) }
         var signature = secp256k1_ecdsa_recoverable_signature()
         let res = secp256k1_ecdsa_sign_recoverable(context, &signature, hash, privKey, nil, nil)
-        guard res > 0 else { throw KeyPairError.signingFailed }
+        guard res > 0 else { throw KeyPairError.native(error: .internal) }
         return signature
     }
     
     func signature(from bytes: [UInt8]) throws -> secp256k1_ecdsa_recoverable_signature {
-        guard bytes.count == 65 else { throw KeyPairError.badSignatureData }
+        guard bytes.count == 65 else { throw KeyPairError.input(error: .signature) }
         var signature = secp256k1_ecdsa_recoverable_signature()
         let res = secp256k1_ecdsa_recoverable_signature_parse_compact(context, &signature, bytes, Int32(bytes[64]))
-        guard res > 0 else { throw KeyPairError.badSignatureData }
+        guard res > 0 else { throw KeyPairError.input(error: .signature) }
         return signature
     }
     
     func publicKey(from bytes: [UInt8]) throws -> secp256k1_pubkey {
         guard bytes.count == 33 || bytes.count == 65 else {
-            throw KeyPairError.badPublicKeyData
+            throw KeyPairError.input(error: .publicKey)
         }
         var pubkey = secp256k1_pubkey()
         let res = secp256k1_ec_pubkey_parse(context, &pubkey, bytes, bytes.count)
-        guard res > 0 else { throw KeyPairError.badPublicKeyData }
+        guard res > 0 else { throw KeyPairError.input(error: .publicKey) }
         return pubkey
     }
     
     func toPublicKey(privKey: [UInt8]) throws -> secp256k1_pubkey {
-        guard privKey.count == Self.privKeySize else { throw KeyPairError.badPrivateKeyData }
+        guard privKey.count == Self.privKeySize else { throw KeyPairError.native(error: .badPrivateKey) }
         var pubkey = secp256k1_pubkey()
         let res = secp256k1_ec_pubkey_create(context, &pubkey, privKey)
-        guard res > 0 else { throw KeyPairError.badPrivateKeyData }
+        guard res > 0 else { throw KeyPairError.native(error: .internal) }
         return pubkey
     }
     
@@ -76,7 +76,7 @@ class Secp256k1Context {
         var recId: Int32 = 0
         secp256k1_ecdsa_recoverable_signature_serialize_compact(context, &sig, &recId, &signature)
         guard recId == 0 || recId == 1 else {
-            throw KeyPairError.badSignatureData
+            throw KeyPairError.native(error: .internal)
         }
         sig[64] = UInt8(recId)
         return sig
@@ -91,7 +91,7 @@ class Secp256k1Context {
             UInt32(compressed ? SECP256K1_EC_COMPRESSED : SECP256K1_EC_UNCOMPRESSED)
         )
         guard res > 0, keyLength == serializedKey.count else {
-            throw KeyPairError.badPublicKeyData
+            throw KeyPairError.native(error: .internal)
         }
         return serializedKey
     }

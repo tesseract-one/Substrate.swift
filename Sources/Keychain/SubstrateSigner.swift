@@ -43,7 +43,7 @@ extension Keychain: SubstrateSigner {
                 return
             }
             do {
-                let signatureData = try pair.sign(message: data)
+                let signatureData = pair.sign(message: data)
                 let sender = try R.TAddress(pubKey: account)
                 let signature = try R.TSignature(type: account.typeId, bytes: signatureData)
                 let extrinsic = SExtrinsic<C, R>(

@@ -1,5 +1,5 @@
 //
-//  Derive.swift
+//  PathComponent.swift
 //  
 //
 //  Created by Yehor Popovych on 05.05.2021.
@@ -9,51 +9,56 @@ import Foundation
 import ScaleCodec
 import Substrate
 
-public enum DeriveJunction {
+public enum PathComponent {
     /// Soft (vanilla) derivation. Public keys have a correspondent derivation.
     case soft(Data)
     /// Hard ("hardened") derivation. Public keys do not have a correspondent derivation.
     case hard(Data)
     
-    /// The length of the junction identifier. Note that this is also referred to as the
+    /// The length of the path identifier. Note that this is also referred to as the
     /// `CHAIN_CODE_LENGTH` in the context of Schnorrkel.
-    public static let JUNCTION_ID_LEN = 32
+    public static let size = 32
     // Hasher for 32 byte length
     public static let hasher = HBlake2b256.hasher
 }
 
-extension DeriveJunction {
-    /// return a soft derive junction with the same chain code.
+extension PathComponent {
+    /// return a soft path component with the same chain code.
     public var soften: Self { .soft(bytes) }
 
-    /// return a hard derive junction with the same chain code.
+    /// return a hard path component with the same chain code.
     public var harden: Self { .hard(bytes) }
 
-    /// Create a new soft (vanilla) DeriveJunction from a given, encodable, value.
+    /// Create a new soft (vanilla) PathComponent from a given, encodable, value.
     ///
-    /// If you need a hard junction, use `init(hard: )`.
+    /// If you need a hard component, use `init(hard: )`.
     public init<T: ScaleEncodable>(soft index: T) throws {
-        let result: Data
-        let data = try SCALE.default.encode(index)
-        if data.count > Self.JUNCTION_ID_LEN {
-            result = Self.hasher.hash(data: data)
+        var result: Data
+        switch index {
+        case let arr as [UInt8]: result = Data(arr)
+        case let data as Data: result = data
+        default: result = try SCALE.default.encode(index)
+        }
+        if result.count > Self.size {
+            result = Self.hasher.hash(data: result)
         } else {
-            result = data + Data(repeating: 0, count: Self.JUNCTION_ID_LEN - data.count)
+            result = result + Data(repeating: 0, count: Self.size - result.count)
         }
         self = .soft(result)
     }
 
-    /// Create a new hard (hardened) DeriveJunction from a given, encodable, value.
+    /// Create a new hard (hardened) PathComponent from a given, encodable, value.
     ///
-    /// If you need a soft junction, use `init(soft: )`.
+    /// If you need a hard component, use `init(soft: )`.
     public init<T: ScaleEncodable>(hard index: T) throws {
         self = try Self(soft: index).harden
     }
     
-    public init(path: String) throws {
-        let (code, hard) = path.starts(with: "/")
-            ? (String(path.substr(from: 1)), true)
-            : (path, false)
+    /// Parses string path component.
+    public init(string component: String) throws {
+        let (code, hard) = component.starts(with: "/")
+            ? (String(component.substr(from: 1)), true)
+            : (component, false)
         let soft: Self
         if let uint = UInt64(code) {
             soft = try Self(soft: uint)
@@ -80,14 +85,4 @@ extension DeriveJunction {
 
     /// Return `true` if the junction is hard.
     public var isHard: Bool { !isSoft }
-}
-
-public enum DeriveError: Error {
-    case publicHardPath
-    case publicDeriveIsNotSupported
-    case softDeriveIsNotSupported
-}
-
-public protocol Derivable {
-    func derive(path: [DeriveJunction]) throws -> Self
 }

@@ -21,10 +21,10 @@ final class Sr25519Tests: XCTestCase {
         let pubKey = try? Sr25519PublicKey(bytes: Hex.decode(hex: "44a996beb1eef7bdcab976ab6d2ca26104834164ecf28fb375600576fcc6eb0f")!, format: .substrate)
         XCTAssertEqual(pair?.pubKey(format: .substrate) as? Sr25519PublicKey, pubKey)
         let message = Data()
-        let signature = try? pair?.sign(message: message)
-        XCTAssertNotNil(signature)
-        guard let signature = signature else { return }
-        XCTAssertEqual(try? pair?.verify(message: message, signature: signature), true)
+        let oSignature = pair?.sign(message: message)
+        XCTAssertNotNil(oSignature)
+        guard let signature = oSignature else { return }
+        XCTAssertEqual(pair?.verify(message: message, signature: signature), true)
     }
     
     func testPhraseInit() {
@@ -45,14 +45,12 @@ final class Sr25519Tests: XCTestCase {
     }
     
     func testSignAndVerify() {
-        let pair = try? Sr25519KeyPair(seed: Hex.decode(hex: "fac7959dbfe72f052e5a0c3c8d6530f202b02fd8f9f5ca3580ec8deb7797479e")!)
-        XCTAssertNotNil(pair)
-        guard let pair = pair else { return }
+        let oPair = try? Sr25519KeyPair(seed: Hex.decode(hex: "fac7959dbfe72f052e5a0c3c8d6530f202b02fd8f9f5ca3580ec8deb7797479e")!)
+        XCTAssertNotNil(oPair)
+        guard let pair = oPair else { return }
         let message = Data("Some awesome message to sign".utf8)
-        let signature = try? pair.sign(message: message)
-        XCTAssertNotNil(signature)
-        guard let signature = signature else { return }
-        let isValid = try? pair.verify(message: message, signature: signature)
+        let signature = pair.sign(message: message)
+        let isValid = pair.verify(message: message, signature: signature)
         XCTAssertEqual(isValid, true)
     }
     

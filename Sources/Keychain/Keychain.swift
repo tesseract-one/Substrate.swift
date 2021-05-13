@@ -7,6 +7,9 @@
 
 import Foundation
 import Substrate
+import Sr25519
+
+public typealias SubstrateKeychainRandom = Sr25519SecureRandom
 
 public class Keychain {
     private var _keyPairs: Array<KeyPair> = []

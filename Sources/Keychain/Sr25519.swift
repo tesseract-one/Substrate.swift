@@ -31,13 +31,18 @@ public struct Sr25519KeyPair: KeyPair {
     public var typeId: CryptoTypeId { .sr25519 }
     
     public init(phrase: String, password: String? = nil) throws {
-        let mnemonic = try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
+        let mnemonic = try Self.convertError {
+            try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
+        }
         let seed = mnemonic.seed(password: password ?? "", wordlist: .english)
         try self.init(seed: Data(seed))
     }
     
     public init(seed: Data) throws {
-        try self.init(keyPair: SRKeyPair(seed: SRSeed(raw: seed.prefix(SRSeed.size))))
+        let kp = try Self.convertError {
+            try SRKeyPair(seed: SRSeed(raw: seed.prefix(SRSeed.size)))
+        }
+        self.init(keyPair: kp)
     }
     
     public init() {
@@ -48,14 +53,17 @@ public struct Sr25519KeyPair: KeyPair {
         try! SBSRPublicKey(bytes: keyPair.publicKey.raw, format: format)
     }
     
-    public func sign(message: Data) throws -> Data {
+    public func sign(message: Data) -> Data {
         let hash = HBlake2b256.hasher.hash(data: message)
         return keyPair.sign(message: hash).raw
     }
     
-    public func verify(message: Data, signature: Data) throws -> Bool {
+    public func verify(message: Data, signature: Data) -> Bool {
+        guard let sig = try? SRSignature(raw: signature) else {
+            return false
+        }
         let hash = HBlake2b256.hasher.hash(data: message)
-        return try keyPair.verify(message: hash, signature: SRSignature(raw: signature))
+        return keyPair.verify(message: hash, signature: sig)
     }
     
     public static var seedLength: Int = SRSeed.size
@@ -63,27 +71,58 @@ public struct Sr25519KeyPair: KeyPair {
     private init(keyPair: SRKeyPair) {
         self.keyPair = keyPair
     }
+    
+    internal static func convertError<T>(_ cb: () throws -> T) throws -> T {
+        do {
+            return try cb()
+        } catch let e as Sr25519Error {
+            switch e {
+            case .badChainCodeLength:
+                throw KeyPairError.derive(error: .badComponentSize)
+            case .badKeyPairLength:
+                throw KeyPairError.native(error: .badPrivateKey)
+            case .badPublicKeyLength:
+                throw KeyPairError.input(error: .publicKey)
+            case .badSeedLength:
+                throw KeyPairError.input(error: .seed)
+            case .badSignatureLength, .badVrfSignatureLength:
+                throw KeyPairError.input(error: .signature)
+            case .badVrfThresholdLength:
+                throw KeyPairError.input(error: .threshold)
+            case .vrfError:
+                throw KeyPairError.native(error: .internal)
+            }
+        } catch {
+            throw KeyPairError(error: error)
+        }
+    }
 }
 
-extension Sr25519KeyPair: Derivable {
-    public func derive(path: [DeriveJunction]) throws -> Sr25519KeyPair {
+extension Sr25519KeyPair: KeyDerivable {
+    public func derive(path: [PathComponent]) throws -> Sr25519KeyPair {
         let kp = try path.reduce(keyPair) { (pair, cmp) in
-            try pair.derive(chainCode: SRChainCode(raw: cmp.bytes), hard: cmp.isHard)
+            let chainCode = try Self.convertError { try SRChainCode(raw: cmp.bytes) }
+            return pair.derive(chainCode: chainCode, hard: cmp.isHard)
         }
         return Self(keyPair: kp)
     }
 }
 
-extension SBSRPublicKey: Derivable {
-    public func derive(path: [DeriveJunction]) throws -> SBSRPublicKey {
+extension SBSRPublicKey: KeyDerivable {
+    public func derive(path: [PathComponent]) throws -> SBSRPublicKey {
         let pub = try path.reduce(SRPublicKey(raw: bytes)) { (pub, cmp) in
-            guard cmp.isSoft else { throw DeriveError.publicHardPath }
-            return try pub.derive(chainCode: SRChainCode(raw: cmp.bytes))
+            guard cmp.isSoft else { throw KeyPairError.derive(error: .publicDeriveHasHardPath) }
+            let chainCode = try Sr25519KeyPair.convertError { try SRChainCode(raw: cmp.bytes) }
+            return pub.derive(chainCode: chainCode)
         }
-        return try SBSRPublicKey(bytes: pub.raw, format: format)
+        do {
+            return try SBSRPublicKey(bytes: pub.raw, format: format)
+        } catch _ as SizeMismatchError {
+            throw KeyPairError.input(error: .publicKey)
+        }
+        
     }
 }
-
 
 extension SBSRPublicKey {
     public func verify(signature: SBSRSignature, message: Data) -> Bool {

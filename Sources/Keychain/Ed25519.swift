@@ -40,13 +40,18 @@ public struct Ed25519KeyPair: KeyPair {
     public var typeId: CryptoTypeId { .ed25519 }
     
     public init(phrase: String, password: String? = nil) throws {
-        let mnemonic = try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
+        let mnemonic = try Self.convertError {
+            try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
+        }
         let seed = mnemonic.seed(password: password ?? "", wordlist: .english)
         try self.init(seed: Data(seed))
     }
     
     public init(seed: Data) throws {
-        try self.init(keyPair: EDKeyPair(seed: EDSeed(raw: seed.prefix(EDSeed.size))))
+        let kpSeed = try Self.convertError {
+            try EDSeed(raw: seed.prefix(EDSeed.size))
+        }
+        self.init(keyPair: EDKeyPair(seed: kpSeed))
     }
     
     public init() {
@@ -57,14 +62,17 @@ public struct Ed25519KeyPair: KeyPair {
         try! SBEDPublicKey(bytes: keyPair.publicKey.raw, format: format)
     }
     
-    public func sign(message: Data) throws -> Data {
+    public func sign(message: Data) -> Data {
         let hash = HBlake2b256.hasher.hash(data: message)
         return keyPair.sign(message: hash).raw
     }
     
-    public func verify(message: Data, signature: Data) throws -> Bool {
+    public func verify(message: Data, signature: Data) -> Bool {
+        guard let sig = try? EDSignature(raw: signature) else {
+            return false
+        }
         let hash = HBlake2b256.hasher.hash(data: message)
-        return try keyPair.verify(message: hash, signature: EDSignature(raw: signature))
+        return keyPair.verify(message: hash, signature: sig)
     }
     
     public static var seedLength: Int = EDSeed.size
@@ -72,20 +80,46 @@ public struct Ed25519KeyPair: KeyPair {
     private init(keyPair: EDKeyPair) {
         self.keyPair = keyPair
     }
+    
+    internal static func convertError<T>(_ cb: () throws -> T) throws -> T {
+        do {
+            return try cb()
+        } catch let e as Ed25519Error {
+            switch e {
+            case .badKeyPairLength, .badPrivateKeyLength:
+                throw KeyPairError.native(error: .badPrivateKey)
+            case .badPublicKeyLength:
+                throw KeyPairError.input(error: .publicKey)
+            case .badSeedLength:
+                throw KeyPairError.input(error: .seed)
+            case .badSignatureLength:
+                throw KeyPairError.input(error: .signature)
+            }
+        } catch {
+            throw KeyPairError(error: error)
+        }
+    }
 }
 
-extension Ed25519KeyPair: Derivable {
-    public func derive(path: [DeriveJunction]) throws -> Ed25519KeyPair {
+extension Ed25519KeyPair: KeyDerivable {
+    public func derive(path: [PathComponent]) throws -> Ed25519KeyPair {
         let kp = try path.reduce(keyPair) { (pair, cmp) in
-            guard cmp.isHard else { throw DeriveError.softDeriveIsNotSupported }
+            guard cmp.isHard else { throw KeyPairError.derive(error: .softDeriveIsNotSupported) }
             let encoder = SCALE.default.encoder()
             try encoder.encode("Ed25519HDKD")
             try encoder.encode(keyPair.privateRaw, .fixed(UInt(EDKeyPair.secretSize)))
-            try encoder.encode(cmp.bytes, .fixed(UInt(DeriveJunction.JUNCTION_ID_LEN)))
+            try encoder.encode(cmp.bytes, .fixed(UInt(PathComponent.size)))
             let hash = HBlake2b256.hasher.hash(data: encoder.output)
-            return try EDKeyPair(seed: EDSeed(raw: hash))
+            let seed = try Self.convertError { try EDSeed(raw: hash) }
+            return EDKeyPair(seed: seed)
         }
         return Self(keyPair: kp)
+    }
+}
+
+extension SBEDPublicKey: KeyDerivable {
+    public func derive(path: [PathComponent]) throws -> SBEDPublicKey {
+        throw KeyPairError.derive(error: .softDeriveIsNotSupported)
     }
 }
 
