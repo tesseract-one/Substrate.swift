@@ -33,9 +33,38 @@ public typealias SBEDPublicKey = SubstratePrimitives.Ed25519PublicKey
 public typealias SBEDSignature = SubstratePrimitives.Ed25519Signature
 #endif
 
-public struct Ed25519KeyPair: KeyPair {
+public struct Ed25519KeyPair {
     private let keyPair: EDKeyPair
     
+    private init(keyPair: EDKeyPair) {
+        self.keyPair = keyPair
+    }
+    
+    public func publicKey(format: Ss58AddressFormat) -> SBEDPublicKey {
+        try! SBEDPublicKey(bytes: keyPair.publicKey.raw, format: format)
+    }
+    
+    fileprivate static func convertError<T>(_ cb: () throws -> T) throws -> T {
+        do {
+            return try cb()
+        } catch let e as Ed25519Error {
+            switch e {
+            case .badKeyPairLength, .badPrivateKeyLength:
+                throw KeyPairError.native(error: .badPrivateKey)
+            case .badPublicKeyLength:
+                throw KeyPairError.input(error: .publicKey)
+            case .badSeedLength:
+                throw KeyPairError.input(error: .seed)
+            case .badSignatureLength:
+                throw KeyPairError.input(error: .signature)
+            }
+        } catch {
+            throw KeyPairError(error: error)
+        }
+    }
+}
+
+extension Ed25519KeyPair: KeyPair {
     public var rawPubKey: Data { keyPair.publicKey.raw }
     public var typeId: CryptoTypeId { .ed25519 }
     
@@ -59,7 +88,7 @@ public struct Ed25519KeyPair: KeyPair {
     }
     
     public func pubKey(format: Ss58AddressFormat) -> PublicKey {
-        try! SBEDPublicKey(bytes: keyPair.publicKey.raw, format: format)
+        publicKey(format: format)
     }
     
     public func sign(message: Data) -> Data {
@@ -76,29 +105,6 @@ public struct Ed25519KeyPair: KeyPair {
     }
     
     public static var seedLength: Int = EDSeed.size
-    
-    private init(keyPair: EDKeyPair) {
-        self.keyPair = keyPair
-    }
-    
-    internal static func convertError<T>(_ cb: () throws -> T) throws -> T {
-        do {
-            return try cb()
-        } catch let e as Ed25519Error {
-            switch e {
-            case .badKeyPairLength, .badPrivateKeyLength:
-                throw KeyPairError.native(error: .badPrivateKey)
-            case .badPublicKeyLength:
-                throw KeyPairError.input(error: .publicKey)
-            case .badSeedLength:
-                throw KeyPairError.input(error: .seed)
-            case .badSignatureLength:
-                throw KeyPairError.input(error: .signature)
-            }
-        } catch {
-            throw KeyPairError(error: error)
-        }
-    }
 }
 
 extension Ed25519KeyPair: KeyDerivable {

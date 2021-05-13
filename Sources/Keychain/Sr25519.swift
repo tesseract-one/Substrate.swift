@@ -24,55 +24,18 @@ public typealias SBSRPublicKey = SubstratePrimitives.Sr25519PublicKey
 public typealias SBSRSignature = SubstratePrimitives.Sr25519Signature
 #endif
 
-public struct Sr25519KeyPair: KeyPair {
+public struct Sr25519KeyPair {
     private let keyPair: SRKeyPair
     
-    public var rawPubKey: Data { keyPair.publicKey.raw }
-    public var typeId: CryptoTypeId { .sr25519 }
-    
-    public init(phrase: String, password: String? = nil) throws {
-        let mnemonic = try Self.convertError {
-            try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
-        }
-        let seed = mnemonic.seed(password: password ?? "", wordlist: .english)
-        try self.init(seed: Data(seed))
-    }
-    
-    public init(seed: Data) throws {
-        let kp = try Self.convertError {
-            try SRKeyPair(seed: SRSeed(raw: seed.prefix(SRSeed.size)))
-        }
-        self.init(keyPair: kp)
-    }
-    
-    public init() {
-        try! self.init(seed: Data(SubstrateKeychainRandom.bytes(count: SRSeed.size)))
-    }
-    
-    public func pubKey(format: Ss58AddressFormat) -> PublicKey {
+    public func publicKey(format: Ss58AddressFormat) -> SBSRPublicKey {
         try! SBSRPublicKey(bytes: keyPair.publicKey.raw, format: format)
     }
-    
-    public func sign(message: Data) -> Data {
-        let hash = HBlake2b256.hasher.hash(data: message)
-        return keyPair.sign(message: hash).raw
-    }
-    
-    public func verify(message: Data, signature: Data) -> Bool {
-        guard let sig = try? SRSignature(raw: signature) else {
-            return false
-        }
-        let hash = HBlake2b256.hasher.hash(data: message)
-        return keyPair.verify(message: hash, signature: sig)
-    }
-    
-    public static var seedLength: Int = SRSeed.size
     
     private init(keyPair: SRKeyPair) {
         self.keyPair = keyPair
     }
     
-    internal static func convertError<T>(_ cb: () throws -> T) throws -> T {
+    fileprivate static func convertError<T>(_ cb: () throws -> T) throws -> T {
         do {
             return try cb()
         } catch let e as Sr25519Error {
@@ -96,6 +59,49 @@ public struct Sr25519KeyPair: KeyPair {
             throw KeyPairError(error: error)
         }
     }
+}
+
+extension Sr25519KeyPair: KeyPair {
+    public var typeId: CryptoTypeId { .sr25519 }
+    public var rawPubKey: Data { keyPair.publicKey.raw }
+    
+    public init(phrase: String, password: String? = nil) throws {
+        let mnemonic = try Self.convertError {
+            try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
+        }
+        let seed = mnemonic.seed(password: password ?? "", wordlist: .english)
+        try self.init(seed: Data(seed))
+    }
+    
+    public init(seed: Data) throws {
+        let kp = try Self.convertError {
+            try SRKeyPair(seed: SRSeed(raw: seed.prefix(SRSeed.size)))
+        }
+        self.init(keyPair: kp)
+    }
+    
+    public init() {
+        try! self.init(seed: Data(SubstrateKeychainRandom.bytes(count: SRSeed.size)))
+    }
+    
+    public func pubKey(format: Ss58AddressFormat) -> PublicKey {
+        publicKey(format: format)
+    }
+    
+    public func sign(message: Data) -> Data {
+        let hash = HBlake2b256.hasher.hash(data: message)
+        return keyPair.sign(message: hash).raw
+    }
+    
+    public func verify(message: Data, signature: Data) -> Bool {
+        guard let sig = try? SRSignature(raw: signature) else {
+            return false
+        }
+        let hash = HBlake2b256.hasher.hash(data: message)
+        return keyPair.verify(message: hash, signature: sig)
+    }
+    
+    public static var seedLength: Int = SRSeed.size
 }
 
 extension Sr25519KeyPair: KeyDerivable {
