@@ -89,16 +89,14 @@ extension Sr25519KeyPair: KeyPair {
     }
     
     public func sign(message: Data) -> Data {
-        let hash = HBlake2b256.hasher.hash(data: message)
-        return keyPair.sign(message: hash).raw
+        return keyPair.sign(message: message).raw
     }
     
     public func verify(message: Data, signature: Data) -> Bool {
         guard let sig = try? SRSignature(raw: signature) else {
             return false
         }
-        let hash = HBlake2b256.hasher.hash(data: message)
-        return keyPair.verify(message: hash, signature: sig)
+        return keyPair.verify(message: message, signature: sig)
     }
     
     public static var seedLength: Int = SRSeed.size

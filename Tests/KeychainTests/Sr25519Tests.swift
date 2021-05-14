@@ -14,8 +14,6 @@ import Substrate
 @testable import Substrate
 #endif
 
-import Bip39
-
 final class Sr25519Tests: XCTestCase {
     func testSrTestVectorShouldWork() {
         let seed = Hex.decode(hex: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")!
