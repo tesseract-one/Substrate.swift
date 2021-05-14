@@ -15,7 +15,6 @@ public struct SubstrateRpcBabeApi<S: SubstrateProtocol>: SubstrateRpcApi where S
         self.substrate = substrate
     }
 
-    // TODO rework, use Dictionary<AuthorityId, EpochAuthorship>
     public func epochAuthorship(
         timeout: TimeInterval? = nil,
         _ cb: @escaping SRpcApiCallback<Dictionary<BabeAutorityId<S.R>, EpochAutorship>>

@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct Header<Number: ScaleDynamicCodable & Codable, H: Hash> {
+public struct Header<Number: BlockNumberProtocol, H: Hash> {
     public let parentHash: H
     public let number: Number
     public let stateRoot: H
