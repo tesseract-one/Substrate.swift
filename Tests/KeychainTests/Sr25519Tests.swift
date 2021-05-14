@@ -68,4 +68,3 @@ final class Sr25519Tests: XCTestCase {
         XCTAssertEqual(pair?.rawPubKey, known)
     }
 }
-

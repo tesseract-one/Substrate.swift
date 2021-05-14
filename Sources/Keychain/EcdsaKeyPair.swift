@@ -50,10 +50,8 @@ extension EcdsaKeyPair: KeyPair {
         let mnemonic: Mnemonic
         do {
             mnemonic = try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
-        } catch let e as Mnemonic.Error {
-            throw KeyPairError.bip39(error: e)
         } catch {
-            throw KeyPairError.unknown(error: error)
+            throw KeyPairError(error: error)
         }
         let seed = mnemonic.seed(password: password ?? "", wordlist: .english)
         try self.init(seed: Data(seed))

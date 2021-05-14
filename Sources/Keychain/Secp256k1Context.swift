@@ -1,5 +1,5 @@
 //
-//  secp256k1.swift
+//  Secp256k1Context.swift
 //  
 //
 //  Created by Yehor Popovych on 12.05.2021.
