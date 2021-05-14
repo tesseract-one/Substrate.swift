@@ -9,10 +9,10 @@ import Foundation
 import Substrate
 
 /// The root phrase for our publicly known keys.
-public let DEFAULT_DEV_PHRASE = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"
+public var DEFAULT_DEV_PHRASE = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"
 
 /// The address of the associated root phrase for our publicly known keys.
-public let DEFAULT_DEV_ADDRESS = "5DfhGyQdFobKM8NsWvEeAKk5EQQgYe9AydgJ7rMB6E1EqRzV"
+public var DEFAULT_DEV_ADDRESS = "5DfhGyQdFobKM8NsWvEeAKk5EQQgYe9AydgJ7rMB6E1EqRzV"
 
 public protocol KeyDerivable {
     func derive(path: [PathComponent]) throws -> Self

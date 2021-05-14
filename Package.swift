@@ -24,7 +24,7 @@ var package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/tesseract-one/swift-scale-codec.git", from: "0.2.0"),
-        .package(url: "https://github.com/tesseract-one/Blake2.swift.git", from: "0.1.0"),
+        .package(url: "https://github.com/tesseract-one/Blake2.swift.git", from: "0.1.2"),
         .package(url: "https://github.com/tesseract-one/Sr25519.swift.git", from: "0.1.2"),
         .package(url: "https://github.com/Boilertalk/secp256k1.swift.git", from: "0.1.4"),
         .package(url: "https://github.com/tesseract-one/Bip39.swift.git", from: "0.1.0"),

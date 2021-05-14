@@ -72,7 +72,7 @@ extension Ed25519KeyPair: KeyPair {
         let mnemonic = try Self.convertError {
             try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
         }
-        let seed = mnemonic.seed(password: password ?? "", wordlist: .english)
+        let seed = mnemonic.substrate_seed(password: password ?? "")
         try self.init(seed: Data(seed))
     }
     

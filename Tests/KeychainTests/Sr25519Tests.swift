@@ -14,6 +14,8 @@ import Substrate
 @testable import Substrate
 #endif
 
+import Bip39
+
 final class Sr25519Tests: XCTestCase {
     func testSrTestVectorShouldWork() {
         let seed = Hex.decode(hex: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")!
@@ -42,6 +44,25 @@ final class Sr25519Tests: XCTestCase {
         let p3 = try? Sr25519KeyPair.parse(DEFAULT_DEV_PHRASE + "/Alice")
         let p4 = try? Sr25519KeyPair.parse("/Alice")
         XCTAssertEqual(p3?.rawPubKey, p4?.rawPubKey)
+    }
+    
+    func testDefaultAddressShouldBeUsed() {
+        let p1 = try? Sr25519PublicKey.from(string: DEFAULT_DEV_ADDRESS + "/Alice")
+        let p2 = try? Sr25519PublicKey.from(string: "/Alice")
+        XCTAssertNotNil(p1)
+        XCTAssertEqual(p1, p2)
+    }
+    
+    func testDefaultPhraseShouldCorrespondToDefaultAddress() {
+        let p1 = try? Sr25519KeyPair.parse(DEFAULT_DEV_PHRASE + "/Alice")
+        let pub1 = try? Sr25519PublicKey.from(string: DEFAULT_DEV_ADDRESS + "/Alice")
+        XCTAssertNotNil(p1)
+        XCTAssertEqual(p1?.rawPubKey, pub1?.bytes)
+        
+        let p2 = try? Sr25519KeyPair.parse("/Alice")
+        let pub2 = try? Sr25519PublicKey.from(string: "/Alice")
+        XCTAssertNotNil(p2)
+        XCTAssertEqual(p2?.rawPubKey, pub2?.bytes)
     }
     
     func testSignAndVerify() {

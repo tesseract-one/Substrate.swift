@@ -67,9 +67,9 @@ extension Sr25519KeyPair: KeyPair {
     
     public init(phrase: String, password: String? = nil) throws {
         let mnemonic = try Self.convertError {
-            try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
+            try Mnemonic(mnemonic: phrase.components(separatedBy: " "), wordlist: .english)
         }
-        let seed = mnemonic.seed(password: password ?? "", wordlist: .english)
+        let seed = mnemonic.substrate_seed(password: password ?? "")
         try self.init(seed: Data(seed))
     }
     
