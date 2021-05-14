@@ -65,6 +65,92 @@ final class Sr25519Tests: XCTestCase {
         XCTAssertEqual(p2?.rawPubKey, pub2?.bytes)
     }
     
+    func testDeriveSoftShouldWork() {
+        let oPair = try? Sr25519KeyPair(seed: Hex.decode(hex: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")!)
+        XCTAssertNotNil(oPair)
+        guard let pair = oPair else { return }
+        let derive1 = try? pair.derive(path: [PathComponent(soft: UInt32(1))])
+        let derive1b = try? pair.derive(path: [PathComponent(soft: UInt32(1))])
+        XCTAssertNotNil(derive1)
+        XCTAssertEqual(derive1?.rawPubKey, derive1b?.rawPubKey)
+        let derive2 = try? pair.derive(path: [PathComponent(soft: UInt32(2))])
+        XCTAssertNotEqual(derive1?.rawPubKey, derive2?.rawPubKey)
+    }
+    
+    func testDeriveHardShouldWork() {
+        let oPair = try? Sr25519KeyPair(seed: Hex.decode(hex: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")!)
+        XCTAssertNotNil(oPair)
+        guard let pair = oPair else { return }
+        let derive1 = try? pair.derive(path: [PathComponent(hard: UInt32(1))])
+        let derive1b = try? pair.derive(path: [PathComponent(hard: UInt32(1))])
+        XCTAssertNotNil(derive1)
+        XCTAssertEqual(derive1?.rawPubKey, derive1b?.rawPubKey)
+        let derive2 = try? pair.derive(path: [PathComponent(hard: UInt32(2))])
+        XCTAssertNotEqual(derive1?.rawPubKey, derive2?.rawPubKey)
+    }
+    
+    func testDeriveSoftPublicShouldWork() {
+        let oPair = try? Sr25519KeyPair(seed: Hex.decode(hex: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")!)
+        XCTAssertNotNil(oPair)
+        guard let pair = oPair else { return }
+        let path = try! [PathComponent(soft: UInt32(1))]
+        let pair1 = try? pair.derive(path: path)
+        let pub1 = try? pair.publicKey(format: .substrate).derive(path: path)
+        XCTAssertNotNil(pair1)
+        XCTAssertEqual(pair1?.rawPubKey, pub1?.bytes)
+    }
+    
+    func testDeriveHardPublicShouldFail() {
+        let oPair = try? Sr25519KeyPair(seed: Hex.decode(hex: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")!)
+        XCTAssertNotNil(oPair)
+        guard let pair = oPair else { return }
+        let path = try! [PathComponent(hard: UInt32(1))]
+        XCTAssertThrowsError(try pair.publicKey(format: .substrate).derive(path: path))
+    }
+    
+    func testGeneratedPairShouldWork() {
+        let pair = Sr25519KeyPair()
+        let message = Data("Something important".utf8)
+        let signature = pair.sign(message: message)
+        XCTAssertTrue(pair.verify(message: message, signature: signature))
+    }
+    
+    func testMessedSignatureShouldNotWork() {
+        let pair = Sr25519KeyPair()
+        let message = Data("Signed payload".utf8)
+        var signature = pair.sign(message: message)
+        signature[0] = signature[0] << 2
+        signature[2] = signature[2] << 1
+        XCTAssertFalse(pair.verify(message: message, signature: signature))
+    }
+    
+    func testMessedMessageShouldNotWork() {
+        let pair = Sr25519KeyPair()
+        let message = Data("Something important".utf8)
+        let signature = pair.sign(message: message);
+        XCTAssertFalse(pair.verify(message: Data("Something unimportant".utf8), signature: signature))
+    }
+    
+    func testSeededPairShouldWork() {
+        let oPair = try? Sr25519KeyPair(seed: Data("12345678901234567890123456789012".utf8))
+        XCTAssertNotNil(oPair)
+        guard let pair = oPair else { return }
+        let expPub = try? Sr25519PublicKey(bytes: Hex.decode(hex: "741c08a06f41c596608f6774259bd9043304adfa5d3eea62760bd9be97634d63")!, format: .substrate)
+        XCTAssertEqual(pair.rawPubKey, expPub?.bytes)
+        
+        let message = Hex.decode(hex: "2f8c6129d816cf51c374bc7f08c3e63ed156cf78aefb4a6550d97b87997977ee00000000000000000200d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a4500000000000000")!
+        let signature = pair.sign(message: message)
+        XCTAssertTrue(pair.verify(message: message, signature: signature))
+    }
+    
+    func testSs58CheckRoundtripWorks() {
+        let pair = Sr25519KeyPair()
+        let ss58 = pair.publicKey(format: .substrate).ss58
+        let pub = try? Sr25519PublicKey.from(ss58: ss58)
+        XCTAssertEqual(pair.publicKey(format: .substrate), pub)
+    }
+
+    
     func testSignAndVerify() {
         let oPair = try? Sr25519KeyPair(seed: Hex.decode(hex: "fac7959dbfe72f052e5a0c3c8d6530f202b02fd8f9f5ca3580ec8deb7797479e")!)
         XCTAssertNotNil(oPair)
