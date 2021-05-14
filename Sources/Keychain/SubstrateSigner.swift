@@ -39,20 +39,28 @@ extension Keychain: SubstrateSigner {
                 try payload.encode(in: encoder, registry: registry)
                 data = encoder.output
             } catch {
-                cb(.failure(.unknown(error)))
+                cb(.failure(.badPayload(error: error.localizedDescription)))
                 return
             }
+            let signatureData = pair.sign(message: data)
+            let sender: R.TAddress
             do {
-                let signatureData = pair.sign(message: data)
-                let sender = try R.TAddress(pubKey: account)
-                let signature = try R.TSignature(type: account.typeId, bytes: signatureData)
-                let extrinsic = SExtrinsic<C, R>(
-                    call: payload.call, signed: sender, signature: signature, extra: payload.extra
-                )
-                cb(.success(extrinsic))
+                sender = try R.TAddress(pubKey: account)
             } catch {
-                cb(.failure(.unknown(error)))
+                cb(.failure(.cantCreateAddress(error: error.localizedDescription)))
+                return
             }
+            let signature: R.TSignature
+            do {
+                signature = try R.TSignature(type: account.typeId, bytes: signatureData)
+            } catch {
+                cb(.failure(.cantCreateSignature(error: error.localizedDescription)))
+                return
+            }
+            let extrinsic = SExtrinsic<C, R>(
+                call: payload.call, signed: sender, signature: signature, extra: payload.extra
+            )
+            cb(.success(extrinsic))
         }
     }
 }

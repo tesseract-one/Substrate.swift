@@ -33,7 +33,10 @@ public protocol SubstrateSigner {
 
 public enum SubstrateSignerError: Error {
     case accountNotFound(PublicKey)
+    case badPayload(error: String)
+    case cantCreateAddress(error: String)
+    case cantCreateSignature(error: String)
     case cantBeConnected
     case cancelledByUser
-    case unknown(Error)
+    case unknown(error: String)
 }
