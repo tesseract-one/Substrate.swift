@@ -112,6 +112,13 @@ extension SBECPublicKey: KeyDerivable {
 }
 
 extension SBECPublicKey {
+    // Compressed or uncompressed key can be used.
+    public init(converting data: Data, format: Ss58AddressFormat) throws {
+        let pub = try EcdsaKeyPair._context.publicKey(from: Array(data))
+        let newData = try EcdsaKeyPair._context.serialize(pubKey: pub, compressed: true)
+        try self.init(bytes: Data(newData), format: format)
+    }
+    
     public func verify(signature: SBECSignature, message: Data) -> Bool {
         guard let sig = try? EcdsaKeyPair._context.signature(from: Array(signature.signature)) else {
             return false
