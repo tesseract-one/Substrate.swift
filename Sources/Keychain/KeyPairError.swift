@@ -37,6 +37,7 @@ public enum KeyPairError: Error {
         case message
         case publicKey
         case threshold
+        case privateKey
     }
     
     public enum NativeLibrary: Error {

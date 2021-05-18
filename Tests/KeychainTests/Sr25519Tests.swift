@@ -35,30 +35,30 @@ final class Sr25519Tests: XCTestCase {
     }
     
     func testDefaultPhraseShouldBeUsed() {
-        let p1 = try? Sr25519KeyPair.parse("//Alice///password")
-        let p2 = try? Sr25519KeyPair.parse(DEFAULT_DEV_PHRASE + "//Alice", override: "password")
+        let p1 = try? Sr25519KeyPair(parsing: "//Alice///password")
+        let p2 = try? Sr25519KeyPair(parsing: DEFAULT_DEV_PHRASE + "//Alice", override: "password")
         XCTAssertEqual(p1?.rawPubKey, p2?.rawPubKey)
         
-        let p3 = try? Sr25519KeyPair.parse(DEFAULT_DEV_PHRASE + "/Alice")
-        let p4 = try? Sr25519KeyPair.parse("/Alice")
+        let p3 = try? Sr25519KeyPair(parsing: DEFAULT_DEV_PHRASE + "/Alice")
+        let p4 = try? Sr25519KeyPair(parsing: "/Alice")
         XCTAssertEqual(p3?.rawPubKey, p4?.rawPubKey)
     }
     
     func testDefaultAddressShouldBeUsed() {
-        let p1 = try? Sr25519PublicKey.from(string: DEFAULT_DEV_ADDRESS + "/Alice")
-        let p2 = try? Sr25519PublicKey.from(string: "/Alice")
+        let p1 = try? Sr25519PublicKey(parsing: DEFAULT_DEV_ADDRESS + "/Alice")
+        let p2 = try? Sr25519PublicKey(parsing: "/Alice")
         XCTAssertNotNil(p1)
         XCTAssertEqual(p1, p2)
     }
     
     func testDefaultPhraseShouldCorrespondToDefaultAddress() {
-        let p1 = try? Sr25519KeyPair.parse(DEFAULT_DEV_PHRASE + "/Alice")
-        let pub1 = try? Sr25519PublicKey.from(string: DEFAULT_DEV_ADDRESS + "/Alice")
+        let p1 = try? Sr25519KeyPair(parsing: DEFAULT_DEV_PHRASE + "/Alice")
+        let pub1 = try? Sr25519PublicKey(parsing: DEFAULT_DEV_ADDRESS + "/Alice")
         XCTAssertNotNil(p1)
         XCTAssertEqual(p1?.rawPubKey, pub1?.bytes)
         
-        let p2 = try? Sr25519KeyPair.parse("/Alice")
-        let pub2 = try? Sr25519PublicKey.from(string: "/Alice")
+        let p2 = try? Sr25519KeyPair(parsing: "/Alice")
+        let pub2 = try? Sr25519PublicKey(parsing: "/Alice")
         XCTAssertNotNil(p2)
         XCTAssertEqual(p2?.rawPubKey, pub2?.bytes)
     }
@@ -144,7 +144,7 @@ final class Sr25519Tests: XCTestCase {
     func testSs58CheckRoundtripWorks() {
         let pair = Sr25519KeyPair()
         let ss58 = pair.publicKey(format: .substrate).ss58
-        let pub = try? Sr25519PublicKey.from(ss58: ss58)
+        let pub = try? Sr25519PublicKey(ss58: ss58)
         XCTAssertEqual(pair.publicKey(format: .substrate), pub)
     }
 
@@ -160,14 +160,14 @@ final class Sr25519Tests: XCTestCase {
     }
     
     func testCompatibilityDeriveHardKnownPairShouldWork() {
-        let pair = try? Sr25519KeyPair.parse(DEFAULT_DEV_PHRASE + "//Alice")
+        let pair = try? Sr25519KeyPair(parsing: DEFAULT_DEV_PHRASE + "//Alice")
         // known address of DEV_PHRASE with 1.1
         let known = Hex.decode(hex: "d43593c715fdd31c61141abd04a99fd6822c8558854ccde39a5684e7a56da27d")!
         XCTAssertEqual(pair?.rawPubKey, known)
     }
     
     func testCompatibilityDeriveSoftKnownPairShouldWork() {
-        let pair = try? Sr25519KeyPair.parse(DEFAULT_DEV_PHRASE + "/Alice")
+        let pair = try? Sr25519KeyPair(parsing: DEFAULT_DEV_PHRASE + "/Alice")
         // known address of DEV_PHRASE with 1.1
         let known = Hex.decode(hex: "d6c71059dbbe9ad2b0ed3f289738b800836eb425544ce694825285b958ca755e")!
         XCTAssertEqual(pair?.rawPubKey, known)

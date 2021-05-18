@@ -16,10 +16,10 @@ import Substrate
 
 final class EcdsaTests: XCTestCase {
     func testDefaultPhraseShouldBeUsed() {
-        let p1 = try? EcdsaKeyPair.parse("//Alice///password")
-        let p2 = try? EcdsaKeyPair.parse(DEFAULT_DEV_PHRASE + "//Alice", override: "password")
+        let p1 = try? EcdsaKeyPair(parsing: "//Alice///password")
+        let p2 = try? EcdsaKeyPair(parsing: DEFAULT_DEV_PHRASE + "//Alice", override: "password")
         XCTAssertNotNil(p1)
-        XCTAssertEqual(p1?.rawPubKey, p2?.rawPubKey)
+        XCTAssertEqual(p1?.raw, p2?.raw)
     }
     
     func testSeedAndDeriveShouldWork() {
@@ -48,7 +48,7 @@ final class EcdsaTests: XCTestCase {
     }
 
     func testTestVectorByStringShouldWork() {
-        let oPair = try? EcdsaKeyPair.parse("0x9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+        let oPair = try? EcdsaKeyPair(parsing: "0x9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
         XCTAssertNotNil(oPair)
         guard let pair = oPair else { return }
         let expPublic = Hex.decode(hex: "028db55b05db86c0b1786ca49f095d76344c9e6056b2f02701a7e7f3c20aabfd91")!
@@ -85,7 +85,7 @@ final class EcdsaTests: XCTestCase {
         XCTAssertNotNil(oPair)
         guard let pair = oPair else { return }
         let pair2 = try? EcdsaKeyPair(phrase: mnemonic.mnemonic(wordlist: .english).joined(separator: " "))
-        XCTAssertEqual(pair.rawPubKey, pair2?.rawPubKey)
+        XCTAssertEqual(pair.raw, pair2?.raw)
     }
 
     func testGenerateWithPasswordPhraseRecoveryPossible() {
@@ -100,7 +100,7 @@ final class EcdsaTests: XCTestCase {
             phrase: mnemonic.mnemonic(wordlist: .english).joined(separator: " "),
             password: "password"
         )
-        XCTAssertEqual(pair.rawPubKey, pair2?.rawPubKey)
+        XCTAssertEqual(pair.raw, pair2?.raw)
     }
 
     func testPasswordDoesSomething() {
@@ -114,7 +114,7 @@ final class EcdsaTests: XCTestCase {
         let pair2 = try? EcdsaKeyPair(
             phrase: mnemonic.mnemonic(wordlist: .english).joined(separator: " ")
         )
-        XCTAssertNotEqual(pair.rawPubKey, pair2?.rawPubKey)
+        XCTAssertNotEqual(pair.raw, pair2?.raw)
     }
 
     func testSs58CheckRoundtripWorks() {
@@ -122,7 +122,7 @@ final class EcdsaTests: XCTestCase {
         XCTAssertNotNil(oPair)
         guard let pair = oPair else { return }
         let ss58 = pair.pubKey(format: .substrate).ss58
-        let pub = try? EcdsaPublicKey.from(ss58: ss58)
+        let pub = try? EcdsaPublicKey(ss58: ss58)
         XCTAssertEqual(pair.rawPubKey, pub?.bytes)
     }
 }

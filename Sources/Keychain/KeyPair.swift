@@ -11,10 +11,12 @@ import Substrate
 public protocol KeyPair {
     var typeId: CryptoTypeId { get }
     var rawPubKey: Data { get }
+    var raw: Data { get }
     
     init()
     init(phrase: String, password: String?) throws
     init(seed: Data) throws
+    init(raw: Data) throws
     
     func pubKey(format: Ss58AddressFormat) -> PublicKey
     

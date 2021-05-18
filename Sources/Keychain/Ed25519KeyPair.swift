@@ -49,8 +49,10 @@ public struct Ed25519KeyPair {
             return try cb()
         } catch let e as Ed25519Error {
             switch e {
-            case .badKeyPairLength, .badPrivateKeyLength:
+            case .badKeyPairLength:
                 throw KeyPairError.native(error: .badPrivateKey)
+            case .badPrivateKeyLength:
+                throw KeyPairError.input(error: .privateKey)
             case .badPublicKeyLength:
                 throw KeyPairError.input(error: .publicKey)
             case .badSeedLength:
@@ -66,6 +68,7 @@ public struct Ed25519KeyPair {
 
 extension Ed25519KeyPair: KeyPair {
     public var rawPubKey: Data { keyPair.publicKey.raw }
+    public var raw: Data { keyPair.raw }
     public var typeId: CryptoTypeId { .ed25519 }
     
     public init(phrase: String, password: String? = nil) throws {
@@ -85,6 +88,13 @@ extension Ed25519KeyPair: KeyPair {
     
     public init() {
         try! self.init(seed: Data(SubstrateKeychainRandom.bytes(count: EDSeed.size)))
+    }
+    
+    public init(raw: Data) throws {
+        let kp = try Self.convertError {
+            try EDKeyPair(raw: raw)
+        }
+        self.init(keyPair: kp)
     }
     
     public func pubKey(format: Ss58AddressFormat) -> PublicKey {

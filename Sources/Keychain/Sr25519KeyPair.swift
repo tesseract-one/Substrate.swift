@@ -63,6 +63,7 @@ public struct Sr25519KeyPair {
 
 extension Sr25519KeyPair: KeyPair {
     public var typeId: CryptoTypeId { .sr25519 }
+    public var raw: Data { keyPair.raw }
     public var rawPubKey: Data { keyPair.publicKey.raw }
     
     public init(phrase: String, password: String? = nil) throws {
@@ -76,6 +77,13 @@ extension Sr25519KeyPair: KeyPair {
     public init(seed: Data) throws {
         let kp = try Self.convertError {
             try SRKeyPair(seed: SRSeed(raw: seed.prefix(SRSeed.size)))
+        }
+        self.init(keyPair: kp)
+    }
+    
+    public init(raw: Data) throws {
+        let kp = try Self.convertError {
+            try SRKeyPair(raw: raw)
         }
         self.init(keyPair: kp)
     }

@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol Ss58CodableKey {
-    static func from(ss58: String) throws -> Self
+    init(ss58: String) throws
     var ss58: String { get }
 }
 
@@ -25,9 +25,9 @@ public protocol PublicKey: ScaleDynamicCodable, Ss58CodableKey {
 }
 
 extension PublicKey {
-    public static func from(ss58: String) throws -> Self {
+    public init(ss58: String) throws {
         let (data, format) = try Ss58AddressCodec.instance.decode(string: ss58)
-        return try Self(bytes: data, format: format)
+        try self.init(bytes: data, format: format)
     }
     
     public var ss58: String {

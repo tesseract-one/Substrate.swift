@@ -29,7 +29,7 @@ public struct SubstrateRpcBabeApi<S: SubstrateProtocol>: SubstrateRpcApi where S
                 .flatMap { autorships in
                     Result(catching: { () -> Dictionary<BabeAutorityId<S.R>, EpochAutorship> in
                         let tuples = try autorships.map {
-                            try (BabeAutorityId<S.R>.from(ss58: $0.key), $0.value)
+                            try (BabeAutorityId<S.R>(ss58: $0.key), $0.value)
                         }
                         return Dictionary(tuples) { l, _ in l }
                     }).mapError(SubstrateRpcApiError.from)

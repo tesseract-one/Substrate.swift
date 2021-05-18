@@ -19,15 +19,15 @@ public protocol KeyDerivable {
 }
 
 extension PublicKey where Self: KeyDerivable {
-    public static func from(string: String) throws -> Self {
+    public init(parsing string: String) throws {
         guard let match = KeyRegex.firstMatch(in: string, options: [], range: NSRange(location: 0, length: string.count)) else {
             throw KeyPairError.publicParsing(error: .invalidFormat)
         }
         let ss58: String = Range(match.range(at: 1), in: string).map {String(string[$0])} ?? DEFAULT_DEV_ADDRESS
         let path: String? = Range(match.range(at: 2), in: string).map {String(string[$0])}
-        let parsed: Self
+        var parsed: Self
         do {
-            parsed = try from(ss58: ss58)
+            parsed = try Self(ss58: ss58)
         } catch let e as Ss58Error {
             throw KeyPairError.publicParsing(error: .ss58(error: e))
         } catch {
@@ -46,18 +46,17 @@ extension PublicKey where Self: KeyDerivable {
                 }
             }
             do {
-                return try parsed.derive(path: derives)
+                parsed = try parsed.derive(path: derives)
             } catch {
                 throw KeyPairError.publicParsing(error: .invalidPath)
             }
-        } else {
-            return parsed
         }
+        try self.init(bytes: parsed.bytes, format: parsed.format)
     }
 }
 
 extension KeyPair where Self: KeyDerivable {
-    public static func parse(_ str: String, override password: String? = nil) throws -> Self {
+    public init(parsing str: String, override password: String? = nil) throws {
         guard let match = SeedRegex.firstMatch(in: str, options: [], range: NSRange(location: 0, length: str.count)) else {
             throw KeyPairError.secretParsing(error: .invalidFormat)
         }
@@ -77,7 +76,7 @@ extension KeyPair where Self: KeyDerivable {
                 throw KeyPairError.secretParsing(error: .invalidPath)
             }
         }
-        let root: Self
+        var root: Self
         if phrase.starts(with: "0x") {
             guard let seed = Hex.decode(hex: phrase) else {
                 throw KeyPairError.secretParsing(error: .invalidSeed)
@@ -95,10 +94,11 @@ extension KeyPair where Self: KeyDerivable {
             }
         }
         do {
-            return try root.derive(path: derivations)
+            root = try root.derive(path: derivations)
         } catch {
             throw KeyPairError.secretParsing(error: .invalidPath)
         }
+        try self.init(raw: root.raw)
     }
 }
 

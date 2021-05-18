@@ -44,6 +44,7 @@ public struct EcdsaKeyPair {
 
 extension EcdsaKeyPair: KeyPair {
     public var rawPubKey: Data { _publicRaw }
+    public var raw: Data { Data(_private) + rawPubKey }
     public var typeId: CryptoTypeId { .ecdsa }
     
     public init(phrase: String, password: String? = nil) throws {
@@ -62,6 +63,13 @@ extension EcdsaKeyPair: KeyPair {
             throw KeyPairError.input(error: .seed)
         }
         try self.init(privKey: Array(seed.prefix(Secp256k1Context.privKeySize)))
+    }
+    
+    public init(raw: Data) throws {
+        guard raw.count == (Secp256k1Context.privKeySize + Secp256k1Context.compressedPubKeySize) else {
+            throw KeyPairError.native(error: .badPrivateKey)
+        }
+        try self.init(privKey: Array(raw[0..<Secp256k1Context.privKeySize]))
     }
     
     public init() {

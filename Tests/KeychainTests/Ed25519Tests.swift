@@ -16,10 +16,10 @@ import Substrate
 
 final class Ed25519Tests: XCTestCase {
     func testDefaultPhraseShouldBeUsed() {
-        let p1 = try? Ed25519KeyPair.parse("//Alice///password")
-        let p2 = try? Ed25519KeyPair.parse(DEFAULT_DEV_PHRASE + "//Alice", override: "password")
+        let p1 = try? Ed25519KeyPair(parsing: "//Alice///password")
+        let p2 = try? Ed25519KeyPair(parsing: DEFAULT_DEV_PHRASE + "//Alice", override: "password")
         XCTAssertNotNil(p1)
-        XCTAssertEqual(p1?.rawPubKey, p2?.rawPubKey)
+        XCTAssertEqual(p1?.raw, p2?.raw)
     }
     
     func testSeedAndDeriveShouldWork() {
@@ -48,7 +48,7 @@ final class Ed25519Tests: XCTestCase {
     }
     
     func testTestVectorByStringShouldWork() {
-        let oPair = try? Ed25519KeyPair.parse("0x9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+        let oPair = try? Ed25519KeyPair(parsing: "0x9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
         XCTAssertNotNil(oPair)
         guard let pair = oPair else { return }
         let expPublic = Hex.decode(hex: "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")!
@@ -85,7 +85,7 @@ final class Ed25519Tests: XCTestCase {
         XCTAssertNotNil(oPair)
         guard let pair = oPair else { return }
         let pair2 = try? Ed25519KeyPair(phrase: mnemonic.mnemonic(wordlist: .english).joined(separator: " "))
-        XCTAssertEqual(pair.rawPubKey, pair2?.rawPubKey)
+        XCTAssertEqual(pair.raw, pair2?.raw)
     }
     
     func testGenerateWithPasswordPhraseRecoveryPossible() {
@@ -100,7 +100,7 @@ final class Ed25519Tests: XCTestCase {
             phrase: mnemonic.mnemonic(wordlist: .english).joined(separator: " "),
             password: "password"
         )
-        XCTAssertEqual(pair.rawPubKey, pair2?.rawPubKey)
+        XCTAssertEqual(pair.raw, pair2?.raw)
     }
     
     func testPasswordDoesSomething() {
@@ -122,7 +122,7 @@ final class Ed25519Tests: XCTestCase {
         XCTAssertNotNil(oPair)
         guard let pair = oPair else { return }
         let ss58 = pair.pubKey(format: .substrate).ss58
-        let pub = try? Ed25519PublicKey.from(ss58: ss58)
+        let pub = try? Ed25519PublicKey(ss58: ss58)
         XCTAssertEqual(pair.rawPubKey, pub?.bytes)
     }
 }
