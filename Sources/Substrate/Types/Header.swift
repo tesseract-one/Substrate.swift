@@ -46,7 +46,9 @@ extension Header: Codable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         parentHash = try container.decode(H.self, forKey: .parentHash)
-        number = try container.decode(Number.self, forKey: .number)
+        let numberData = try container.decode(Data.self, forKey: .number)
+        number = try Number(jsonData: numberData)
+        //number = try container.decode(Number.self, forKey: .number)
         stateRoot = try container.decode(H.self, forKey: .stateRoot)
         extrinsicRoot = try container.decode(H.self, forKey: .extrinsicRoot)
         digest = try container.decode(Digest<H>.self, forKey: .digest)
@@ -55,7 +57,9 @@ extension Header: Codable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(parentHash, forKey: .parentHash)
-        try container.encode(number, forKey: .number)
+        try container.encode(number.jsonData, forKey: .number)
+        //try number.encode(toJson: container.superEncoder(forKey: .number))
+        //try container.encode(number, forKey: .number)
         try container.encode(stateRoot, forKey: .stateRoot)
         try container.encode(extrinsicRoot, forKey: .extrinsicRoot)
         try container.encode(digest, forKey: .digest)

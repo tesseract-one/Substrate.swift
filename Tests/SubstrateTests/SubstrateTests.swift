@@ -39,10 +39,10 @@ final class SubstrateTests: XCTestCase {
     
     func testStorageCall() {
         let disconnected = expectation(description: "Disconnected")
-        let key = SystemAccountStorageKey<DefaultNodeRuntime>(accountId: .default())
+        let key = SystemAccountStorageKey<PolkadotRuntime>(accountId: .default())
         let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
         
-        Substrate<DefaultNodeRuntime, HttpRpcClient>.create(client: client, runtime: DefaultNodeRuntime()) { result in
+        Substrate<DefaultNodeRuntime, HttpRpcClient>.create(client: client, runtime: PolkadotRuntime()) { result in
             switch result {
             case .failure(let err):
                 XCTFail("\(err)")

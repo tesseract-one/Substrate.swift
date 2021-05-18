@@ -76,7 +76,7 @@ public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
     ) {
         client.call(
             method: "chain_getBlockHash",
-            params: RpcCallParams(block),
+            params: RpcCallParams(block?.jsonData),
             timeout: timeout
         ) { (res: RpcClientResult<S.R.THash>) in
             cb(res.mapError(SubstrateRpcApiError.rpc))

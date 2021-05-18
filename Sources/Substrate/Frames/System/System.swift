@@ -34,6 +34,7 @@ open class SystemModule<S: System>: ModuleProtocol {
         try registry.register(type: S.THash.self, as: .type(name: "Hash"))
         try registry.register(type: S.TAccountId.self, as: .type(name: "AccountId"))
         try registry.register(type: S.TAddress.self, as: .type(name: "Address"))
+        try registry.register(type: S.TAddress.self, as: .type(name: "LookupSource"))
         try registry.register(type: S.THeader.self, as: .type(name: "Header"))
         try registry.register(type: S.TAccountData.self, as: .type(name: "AccountData"))
         try registry.register(type: Origin<S.TAccountId>.self, as: .type(name: "Origin"))

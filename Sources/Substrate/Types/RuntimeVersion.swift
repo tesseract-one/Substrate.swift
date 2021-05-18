@@ -19,5 +19,11 @@ public struct RuntimeVersion: Decodable {
     public struct Api: Decodable {
         public let id: Data
         public let version: UInt32
+        
+        public init(from decoder: Decoder) throws {
+            var container = try decoder.unkeyedContainer()
+            id = try container.decode(Data.self)
+            version = try container.decode(UInt32.self)
+        }
     }
 }
