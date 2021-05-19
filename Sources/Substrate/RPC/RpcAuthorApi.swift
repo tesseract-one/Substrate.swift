@@ -54,7 +54,7 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
             let response = res.mapError(SubstrateRpcApiError.from).flatMap { dataArray in
                 Result {
                     try dataArray.map { data in
-                        try S.R.TExtrinsic(data: data, registry: substrate.registry)
+                        try S.R.TExtrinsic(data: data, registry: self.substrate.registry)
                     }
                 }.mapError(SubstrateRpcApiError.from)
             }

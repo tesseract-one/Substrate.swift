@@ -29,7 +29,7 @@ public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
                         block: Block(
                             header: cbd.block.header,
                             extrinsics: try cbd.block.extrinsics.map {
-                                try S.R.TExtrinsic(data: $0, registry: substrate.registry)
+                                try S.R.TExtrinsic(data: $0, registry: self.substrate.registry)
                             }
                         ),
                         justification: cbd.justification
