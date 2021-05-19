@@ -12,7 +12,7 @@ extension NSRegularExpression {
     public func replacingMatches(
         in source: String,
         options: MatchingOptions,
-        matcher: (NSTextCheckingResult) -> String?
+        matcher: @escaping (NSTextCheckingResult) -> String?
     ) -> String {
         var result = ""
         var lastIndex = source.startIndex
