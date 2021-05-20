@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import secp256k1
+import CSecp256k1
 import Bip39
 
 #if COCOAPODS
