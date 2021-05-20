@@ -55,7 +55,7 @@ Pod::Spec.new do |s|
     ss.source_files = 'Sources/Primitives/**/*.swift'
 
     ss.dependency 'Blake2', '~> 0.1'
-    ss.dependency 'ScaleCodec', '~> 0.1'
+    ss.dependency 'ScaleCodec', '~> 0.2'
     ss.dependency 'xxHash-Swift', '~> 1.1'
     
     ss.test_spec 'PrimitivesTests' do |test_spec|
