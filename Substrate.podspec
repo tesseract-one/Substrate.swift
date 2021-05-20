@@ -21,6 +21,7 @@ Pod::Spec.new do |s|
     ss.source_files = 'Sources/Keychain/**/*.swift'
 
     ss.dependency 'Substrate/Substrate'
+    ss.dependency 'UncommonCrypto', '~> 0.1'
     ss.dependency 'Bip39.swift', '~> 0.1'
     ss.dependency 'Sr25519', '~> 0.1'
     ss.dependency 'secp256k1.swift', '~> 0.1'
