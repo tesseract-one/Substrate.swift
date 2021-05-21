@@ -24,7 +24,7 @@ Pod::Spec.new do |s|
     ss.dependency 'UncommonCrypto', '~> 0.1'
     ss.dependency 'Bip39.swift', '~> 0.1'
     ss.dependency 'Sr25519', '~> 0.1'
-    ss.dependency 'secp256k1.swift', '~> 0.1'
+    ss.dependency 'CSecp256k1', '~> 0.1'
     
     ss.test_spec 'SubstrateTests' do |test_spec|
       test_spec.source_files = 'Tests/KeychainTests/**/*.swift'
