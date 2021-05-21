@@ -6,8 +6,10 @@
 //
 
 import Foundation
-import SubstratePrimitives
 import ScaleCodec
+#if !COCOAPODS
+import SubstratePrimitives
+#endif
 
 public struct RuntimeVersionedMetadata: ScaleDecodable {
     public let magicNumber: UInt32

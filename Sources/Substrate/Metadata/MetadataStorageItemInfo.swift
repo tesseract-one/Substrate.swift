@@ -1,5 +1,5 @@
 //
-//  MetadataStorage.swift
+//  MetadataStorageItemInfo.swift
 //  
 //
 //  Created by Yehor Popovych on 12/29/20.
@@ -7,7 +7,9 @@
 
 import Foundation
 import ScaleCodec
+#if !COCOAPODS
 import SubstratePrimitives
+#endif
 
 public class MetadataStorageItemInfo {
     public let prefix: String

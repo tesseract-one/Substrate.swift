@@ -1,12 +1,14 @@
 //
-//  MetadataCall.swift
+//  MetadataCallInfo.swift
 //  
 //
 //  Created by Yehor Popovych on 12/29/20.
 //
 
 import Foundation
+#if !COCOAPODS
 import SubstratePrimitives
+#endif
 
 public class MetadataCallInfo {
     public let index: UInt8

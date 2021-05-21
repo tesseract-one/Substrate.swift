@@ -6,7 +6,9 @@
 //
 
 import Foundation
+#if !COCOAPODS
 import SubstratePrimitives
+#endif
 
 public class MetadataDynamicError: Error {
     public let index: UInt8

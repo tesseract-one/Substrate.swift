@@ -7,7 +7,9 @@
 
 import Foundation
 import ScaleCodec
+#if !COCOAPODS
 import SubstratePrimitives
+#endif
 
 public class Metadata {
     public let modulesByName: Dictionary<String, MetadataModuleInfo>

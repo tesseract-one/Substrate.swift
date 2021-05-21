@@ -1,12 +1,14 @@
 //
-//  MetadataEvent.swift
+//  MetadataEventInfo.swift
 //  
 //
 //  Created by Yehor Popovych on 12/29/20.
 //
 
 import Foundation
+#if !COCOAPODS
 import SubstratePrimitives
+#endif
 
 public class MetadataEventInfo {
     public let index: UInt8

@@ -29,6 +29,10 @@ extension PolkadotRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtrinsicExtra = DefaultExtrinsicExtra<Self>
     
+    public var supportedSpecVersions: Range<UInt32> {
+        return 30..<UInt32.max
+    }
+    
     public var modules: [ModuleBase] {
         [PrimitivesModule<Self>(), SystemModule<Self>(),
          SessionModule<Self>(), BalancesModule<Self>(),

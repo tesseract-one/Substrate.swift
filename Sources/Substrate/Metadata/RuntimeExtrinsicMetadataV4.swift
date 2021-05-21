@@ -7,7 +7,9 @@
 
 import Foundation
 import ScaleCodec
+#if !COCOAPODS
 import SubstratePrimitives
+#endif
 
 public struct RuntimeExtrinsicMetadataV4: ScaleDecodable, RuntimeExtrinsicMetadata, Encodable {
     public let version: UInt8

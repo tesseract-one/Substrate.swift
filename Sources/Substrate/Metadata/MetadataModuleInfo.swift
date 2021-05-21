@@ -1,12 +1,14 @@
 //
-//  MetadataModule.swift
+//  MetadataModuleInfo.swift
 //  
 //
 //  Created by Yehor Popovych on 12/29/20.
 //
 
 import Foundation
+#if !COCOAPODS
 import SubstratePrimitives
+#endif
 
 public class MetadataModuleInfo {
     public let name: String

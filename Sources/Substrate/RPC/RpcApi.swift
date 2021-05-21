@@ -61,6 +61,7 @@ public enum SubstrateRpcApiError: Error {
     case decoding(error: SDecodingError)
     case type(error: DTypeParsingError)
     case registry(error: TypeRegistryError)
+    case unsupportedRuntimeVersion(UInt32)
     case rpc(error: RpcClientError)
     case unknown(error: Error)
     

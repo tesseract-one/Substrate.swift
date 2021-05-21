@@ -14,12 +14,17 @@ extension Substrate {
         client: C, runtime: R, signer: SubstrateSigner? = nil, _ cb: @escaping SRpcApiCallback<Substrate<R, C>>
     ) {
         _getRuntimeInfo(client: client, subs: Substrate<R, C>.self) { res in
-            let result = res.flatMap { (meta, hash, version, props) in
-               _createRegistry(meta: meta, runtime: runtime).map { registry in
-                    Substrate<R, C>(
-                        registry: registry, genesisHash: hash,
-                        runtimeVersion: version, properties: props,
-                        client: client, signer: signer)
+            let result = res.flatMap { (meta, hash, version, props) -> SRpcApiResult<Substrate<R, C>> in
+                let runtimeCheck = runtime.supportedSpecVersions.contains(version.specVersion)
+                    ? Result.success(())
+                    : Result.failure(SubstrateRpcApiError.unsupportedRuntimeVersion(version.specVersion))
+                return runtimeCheck.flatMap {
+                    _createRegistry(meta: meta, runtime: runtime).map { registry in
+                        Substrate<R, C>(
+                            registry: registry, genesisHash: hash,
+                            runtimeVersion: version, properties: props,
+                            client: client, signer: signer)
+                    }
                 }
             }
             cb(result)
@@ -45,6 +50,7 @@ private extension Substrate {
             switch res {
             case .failure(let err): cb(.failure(err))
             case .success((let meta, let hash, let version)):
+                print("Version", version)
                 SubstrateRpcSystemApi<S>.properties(client: client, timeout: 60) { res in
                     cb(res.map {(meta, hash, version, $0)})
                 }

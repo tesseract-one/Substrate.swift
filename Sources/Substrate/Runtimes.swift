@@ -43,10 +43,17 @@ extension DefaultNodeRuntime: Grandpa {}
 extension DefaultNodeRuntime: ImOnline {}
 extension DefaultNodeRuntime: Parachains {}
 extension DefaultNodeRuntime: AuthorityDiscovery {}
+extension DefaultNodeRuntime: BeefyApi {
+    public typealias TBeefyValidatorSetId = UInt64
+}
 
 extension DefaultNodeRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtrinsicExtra = DefaultExtrinsicExtra<Self>
+    
+    public var supportedSpecVersions: Range<UInt32> {
+        return UInt32.min..<UInt32.max
+    }
     
     public var modules: [ModuleBase] {
         [PrimitivesModule<Self>(), SystemModule<Self>(),

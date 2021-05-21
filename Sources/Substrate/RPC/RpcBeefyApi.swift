@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SubstrateRpcBeefyApi<S: SubstrateProtocol>: SubstrateRpcApi {
+public struct SubstrateRpcBeefyApi<S: SubstrateProtocol>: SubstrateRpcApi where S.R: BeefyApi {
     public weak var substrate: S!
     public typealias BeefySignedCommitment = Data
     
@@ -26,4 +26,8 @@ extension SubstrateRpcBeefyApi where S.C: SubscribableRpcClient {
             cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
+}
+
+extension SubstrateRpcApiRegistry where S.R: BeefyApi {
+    public var beefy: SubstrateRpcBeefyApi<S> { getRpcApi(SubstrateRpcBeefyApi<S>.self) }
 }

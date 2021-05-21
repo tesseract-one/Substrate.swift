@@ -13,6 +13,8 @@ public protocol Runtime: System, ModuleBase, DynamicTypeId {
     associatedtype TSignature: Signature
     associatedtype TExtrinsicExtra: SignedExtension
     
+    var supportedSpecVersions: Range<UInt32> { get }
+    
     var modules: [ModuleBase] { get }
 }
 

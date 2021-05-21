@@ -38,10 +38,17 @@ extension PolkadotRuntime: Grandpa {}
 extension PolkadotRuntime: ImOnline {}
 extension PolkadotRuntime: Parachains {}
 extension PolkadotRuntime: AuthorityDiscovery {}
+extension PolkadotRuntime: BeefyApi {
+    public typealias TBeefyValidatorSetId = UInt64
+}
 
 extension PolkadotRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtrinsicExtra = DefaultExtrinsicExtra<Self>
+    
+    public var supportedSpecVersions: Range<UInt32> {
+        return 30..<UInt32.max
+    }
     
     public var modules: [ModuleBase] {
         [PrimitivesModule<Self>(), SystemModule<Self>(),
