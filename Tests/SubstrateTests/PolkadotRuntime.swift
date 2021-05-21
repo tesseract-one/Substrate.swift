@@ -37,7 +37,7 @@ extension PolkadotRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtrinsicExtra = DefaultExtrinsicExtra<Self>
     
-    public var modules: [TypeRegistrator] {
+    public var modules: [ModuleBase] {
         [PrimitivesModule<Self>(), SystemModule<Self>(),
          SessionModule<Self>(), BalancesModule<Self>(),
          StakingModule<Self>()]

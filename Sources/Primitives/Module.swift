@@ -8,14 +8,18 @@
 import Foundation
 import ScaleCodec
 
-public protocol TypeRegistrator {
+public protocol ModuleBase {
+    static var NAME: String { get }
+    
     func registerEventsCallsAndTypes<R: TypeRegistryProtocol>(in registry: R) throws
 }
 
-public protocol ModuleProtocol: TypeRegistrator {
+extension ModuleBase {
+    public var name: String { Self.NAME }
+}
+
+public protocol ModuleProtocol: ModuleBase {
     associatedtype Frame
-    
-    static var NAME: String { get }
 }
 
 open class PrimitivesModule<S>: ModuleProtocol {
@@ -40,6 +44,7 @@ open class PrimitivesModule<S>: ModuleProtocol {
         try registry.register(type: SInt128.self, as: .type(name: "i128"))
         try registry.register(type: SInt256.self, as: .type(name: "i256"))
         try registry.register(type: SInt512.self, as: .type(name: "i512"))
+        try registry.register(type: Bool.self, as: .type(name: "bool"))
         try registry.register(type: SCompact<UInt8>.self, as: .compact(type: .type(name: "u8")))
         try registry.register(type: SCompact<UInt16>.self, as: .compact(type: .type(name: "u16")))
         try registry.register(type: SCompact<UInt32>.self, as: .compact(type: .type(name: "u32")))

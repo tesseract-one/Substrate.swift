@@ -23,36 +23,9 @@ public class TypeRegistry {
         self.metadata = metadata
     }
     
-    public func validate() throws {
-        var missing = Dictionary<DType, [String]>()
-        let check = { (type: DType, path: [String]) in
-            missing.merge(self._checkType(types: self._types, type: type, path: path)) { (v1, _) in v1 }
-        }
-        for module in metadata.modulesByName.values {
-            let modulePart = "module: \(module.name)"
-            for event in module.eventsByName.values {
-                for argument in event.arguments {
-                    check(argument, [modulePart, "event: \(event.name)"])
-                }
-            }
-            for call in module.callsByName.values {
-                for type in call.types.values {
-                    check(type, [modulePart, "call: \(call.name)"])
-                }
-            }
-            for constant in module.constants.values {
-                check(constant.type, [modulePart, "constant: \(constant.name)"])
-            }
-            for storageItem in module.storage.values {
-                for type in storageItem.pathTypes {
-                    check(type, [modulePart, "storage item path: \(storageItem.name)"])
-                }
-                check(storageItem.valueType, [modulePart, "storage item value: \(storageItem.name)"])
-            }
-        }
-        if !missing.isEmpty {
-            throw TypeRegistryError.validationError(missingTypes: missing)
-        }
+    public func validate(modules: Array<ModuleBase>? = nil) throws {
+        let names = modules.map { Set($0.map { $0.name }) }
+        try _validate(modules: names, types: _types, metadata: metadata)
     }
     
     func decode(static: DType, from decoder: ScaleDecoder) throws -> ScaleDynamicCodable {

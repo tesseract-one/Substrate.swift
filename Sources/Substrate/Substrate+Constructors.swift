@@ -32,7 +32,7 @@ private extension Substrate {
         return Result {
             let registry = TypeRegistry(metadata: meta)
             try runtime.registerEventsCallsAndTypes(in: registry)
-            try registry.validate()
+            try registry.validate(modules: runtime.modules)
             return registry
         }.mapError(SubstrateRpcApiError.from)
     }

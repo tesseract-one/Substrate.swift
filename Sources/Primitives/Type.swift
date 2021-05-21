@@ -20,7 +20,7 @@ public indirect enum DType: Equatable, Hashable, Encodable {
     case result(success: DType, error: DType)
     case tuple(elements: [DType])
     
-    var name: String {
+    public var name: String {
         switch self {
         case .null: return "Null"
         case .doNotConstruct: return "DoNotConstruct"

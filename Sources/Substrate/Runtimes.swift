@@ -40,7 +40,7 @@ extension DefaultNodeRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtrinsicExtra = DefaultExtrinsicExtra<Self>
     
-    public var modules: [TypeRegistrator] {
+    public var modules: [ModuleBase] {
         [PrimitivesModule<Self>(), SystemModule<Self>(),
          StakingModule<Self>(), ContractsModule<Self>(),
          SudoModule<Self>(), SessionModule<Self>(),
