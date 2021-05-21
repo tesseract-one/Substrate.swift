@@ -20,25 +20,25 @@ extension TypeRegistry {
             guard modules?.contains(mName) ?? true else { return [] }
             let mPath = mName
             let inEvents = module.eventsByName.values.flatMap { (event) -> [(DType, String)] in
-                let ePath = "\(mPath).events['\(event.name)']"
+                let ePath = "\(mPath).events[\(event.name)]"
                 return event.arguments.enumerated().flatMap { (index, argType) in
                     self._checkType(types: types, type: argType, path: "\(ePath)[\(index)]")
                 }
             }
             let inCalls = module.callsByName.values.flatMap { (call) -> [(DType, String)] in
-                let cPath = "\(mPath).calls['\(call.name)']"
+                let cPath = "\(mPath).calls[\(call.name)]"
                 return call.types.flatMap { (name, argType) in
-                    self._checkType(types: types, type: argType, path: "\(cPath)['\(name)']")
+                    self._checkType(types: types, type: argType, path: "\(cPath)[\(name)]")
                 }
             }
             let inConstants = module.constants.values.flatMap { (const) -> [(DType, String)] in
                 self._checkType(
-                    types: types, type: const.type, path: "\(mPath).constant['\(const.name)']"
+                    types: types, type: const.type, path: "\(mPath).constant[\(const.name)]"
                 )
             }
             let inStorage = module.storage.values.flatMap { (item) -> [(DType, String)] in
                 self._checkType(
-                    types: types, type: item.valueType, path: "\(mPath).storage['\(item.name)\']"
+                    types: types, type: item.valueType, path: "\(mPath).storage[\(item.name)]"
                 )
             }
             return inEvents + inCalls + inConstants + inStorage

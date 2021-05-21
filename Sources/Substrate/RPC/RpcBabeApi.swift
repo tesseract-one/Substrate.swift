@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct SubstrateRpcBabeApi<S: SubstrateProtocol>: SubstrateRpcApi where S.R: Session {
+public struct SubstrateRpcBabeApi<S: SubstrateProtocol>: SubstrateRpcApi where S.R: Babe {
     public weak var substrate: S!
     
     public init(substrate: S) {
@@ -40,11 +40,11 @@ public struct SubstrateRpcBabeApi<S: SubstrateProtocol>: SubstrateRpcApi where S
     }
 }
 
-extension SubstrateRpcApiRegistry where S.R: Session {
+extension SubstrateRpcApiRegistry where S.R: Babe {
     public var babe: SubstrateRpcBabeApi<S> { getRpcApi(SubstrateRpcBabeApi<S>.self) }
 }
 
-public typealias BabeAutorityId<R: Session> = R.TKeys.TBabe.TPublic
+public typealias BabeAutorityId<R: Babe> = R.TKeys.TBabe.TPublic
 
 public struct EpochAutorship: Codable {
     public let primary: Data

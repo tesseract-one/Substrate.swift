@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
+public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi where S.R: Session {
     public weak var substrate: S!
     
     public init(substrate: S) {
@@ -127,7 +127,7 @@ extension SubstrateRpcAuthorApi where S.C: SubscribableRpcClient {
     }
 }
 
-extension SubstrateRpcApiRegistry {
+extension SubstrateRpcApiRegistry where S.R: Session {
     public var author: SubstrateRpcAuthorApi<S> { getRpcApi(SubstrateRpcAuthorApi<S>.self) }
 }
 

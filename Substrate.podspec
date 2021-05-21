@@ -9,9 +9,13 @@ Pod::Spec.new do |s|
   s.author           = { 'Tesseract Systems, Inc.' => 'info@tesseract.one' }
   s.source           = { :git => 'https://github.com/tesseract-one/Substrate.swift.git', :tag => s.version.to_s }
 
-  s.ios.deployment_target = '10.0'
-  s.osx.deployment_target = '10.12'
-  s.tvos.deployment_target = '12.0'
+  test_platforms = {
+    :ios => '10.0',
+    :osx => '10.12',
+    :tvos => '10.0'
+  }
+
+  s.platforms = test_platforms.merge({ :watchos => '6.0' })
   
   s.swift_versions = ['5', '5.1', '5.2', '5.3']
   
@@ -26,7 +30,8 @@ Pod::Spec.new do |s|
     ss.dependency 'Sr25519', '~> 0.1'
     ss.dependency 'CSecp256k1', '~> 0.1'
     
-    ss.test_spec 'SubstrateTests' do |test_spec|
+    ss.test_spec 'KeychainTests' do |test_spec|
+      test_spec.platforms = test_platforms
       test_spec.source_files = 'Tests/KeychainTests/**/*.swift'
     end
   end
@@ -38,6 +43,7 @@ Pod::Spec.new do |s|
     ss.dependency 'Substrate/RPC'
     
     ss.test_spec 'SubstrateTests' do |test_spec|
+      test_spec.platforms = test_platforms
       test_spec.source_files = 'Tests/SubstrateTests/**/*.swift'
     end
   end
@@ -48,6 +54,7 @@ Pod::Spec.new do |s|
     ss.dependency 'Substrate/Substrate'
     
     ss.test_spec 'PolkadotTests' do |test_spec|
+      test_spec.platforms = test_platforms
       test_spec.source_files = 'Tests/PolkadotTests/**/*.swift'
     end
   end
@@ -60,6 +67,7 @@ Pod::Spec.new do |s|
     ss.dependency 'xxHash-Swift', '~> 1.1'
     
     ss.test_spec 'PrimitivesTests' do |test_spec|
+      test_spec.platforms = test_platforms
       test_spec.source_files = 'Tests/PrimitivesTests/**/*.swift'
     end
   end
@@ -70,10 +78,11 @@ Pod::Spec.new do |s|
     ss.dependency 'TesseractWebSocket', '~> 0.0.1'
     
     ss.test_spec 'RPCTests' do |test_spec|
+      test_spec.platforms = test_platforms
       test_spec.dependency 'Serializable.swift', '~> 0.2'
       test_spec.source_files = 'Tests/RPCTests/**/*.swift'
     end
   end
 
-  s.default_subspecs = 'Polkadot'
+  s.default_subspecs = 'Substrate'
 end

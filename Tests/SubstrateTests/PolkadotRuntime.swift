@@ -33,14 +33,22 @@ extension PolkadotRuntime: Session {
     public typealias TKeys = KusamaSessionKeys
 }
 
+extension PolkadotRuntime: Babe {}
+extension PolkadotRuntime: Grandpa {}
+extension PolkadotRuntime: ImOnline {}
+extension PolkadotRuntime: Parachains {}
+extension PolkadotRuntime: AuthorityDiscovery {}
+
 extension PolkadotRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtrinsicExtra = DefaultExtrinsicExtra<Self>
     
     public var modules: [ModuleBase] {
         [PrimitivesModule<Self>(), SystemModule<Self>(),
-         SessionModule<Self>(), BalancesModule<Self>(),
-         StakingModule<Self>()]
+         SessionModule<Self>(), BabeModule<Self>(),
+         GrandpaModule<Self>(), ImOnlineModule<Self>(),
+         AuthorityDiscoveryModule<Self>(),
+         BalancesModule<Self>(), StakingModule<Self>()]
     }
 }
 

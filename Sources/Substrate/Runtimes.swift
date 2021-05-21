@@ -28,13 +28,21 @@ extension DefaultNodeRuntime: System {
 }
 
 extension DefaultNodeRuntime: Staking {}
-extension DefaultNodeRuntime: Contracts {}
+extension DefaultNodeRuntime: Contracts {
+    public typealias TGas = UInt64
+}
 extension DefaultNodeRuntime: Sudo {}
 
 extension DefaultNodeRuntime: Session {
     public typealias TValidatorId = Self.TAccountId
     public typealias TKeys = BasicSessionKeys
 }
+
+extension DefaultNodeRuntime: Babe {}
+extension DefaultNodeRuntime: Grandpa {}
+extension DefaultNodeRuntime: ImOnline {}
+extension DefaultNodeRuntime: Parachains {}
+extension DefaultNodeRuntime: AuthorityDiscovery {}
 
 extension DefaultNodeRuntime: Runtime {
     public typealias TSignature = MultiSignature
@@ -44,6 +52,8 @@ extension DefaultNodeRuntime: Runtime {
         [PrimitivesModule<Self>(), SystemModule<Self>(),
          StakingModule<Self>(), ContractsModule<Self>(),
          SudoModule<Self>(), SessionModule<Self>(),
+         BabeModule<Self>(), GrandpaModule<Self>(),
+         ImOnlineModule<Self>(), AuthorityDiscoveryModule<Self>(),
          BalancesModule<Self>(), StakingModule<Self>()]
     }
 }

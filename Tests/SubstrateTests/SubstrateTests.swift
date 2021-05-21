@@ -24,6 +24,7 @@ final class SubstrateTests: XCTestCase {
             encoder.dataEncodingStrategy = .substrate_prefixedHex
             let json = try! encoder.encode(rmetadata.metadata as! RuntimeMetadataV12)
             print("Metadata", String(data: json, encoding: .utf8)!)
+            print("Modules", rmetadata.metadata.modules.map {$0.name})
         }
         
         client.call(method: "state_getMetadata", params: Array<Int>()) { (res: Result<Data, RpcClientError>) in

@@ -8,7 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public protocol Contracts: Balances {}
+public protocol Contracts: Balances {
+    associatedtype TGas: ScaleDynamicCodable & CompactCodable
+}
 
 open class ContractsModule<C: Contracts>: ModuleProtocol {
     public typealias Frame = C
@@ -18,8 +20,8 @@ open class ContractsModule<C: Contracts>: ModuleProtocol {
     public init() {}
     
     open func registerEventsCallsAndTypes<R>(in registry: R) throws where R : TypeRegistryProtocol {
-        try registry.register(type: Gas.self, as: .type(name: "Gas"))
-        try registry.register(type: SCompact<Gas>.self, as: .compact(type: .type(name: "Gas")))
+        try registry.register(type: C.TGas.self, as: .type(name: "Gas"))
+        try registry.register(type: SCompact<C.TGas>.self, as: .compact(type: .type(name: "Gas")))
         try registry.register(call: ContractsPutCodeCall<C>.self)
         try registry.register(call: ContractsInstantiateCall<C>.self)
         try registry.register(call: ConstractsCallCall<C>.self)
@@ -28,8 +30,6 @@ open class ContractsModule<C: Contracts>: ModuleProtocol {
         try registry.register(event: ContractsContractExecutionEvent<C>.self)
     }
 }
-
-public typealias Gas = UInt64
 
 /// Stores the given binary Wasm code into the chain's storage and returns
 /// its `codehash`.
@@ -70,7 +70,7 @@ public struct ContractsInstantiateCall<C: Contracts> {
     /// Initial balance transfered to the contract.
     public let endowment: C.TBalance
     /// Gas limit.
-    public let gasLimit: Gas
+    public let gasLimit: C.TGas
     /// Code hash returned by the put_code call.
     public let codeHash: C.THash
     /// Data to initialize the contract with.
@@ -110,7 +110,7 @@ public struct ConstractsCallCall<C: Contracts> {
     /// Value to transfer to the contract.
     public let value: C.TBalance
     /// Gas limit.
-    public let gasLimit: Gas
+    public let gasLimit: C.TGas
     /// Data to send to the contract.
     public let data: Data
 }

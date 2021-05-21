@@ -33,7 +33,9 @@ extension SubstrateExtrinsicApi {
             cb(res)
         }
     }
-    
+}
+
+extension SubstrateExtrinsicApi where S.R: Session {
     public func submit<C: AnyCall>(
         unsgined call: C, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
@@ -42,7 +44,7 @@ extension SubstrateExtrinsicApi {
             cb($0.mapError(SubstrateExtrinsicApiError<S.R>.rpc))
         }
     }
-    
+
     public func submit<E: ExtrinsicProtocol>(
         extrinsic: E, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
@@ -65,7 +67,9 @@ public final class SubstrateExtrinsicApiRegistry<S: SubstrateProtocol> {
         _apis[A.id] = api
         return api
     }
-    
+}
+
+extension SubstrateExtrinsicApiRegistry where S.R: Session {
     public func submit<E: ExtrinsicProtocol>(
         extrinsic: E, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
