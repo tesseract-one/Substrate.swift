@@ -44,6 +44,7 @@ extension DefaultNodeRuntime: ImOnline {}
 extension DefaultNodeRuntime: Parachains {}
 extension DefaultNodeRuntime: AuthorityDiscovery {}
 extension DefaultNodeRuntime: BeefyApi {
+    public typealias TBeefyPayload = Hash256
     public typealias TBeefyValidatorSetId = UInt64
 }
 

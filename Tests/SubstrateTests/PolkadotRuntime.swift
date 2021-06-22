@@ -39,6 +39,7 @@ extension PolkadotRuntime: ImOnline {}
 extension PolkadotRuntime: Parachains {}
 extension PolkadotRuntime: AuthorityDiscovery {}
 extension PolkadotRuntime: BeefyApi {
+    public typealias TBeefyPayload = Hash256
     public typealias TBeefyValidatorSetId = UInt64
 }
 

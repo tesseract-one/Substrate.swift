@@ -25,6 +25,13 @@ extension PolkadotRuntime: Session {
     public typealias TKeys = KusamaSessionKeys
 }
 
+extension PolkadotRuntime: Babe {}
+extension PolkadotRuntime: Grandpa {}
+extension PolkadotRuntime: BeefyApi {
+    public typealias TBeefyPayload = Hash256
+    public typealias TBeefyValidatorSetId = UInt64
+}
+
 extension PolkadotRuntime: Runtime {
     public typealias TSignature = MultiSignature
     public typealias TExtrinsicExtra = DefaultExtrinsicExtra<Self>

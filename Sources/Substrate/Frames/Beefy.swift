@@ -8,8 +8,10 @@
 import Foundation
 
 public protocol BeefyApi: Grandpa {
+    associatedtype TBeefyPayload: Hash
     associatedtype TBeefyValidatorSetId: ScaleDynamicCodable
 }
+
 public protocol Beefy: BeefyApi where TKeys: SessionKeysBeefy {}
 
 public protocol SessionKeysBeefy: SessionKeys {
