@@ -22,7 +22,7 @@ final class SubstrateTests: XCTestCase {
             encoder.outputFormatting = .prettyPrinted
             encoder.dateEncodingStrategy = .substrate_iso8601millis
             encoder.dataEncodingStrategy = .substrate_prefixedHex
-            let json = try! encoder.encode(rmetadata.metadata as! RuntimeMetadataV12)
+            let json = try! encoder.encode(rmetadata.metadata as! RuntimeMetadataV13)
             print("Metadata", String(data: json, encoding: .utf8)!)
             print("Modules", rmetadata.metadata.modules.map {$0.name})
         }
