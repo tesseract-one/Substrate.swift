@@ -124,10 +124,31 @@ extension DispatchError: Codable {
 
 
 public struct DispatchInfo: ScaleCodable, ScaleDynamicCodable {
-    public enum Class: CaseIterable, ScaleCodable, ScaleDynamicCodable {
+    public enum Class: CaseIterable, ScaleCodable, ScaleDynamicCodable, Codable {
         case normal
         case operational
         case mandatory
+        
+        public init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            let value = try container.decode(String.self)
+            switch value {
+            case "Normal": self = .normal
+            case "Operational": self = .operational
+            case "Mandatory": self = .mandatory
+            default:
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "Unknown case \(value)")
+            }
+        }
+        
+        public func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            switch self {
+            case .normal: try container.encode("Normal")
+            case .operational: try container.encode("Operational")
+            case .mandatory: try container.encode("Mandatory")
+            }
+        }
     }
     
     public enum Pays: CaseIterable, ScaleCodable, ScaleDynamicCodable {
