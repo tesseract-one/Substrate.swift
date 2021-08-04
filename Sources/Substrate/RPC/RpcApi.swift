@@ -28,7 +28,9 @@ extension SubstrateRpcApi {
             try value.encode(in: encoder, registry: substrate.registry)
             return encoder.output
         } catch {
-            errcb(.failure(.from(error: error)))
+            substrate.client.responseQueue.async {
+                errcb(.failure(.from(error: error)))
+            }
             return nil
         }
     }
@@ -37,7 +39,9 @@ extension SubstrateRpcApi {
         do {
             return try f()
         } catch {
-            errcb(.failure(.from(error: error)))
+            substrate.client.responseQueue.async {
+                errcb(.failure(.from(error: error)))
+            }
             return nil
         }
     }

@@ -57,3 +57,7 @@ public struct SubstrateRpcChildstateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         }
     }
 }
+
+extension SubstrateRpcApiRegistry {
+    public var childstate: SubstrateRpcChildstateApi<S> { getRpcApi(SubstrateRpcChildstateApi<S>.self) }
+}
