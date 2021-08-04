@@ -35,7 +35,7 @@ extension TransactionStatus: Codable {
             }
             return
         } else {
-            let container2 = try decoder.container(keyedBy: TransactionStatusComplexKey.self)
+            let container2 = try decoder.container(keyedBy: CodableComplexKey<CKeyMarker>.self)
             guard let key = container2.allKeys.first else {
                 throw DecodingError.dataCorruptedError(in: container1, debugDescription: "Empty case object")
             }
@@ -73,22 +73,22 @@ extension TransactionStatus: Codable {
             var container = encoder.singleValueContainer()
             try container.encode("invalid")
         case .broadcast(let body):
-            var container = encoder.container(keyedBy: TransactionStatusComplexKey.self)
+            var container = encoder.container(keyedBy: CodableComplexKey<CKeyMarker>.self)
             try container.encode(body, forKey: .broadcast)
         case .inBlock(let body):
-            var container = encoder.container(keyedBy: TransactionStatusComplexKey.self)
+            var container = encoder.container(keyedBy: CodableComplexKey<CKeyMarker>.self)
             try container.encode(body, forKey: .inBlock)
         case .retracted(let body):
-            var container = encoder.container(keyedBy: TransactionStatusComplexKey.self)
+            var container = encoder.container(keyedBy: CodableComplexKey<CKeyMarker>.self)
             try container.encode(body, forKey: .retracted)
         case .finalityTimeout(let body):
-            var container = encoder.container(keyedBy: TransactionStatusComplexKey.self)
+            var container = encoder.container(keyedBy: CodableComplexKey<CKeyMarker>.self)
             try container.encode(body, forKey: .finalityTimeout)
         case .finalized(let body):
-            var container = encoder.container(keyedBy: TransactionStatusComplexKey.self)
+            var container = encoder.container(keyedBy: CodableComplexKey<CKeyMarker>.self)
             try container.encode(body, forKey: .finalized)
         case .usurped(let body):
-            var container = encoder.container(keyedBy: TransactionStatusComplexKey.self)
+            var container = encoder.container(keyedBy: CodableComplexKey<CKeyMarker>.self)
             try container.encode(body, forKey: .usurped)
         }
     }
@@ -131,19 +131,9 @@ extension TransactionStatus: ScaleCodable {
 
 extension TransactionStatus: ScaleDynamicCodable {}
 
-private struct TransactionStatusComplexKey: CodingKey, Equatable {
-    var stringValue: String
-    var intValue: Int?
-    
-    init?(stringValue: String) {
-        self.stringValue = stringValue
-    }
+private enum CKeyMarker: Equatable {}
 
-    init?(intValue: Int) {
-        self.stringValue = String(intValue)
-        self.intValue = intValue
-    }
-    
+private extension CodableComplexKey where T == CKeyMarker {
     static let broadcast = Self(stringValue: "broadcast")!
     static let inBlock = Self(stringValue: "inBlock")!
     static let retracted = Self(stringValue: "retracted")!

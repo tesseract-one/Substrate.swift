@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol Contracts: Balances {
-    associatedtype TGas: ScaleDynamicCodable & CompactCodable
+    associatedtype TGas: ScaleDynamicCodable & CompactCodable & Codable
 }
 
 open class ContractsModule<C: Contracts>: ModuleProtocol {

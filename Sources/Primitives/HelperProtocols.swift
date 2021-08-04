@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol BlockNumberProtocol: ScaleDynamicCodable, SDefault {
+public protocol BlockNumberProtocol: ScaleDynamicCodable, SDefault, Equatable {
     static var firstBlock: Self { get }
     
     // special methods to avoid breaking of type default Codable
