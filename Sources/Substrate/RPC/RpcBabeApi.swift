@@ -23,13 +23,15 @@ public struct SubstrateRpcBabeApi<S: SubstrateProtocol>: SubstrateRpcApi where S
             method: "babe_epochAuthorship",
             params: RpcCallParams(),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<Dictionary<String, EpochAutorship>>) in
+        ) { (res: RpcClientResult<Dictionary<Data, EpochAutorship>>) in
             let result = res
                 .mapError(SubstrateRpcApiError.rpc)
                 .flatMap { autorships in
                     Result(catching: { () -> Dictionary<BabeAutorityId<S.R>, EpochAutorship> in
                         let tuples = try autorships.map {
-                            try (BabeAutorityId<S.R>(ss58: $0.key), $0.value)
+                            try (BabeAutorityId<S.R>(
+                                    bytes: $0.key, format: self.substrate.properties.ss58Format
+                            ), $0.value)
                         }
                         return Dictionary(tuples) { l, _ in l }
                     }).mapError(SubstrateRpcApiError.from)

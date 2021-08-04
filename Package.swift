@@ -39,7 +39,7 @@ var package = Package(
             dependencies: ["Substrate"]),
         .target(
             name: "Substrate",
-            dependencies: ["SubstratePrimitives", "SubstrateRpc"]),
+            dependencies: ["SubstratePrimitives", "SubstrateRpc", "Serializable"]),
         .target(
             name: "SubstratePrimitives",
             dependencies: [
