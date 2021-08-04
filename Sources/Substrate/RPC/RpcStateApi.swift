@@ -181,4 +181,3 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
 extension SubstrateRpcApiRegistry {
     public var state: SubstrateRpcStateApi<S> { getRpcApi(SubstrateRpcStateApi<S>.self) }
 }
-
