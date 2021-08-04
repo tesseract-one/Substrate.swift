@@ -63,7 +63,7 @@ extension SubstrateRpcGrandpaApi where S.C: SubscribableRpcClient {
 
 
 extension SubstrateRpcApiRegistry where S.R: Grandpa {
-    public var state: SubstrateRpcGrandpaApi<S> { getRpcApi(SubstrateRpcGrandpaApi<S>.self) }
+    public var grandpa: SubstrateRpcGrandpaApi<S> { getRpcApi(SubstrateRpcGrandpaApi<S>.self) }
 }
 
 public typealias EncodedFinalityProofs = Data
