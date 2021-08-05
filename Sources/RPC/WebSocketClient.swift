@@ -40,6 +40,11 @@ public class WebSocketRpcClient {
     // By default will log them to the console. Set to `nil` to remove logs.
     public var onError: Optional<(SubscribableRpcClientError, SubscribableRpcClient) -> Void>
     
+    public var parsingContext: [CodingUserInfoKey: Any] {
+        get { decoder.userInfo }
+        set(new) { decoder.userInfo = new }
+    }
+    
     private let _socket: WebSocket
     private var _isConnected: Bool
     private var _disconnecting: Bool

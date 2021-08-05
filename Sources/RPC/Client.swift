@@ -30,6 +30,7 @@ public typealias RpcClientCallback<R> = (RpcClientResult<R>) -> Void
 
 public protocol RpcClient {
     var responseQueue: DispatchQueue { get set }
+    var parsingContext: [CodingUserInfoKey: Any] { get set }
     
     func call<P: Encodable & Sequence, R: Decodable>(
         method: Method, params: P, timeout: TimeInterval, response: @escaping RpcClientCallback<R>

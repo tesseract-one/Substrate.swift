@@ -22,39 +22,24 @@ public protocol SubstrateRpcApi {
 extension SubstrateRpcApi {
     public static var id: String { String(describing: self) }
     
-    func _encode<V: ScaleDynamicEncodable, R>(value: V, _ errcb: @escaping SRpcApiCallback<R>) -> Data? {
-        do {
+    func _encode<V: ScaleDynamicEncodable>(_ value: V) -> SRpcApiResult<Data> {
+        return Result {
             let encoder = SCALE.default.encoder()
             try value.encode(in: encoder, registry: substrate.registry)
             return encoder.output
-        } catch {
-            substrate.client.responseQueue.async {
-                errcb(.failure(.from(error: error)))
-            }
-            return nil
-        }
+        }.mapError(SubstrateRpcApiError.from)
     }
     
-    func _try<T, R>(_ errcb: @escaping SRpcApiCallback<R>, f: @escaping () throws -> T) -> T? {
-        do {
-            return try f()
-        } catch {
-            substrate.client.responseQueue.async {
-                errcb(.failure(.from(error: error)))
-            }
-            return nil
-        }
+    func _decode<V: ScaleDynamicDecodable>(_ t: V.Type, from data: Data) -> SRpcApiResult<V> {
+        return Result {
+            let decoder = SCALE.default.decoder(data: data)
+            return try V(from: decoder, registry: substrate.registry)
+        }.mapError(SubstrateRpcApiError.from)
     }
     
-//    public func decode<V: ScaleDynamicDecodable, R>(_ t: V.Type, from data: Data, _ errcb: SRpcApiCallback<R>) -> V? {
-//        do {
-//            let decoder = SCALE.default.decoder(data: data)
-//            return try V(from: decoder, registry: substrate.registry)
-//        } catch {
-//            errcb(.failure(.from(error: error)))
-//            return nil
-//        }
-//    }
+    func _try<R>(_ f: @escaping () throws -> R) -> SRpcApiResult<R> {
+        return Result { try f() }.mapError(SubstrateRpcApiError.from)
+    }
 }
 
 public typealias SRpcApiResult<R> = Result<R, SubstrateRpcApiError>

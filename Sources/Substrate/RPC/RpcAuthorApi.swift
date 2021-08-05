@@ -45,7 +45,10 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi where
         }
     }
     
-    public func pendingExtrinsics(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<[S.R.TExtrinsic]>) {
+    public func pendingExtrinsics(
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<[S.R.TExtrinsic]>
+    ) {
         substrate.client.call(
             method: "author_pendingExtrinsics",
             params: RpcCallParams(),
@@ -54,7 +57,8 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi where
             let response = res.mapError(SubstrateRpcApiError.from).flatMap { dataArray in
                 Result {
                     try dataArray.map { data in
-                        try S.R.TExtrinsic(data: data, registry: self.substrate.registry)
+                        try S.R.TExtrinsic(from: SCALE.default.decoder(data: data),
+                                           registry: self.substrate.registry)
                     }
                 }.mapError(SubstrateRpcApiError.from)
             }
@@ -62,29 +66,30 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi where
         }
     }
 
-    public func removeExtrinsic<H: Hash>(bytesOrHash: [ExtrinsicOrHash<H>], timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<[S.R.THash]>) {
-        var hexArray = [Data]()
-        for boh in bytesOrHash {
-            switch boh {
-            case .hash(let hash):
-                guard let data = _encode(value: hash, cb) else { return }
-                hexArray.append(data)
-            case .extrinsic(let data):
-                hexArray.append(data)
+    public func removeExtrinsic(
+        bytesOrHash: [ExtrinsicOrHash<S.R>],
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<[S.R.THash]>
+    ) {
+        bytesOrHash.reduce(SRpcApiResult<[Data]>.success([])) { (prev, bOrH) in
+            prev.flatMap { arr in
+                self._encode(bOrH).map { arr + [$0] }
+            }
+        }.pour(error: cb).onSuccess { array in
+            substrate.client.call(
+                method: "author_removeExtrinsic",
+                params: RpcCallParams(array),
+                timeout: timeout ?? substrate.callTimeout
+            ) { (res: RpcClientResult<[Data]>) in
+                let response = res.mapError(SubstrateRpcApiError.from).flatMap { dataArray in
+                    Result {
+                        try dataArray.map { try S.R.THash(decoding: $0) }
+                    }.mapError(SubstrateRpcApiError.from)
+                }
+                cb(response)
             }
         }
-        substrate.client.call(
-            method: "author_removeExtrinsic",
-            params: RpcCallParams(hexArray),
-            timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<[Data]>) in
-            let response = res.mapError(SubstrateRpcApiError.from).flatMap { dataArray in
-                Result {
-                    try dataArray.map { try S.R.THash(decoding: $0) }
-                }.mapError(SubstrateRpcApiError.from)
-            }
-            cb(response)
-        }
+        
     }
     
     public func rotateKeys(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
@@ -97,32 +102,43 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi where
         }
     }
     
-    public func submit<E: ExtrinsicProtocol>(
-        extrinsic: E, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THash>
+    public func submit(
+        extrinsic: S.R.TExtrinsic, timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<S.R.THash>
     ) {
-        guard let data = _encode(value: extrinsic, cb) else { return }
-        substrate.client.call(
-            method: "author_submitExtrinsic",
-            params: RpcCallParams(data),
-            timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<S.R.THash>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc))
-        }
+        _encode(extrinsic)
+            .pour(error: cb)
+            .onSuccess { data in
+                substrate.client.call(
+                    method: "author_submitExtrinsic",
+                    params: RpcCallParams(data),
+                    timeout: timeout ?? substrate.callTimeout
+                ) { (res: RpcClientResult<S.R.THash>) in
+                    cb(res.mapError(SubstrateRpcApiError.rpc))
+                }
+            }
     }
 }
 
 extension SubstrateRpcAuthorApi where S.C: SubscribableRpcClient {
-    public func submitAndWatchExtrinsic<E: ExtrinsicProtocol>(
-        extrinsic: E, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<TransactionStatus<S.R.THash, S.R.THash>>
+    public func submitAndWatchExtrinsic(
+        extrinsic: S.R.TExtrinsic,
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<TransactionStatus<S.R.THash, S.R.THash>>
     ) -> RpcSubscription? {
-        guard let data = _encode(value: extrinsic, cb) else { return nil }
-        return substrate.client.subscribe(
-            method: "author_submitAndWatchExtrinsic",
-            params: RpcCallParams(data),
-            unsubscribe: "author_unwatchExtrinsic"
-        ) { (res: Result<TransactionStatus<S.R.THash, S.R.THash>, RpcClientError>) in
-            let response = res.mapError(SubstrateRpcApiError.rpc)
-            cb(response)
+        switch _encode(extrinsic) {
+        case .failure(let err):
+            cb(.failure(err))
+            return nil
+        case .success(let data):
+            return substrate.client.subscribe(
+                method: "author_submitAndWatchExtrinsic",
+                params: RpcCallParams(data),
+                unsubscribe: "author_unwatchExtrinsic"
+            ) { (res: Result<TransactionStatus<S.R.THash, S.R.THash>, RpcClientError>) in
+                let response = res.mapError(SubstrateRpcApiError.rpc)
+                cb(response)
+            }
         }
     }
 }
@@ -131,7 +147,14 @@ extension SubstrateRpcApiRegistry where S.R: Session {
     public var author: SubstrateRpcAuthorApi<S> { getRpcApi(SubstrateRpcAuthorApi<S>.self) }
 }
 
-public enum ExtrinsicOrHash<H: Hash> {
-    case hash(H)
-    case extrinsic(Data)
+public enum ExtrinsicOrHash<R: Runtime>: ScaleDynamicEncodable {
+    case hash(R.THash)
+    case extrinsic(R.TExtrinsic)
+    
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        switch self {
+        case .hash(let h): try h.encode(in: encoder, registry: registry)
+        case .extrinsic(let e): try e.encode(in: encoder, registry: registry)
+        }
+    }
 }

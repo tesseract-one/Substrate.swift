@@ -70,3 +70,44 @@ extension String {
         return self[self.index(startIndex, offsetBy: index)]
     }
 }
+
+extension CodingUserInfoKey {
+    public static let typeRegistry = Self(rawValue: "SubstrateTypeRegistry")!
+}
+
+extension Decoder {
+    public var typeRegistry: TypeRegistryProtocol? {
+        if let registry = userInfo[.typeRegistry] as? TypeRegistryProtocol? {
+            return registry
+        }
+        return nil
+    }
+}
+
+public struct NoError: Error {}
+
+extension Result {
+    public func pour(queue: DispatchQueue? = nil, error cb: @escaping (Failure) -> Void) -> Result<Success, NoError> {
+        self.mapError { err in
+            if let queue = queue {
+                queue.async { cb(err) }
+            } else {
+                cb(err)
+            }
+            return NoError()
+        }
+    }
+    
+    public func pour<V>(queue: DispatchQueue? = nil, error cb: @escaping (Result<V, Failure>) -> Void) -> Result<Success, NoError> {
+        self.pour(queue: queue) { cb(.failure($0)) }
+    }
+}
+
+extension Result where Failure == NoError {
+    public func onSuccess(_ cb: @escaping (Success) throws -> Void) rethrows {
+        switch self {
+        case .failure: return
+        case .success(let ok): try cb(ok)
+        }
+    }
+}

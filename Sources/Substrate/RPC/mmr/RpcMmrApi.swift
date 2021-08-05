@@ -33,9 +33,3 @@ public struct SubstrateRpcMmrApi<S: SubstrateProtocol>: SubstrateRpcApi {
 extension SubstrateRpcApiRegistry {
     public var mmr: SubstrateRpcMmrApi<S> { getRpcApi(SubstrateRpcMmrApi<S>.self) }
 }
-
-public struct MmrLeafProof<BH: Hash>: Decodable {
-    public let blockHash: BH
-    public let leaf: Data
-    public let proof: Data
-}

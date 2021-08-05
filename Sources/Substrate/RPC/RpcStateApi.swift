@@ -66,22 +66,23 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         _ cb: @escaping SRpcApiCallback<[K]>
     ) {
         let registry = substrate.registry
-        let vals = _try(cb) {
+        _try {
             (try startKey.map { try registry.hash(of: $0) }, try registry.hash(iteratorOf: key))
-        }
-        guard let (start, iterator) = vals else { return }
-        getKeysPaged(
-            iteratorHash: iterator, count: count,
-            startKeyHash: start, at: at, timeout: timeout
-        ) { result in
-            let response = result.flatMap { keys in
-                Result {
-                    try keys.map {
-                        try registry.decode(key: K.self, module: key.module, field: key.field, from: $0)
-                    }
-                }.mapError(SubstrateRpcApiError.from)
+        }.pour(queue: substrate.client.responseQueue, error: cb)
+        .onSuccess { (start, iterator) in
+            getKeysPaged(
+                iteratorHash: iterator, count: count,
+                startKeyHash: start, at: at, timeout: timeout
+            ) { result in
+                let response = result.flatMap { keys in
+                    Result {
+                        try keys.map {
+                            try registry.decode(key: K.self, module: key.module, field: key.field, from: $0)
+                        }
+                    }.mapError(SubstrateRpcApiError.from)
+                }
+                cb(response)
             }
-            cb(response)
         }
     }
     
@@ -91,20 +92,21 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         _ cb: @escaping SRpcApiCallback<[K]>
     ) {
         let registry = substrate.registry
-        let vals = _try(cb) {
+        _try {
             (try startKey.map { try registry.hash(of: $0) }, try registry.hash(iteratorOf: key))
-        }
-        guard let (start, iterator) = vals else { return }
-        getKeysPaged(
-            iteratorHash: iterator, count: count,
-            startKeyHash: start, at: at, timeout: timeout
-        ) { result in
-            let response = result.flatMap { keys in
-                Result {
-                    try keys.map { try registry.decode(key: K.self, from: $0) }
-                }.mapError(SubstrateRpcApiError.from)
+        }.pour(queue: substrate.client.responseQueue, error: cb)
+        .onSuccess { (start, iterator) in
+            getKeysPaged(
+                iteratorHash: iterator, count: count,
+                startKeyHash: start, at: at, timeout: timeout
+            ) { result in
+                let response = result.flatMap { keys in
+                    Result {
+                        try keys.map { try registry.decode(key: K.self, from: $0) }
+                    }.mapError(SubstrateRpcApiError.from)
+                }
+                cb(response)
             }
-            cb(response)
         }
     }
     
@@ -112,19 +114,21 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         for key: K, at: S.R.THash? = nil, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<K.Value>
     ) {
         let registry = substrate.registry
-        let vals = _try(cb) { try (registry.hash(of: key), registry.type(valueOf: key)) }
-        guard let (keyHash, vtype) = vals else { return }
-        getStorage(keyHash: keyHash, at: at, timeout: timeout) { res in
-            let response = res.flatMap { data in
-                Result {
-                    try registry.decode(
-                        static: K.Value.self, as: vtype,
-                        from: SCALE.default.decoder(data: data)
-                    )
-                }.mapError(SubstrateRpcApiError.from)
+        _try { try (registry.hash(of: key), registry.type(valueOf: key)) }
+            .pour(error: cb)
+            .onSuccess { (keyHash, vtype) in
+                getStorage(keyHash: keyHash, at: at, timeout: timeout) { res in
+                    let response = res.flatMap { data in
+                        Result {
+                            try registry.decode(
+                                static: K.Value.self, as: vtype,
+                                from: SCALE.default.decoder(data: data)
+                            )
+                        }.mapError(SubstrateRpcApiError.from)
+                    }
+                    cb(response)
+                }
             }
-            cb(response)
-        }
     }
     
     public func getStorage<K: DynamicStorageKey>(
@@ -132,16 +136,18 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         _ cb: @escaping SRpcApiCallback<DValue>
     ) {
         let registry = substrate.registry
-        let vals = _try(cb) { try (registry.hash(of: key), registry.type(valueOf: key)) }
-        guard let (keyHash, vtype) = vals else { return }
-        getStorage(keyHash: keyHash, at: at, timeout: timeout) { res in
-            let response = res.flatMap { data in
-                Result {
-                    try registry.decode(dynamic: vtype, from: SCALE.default.decoder(data: data))
-                }.mapError(SubstrateRpcApiError.from)
+        _try { try (registry.hash(of: key), registry.type(valueOf: key)) }
+            .pour(error: cb)
+            .onSuccess { (keyHash, vtype) in
+                getStorage(keyHash: keyHash, at: at, timeout: timeout) { res in
+                    let response = res.flatMap { data in
+                        Result {
+                            try registry.decode(dynamic: vtype, from: SCALE.default.decoder(data: data))
+                        }.mapError(SubstrateRpcApiError.from)
+                    }
+                    cb(response)
+                }
             }
-            cb(response)
-        }
     }
     
     public static func runtimeVersion(

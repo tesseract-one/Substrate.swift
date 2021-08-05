@@ -8,10 +8,11 @@
 import Foundation
 
 public struct SubstrateRpcChildstateApi<S: SubstrateProtocol>: SubstrateRpcApi {
-    public weak var substrate: S!
     public typealias StorageKey = Data
     public typealias StorageData = Data
     public typealias PrefixedStorageKey = StorageKey
+    
+    public weak var substrate: S!
     
     public init(substrate: S) {
         self.substrate = substrate

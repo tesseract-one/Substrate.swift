@@ -11,7 +11,8 @@ import ScaleCodec
 
 public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public weak var substrate: S!
-    public typealias ChainBlock<Extrinsic: Codable> = SignedBlock<Block<S.R.THeader, Extrinsic>>
+    
+    public typealias ChainBlock<Extrinsic> = SignedBlock<Block<S.R.THeader, Extrinsic>>
     
     public init(substrate: S) {
         self.substrate = substrate
@@ -29,7 +30,8 @@ public struct SubstrateRpcChainApi<S: SubstrateProtocol>: SubstrateRpcApi {
                         block: Block(
                             header: cbd.block.header,
                             extrinsics: try cbd.block.extrinsics.map {
-                                try S.R.TExtrinsic(data: $0, registry: self.substrate.registry)
+                                try S.R.TExtrinsic(from: SCALE.default.decoder(data: $0),
+                                                   registry: self.substrate.registry)
                             }
                         ),
                         justification: cbd.justification

@@ -9,10 +9,7 @@ import Foundation
 import ScaleCodec
 import SubstratePrimitives
 
-public protocol Runtime: System, ModuleBase, DynamicTypeId {
-    associatedtype TSignature: Signature
-    associatedtype TExtrinsicExtra: SignedExtension
-    
+public protocol Runtime: System, ModuleBase, DynamicTypeId {    
     var supportedSpecVersions: Range<UInt32> { get }
     
     var modules: [ModuleBase] { get }
@@ -22,7 +19,6 @@ extension Runtime {
     public static var NAME: String { Self.id }
     
     public func registerEventsCallsAndTypes<R: TypeRegistryProtocol>(in registry: R) throws {
-        try registry.register(type: TSignature.self, as: .type(name: "Signature"))
         for module in modules {
             try module.registerEventsCallsAndTypes(in: registry)
         }

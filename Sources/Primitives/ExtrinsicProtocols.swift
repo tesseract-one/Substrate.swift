@@ -7,25 +7,34 @@
 
 import Foundation
 
-public protocol ExtrinsicProtocol: ScaleDynamicCodable {
-    associatedtype Call: AnyCall
-    associatedtype SignaturePayload: ScaleDynamicCodable
+public protocol ExtrinsicSigningPayloadProtocol: ScaleDynamicEncodable {
+    associatedtype Extra: SignedExtension
     
-    var isSigned: Optional<Bool> { get }
-    
-    init(call: Self.Call, payload: Optional<SignaturePayload>)
-    init(data: Data, registry: TypeRegistryProtocol) throws
-    
-    func opaque(registry: TypeRegistryProtocol) throws -> OpaqueExtrinsic
+    init(call: AnyCall, extra: Extra) throws
 }
 
-public protocol ExtrinsicMetadataProtocol {
-    associatedtype SignedExtensions: SignedExtension
+public protocol ExtrinsicSignatureProtocol: ScaleDynamicCodable {
+    associatedtype AddressType: Address
+    associatedtype SignatureType: Signature
+}
+
+public protocol ExtrinsicProtocol: ScaleDynamicCodable {
+    associatedtype SigningPayload: ExtrinsicSigningPayloadProtocol
+    associatedtype SignaturePayload: ExtrinsicSignatureProtocol
     
+    var isSigned: Bool { get }
     var version: UInt8 { get }
     static var VERSION: UInt8 { get }
+    
+    init(call: AnyCall, signature: Optional<SignaturePayload>)
+    init(payload: SigningPayload)
+    
+    func payload(with extra: SigningPayload.Extra) throws -> SigningPayload
+    func signed(by address: SignaturePayload.AddressType,
+                with signature: SignaturePayload.SignatureType,
+                payload: SigningPayload) throws -> Self
 }
 
-extension ExtrinsicMetadataProtocol {
+extension ExtrinsicProtocol {
     public var version: UInt8 { Self.VERSION }
 }

@@ -54,6 +54,9 @@ public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
         runtimeVersion: RuntimeVersion, properties: SystemProperties,
         client: C, signer: SubstrateSigner?
     ) {
+        var client = client
+        client.parsingContext[.typeRegistry] = registry
+        
         self.registry = registry
         self.genesisHash = genesisHash
         self.runtimeVersion = runtimeVersion
@@ -69,6 +72,7 @@ public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
         query.substrate = self
         consts.substrate = self
         tx.substrate = self
+        
         registry.ss58AddressFormat = properties.ss58Format
     }
     

@@ -8,12 +8,12 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicSigningPayload<Call: AnyCall, Extra: SignedExtension> {
-    public let call: Call
+public struct ExtrinsicSigningPayload<Extra: SignedExtension>: ExtrinsicSigningPayloadProtocol {
+    public let call: AnyCall
     public let extra: Extra
     public let payload: Extra.AdditionalSignedPayload
     
-    public init(call: Call, extra: Extra) throws {
+    public init(call: AnyCall, extra: Extra) throws {
         self.call = call
         self.payload = try extra.additionalSignedPayload()
         self.extra = extra

@@ -8,137 +8,63 @@
 import Foundation
 import ScaleCodec
 
-
-public struct Extrinsic<Addr: Address, Call: AnyCall, Sign: Signature, Extra: SignedExtension> {
+public struct Extrinsic<Addr: Address, Sign: Signature, Extra: SignedExtension> {
     public let signature: ExtrinsicSignature<Addr, Sign, Extra>?
-    public let call: Call
-    
-    public init(call: Call) {
-        self.call = call
-        self.signature = nil
-    }
-    
-    public init(call: Call, signed: Addr, signature: Sign, extra: Extra) {
-        self.call = call
-        self.signature = ExtrinsicSignature(sender: signed, signature: signature, extra: extra)
-    }
+    public let call: AnyCall
 }
 
 extension Extrinsic: ExtrinsicProtocol {
+    public typealias SigningPayload = ExtrinsicSigningPayload<Extra>
     public typealias SignaturePayload = ExtrinsicSignature<Addr, Sign, Extra>
     
-    public var isSigned: Optional<Bool> { self.signature != nil }
+    public var isSigned: Bool { self.signature != nil }
     
-    public init(call: Call, payload: Optional<SignaturePayload>) {
-        if let data = payload {
-            self.init(call: call, signed: data.sender, signature: data.signature, extra: data.extra)
-        } else {
-            self.init(call: call)
-        }
-    }
-    
-    public init(data: Data, registry: TypeRegistryProtocol) throws {
-        let dec = SCALE.default.decoder(data: data)
-        let info: UInt8 = try dec.decode()
-        let signed = (info & 0b10000000) > 0
-        let version = (info & 0b01111111)
-        guard version == 4 else {
-            throw SDecodingError.dataCorrupted(SDecodingError.Context(
-                path: dec.path, description: "Wrong extrinsic version \(version) expected 4"
-            ))
-        }
-        signature = signed ? try ExtrinsicSignature(from: dec, registry: registry) : nil
-        let _call = try registry.decode(callFrom: dec)
-        guard let call = _call as? Call else {
-            throw SDecodingError.typeMismatch(
-                type(of: _call),
-                SDecodingError.Context(
-                    path: dec.path,
-                    description: "Can't cast \(type(of: _call)) to \(Call.self)"
-                )
-            )
-        }
+    public init(call: AnyCall, signature: Optional<SignaturePayload> = nil) {
         self.call = call
+        self.signature = signature
     }
     
-    public func opaque(registry: TypeRegistryProtocol) throws -> OpaqueExtrinsic {
-        let encoder = SCALE.default.encoder()
-        try self.encode(in: encoder, registry: registry)
-        let decoder = SCALE.default.decoder(data: encoder.output)
-        return try OpaqueExtrinsic(from: decoder, registry: registry)
+    public init(payload: SigningPayload) {
+        self.call = payload.call
+        self.signature = nil
     }
-}
-
-extension Extrinsic: ExtrinsicMetadataProtocol {
-    public typealias SignedExtensions = Extra
+    
+    public func payload(with extra: Extra) throws -> SigningPayload {
+        try SigningPayload(call: call, extra: extra)
+    }
+    
+    public func signed(by address: Addr,
+                       with signature: Sign,
+                       payload: ExtrinsicSigningPayload<Extra>) throws -> Self {
+        let signature = SignaturePayload(sender: address,
+                                         signature: signature,
+                                         extra: payload.extra)
+        return Self(call: call, signature: signature)
+    }
     
     public static var VERSION: UInt8 { 4 }
 }
 
 extension Extrinsic: ScaleDynamicCodable {
     public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
-        let data: Data = try decoder.decode()
-        try self.init(data: data, registry: registry)
-    }
-    
-    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
-        let enc = SCALE.default.encoder()
-        let info = (0b01111111 & 4) + (self.signature != nil ? 0b10000000 : 0)
-        try enc.encode(UInt8(info))
-        if let sign = signature {
-            try sign.encode(in: enc, registry: registry)
+        let info: UInt8 = try decoder.decode()
+        let signed = (info & 0b10000000) > 0
+        let version = (info & 0b01111111)
+        guard version == Self.VERSION else {
+            throw SDecodingError.dataCorrupted(SDecodingError.Context(
+                path: decoder.path, description: "Wrong extrinsic version \(version) expected \(Self.VERSION)"
+            ))
         }
-        try registry.encode(call: call, in: enc)
-        try encoder.encode(enc.output)
-    }
-}
-
-
-public struct OpaqueExtrinsic: ExtrinsicProtocol, ScaleDynamicCodable {
-    public typealias Call = DCall
-    public typealias SignaturePayload = DNull
-    
-    private let registry: TypeRegistryProtocol!
-    public let data: Data
-    
-    public var isSigned: Optional<Bool> { return nil }
-    
-    public init(call: Call, payload: Optional<SignaturePayload>) {
-        fatalError("OpaqueExtrinsic can't be created through constructor.")
-    }
-    
-    public init(data: Data, registry: TypeRegistryProtocol) throws {
-        self.data = data
-        self.registry = registry
+        signature = signed ? try ExtrinsicSignature(from: decoder, registry: registry) : nil
+        call = try registry.decode(callFrom: decoder)
     }
     
     public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
-        try encoder.encode(data)
-    }
-    
-    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
-        self.registry = registry
-        self.data = try decoder.decode()
-    }
-    
-    public func parse<T: ExtrinsicProtocol>(_ t: T.Type) throws -> T {
-        return try t.init(data: data, registry: registry)
-    }
-    
-    public func opaque(registry: TypeRegistryProtocol) throws -> OpaqueExtrinsic {
-        self
-    }
-}
-
-extension OpaqueExtrinsic: Codable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        data = try container.decode(Data.self)
-        registry = nil
-    }
-    
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(data)
+        let info = (0b01111111 & self.version) + (self.signature != nil ? 0b10000000 : 0)
+        try encoder.encode(UInt8(info))
+        if let sign = signature {
+            try sign.encode(in: encoder, registry: registry)
+        }
+        try registry.encode(call: call, in: encoder)
     }
 }

@@ -10,9 +10,6 @@ import Foundation
 public typealias SSignerResult<V> = Result<V, SubstrateSignerError>
 public typealias SSignerCallback<V> = (SSignerResult<V>) -> Void
 
-public typealias SSigningPayload<C: AnyCall, R: Runtime> = ExtrinsicSigningPayload<C, R.TExtrinsicExtra>
-public typealias SExtrinsic<C: AnyCall, R: Runtime> = Extrinsic<R.TAddress, C, R.TSignature, R.TExtrinsicExtra>
-
 public protocol SubstrateSigner {
     // Get list of accounts
     func accounts<R: Runtime>(
@@ -22,12 +19,12 @@ public protocol SubstrateSigner {
     )
     
     // Sign extrinsic payload
-    func sign<C: AnyCall, R: Runtime>(
-        payload: SSigningPayload<C, R>,
+    func sign<R: Runtime>(
+        payload: R.TExtrinsic.SigningPayload,
         with account: PublicKey,
         in runtime: R.Type,
         registry: TypeRegistryProtocol,
-        _ cb: @escaping SSignerCallback<SExtrinsic<C, R>>
+        _ cb: @escaping SSignerCallback<R.TExtrinsic>
     )
 }
 
@@ -36,6 +33,7 @@ public enum SubstrateSignerError: Error {
     case badPayload(error: String)
     case cantCreateAddress(error: String)
     case cantCreateSignature(error: String)
+    case cantCreateExtrinsic(error: String)
     case cantBeConnected
     case cancelledByUser
     case unknown(error: String)

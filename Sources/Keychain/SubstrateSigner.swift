@@ -21,13 +21,13 @@ extension Keychain: SubstrateSigner {
         }
     }
     
-    public func sign<C, R>(
-        payload: SSigningPayload<C, R>,
+    public func sign<R: Runtime>(
+        payload: R.TExtrinsic.SigningPayload,
         with account: PublicKey,
         in runtime: R.Type,
         registry: TypeRegistryProtocol,
-        _ cb: @escaping SSignerCallback<SExtrinsic<C, R>>
-    ) where C : AnyCall, R : Runtime {
+        _ cb: @escaping SSignerCallback<R.TExtrinsic>
+    ) {
         queue.async {
             guard let pair = self.keyPair(for: account) else {
                 cb(.failure(.accountNotFound(account)))
@@ -43,24 +43,29 @@ extension Keychain: SubstrateSigner {
                 return
             }
             let signatureData = pair.sign(message: data)
-            let sender: R.TAddress
+            let sender: R.TExtrinsic.SignaturePayload.AddressType
             do {
-                sender = try R.TAddress(pubKey: account)
+                sender = try R.TExtrinsic.SignaturePayload.AddressType(pubKey: account)
             } catch {
                 cb(.failure(.cantCreateAddress(error: error.localizedDescription)))
                 return
             }
-            let signature: R.TSignature
+            let signature: R.TExtrinsic.SignaturePayload.SignatureType
             do {
-                signature = try R.TSignature(type: account.typeId, bytes: signatureData)
+                signature = try R.TExtrinsic.SignaturePayload.SignatureType(
+                    type: account.typeId, bytes: signatureData
+                )
             } catch {
                 cb(.failure(.cantCreateSignature(error: error.localizedDescription)))
                 return
             }
-            let extrinsic = SExtrinsic<C, R>(
-                call: payload.call, signed: sender, signature: signature, extra: payload.extra
-            )
-            cb(.success(extrinsic))
+            do {
+                let extrinsic = try R.TExtrinsic(payload: payload)
+                    .signed(by: sender, with: signature, payload: payload)
+                cb(.success(extrinsic))
+            } catch {
+                cb(.failure(.cantCreateExtrinsic(error: error.localizedDescription)))
+            }
         }
     }
 }

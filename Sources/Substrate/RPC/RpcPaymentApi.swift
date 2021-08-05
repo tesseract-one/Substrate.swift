@@ -17,16 +17,19 @@ public struct SubstrateRpcPaymentApi<S: SubstrateProtocol>: SubstrateRpcApi wher
     public func queryFeeDetails<E: ExtrinsicProtocol>(
         extrinsic: E, at hash: S.R.THash?,
         timeout: TimeInterval? = nil,
-        cb: @escaping SRpcApiCallback<FeeDetails<S.R.TBalance>>
+        _ cb: @escaping SRpcApiCallback<FeeDetails<S.R.TBalance>>
     ) {
-        guard let data = _encode(value: extrinsic, cb) else { return }
-        substrate.client.call(
-            method: "payment_queryFeeDetails",
-            params: RpcCallParams(data, hash),
-            timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<FeeDetails<S.R.TBalance>>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc))
-        }
+        _encode(extrinsic)
+            .pour(queue: substrate.client.responseQueue, error: cb)
+            .onSuccess { data in
+                self.substrate.client.call(
+                    method: "payment_queryFeeDetails",
+                    params: RpcCallParams(data, hash),
+                    timeout: timeout ?? self.substrate.callTimeout
+                ) { (res: RpcClientResult<FeeDetails<S.R.TBalance>>) in
+                    cb(res.mapError(SubstrateRpcApiError.rpc))
+                }
+            }
     }
     
     public func queryInfo<E: ExtrinsicProtocol>(
@@ -34,14 +37,18 @@ public struct SubstrateRpcPaymentApi<S: SubstrateProtocol>: SubstrateRpcApi wher
         timeout: TimeInterval? = nil,
         cb: @escaping SRpcApiCallback<RuntimeDispatchInfo<S.R.TBalance>>
     ) {
-        guard let data = _encode(value: extrinsic, cb) else { return }
-        substrate.client.call(
-            method: "payment_queryInfo",
-            params: RpcCallParams(data, hash),
-            timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<RuntimeDispatchInfo<S.R.TBalance>>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc))
-        }
+        _encode(extrinsic)
+            .pour(queue: substrate.client.responseQueue, error: cb)
+            .onSuccess { data in
+                self.substrate.client.call(
+                    method: "payment_queryInfo",
+                    params: RpcCallParams(data, hash),
+                    timeout: timeout ?? self.substrate.callTimeout
+                ) { (res: RpcClientResult<RuntimeDispatchInfo<S.R.TBalance>>) in
+                    cb(res.mapError(SubstrateRpcApiError.rpc))
+                }
+            }
+        
     }
 }
 

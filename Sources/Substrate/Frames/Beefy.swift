@@ -10,6 +10,7 @@ import Foundation
 public protocol BeefyApi: Grandpa {
     associatedtype TBeefyPayload: Hash
     associatedtype TBeefyValidatorSetId: ScaleDynamicCodable
+    associatedtype TBeefySignature: Signature
 }
 
 public protocol Beefy: BeefyApi where TKeys: SessionKeysBeefy {}

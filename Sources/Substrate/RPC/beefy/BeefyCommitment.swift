@@ -1,48 +1,12 @@
 //
-//  RpcBeefyApi.swift
+//  BeefyCommitment.swift
 //  
 //
-//  Created by Ostap Danylovych on 03.05.2021.
+//  Created by Yehor Popovych on 05.08.2021.
 //
 
 import Foundation
-
-public struct SubstrateRpcBeefyApi<S: SubstrateProtocol>: SubstrateRpcApi where S.R: BeefyApi {
-    public weak var substrate: S!
-    
-    public typealias SBeefySignedCommitment = BeefySignedCommitment<
-        S.R.TBeefyPayload, S.R.TBlockNumber, S.R.TBeefyValidatorSetId, S.R.TSignature
-    >
-    
-    public init(substrate: S) {
-        self.substrate = substrate
-    }
-}
-
-extension SubstrateRpcBeefyApi where S.C: SubscribableRpcClient {
-    public func subscribeJustifications(
-        timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<SBeefySignedCommitment>
-    ) -> RpcSubscription {
-        let registry = substrate.registry
-        return substrate.client.subscribe(
-            method: "beefy_subscribeJustifications",
-            params: RpcCallParams(),
-            unsubscribe: "beefy_unsubscribeJustifications"
-        ) { (res: RpcClientResult<Data>) in
-            let result = res.mapError(SubstrateRpcApiError.rpc).flatMap { data in
-                Result {
-                    try SBeefySignedCommitment(from: SCALE.default.decoder(data: data), registry: registry)
-                }.mapError(SubstrateRpcApiError.from)
-            }
-            cb(result)
-        }
-    }
-}
-
-extension SubstrateRpcApiRegistry where S.R: BeefyApi {
-    public var beefy: SubstrateRpcBeefyApi<S> { getRpcApi(SubstrateRpcBeefyApi<S>.self) }
-}
-
+import ScaleCodec
 
 public struct BeefyCommitment<Payload, BN, VId>: ScaleDynamicCodable
     where Payload: ScaleDynamicCodable, BN: BlockNumberProtocol, VId: ScaleDynamicCodable

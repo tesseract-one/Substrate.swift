@@ -18,6 +18,11 @@ public class HttpRpcClient: RpcClient {
     public var decoder: JSONDecoder
     public var session: URLSession
     
+    public var parsingContext: [CodingUserInfoKey: Any] {
+        get { decoder.userInfo }
+        set(new) { decoder.userInfo = new }
+    }
+    
     public init(
         url: URL, responseQueue: DispatchQueue = .main,
         headers: [String: String] = [:], session: URLSession = .shared,

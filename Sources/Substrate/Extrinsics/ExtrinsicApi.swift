@@ -24,7 +24,9 @@ extension SubstrateExtrinsicApi {
     public static var id: String { String(describing: self) }
     
     public func nonce(
-        accountId: S.R.TAccountId, timeout: TimeInterval? = nil, _ cb: @escaping SExtrinsicApiCallback<S.R.TIndex, S.R>
+        accountId: S.R.TAccountId,
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SExtrinsicApiCallback<S.R.TIndex, S.R>
     ) {
         substrate.query.system.accountInfo(accountId: accountId) { result in
             let res = result
@@ -36,17 +38,17 @@ extension SubstrateExtrinsicApi {
 }
 
 extension SubstrateExtrinsicApi where S.R: Session {
-    public func submit<C: AnyCall>(
-        unsgined call: C, timeout: TimeInterval? = nil,
+    public func submit(
+        unsgined call: AnyCall, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
     ) {
-        substrate.rpc.author.submit(extrinsic: SExtrinsic<C, S.R>(call: call)) {
+        substrate.rpc.author.submit(extrinsic: S.R.TExtrinsic(call: call, signature: nil)) {
             cb($0.mapError(SubstrateExtrinsicApiError<S.R>.rpc))
         }
     }
 
-    public func submit<E: ExtrinsicProtocol>(
-        extrinsic: E, timeout: TimeInterval? = nil,
+    public func submit(
+        extrinsic: S.R.TExtrinsic, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
     ) {
         substrate.rpc.author.submit(extrinsic: extrinsic, timeout: timeout) {
@@ -70,8 +72,8 @@ public final class SubstrateExtrinsicApiRegistry<S: SubstrateProtocol> {
 }
 
 extension SubstrateExtrinsicApiRegistry where S.R: Session {
-    public func submit<E: ExtrinsicProtocol>(
-        extrinsic: E, timeout: TimeInterval? = nil,
+    public func submit(
+        extrinsic: S.R.TExtrinsic, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
     ) {
         substrate.rpc.author.submit(extrinsic: extrinsic, timeout: timeout) {

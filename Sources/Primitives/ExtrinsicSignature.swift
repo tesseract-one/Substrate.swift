@@ -8,7 +8,10 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicSignature<Addr: Address, Sign: Signature, Extra: SignedExtension>  {
+public struct ExtrinsicSignature<Addr: Address, Sign: Signature, Extra: SignedExtension>: ExtrinsicSignatureProtocol  {
+    public typealias AddressType = Addr
+    public typealias SignatureType = Sign
+    
     public let sender: Addr
     public let signature: Sign
     public let extra: Extra

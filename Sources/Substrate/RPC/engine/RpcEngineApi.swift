@@ -45,18 +45,3 @@ public struct SubstrateRpcEngineApi<S: SubstrateProtocol>: SubstrateRpcApi {
 extension SubstrateRpcApiRegistry {
     public var engine: SubstrateRpcEngineApi<S> { getRpcApi(SubstrateRpcEngineApi<S>.self) }
 }
-
-
-public struct CreatedBlock<H: Hash>: Decodable {
-    public let hash: H
-    public let aux: ImportedAux
-}
-
-public struct ImportedAux: Decodable {
-    public let headerOnly: Bool
-    public let clearJustificationRequests: Bool
-    public let needsJustification: Bool
-    public let badJustification: Bool
-    public let needsFinalityProof: Bool
-    public let isNewBest: Bool
-}
