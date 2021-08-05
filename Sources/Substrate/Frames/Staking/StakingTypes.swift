@@ -1,5 +1,5 @@
 //
-//  StackingTypes.swift
+//  StakingTypes.swift
 //  
 //
 //  Created by Yehor Popovych on 1/13/21.

@@ -17,6 +17,7 @@ extension PolkadotRuntime: Balances {
 extension PolkadotRuntime: System {
     public typealias TIndex = UInt32
     public typealias TBlockNumber = UInt32
+    public typealias TWeight = UInt64
     public typealias THash = Hash256
     public typealias THasher = HBlake2b256
     public typealias TAccountId = Sr25519PublicKey
