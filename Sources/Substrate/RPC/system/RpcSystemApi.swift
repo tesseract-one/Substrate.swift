@@ -252,13 +252,13 @@ public struct SubstrateRpcSystemApi<S: SubstrateProtocol>: SubstrateRpcApi {
     
     public func syncState(
         timeout: TimeInterval? = nil,
-        _ cb: @escaping SRpcApiCallback<SyncState>
+        _ cb: @escaping SRpcApiCallback<SyncState<S.R.TBlockNumber>>
     ) {
         substrate.client.call(
             method: "system_syncState",
             params: RpcCallParams(),
             timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<SyncState>) in
+        ) { (res: RpcClientResult<SyncState<S.R.TBlockNumber>>) in
             cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }

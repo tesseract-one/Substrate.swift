@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SubstrateExtrinsicSystemApi<S: SubstrateProtocol>: SubstrateExtrinsicApi where S.R: Session {
+public struct SubstrateExtrinsicSystemApi<S: SubstrateProtocol>: SubstrateExtrinsicApi {
     public weak var substrate: S!
 
     public init(substrate: S) {
@@ -45,6 +45,6 @@ extension SubstrateExtrinsicSystemApi where S.R: DefaultExtrinsicExtraProvider {
     }
 }
 
-extension SubstrateExtrinsicApiRegistry where S.R: Session {
+extension SubstrateExtrinsicApiRegistry {
     public var system: SubstrateExtrinsicSystemApi<S> { getExtrinsicApi(SubstrateExtrinsicSystemApi<S>.self) }
 }

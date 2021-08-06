@@ -37,7 +37,7 @@ extension SubstrateExtrinsicApi {
     }
 }
 
-extension SubstrateExtrinsicApi where S.R: Session {
+extension SubstrateExtrinsicApi {
     public func submit(
         unsgined call: AnyCall, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
@@ -71,7 +71,7 @@ public final class SubstrateExtrinsicApiRegistry<S: SubstrateProtocol> {
     }
 }
 
-extension SubstrateExtrinsicApiRegistry where S.R: Session {
+extension SubstrateExtrinsicApiRegistry {
     public func submit(
         extrinsic: S.R.TExtrinsic, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>

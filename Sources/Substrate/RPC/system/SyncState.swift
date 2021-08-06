@@ -26,6 +26,8 @@ public struct SyncState<BN: BlockNumberProtocol>: Codable {
         currentBlock = try BN(jsonData: data)
         if let data = try container.decode(Optional<Data>.self, forKey: .highestBlock) {
             highestBlock = try BN(jsonData: data)
+        } else {
+            highestBlock = nil
         }
     }
     

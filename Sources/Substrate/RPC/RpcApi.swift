@@ -30,13 +30,6 @@ extension SubstrateRpcApi {
         }.mapError(SubstrateRpcApiError.from)
     }
     
-    func _decode<V: ScaleDynamicDecodable>(_ t: V.Type, from data: Data) -> SRpcApiResult<V> {
-        return Result {
-            let decoder = SCALE.default.decoder(data: data)
-            return try V(from: decoder, registry: substrate.registry)
-        }.mapError(SubstrateRpcApiError.from)
-    }
-    
     func _try<R>(_ f: @escaping () throws -> R) -> SRpcApiResult<R> {
         return Result { try f() }.mapError(SubstrateRpcApiError.from)
     }

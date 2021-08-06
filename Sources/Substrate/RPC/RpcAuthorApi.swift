@@ -8,41 +8,11 @@
 import Foundation
 import ScaleCodec
 
-public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi where S.R: Session {
+public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi {
     public weak var substrate: S!
     
     public init(substrate: S) {
         self.substrate = substrate
-    }
-    
-    public func hasKey(publicKey: Data, keyType: String, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Bool>) {
-        substrate.client.call(
-            method: "author_hasKey",
-            params: RpcCallParams(publicKey, keyType),
-            timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<Bool>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc))
-        }
-    }
-    
-    public func hasSessionKeys(sessionKeys: Data, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Bool>) {
-        substrate.client.call(
-            method: "author_hasSessionKeys",
-            params: RpcCallParams(sessionKeys),
-            timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<Bool>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc))
-        }
-    }
-    
-    public func insertKey(keyType: String, suri: String, publicKey: Data, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
-        substrate.client.call(
-            method: "author_insertKey",
-            params: RpcCallParams(keyType, suri, publicKey),
-            timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<Data>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc))
-        }
     }
     
     public func pendingExtrinsics(
@@ -89,17 +59,6 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi where
                 cb(response)
             }
         }
-        
-    }
-    
-    public func rotateKeys(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<Data>) {
-        substrate.client.call(
-            method: "author_rotateKeys",
-            params: RpcCallParams(),
-            timeout: timeout ?? substrate.callTimeout
-        ) { (res: RpcClientResult<Data>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc))
-        }
     }
     
     public func submit(
@@ -117,6 +76,76 @@ public struct SubstrateRpcAuthorApi<S: SubstrateProtocol>: SubstrateRpcApi where
                     cb(res.mapError(SubstrateRpcApiError.rpc))
                 }
             }
+    }
+}
+
+extension SubstrateRpcAuthorApi where S.R: Session {
+    public func hasKey<K: PublicKey>(
+        publicKey: K, keyType: KeyTypeId,
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<Bool>
+    ) {
+        substrate.client.call(
+            method: "author_hasKey",
+            params: RpcCallParams(publicKey.bytes, keyType.rawValue),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<Bool>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
+    }
+    
+    public func hasSessionKeys(
+        keys: S.R.TKeys,
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<Bool>
+    ) {
+        _encode(keys)
+            .pour(error: cb)
+            .onSuccess { data in
+                substrate.client.call(
+                    method: "author_hasSessionKeys",
+                    params: RpcCallParams(data),
+                    timeout: timeout ?? substrate.callTimeout
+                ) { (res: RpcClientResult<Bool>) in
+                    cb(res.mapError(SubstrateRpcApiError.rpc))
+                }
+            }
+    }
+    
+    public func insertKey<K: PublicKey>(
+        keyType: KeyTypeId, suri: String, publicKey: K,
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<Data>
+    ) {
+        substrate.client.call(
+            method: "author_insertKey",
+            params: RpcCallParams(keyType.rawValue, suri, publicKey.bytes),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<Data>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
+    }
+    
+    public func rotateKeys(
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<S.R.TKeys>
+    ) {
+        let registry = substrate.registry
+        substrate.client.call(
+            method: "author_rotateKeys",
+            params: RpcCallParams(),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<Data>) in
+            let result = res
+                .mapError(SubstrateRpcApiError.rpc)
+                .flatMap { data in
+                    Result {
+                        try S.R.TKeys(from: SCALE.default.decoder(data: data),
+                                      registry: registry)
+                    }.mapError(SubstrateRpcApiError.from)
+                }
+            cb(result)
+        }
     }
 }
 
@@ -143,7 +172,7 @@ extension SubstrateRpcAuthorApi where S.C: SubscribableRpcClient {
     }
 }
 
-extension SubstrateRpcApiRegistry where S.R: Session {
+extension SubstrateRpcApiRegistry {
     public var author: SubstrateRpcAuthorApi<S> { getRpcApi(SubstrateRpcAuthorApi<S>.self) }
 }
 

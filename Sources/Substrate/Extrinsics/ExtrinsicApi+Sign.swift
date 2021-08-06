@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension SubstrateExtrinsicApi where S.R: Session {
+extension SubstrateExtrinsicApi {
     public func accounts(_ cb: @escaping SExtrinsicApiCallback<AccountList<S.R>, S.R>) {
         guard let signer = substrate.signer else {
             cb(.failure(.dontHaveSigner))
@@ -55,7 +55,7 @@ extension SubstrateExtrinsicApi where S.R: Session {
     }
 }
 
-extension SubstrateExtrinsicApi where S.R: ExtrinsicExtraProvider & Session {
+extension SubstrateExtrinsicApi where S.R: ExtrinsicExtraProvider {
     public func signAndSubmit(
         call: AnyCall, with account: S.R.TAccountId,
         options: S.R.TExtraOptions, timeout: TimeInterval? = nil,
@@ -75,7 +75,7 @@ extension SubstrateExtrinsicApi where S.R: ExtrinsicExtraProvider & Session {
     }
 }
 
-extension SubstrateExtrinsicApi where S.R: DefaultExtrinsicExtraProvider & Session {
+extension SubstrateExtrinsicApi where S.R: DefaultExtrinsicExtraProvider {
     public func signAndSubmit(
         call: AnyCall, with account: S.R.TAccountId, timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.THash, S.R>
