@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public struct SubstrateRpcBabeApi<S: SubstrateProtocol>: SubstrateRpcApi where S.R: Babe {
-    public typealias AutorityId = S.R.TKeys.TBabe.TPublic
+    public typealias AuthorityId = S.R.TKeys.TBabe.TPublic
     
     public weak var substrate: S!
     
@@ -19,7 +19,7 @@ public struct SubstrateRpcBabeApi<S: SubstrateProtocol>: SubstrateRpcApi where S
 
     public func epochAuthorship(
         timeout: TimeInterval? = nil,
-        _ cb: @escaping SRpcApiCallback<Dictionary<AutorityId, EpochAutorship>>
+        _ cb: @escaping SRpcApiCallback<Dictionary<AuthorityId, EpochAutorship>>
     ) {
         substrate.client.call(
             method: "babe_epochAuthorship",
@@ -29,9 +29,9 @@ public struct SubstrateRpcBabeApi<S: SubstrateProtocol>: SubstrateRpcApi where S
             let result = res
                 .mapError(SubstrateRpcApiError.rpc)
                 .flatMap { autorships in
-                    Result(catching: { () -> Dictionary<AutorityId, EpochAutorship> in
+                    Result(catching: { () -> Dictionary<AuthorityId, EpochAutorship> in
                         let tuples = try autorships.map {
-                            try (AutorityId(
+                            try (AuthorityId(
                                     bytes: $0.key, format: self.substrate.properties.ss58Format
                             ), $0.value)
                         }
