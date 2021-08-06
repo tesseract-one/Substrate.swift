@@ -14,8 +14,8 @@ public struct SubstrateRpcPaymentApi<S: SubstrateProtocol>: SubstrateRpcApi wher
         self.substrate = substrate
     }
     
-    public func queryFeeDetails<E: ExtrinsicProtocol>(
-        extrinsic: E, at hash: S.R.THash?,
+    public func queryFeeDetails(
+        extrinsic: S.R.TExtrinsic, at hash: S.R.THash?,
         timeout: TimeInterval? = nil,
         _ cb: @escaping SRpcApiCallback<FeeDetails<S.R.TBalance>>
     ) {
@@ -33,7 +33,7 @@ public struct SubstrateRpcPaymentApi<S: SubstrateProtocol>: SubstrateRpcApi wher
     }
     
     public func queryInfo<E: ExtrinsicProtocol>(
-        extrinsic: E, at hash: S.R.THash?,
+        extrinsic: S.R.TExtrinsic, at hash: S.R.THash?,
         timeout: TimeInterval? = nil,
         cb: @escaping SRpcApiCallback<RuntimeDispatchInfo<S.R.TBalance>>
     ) {
@@ -54,26 +54,4 @@ public struct SubstrateRpcPaymentApi<S: SubstrateProtocol>: SubstrateRpcApi wher
 
 extension SubstrateRpcApiRegistry where S.R: Balances {
     public var payment: SubstrateRpcPaymentApi<S> { getRpcApi(SubstrateRpcPaymentApi<S>.self) }
-}
-
-public struct FeeDetails<Balance: Decodable & UnsignedInteger>: Decodable {
-    public let inclusionFee: Optional<InclusionFee<Balance>>
-}
-
-public struct InclusionFee<Balance: Decodable & UnsignedInteger>: Decodable {
-    public let baseFee: Balance
-    public let lenFee: Balance
-    public let adjustedWeightFee: Balance
-}
-
-public struct RuntimeDispatchInfo<Balance: Decodable & UnsignedInteger>: Decodable {
-    public let weight: UInt64
-    public let clazz: DispatchInfo.Class
-    public let partialFee: Balance
-    
-    enum CodingKeys: String, CodingKey {
-        case clazz = "class"
-        case partialFee
-        case weight
-    }
 }
