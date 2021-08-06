@@ -7,11 +7,11 @@
 
 import Foundation
 
-public struct FeeDetails<Balance: Decodable & UnsignedInteger>: Decodable {
+public struct FeeDetails<Balance: Decodable>: Decodable {
     public let inclusionFee: Optional<InclusionFee<Balance>>
 }
 
-public struct InclusionFee<Balance: Decodable & UnsignedInteger>: Decodable {
+public struct InclusionFee<Balance: Decodable>: Decodable {
     public let baseFee: Balance
     public let lenFee: Balance
     public let adjustedWeightFee: Balance

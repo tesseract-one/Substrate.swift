@@ -10,7 +10,7 @@ import ScaleCodec
 
 public struct SystemExtrinsicSuccessEvent<S: System> {
     /// The dispatch info.
-    public let info: DispatchInfo
+    public let info: DispatchInfo<S.TWeight>
 }
 
 extension SystemExtrinsicSuccessEvent: Event {
@@ -19,7 +19,7 @@ extension SystemExtrinsicSuccessEvent: Event {
     public static var EVENT: String { "ExtrinsicSuccess" }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
-        info = try decoder.decode()
+        info = try DispatchInfo<S.TWeight>(from: decoder, registry: registry)
     }
 }
 
@@ -28,7 +28,7 @@ public struct SystemExtrinsicFailedEvent<S: System> {
     /// The dispatch error.
     public let error: DispatchError
     /// The dispatch info.
-    public let info: DispatchInfo
+    public let info: DispatchInfo<S.TWeight>
 }
 
 extension SystemExtrinsicFailedEvent: Event {
@@ -38,7 +38,7 @@ extension SystemExtrinsicFailedEvent: Event {
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         error = try decoder.decode()
-        info = try decoder.decode()
+        info = try DispatchInfo<S.TWeight>(from: decoder, registry: registry)
     }
 }
 

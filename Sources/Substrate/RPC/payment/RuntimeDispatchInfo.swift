@@ -7,9 +7,9 @@
 
 import Foundation
 
-public struct RuntimeDispatchInfo<Balance: Decodable & UnsignedInteger>: Decodable {
-    public let weight: UInt64
-    public let clazz: DispatchInfo.Class
+public struct RuntimeDispatchInfo<Balance: Decodable, Weight: WeightProtocol>: Decodable {
+    public let weight: Weight
+    public let clazz: DispatchInfo<Weight>.Class
     public let partialFee: Balance
     
     enum CodingKeys: String, CodingKey {

@@ -32,10 +32,10 @@ public struct SubstrateRpcPaymentApi<S: SubstrateProtocol>: SubstrateRpcApi wher
             }
     }
     
-    public func queryInfo<E: ExtrinsicProtocol>(
+    public func queryInfo(
         extrinsic: S.R.TExtrinsic, at hash: S.R.THash?,
         timeout: TimeInterval? = nil,
-        cb: @escaping SRpcApiCallback<RuntimeDispatchInfo<S.R.TBalance>>
+        cb: @escaping SRpcApiCallback<RuntimeDispatchInfo<S.R.TBalance, S.R.TWeight>>
     ) {
         _encode(extrinsic)
             .pour(queue: substrate.client.responseQueue, error: cb)
@@ -44,7 +44,7 @@ public struct SubstrateRpcPaymentApi<S: SubstrateProtocol>: SubstrateRpcApi wher
                     method: "payment_queryInfo",
                     params: RpcCallParams(data, hash),
                     timeout: timeout ?? self.substrate.callTimeout
-                ) { (res: RpcClientResult<RuntimeDispatchInfo<S.R.TBalance>>) in
+                ) { (res: RpcClientResult<RuntimeDispatchInfo<S.R.TBalance, S.R.TWeight>>) in
                     cb(res.mapError(SubstrateRpcApiError.rpc))
                 }
             }

@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol System {
+public protocol System: BaseFrame {
     associatedtype TIndex: ScaleDynamicCodable & CompactCodable & SDefault & Codable
     associatedtype TBlockNumber: BlockNumberProtocol
     associatedtype THash: Hash
@@ -18,7 +18,6 @@ public protocol System {
     associatedtype THeader: ScaleDynamicCodable & Codable
     associatedtype TExtrinsic: ExtrinsicProtocol
     associatedtype TAccountData: ScaleDynamicCodable
-    associatedtype TWeight: UnsignedInteger & ScaleDynamicCodable & Codable
 }
 
 open class SystemModule<S: System>: ModuleProtocol {
@@ -38,7 +37,6 @@ open class SystemModule<S: System>: ModuleProtocol {
         try registry.register(type: S.TAddress.self, as: .type(name: "LookupSource"))
         try registry.register(type: S.THeader.self, as: .type(name: "Header"))
         try registry.register(type: S.TAccountData.self, as: .type(name: "AccountData"))
-        try registry.register(type: S.TWeight.self, as: .type(name: "Weight"))
         try registry.register(type: S.TExtrinsic.self, as: .type(name: "Extrinsic"))
         try registry.register(type: Origin<S.TAccountId>.self, as: .type(name: "Origin"))
         try registry.register(type: RuntimeDbWeight<S.TWeight>.self, as: .type(name: "RuntimeDbWeight"))
@@ -57,7 +55,7 @@ open class SystemModule<S: System>: ModuleProtocol {
 }
 
 
-public struct RuntimeDbWeight<Weight: ScaleDynamicCodable>: ScaleDynamicCodable {
+public struct RuntimeDbWeight<Weight: WeightProtocol>: ScaleDynamicCodable {
     public let read: Weight
     public let write: Weight
     

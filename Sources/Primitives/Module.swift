@@ -22,8 +22,14 @@ public protocol ModuleProtocol: ModuleBase {
     associatedtype Frame
 }
 
-open class PrimitivesModule<S>: ModuleProtocol {
-    public typealias Frame = S
+public typealias WeightProtocol = UnsignedInteger & ScaleDynamicCodable & Codable
+
+public protocol BaseFrame {
+   associatedtype TWeight: WeightProtocol
+}
+
+open class PrimitivesModule<B: BaseFrame>: ModuleProtocol {
+    public typealias Frame = B
     
     public static var NAME: String { "_Primitives" }
     
@@ -57,7 +63,8 @@ open class PrimitivesModule<S>: ModuleProtocol {
         try registry.register(type: DNull.self, as: .type(name: "Null"))
         try registry.register(type: Moment.self, as: .type(name: "Moment"))
         try registry.register(type: BitVec.self, as: .type(name: "BitVec"))
-        try registry.register(type: DispatchInfo.self, as: .type(name: "DispatchInfo"))
+        try registry.register(type: B.TWeight.self, as: .type(name: "Weight"))
+        try registry.register(type: DispatchInfo<B.TWeight>.self, as: .type(name: "DispatchInfo"))
         try registry.register(type: DispatchError.self, as: .type(name: "DispatchError"))
     }
 }

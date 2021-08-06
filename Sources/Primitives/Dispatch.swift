@@ -123,7 +123,7 @@ extension DispatchError: Codable {
 }
 
 
-public struct DispatchInfo: ScaleCodable, ScaleDynamicCodable {
+public struct DispatchInfo<Weight: WeightProtocol>: ScaleDynamicCodable {
     public enum Class: CaseIterable, ScaleCodable, ScaleDynamicCodable, Codable {
         case normal
         case operational
@@ -156,18 +156,19 @@ public struct DispatchInfo: ScaleCodable, ScaleDynamicCodable {
         case no
     }
     
-    public let weight: UInt64
+    public let weight: Weight
     public let clazz: Class
     public let paysFee: Pays
     
-    public init(from decoder: ScaleDecoder) throws {
-        weight = try decoder.decode()
+    public init(from decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
+        weight = try Weight(from: decoder, registry: registry)
         clazz = try decoder.decode()
         paysFee = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(weight).encode(clazz).encode(paysFee)
+    public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
+        try weight.encode(in: encoder, registry: registry)
+        try encoder.encode(clazz).encode(paysFee)
     }
 }
 
