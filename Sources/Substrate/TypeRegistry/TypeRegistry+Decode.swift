@@ -9,24 +9,6 @@ import Foundation
 import ScaleCodec
 
 extension TypeRegistry {
-    func _decodeEventHeader(from decoder: ScaleDecoder) throws -> (module: String, event: MetadataEventInfo) {
-        let u8t = try type(of: UInt8.self)
-        let moduleIndex = try _typeDecodingError(u8t) { try decoder.decode(UInt8.self) }
-        let module = try _metaError { try self.meta.module(index: moduleIndex) }
-        let eventIndex = try _typeDecodingError(u8t) { try decoder.decode(UInt8.self) }
-        let event = try _metaError { try module.event(index: eventIndex) }
-        return (module: module.name, event: event)
-    }
-    
-    func _decodeCallHeader(from decoder: ScaleDecoder) throws -> (module: String, call: MetadataCallInfo) {
-        let u8t = try type(of: UInt8.self)
-        let moduleIndex = try _typeDecodingError(u8t) { try decoder.decode(UInt8.self) }
-        let module = try _metaError { try self.meta.module(index: moduleIndex) }
-        let callIndex = try _typeDecodingError(u8t) { try decoder.decode(UInt8.self) }
-        let call = try _metaError { try module.call(index: callIndex) }
-        return (module: module.name, call: call)
-    }
-    
     func _decode(
         type: DType, from decoder: ScaleDecoder
     ) throws -> DValue {

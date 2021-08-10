@@ -65,6 +65,6 @@ extension Extrinsic: ScaleDynamicCodable {
         if let sign = signature {
             try sign.encode(in: encoder, registry: registry)
         }
-        try registry.encode(call: call, in: encoder)
+        try call.encode(in: encoder, registry: registry)
     }
 }

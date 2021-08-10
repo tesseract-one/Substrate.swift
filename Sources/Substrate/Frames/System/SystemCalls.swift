@@ -18,6 +18,8 @@ extension SystemSetCodeCall: Call {
     
     public static var FUNCTION: String { "set_code" }
     
+    public var params: Dictionary<String, Any> { ["code": code] }
+    
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         code = try decoder.decode()
     }
@@ -36,6 +38,8 @@ extension SystemSetCodeWithoutChecksCall: Call {
     public typealias Module = SystemModule<S>
     
     public static var FUNCTION: String { "set_code_without_checks" }
+    
+    public var params: Dictionary<String, Any> { ["code": code] }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         code = try decoder.decode()

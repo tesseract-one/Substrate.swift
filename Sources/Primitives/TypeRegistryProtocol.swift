@@ -20,9 +20,8 @@ public enum TypeRegistryError: Error {
     // Calls
     case callFoundWrongCall(module: String, function: String, exmodule: String, exfunction: String)
     case callDecodingError(module: String, function: String, error: SDecodingError)
-    case callEncodingError(call: AnyCall, error: SEncodingError)
-    case callEncodingWrongParametersCount(call: DynamicCall, count: Int, expected: Int)
-    case callEncodingUnknownCallType(call: AnyCall)
+    case callEncodingMissingParameter(call: DCall, parameter: String, type: DType)
+    case callEncodingWrongParametersCount(call: DCall, count: Int, expected: Int)
     // Meta
     case metadata(error: MetadataError)
     // Value Encoding
@@ -65,13 +64,13 @@ public protocol TypeRegistryProtocol: AnyObject {
     func value<C: Constant>(of constant: C) throws -> C.Value
     
     // Events
+    func info(forEvent header: (module: UInt8, event: UInt8)) throws -> (module: String, event: String)
+    func types(forEvent event: String, in module: String) throws -> [DType]
     func decode(eventFrom decoder: ScaleDecoder) throws -> AnyEvent
-    func decode<E: Event>(event: E.Type, from decoder: ScaleDecoder) throws -> E
     func register<E: Event>(event: E.Type) throws
     
     // Values
     func type<T: DynamicTypeId>(of t: T.Type) throws -> DType
-//    func value<T: ScaleDynamicCodable>(dynamic val: T) throws -> DValue
     func encode(value: ScaleDynamicEncodable, type: DType, in encoder: ScaleEncoder) throws
     func encode(dynamic: DValue, type: DType, in encoder: ScaleEncoder) throws
     func decode<V: ScaleDynamicDecodable>(static: V.Type, as type: DType, from decoder: ScaleDecoder) throws -> V
@@ -79,9 +78,10 @@ public protocol TypeRegistryProtocol: AnyObject {
     func register<T: ScaleDynamicCodable>(type: T.Type, as dynamic: DType) throws
     
     // Calls
-    func encode(call: AnyCall, in encoder: ScaleEncoder) throws
+    func info(forCall header: (module: UInt8, call: UInt8)) throws -> (module: String, call: String)
+    func header(forCall call: String, in module: String) throws -> (module: UInt8, call: UInt8)
+    func types(forCall call: String, in module: String) throws -> [(String, DType)]
     func decode(callFrom decoder: ScaleDecoder) throws -> AnyCall
-    func decode<C: Call>(call: C.Type, from decoder: ScaleDecoder) throws -> C
     func register<C: Call>(call: C.Type) throws
 }
 

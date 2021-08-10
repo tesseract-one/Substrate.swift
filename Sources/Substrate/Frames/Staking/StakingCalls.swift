@@ -19,6 +19,8 @@ extension StakingSetPayeeCall: Call {
     
     public static var FUNCTION: String { "set_payee" }
     
+    public var params: Dictionary<String, Any> { ["payee": payee] }
+    
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         payee = try RewardDestination<S.TAccountId>(from: decoder, registry: registry)
     }
@@ -40,6 +42,8 @@ extension StakingChillCall: Call {
     public typealias Module = StakingModule<S>
     
     public static var FUNCTION: String { "chill" }
+    
+    public var params: Dictionary<String, Any> { [:] }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
     }
@@ -64,6 +68,8 @@ extension StakingValidateCall: Call {
     
     public static var FUNCTION: String { "validate" }
     
+    public var params: Dictionary<String, Any> { ["prefs": prefs] }
+    
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         prefs = try decoder.decode()
     }
@@ -71,8 +77,6 @@ extension StakingValidateCall: Call {
     public func encode(paramsIn encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         try prefs.encode(in: encoder, registry: registry)
     }
-    
-    public var params: [ScaleDynamicCodable] { [prefs] }
 }
 
 /// Declare the desire to nominate `targets` for the origin controller.
@@ -90,6 +94,8 @@ extension StakingNominateCall: Call {
     public typealias Module = StakingModule<S>
     
     public static var FUNCTION: String { "nominate" }
+    
+    public var params: Dictionary<String, Any> { ["targets": targets] }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         targets = try Array<S.TAddress>(from: decoder, registry: registry)

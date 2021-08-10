@@ -37,27 +37,6 @@ extension TypeRegistry {
         try _encode(value: dynamic.dynamicEncodable, type: type, in: encoder)
     }
     
-    func _encodeCallHeader(call: AnyCall, in encoder: ScaleEncoder) throws {
-        let module = try _metaError { try self.meta.module(name: call.module) }
-        let info = try _metaError { try module.call(name: call.function) }
-        try _callEncodingError(call) { try encoder.encode(module.index) }
-        try _callEncodingError(call) { try encoder.encode(info.index) }
-    }
-    
-    func _encodeDynamicCallParams(call: DynamicCall, in encoder: ScaleEncoder) throws {
-        let module = try _metaError { try self.meta.module(name: call.module) }
-        let info = try _metaError { try module.call(name: call.function) }
-        let types = info.argumentsList.map { $0.1 }
-        guard types.count == call.params.count else {
-            throw TypeRegistryError.callEncodingWrongParametersCount(
-                call: call, count: call.params.count, expected: types.count
-            )
-        }
-        for (t, p) in zip(types, call.params) {
-            try _encode(dynamic: p, type: t, in: encoder)
-        }
-    }
-    
     private func _encodeCompact(value: ScaleDynamicEncodable, encoder: ScaleEncoder) throws {
         guard let val = value as? CompactConvertible else {
             throw TypeRegistryError.encodingValueIsNotCompactCodable(value: value)

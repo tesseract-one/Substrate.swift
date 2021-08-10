@@ -20,6 +20,8 @@ extension BalancesTransferCall: Call {
     
     public static var FUNCTION: String { "transfer" }
     
+    public var params: Dictionary<String, Any> { ["to": to, "amount": amount] }
+    
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         to = try B.TAddress(from: decoder, registry: registry)
         amount = try decoder.decode(.compact)

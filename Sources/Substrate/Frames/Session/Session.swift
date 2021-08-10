@@ -39,6 +39,8 @@ extension SessionSetKeysCall: Call {
     
     public static var FUNCTION: String { "set_keys" }
     
+    public var params: Dictionary<String, Any> { ["keys": keys, "proof": proof] }
+    
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         keys = try S.TKeys(from: decoder, registry: registry)
         proof = try decoder.decode()

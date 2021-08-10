@@ -23,7 +23,7 @@ public struct ExtrinsicSigningPayload<Extra: SignedExtension>: ExtrinsicSigningP
 extension ExtrinsicSigningPayload: ScaleDynamicEncodable {
     public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
         let enc = SCALE.default.encoder()
-        try registry.encode(call: call, in: enc)
+        try call.encode(in: enc, registry: registry)
         try extra.encode(in: enc, registry: registry)
         try payload.encode(in: enc, registry: registry)
         var data = enc.output

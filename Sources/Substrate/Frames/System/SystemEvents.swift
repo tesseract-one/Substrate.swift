@@ -18,6 +18,8 @@ extension SystemExtrinsicSuccessEvent: Event {
     
     public static var EVENT: String { "ExtrinsicSuccess" }
     
+    public var arguments: [Any] { [info] }
+    
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         info = try DispatchInfo<S.TWeight>(from: decoder, registry: registry)
     }
@@ -36,6 +38,8 @@ extension SystemExtrinsicFailedEvent: Event {
     
     public static var EVENT: String { "ExtrinsicFailed" }
     
+    public var arguments: [Any] { [error, info] }
+    
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         error = try decoder.decode()
         info = try DispatchInfo<S.TWeight>(from: decoder, registry: registry)
@@ -49,6 +53,8 @@ extension SystemCodeUpdatedEvent: Event {
     
     public static var EVENT: String { "CodeUpdated" }
     
+    public var arguments: [Any] { [] }
+    
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {}
 }
 
@@ -61,6 +67,8 @@ extension SystemNewAccountEvent: Event {
     public typealias Module = SystemModule<S>
     
     public static var EVENT: String { "NewAccount" }
+    
+    public var arguments: [Any] { [accountId] }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         accountId = try S.TAccountId(from: decoder, registry: registry)
@@ -76,6 +84,8 @@ extension SystemKilledAccountEvent: Event {
     public typealias Module = SystemModule<S>
     
     public static var EVENT: String { "KilledAccount" }
+    
+    public var arguments: [Any] { [accountId] }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         accountId = try S.TAccountId(from: decoder, registry: registry)

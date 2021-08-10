@@ -22,6 +22,8 @@ extension BalancesTransferEvent: Event {
     
     public static var EVENT: String { "Transfer" }
     
+    public var arguments: [Any] { [from, to, amount] }
+    
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         from = try B.TAccountId(from: decoder, registry: registry)
         to = try B.TAccountId(from: decoder, registry: registry)

@@ -68,6 +68,13 @@ extension MetadataModuleInfo {
         return event
     }
     
+    public func event(name: String) throws -> MetadataEventInfo {
+        guard let event = eventsByName[name] else {
+            throw MetadataError.eventNotFound(module: self.name, event: name)
+        }
+        return event
+    }
+    
     public func call(index: UInt8) throws -> MetadataCallInfo {
         guard let call = callsByIndex[index] else {
             throw MetadataError.callNotFound(module: name, index: index)

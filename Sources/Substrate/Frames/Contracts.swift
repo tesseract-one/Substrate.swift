@@ -44,6 +44,8 @@ extension ContractsPutCodeCall: Call {
     
     public static var FUNCTION: String { "put_code" }
     
+    public var params: Dictionary<String, Any> { ["code": code] }
+    
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         code = try decoder.decode()
     }
@@ -81,6 +83,10 @@ extension ContractsInstantiateCall: Call {
     public typealias Module = ContractsModule<C>
     
     public static var FUNCTION: String { "instantiate" }
+    
+    public var params: Dictionary<String, Any> {
+        ["endowment": endowment, "gasLimit": gasLimit, "codeHash": codeHash, "data": data]
+    }
     
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         endowment = try decoder.decode(.compact)
@@ -120,6 +126,10 @@ extension ConstractsCallCall: Call {
     
     public static var FUNCTION: String { "call" }
     
+    public var params: Dictionary<String, Any> {
+        ["destination": destination, "value": value, "gasLimit": gasLimit, "data": data]
+    }
+    
     public init(decodingParamsFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         destination = try C.TAddress(from: decoder, registry: registry)
         value = try decoder.decode(.compact)
@@ -145,6 +155,8 @@ extension ConstractsCodeStoredEvent: Event {
     
     public static var EVENT: String { "CodeStored" }
     
+    public var arguments: [Any] { [codeHash] }
+    
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         codeHash = try decoder.decode()
     }
@@ -162,6 +174,8 @@ extension ContractsInstantiatedEvent: Event {
     public typealias Module = ContractsModule<C>
     
     public static var EVENT: String { "Instantiated" }
+    
+    public var arguments: [Any] { [caller, contract] }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         caller = try C.TAccountId(from: decoder, registry: registry)
@@ -183,6 +197,8 @@ extension ContractsContractExecutionEvent: Event {
     public typealias Module = ContractsModule<C>
     
     public static var EVENT: String { "ContractExecution" }
+    
+    public var arguments: [Any] { [caller, callData] }
     
     public init(decodingDataFrom decoder: ScaleDecoder, registry: TypeRegistryProtocol) throws {
         caller = try C.TAccountId(from: decoder, registry: registry)
