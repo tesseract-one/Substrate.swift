@@ -30,8 +30,6 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         }
     }
     
-    // Child methods
-    
     public func getKeys(prefix: Data,
                         at hash: S.R.THash? = nil,
                         timeout: TimeInterval? = nil,
@@ -390,6 +388,63 @@ public struct SubstrateRpcStateApi<S: SubstrateProtocol>: SubstrateRpcApi {
         .pour(queue: substrate.client.responseQueue, error: cb)
         .onSuccess { (keys: [Data]) in
             self.queryStorage(keys: keys, from: fBlock, to: tBlock, timeout: timeout, cb)
+        }
+    }
+    
+    public func queryStorageAt(
+        keys: Array<Data>,
+        at hash: S.R.THash? = nil,
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<StorageChangeSet<S.R.THash>>
+    ) {
+        let registry = substrate.registry
+        substrate.client.call(
+            method: "state_queryStorageAt",
+            params: RpcCallParams(keys, hash),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<StorageChangeSetData<S.R.THash>>) in
+            let result = res
+                .mapError(SubstrateRpcApiError.rpc)
+                .flatMap { data in
+                    Result { try data.parse(registry: registry) }
+                        .mapError(SubstrateRpcApiError.from)
+                }
+            cb(result)
+        }
+    }
+    
+    public func queryStorage(
+        keys: [AnyStorageKey],
+        at hash: S.R.THash? = nil,
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<StorageChangeSet<S.R.THash>>
+    ) {
+        _try {
+            try keys.map {
+                let encoder = SCALE.default.encoder()
+                try $0.encode(in: encoder, registry: substrate.registry)
+                return encoder.output
+            }
+        }
+        .pour(queue: substrate.client.responseQueue, error: cb)
+        .onSuccess { (keys: [Data]) in
+            self.queryStorageAt(keys: keys, at: hash, timeout: timeout, cb)
+        }
+    }
+    
+    public func traceBlock(
+        block: S.R.THash,
+        targets: String?,
+        storageKeys: String?,
+        timeout: TimeInterval? = nil,
+        _ cb: @escaping SRpcApiCallback<TraceBlockResponse>
+    ) {
+        substrate.client.call(
+            method: "state_traceBlock",
+            params: RpcCallParams(block, targets, storageKeys),
+            timeout: timeout ?? substrate.callTimeout
+        ) { (res: RpcClientResult<TraceBlockResponse>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }
 }
