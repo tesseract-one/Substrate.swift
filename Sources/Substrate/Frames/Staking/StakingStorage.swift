@@ -29,11 +29,11 @@ extension StakingErasRewardPointsStorageKey: MapStorageKey {
     
     public static var FIELD: String { "ErasRewardPoints" }
     
-    public var path: K? { index }
+    public var key: K? { index }
     public var hash: Data? { _hash }
     
-    public init(path: K?, hash: Data) {
-        self.index = path
+    public init(key: K?, hash: Data) {
+        self.index = key
         self._hash = hash
     }
 }
@@ -76,11 +76,11 @@ extension StakingBondedStorageKey: MapStorageKey {
     
     public static var FIELD: String { "Bonded" }
     
-    public var path: K? { stash }
+    public var key: K? { stash }
     public var hash: Data? { _hash }
     
-    public init(path: K?, hash: Data) {
-        self.stash = path
+    public init(key: K?, hash: Data) {
+        self.stash = key
         self._hash = hash
     }
 }
@@ -105,11 +105,11 @@ extension StakingLedgerStorageKey: MapStorageKey {
     
     public static var FIELD: String { "Ledger" }
     
-    public var path: K? { controller }
+    public var key: K? { controller }
     public var hash: Data? { _hash }
     
-    public init(path: K?, hash: Data) {
-        self.controller = path
+    public init(key: K?, hash: Data) {
+        self.controller = key
         self._hash = hash
     }
 }
@@ -134,11 +134,11 @@ extension StakingPayeeStorageKey: MapStorageKey {
     
     public static var FIELD: String { "Payee" }
     
-    public var path: K? { stash }
+    public var key: K? { stash }
     public var hash: Data? { _hash }
     
-    public init(path: K?, hash: Data) {
-        self.stash = path
+    public init(key: K?, hash: Data) {
+        self.stash = key
         self._hash = hash
     }
 }
@@ -163,11 +163,11 @@ extension StakingValidatorsStorageKey: MapStorageKey {
     
     public static var FIELD: String { "Validators" }
     
-    public var path: K? { stash }
+    public var key: K? { stash }
     public var hash: Data? { _hash }
     
-    public init(path: K?, hash: Data) {
-        self.stash = path
+    public init(key: K?, hash: Data) {
+        self.stash = key
         self._hash = hash
     }
 }
@@ -192,11 +192,11 @@ extension StakingNominatorsStorageKey: MapStorageKey {
     
     public static var FIELD: String { "Nominators" }
     
-    public var path: K? { stash }
+    public var key: K? { stash }
     public var hash: Data? { _hash }
     
-    public init(path: K?, hash: Data) {
-        self.stash = path
+    public init(key: K?, hash: Data) {
+        self.stash = key
         self._hash = hash
     }
 }

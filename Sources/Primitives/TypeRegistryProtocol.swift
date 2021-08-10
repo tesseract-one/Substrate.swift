@@ -17,11 +17,9 @@ public enum TypeRegistryError: Error {
     // Events
     case eventFoundWrongEvent(module: String, event: String, exmodule: String, exevent: String)
     case eventDecodingError(module: String, event: String, error: SDecodingError)
-    case eventRegistrationError(event: AnyEvent, message: String)
     // Calls
     case callFoundWrongCall(module: String, function: String, exmodule: String, exfunction: String)
     case callDecodingError(module: String, function: String, error: SDecodingError)
-    case callRegistrationError(event: AnyEvent, message: String)
     case callEncodingError(call: AnyCall, error: SEncodingError)
     case callEncodingWrongParametersCount(call: DynamicCall, count: Int, expected: Int)
     case callEncodingUnknownCallType(call: AnyCall)
@@ -37,12 +35,14 @@ public enum TypeRegistryError: Error {
     case encodingWrongElementCount(in: ScaleDynamicEncodable, expected: Int)
     // Storage
     case storageItemBadPathTypesCount(module: String, field: String, count: Int, expected: Int)
-    case storageItemBadItemType(module: String, field: String, type: String, expected: String)
+    case storageItemBadPathCount(module: String, field: String, count: Int, expected: Int)
     case storageItemEmptyItem(module: String, field: String)
-    case storageItemDecodingError(module: String, field: String, error: SDecodingError)
+    case storageItemUnknownPrefix(prefix: Data)
     case storageItemDecodingBadPrefix(module: String, field: String, prefix: Data, expected: Data)
     // Validation
     case validationError(missingTypes: Dictionary<DType, [String]>)
+    // Common decoding error
+    case decoding(error: SDecodingError)
     // Unknown
     case unknown(error: Error)
 }
@@ -51,15 +51,13 @@ public protocol TypeRegistryProtocol: AnyObject {
     var ss58AddressFormat: Ss58AddressFormat { get set }
     
     // Storage
-    func hash<K: DynamicStorageKey>(of key: K) throws -> Data
-    func hash<K: StaticStorageKey>(of key: K) throws -> Data
-    func hash<K: DynamicStorageKey>(iteratorOf key: K) throws -> Data
-    func hash<K: IterableStaticStorageKey>(iteratorOf key: K) throws -> Data
-    func type<K: AnyStorageKey>(valueOf key: K) throws -> DType
-    func value<K: DynamicStorageKey>(defaultOf key: K) throws -> DValue
-    func value<K: StaticStorageKey>(defaultOf key: K) throws -> K.Value
-    func decode<K: DynamicStorageKey>(key: K.Type, module: String, field: String, from data: Data) throws -> K
-    func decode<K: StaticStorageKey>(key: K.Type, from data: Data) throws -> K
+    func info(forKey prefix: Data) throws -> (module: String, field: String)
+    func hashers(forKey field: String, in module: String) throws -> [Hasher]
+    func types(forKey field: String, in module: String) throws -> [DType]
+    func value(defaultOf key: DStorageKey) throws -> DValue
+    func value<K: StorageKey>(defaultOf key: K) throws -> K.Value
+    func decode(keyFrom decoder: ScaleDecoder) throws -> AnyStorageKey
+    func register<K: StorageKey>(key: K.Type) throws
     
     // Constants
     func type<C: AnyConstant>(of constant: C) throws -> DType

@@ -32,14 +32,18 @@ public class MetadataStorageItemInfo {
         documentation = runtime.documentation.joined(separator: "\n")
     }
     
-    public func prefixHash() -> Data {
-        var data = HXX128.hasher.hash(data: prefix.data(using: .utf8)!)
-        data.append(HXX128.hasher.hash(data: name.data(using: .utf8)!))
-        return data
+    public func hashers() -> [Hasher] {
+        switch type {
+        case .plain: return []
+        case .map(hasher: let h, key: _, value: _, unused: _):
+            return [h.hasher]
+        case .doubleMap(hasher: let h1, key1: _, key2: _, value: _, key2_hasher: let h2):
+            return [h1.hasher, h2.hasher]
+        }
     }
     
-    public func prefixHashLength() -> Int {
-        return 2 * HXX128.hashPartByteLength
+    public func types() -> [DType] {
+        return pathTypes + [valueType]
     }
     
     public func defaultValue(registry: TypeRegistryProtocol) throws -> DValue {
@@ -47,54 +51,6 @@ public class MetadataStorageItemInfo {
     }
     
     public func defaultValue<T: ScaleDynamicDecodable>(_ t: T.Type, registry: TypeRegistryProtocol) throws -> T {
-        try registry.decode(static: t, as: valueType, from: SCALE.default.decoder(data: defaultValue))
-    }
-    
-    public func hash<K: DynamicStorageKey>(of key: K, registry: TypeRegistryProtocol) throws -> Data {
-        let prefix = prefixHash()
-        switch type {
-        case .plain(_):
-            return try prefix + key.key(h1: nil, h2: nil, types: pathTypes, registry: registry)
-        case .map(hasher: let h1, key: _, value: _, unused: _):
-            return try prefix + key.key(h1: h1.hasher, h2: nil, types: pathTypes, registry: registry)
-        case .doubleMap(hasher: let h1 , key1: _, key2: _, value: _, key2_hasher: let h2):
-            return try prefix + key.key(h1: h1.hasher, h2: h2.hasher, types: pathTypes, registry: registry)
-        }
-    }
-    
-    public func hash<K: StaticStorageKey>(of key: K, registry: TypeRegistryProtocol) throws -> Data {
-        let prefix = prefixHash()
-        switch type {
-        case .plain(_):
-            return try prefix + key.key(h1: nil, h2: nil, registry: registry)
-        case .map(hasher: let h1, key: _, value: _, unused: _):
-            return try prefix + key.key(h1: h1.hasher, h2: nil, registry: registry)
-        case .doubleMap(hasher: let h1 , key1: _, key2: _, value: _, key2_hasher: let h2):
-            return try prefix + key.key(h1: h1.hasher, h2: h2.hasher, registry: registry)
-        }
-    }
-    
-    public func hash<K: DynamicStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
-        let prefix = prefixHash()
-        switch type {
-        case .plain(_):
-            return try prefix + key.iteratorKey(h1: nil, type: nil, registry: registry)
-        case .map(hasher: _, key: _, value: _, unused: _):
-            return try prefix + key.iteratorKey(h1: nil, type: nil, registry: registry)
-        case .doubleMap(hasher: let h1 , key1: _, key2: _, value: _, key2_hasher: _):
-            return try prefix + key.iteratorKey(h1: h1.hasher, type: pathTypes[0], registry: registry)
-        }
-    }
-    
-    public func hash<K: IterableStaticStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
-        let prefix = prefixHash()
-        switch type {
-        case .plain(_):
-            return try prefix + key.iteratorKey(h1: nil, registry: registry)
-        case .map(hasher: _, key: _, value: _, unused: _):
-            return try prefix + key.iteratorKey(h1: nil, registry: registry)
-        case .doubleMap(hasher: let h1 , key1: _, key2: _, value: _, key2_hasher: _):
-            return try prefix + key.iteratorKey(h1: h1.hasher, registry: registry)
-        }
+        try T(from: SCALE.default.decoder(data: defaultValue), registry: registry)
     }
 }

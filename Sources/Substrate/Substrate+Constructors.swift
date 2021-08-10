@@ -66,7 +66,7 @@ private extension Substrate {
             switch res {
             case .failure(let err): cb(.failure(err))
             case .success((let meta, let hash)):
-                SubstrateRpcStateApi<S>.runtimeVersion(at: nil, with: client, timeout: 60) { res in
+                SubstrateRpcStateApi<S>.getRuntimeVersion(at: nil, with: client, timeout: 60) { res in
                     cb(res.map {(meta, hash, $0)})
                 }
             }
@@ -92,6 +92,6 @@ private extension Substrate {
         client: RpcClient, subs: S.Type,
         cb: @escaping SRpcApiCallback<Metadata>
     ) {
-        SubstrateRpcStateApi<S>.metadata(client: client, timeout: 60, cb)
+        SubstrateRpcStateApi<S>.getMetadata(client: client, timeout: 60, cb)
     }
 }

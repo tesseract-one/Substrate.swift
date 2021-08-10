@@ -49,7 +49,7 @@ final class SubstrateTests: XCTestCase {
                 XCTFail("\(err)")
                 disconnected.fulfill()
             case .success(let substrate):
-                let hash = try! substrate.registry.hash(iteratorOf: key)
+                let hash = try! key.iterator(registry: substrate.registry)
                 print(hash.hex)
                 disconnected.fulfill()
             }

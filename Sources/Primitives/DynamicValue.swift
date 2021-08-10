@@ -8,6 +8,7 @@
 import Foundation
 import ScaleCodec
 
+// TODO: Create better dynamic logic (DYNAMIC)
 public indirect enum DValue: Error {
     case null
     case native(type: DType, value: ScaleDynamicCodable)

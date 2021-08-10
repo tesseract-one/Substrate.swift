@@ -100,7 +100,7 @@ extension SubstrateRpcAuthorApi where S.R: Session {
         _ cb: @escaping SRpcApiCallback<Bool>
     ) {
         _encode(keys)
-            .pour(error: cb)
+            .pour(queue: substrate.client.responseQueue, error: cb)
             .onSuccess { data in
                 substrate.client.call(
                     method: "author_hasSessionKeys",

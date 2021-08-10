@@ -45,46 +45,30 @@ extension Metadata {
 
 // StorageKey
 extension Metadata {
-    private func _getStorageInfo<K: AnyStorageKey>(for key: K) throws -> MetadataStorageItemInfo {
-        guard let module = modulesByName[key.module] else {
-            throw MetadataError.moduleNotFound(name: key.module)
+    private func _getStorageInfo(for field: String, in module: String) throws -> MetadataStorageItemInfo {
+        guard let mod = modulesByName[module] else {
+            throw MetadataError.moduleNotFound(name: module)
         }
-        guard let storage = module.storage[key.field] else {
-            throw MetadataError.storageItemNotFound(prefix: key.module, item: key.field)
+        guard let storage = mod.storage[field] else {
+            throw MetadataError.storageItemNotFound(prefix: module, item: field)
         }
         return storage
     }
     
-    public func prefixHashLength<K: AnyStorageKey>(of key: K) throws -> Int {
-        try _getStorageInfo(for: key).prefixHashLength()
+    func hashers(forKey field: String, in module: String) throws -> [Hasher] {
+        try _getStorageInfo(for: field, in: module).hashers()
     }
     
-    public func hash<K: DynamicStorageKey>(of key: K, registry: TypeRegistryProtocol) throws -> Data {
-        try _getStorageInfo(for: key).hash(of: key, registry: registry)
+    func types(forKey field: String, in module: String) throws -> [DType] {
+        try _getStorageInfo(for: field, in: module).types()
     }
     
-    public func hash<K: StaticStorageKey>(of key: K, registry: TypeRegistryProtocol) throws -> Data {
-        try _getStorageInfo(for: key).hash(of: key, registry: registry)
+    func value(defaultOf key: DStorageKey, registry: TypeRegistryProtocol) throws -> DValue {
+        try _getStorageInfo(for: key.field, in: key.module).defaultValue(registry: registry)
     }
     
-    public func hash<K: DynamicStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
-        try _getStorageInfo(for: key).hash(iteratorOf: key, registry: registry)
-    }
-    
-    public func hash<K: IterableStaticStorageKey>(iteratorOf key: K, registry: TypeRegistryProtocol) throws -> Data {
-        try _getStorageInfo(for: key).hash(iteratorOf: key, registry: registry)
-    }
-    
-    public func type<K: AnyStorageKey>(valueOf key: K) throws -> DType {
-        try _getStorageInfo(for: key).valueType
-    }
-    
-    public func value<K: DynamicStorageKey>(defaultOf key: K, registry: TypeRegistryProtocol) throws -> DValue {
-        try _getStorageInfo(for: key).defaultValue(registry: registry)
-    }
-    
-    public func value<K: StaticStorageKey>(defaultOf key: K, registry: TypeRegistryProtocol) throws -> K.Value {
-        try _getStorageInfo(for: key).defaultValue(K.Value.self, registry: registry)
+    func value<K: StorageKey>(defaultOf key: K, registry: TypeRegistryProtocol) throws -> K.Value {
+        try _getStorageInfo(for: key.field, in: key.module).defaultValue(K.Value.self, registry: registry)
     }
 }
 

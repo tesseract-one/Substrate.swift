@@ -27,24 +27,6 @@ extension TypeRegistry {
         return (module: module.name, call: call)
     }
     
-    func _decodeStorageItemHeader(
-        module: String, field: String, from decoder: ScaleDecoder
-    ) throws -> MetadataStorageItemInfo {
-        let mod = try _metaError { try self.meta.module(name: module) }
-        let info = try _metaError { try mod.storageItem(name: field) }
-        return try _storageKeyDecodingError(module: module, field: field) {
-            let prefixLength = info.prefixHashLength()
-            let parsedPrefix: Data = try decoder.decode(.fixed(UInt(prefixLength)))
-            let prefix = info.prefixHash()
-            guard parsedPrefix == prefix else {
-                throw TypeRegistryError.storageItemDecodingBadPrefix(
-                    module: module, field: field, prefix: parsedPrefix, expected: prefix
-                )
-            }
-            return info
-        }
-    }
-    
     func _decode(
         type: DType, from decoder: ScaleDecoder
     ) throws -> DValue {

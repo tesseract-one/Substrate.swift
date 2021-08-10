@@ -27,11 +27,11 @@ extension SystemAccountStorageKey: MapStorageKey {
     
     public static var FIELD: String { "Account" }
     
-    public var path: K? { accountId }
+    public var key: K? { accountId }
     public var hash: Data? { _hash }
     
-    public init(path: S.TAccountId?, hash: Data) {
-        self.accountId = path
+    public init(key: S.TAccountId?, hash: Data) {
+        self.accountId = key
         self._hash = hash
     }
 }

@@ -197,19 +197,6 @@ public struct SubstrateRpcSystemApi<S: SubstrateProtocol>: SubstrateRpcApi {
         Self.properties(client: substrate.client, timeout: timeout ?? substrate.callTimeout, cb)
     }
     
-    public static func properties(
-        client: RpcClient, timeout: TimeInterval,
-        _ cb: @escaping SRpcApiCallback<SystemProperties>
-    ) {
-        client.call(
-            method: "system_properties",
-            params: RpcCallParams(),
-            timeout: timeout
-        ) { (res: RpcClientResult<SystemProperties>) in
-            cb(res.mapError(SubstrateRpcApiError.rpc))
-        }
-    }
-    
     public func removeReservedPeer(
         peerId: String,
         timeout: TimeInterval? = nil,
@@ -272,6 +259,21 @@ public struct SubstrateRpcSystemApi<S: SubstrateProtocol>: SubstrateRpcApi {
             params: RpcCallParams(),
             timeout: timeout ?? substrate.callTimeout
         ) { (res: RpcClientResult<String>) in
+            cb(res.mapError(SubstrateRpcApiError.rpc))
+        }
+    }
+}
+
+extension SubstrateRpcSystemApi { //Static calls
+    public static func properties(
+        client: RpcClient, timeout: TimeInterval,
+        _ cb: @escaping SRpcApiCallback<SystemProperties>
+    ) {
+        client.call(
+            method: "system_properties",
+            params: RpcCallParams(),
+            timeout: timeout
+        ) { (res: RpcClientResult<SystemProperties>) in
             cb(res.mapError(SubstrateRpcApiError.rpc))
         }
     }

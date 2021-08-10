@@ -20,11 +20,11 @@ public protocol SubstrateStorageApi {
 extension SubstrateStorageApi {
     public static var id: String { String(describing: self) }
     
-    public func value<K: StaticStorageKey>(defaultOf key: K) throws -> K.Value {
+    public func value<K: StorageKey>(defaultOf key: K) throws -> K.Value {
         try substrate.registry.value(defaultOf: key)
     }
     
-    public func value<K: StaticStorageKey>(of key: K, _ cb: @escaping SRpcApiCallback<K.Value>) {
+    public func value<K: StorageKey>(of key: K, _ cb: @escaping SRpcApiCallback<K.Value>) {
         substrate.rpc.state.getStorage(for: key, cb)
     }
 }
@@ -42,19 +42,19 @@ public final class SubstrateStorageApiRegistry<S: SubstrateProtocol> {
         return api
     }
     
-    public func value<K: DynamicStorageKey>(defaultOf key: K) throws -> DValue {
+    public func value(defaultOf key: DStorageKey) throws -> DValue {
         try substrate.registry.value(defaultOf: key)
     }
     
-    public func value<K: StaticStorageKey>(defaultOf key: K) throws -> K.Value {
+    public func value<K: StorageKey>(defaultOf key: K) throws -> K.Value {
         try substrate.registry.value(defaultOf: key)
     }
     
-    public func value<K: DynamicStorageKey>(of key: K, _ cb: @escaping SRpcApiCallback<DValue>) {
+    public func value(of key: DStorageKey, _ cb: @escaping SRpcApiCallback<DValue>) {
         substrate.rpc.state.getStorage(for: key, cb)
     }
     
-    public func value<K: StaticStorageKey>(of key: K, _ cb: @escaping SRpcApiCallback<K.Value>) {
+    public func value<K: StorageKey>(of key: K, _ cb: @escaping SRpcApiCallback<K.Value>) {
         substrate.rpc.state.getStorage(for: key, cb)
     }
 }
