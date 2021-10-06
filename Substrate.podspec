@@ -75,7 +75,7 @@ Pod::Spec.new do |s|
   s.subspec 'RPC' do |ss|
     ss.source_files = 'Sources/RPC/**/*.swift'
 
-    ss.dependency 'TesseractWebSocket', '~> 0.0.1'
+    ss.dependency 'TesseractWebSocket', '~> 0.1.0'
     
     ss.test_spec 'RPCTests' do |test_spec|
       test_spec.platforms = test_platforms

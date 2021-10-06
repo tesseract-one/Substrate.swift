@@ -31,7 +31,7 @@ var package = Package(
         .package(url: "https://github.com/tesseract-one/Bip39.swift.git", from: "0.1.1"),
         .package(url: "https://github.com/daisuke-t-jp/xxHash-Swift.git", from: "1.1.0"),
         .package(url: "https://github.com/tesseract-one/Serializable.swift.git", from: "0.2.0"),
-        .package(url: "https://github.com/tesseract-one/WebSocket.swift.git", from: "0.0.7"),
+        .package(url: "https://github.com/tesseract-one/WebSocket.swift.git", from: "0.1.0"),
     ],
     targets: [
         .target(
