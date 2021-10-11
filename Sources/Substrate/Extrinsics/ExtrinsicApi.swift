@@ -28,7 +28,7 @@ extension SubstrateExtrinsicApi {
         timeout: TimeInterval? = nil,
         _ cb: @escaping SExtrinsicApiCallback<S.R.TIndex, S.R>
     ) {
-        substrate.query.system.accountInfo(accountId: accountId) { result in
+        substrate.query.system.accounts.get(key: accountId) { result in
             let res = result
                 .map { $0.nonce }
                 .mapError(SubstrateExtrinsicApiError<S.R>.rpc)

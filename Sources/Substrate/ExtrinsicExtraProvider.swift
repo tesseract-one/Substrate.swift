@@ -44,7 +44,7 @@ extension DefaultExtrinsicExtraProvider {
         accountId: TAccountId, timeout: TimeInterval, substrate: S,
         _ cb: @escaping SRpcApiCallback<TIndex>
     ) where Self == S.R, S : SubstrateProtocol {
-        substrate.query.system.accountInfo(accountId: accountId) {
+        substrate.query.system.accounts.get(key: accountId) {
             cb($0.map { $0.nonce })
         }
     }

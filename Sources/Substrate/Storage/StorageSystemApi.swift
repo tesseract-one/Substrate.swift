@@ -14,22 +14,11 @@ public struct SubstrateStorageSystemApi<S: SubstrateProtocol>: SubstrateStorageA
         self.substrate = substrate
     }
     
-    public func accountInfo(
-        accountId: S.R.TAccountId, at: S.R.THash? = nil, timeout: TimeInterval? = nil,
-        _ cb: @escaping SRpcApiCallback<AccountInfo<S.R>>
-    ) {
-        substrate.rpc.state.getStorage(
-            for: SystemAccountStorageKey(accountId: accountId),
-            at: at, timeout: timeout, cb
-        )
+    public var accounts: StorageApiEntry<S, SystemAccountStorageKey<S.R>> {
+        StorageApiEntry(substrate: substrate)
     }
     
-    public func accounts(
-        count: UInt32, from accountId: S.R.TAccountId? = nil, hash: S.R.THash? = nil,
-        timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<AccountInfo<S.R>>
-    ) {
-        
-    }
+    public var 
 }
 
 extension SubstrateStorageApiRegistry where S.R: System {

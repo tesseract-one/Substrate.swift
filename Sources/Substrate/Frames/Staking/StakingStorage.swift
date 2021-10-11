@@ -32,6 +32,10 @@ extension StakingErasRewardPointsStorageKey: MapStorageKey {
     public var key: K? { index }
     public var hash: Data? { _hash }
     
+    public init(key: K) {
+        self.init(index: key)
+    }
+    
     public init(key: K?, hash: Data) {
         self.index = key
         self._hash = hash
@@ -79,6 +83,10 @@ extension StakingBondedStorageKey: MapStorageKey {
     public var key: K? { stash }
     public var hash: Data? { _hash }
     
+    public init(key: K) {
+        self.init(stash: key)
+    }
+    
     public init(key: K?, hash: Data) {
         self.stash = key
         self._hash = hash
@@ -107,6 +115,10 @@ extension StakingLedgerStorageKey: MapStorageKey {
     
     public var key: K? { controller }
     public var hash: Data? { _hash }
+    
+    public init(key: K) {
+        self.init(controller: key)
+    }
     
     public init(key: K?, hash: Data) {
         self.controller = key
@@ -137,6 +149,10 @@ extension StakingPayeeStorageKey: MapStorageKey {
     public var key: K? { stash }
     public var hash: Data? { _hash }
     
+    public init(key: K) {
+        self.init(stash: key)
+    }
+    
     public init(key: K?, hash: Data) {
         self.stash = key
         self._hash = hash
@@ -166,6 +182,10 @@ extension StakingValidatorsStorageKey: MapStorageKey {
     public var key: K? { stash }
     public var hash: Data? { _hash }
     
+    public init(key: K) {
+        self.init(stash: key)
+    }
+    
     public init(key: K?, hash: Data) {
         self.stash = key
         self._hash = hash
@@ -194,6 +214,10 @@ extension StakingNominatorsStorageKey: MapStorageKey {
     
     public var key: K? { stash }
     public var hash: Data? { _hash }
+    
+    public init(key: K) {
+        self.init(stash: key)
+    }
     
     public init(key: K?, hash: Data) {
         self.stash = key

@@ -37,6 +37,7 @@ public protocol MapStorageKey: IterableStorageKey where IteratorKey == Void {
     var key: K? { get }
     var hash: Data? { get }
     
+    init(key: K)
     init(key: K?, hash: Data)
 }
 
@@ -44,12 +45,11 @@ public protocol DoubleMapStorageKey: IterableStorageKey where IteratorKey == K1 
     associatedtype K1: ScaleDynamicCodable
     associatedtype K2: ScaleDynamicCodable
     
-    var key1: K1? { get }
-    var key2: K2? { get }
-    var hash1: Data? { get }
-    var hash2: Data? { get }
+    var key: (K1?, K2?) { get }
+    var hash: (Data, Data)? { get }
     
-    init(key1: K1?, key2: K2?, hash1: Data, hash2: Data)
+    init(key: (K1, K2))
+    init(key: (K1?, K2?), hash: (Data, Data))
 }
 
 extension StaticStorageKey {
@@ -141,7 +141,7 @@ extension DoubleMapStorageKey {
         }
         let (key1, hash1): (K1?, Data) = try Self._decode(hasher: hashers[0], decoder: decoder, registry: registry)
         let (key2, hash2): (K2?, Data) = try Self._decode(hasher: hashers[1], decoder: decoder, registry: registry)
-        self.init(key1: key1, key2: key2, hash1: hash1, hash2: hash2)
+        self.init(key: (key1, key2), hash: (hash1, hash2))
     }
     
     public func encode(in encoder: ScaleEncoder, registry: TypeRegistryProtocol) throws {
@@ -152,8 +152,8 @@ extension DoubleMapStorageKey {
             )
         }
         try encoder.encode(Self._prefix(), .fixed(Self.prefixSize))
-        let hash1 = try Self._hash(hasher: hashers[0], hash: hash1, key: key1, registry: registry)
-        let hash2 = try Self._hash(hasher: hashers[1], hash: hash2, key: key2, registry: registry)
+        let hash1 = try Self._hash(hasher: hashers[0], hash: hash?.0, key: key.0, registry: registry)
+        let hash2 = try Self._hash(hasher: hashers[1], hash: hash?.1, key: key.1, registry: registry)
         try encoder.encode(hash1, .fixed(UInt(hash1.count)))
         try encoder.encode(hash2, .fixed(UInt(hash2.count)))
     }
@@ -166,7 +166,7 @@ extension DoubleMapStorageKey {
             )
         }
         return try Self._prefix()
-            + Self._hash(hasher: hashers[0], hash: hash1, key: key1, registry: registry)
+            + Self._hash(hasher: hashers[0], hash: hash?.0, key: key.0, registry: registry)
     }
     
     public static func iterator(key: IteratorKey, registry: TypeRegistryProtocol) throws -> Data {
@@ -180,8 +180,8 @@ extension DoubleMapStorageKey {
             + Self._hash(hasher: hashers[0], hash: nil, key: key, registry: registry)
     }
     
-    public var path: [Any?] { [key1, key2] }
-    public var hashes: [Data]? { hash1.flatMap { h1 in hash2.map { [h1, $0] } } }
+    public var path: [Any?] { [key.0, key.1] }
+    public var hashes: [Data]? { hash.map { [$0.0, $0.1] } }
 }
 
 private extension StaticStorageKey {

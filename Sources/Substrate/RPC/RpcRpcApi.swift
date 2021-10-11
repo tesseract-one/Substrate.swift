@@ -31,3 +31,8 @@ public struct SubstrateRpcRpcApi<S: SubstrateProtocol>: SubstrateRpcApi {
 extension SubstrateRpcApiRegistry {
     public var rpc: SubstrateRpcRpcApi<S> { getRpcApi(SubstrateRpcRpcApi<S>.self) }
 }
+
+public struct RpcMethods: Codable {
+    public let version: UInt32
+    public let methods: Array<String>
+}
