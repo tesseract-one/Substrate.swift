@@ -18,7 +18,13 @@ public struct SubstrateStorageSystemApi<S: SubstrateProtocol>: SubstrateStorageA
         StorageApiEntry(substrate: substrate)
     }
     
-    public var 
+    public var allExtrinsicsLen: StorageApiEntry<S, SystemAllExtrinsicsLenStorageKey<S.R>> {
+        StorageApiEntry(substrate: substrate)
+    }
+    
+    public var blockHash: StorageApiEntry<S, SystemBlockHashStorageKey<S.R>> {
+        StorageApiEntry(substrate: substrate)
+    }
 }
 
 extension SubstrateStorageApiRegistry where S.R: System {
