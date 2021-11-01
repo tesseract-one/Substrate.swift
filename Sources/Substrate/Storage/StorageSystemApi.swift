@@ -25,6 +25,10 @@ public struct SubstrateStorageSystemApi<S: SubstrateProtocol>: SubstrateStorageA
     public var blockHash: StorageApiEntry<S, SystemBlockHashStorageKey<S.R>> {
         StorageApiEntry(substrate: substrate)
     }
+    
+    public var blockWeight: StorageApiEntry<S, SystemBlockWeightStorageKey<S.R>> {
+        StorageApiEntry(substrate: substrate)
+    }
 }
 
 extension SubstrateStorageApiRegistry where S.R: System {

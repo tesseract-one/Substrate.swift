@@ -85,3 +85,14 @@ extension SystemBlockHashStorageKey: MapStorageKey {
         self._hash = hash
     }
 }
+
+public struct SystemBlockWeightStorageKey<S: System> {
+    public init() {}
+}
+
+extension SystemBlockWeightStorageKey: PlainStorageKey {
+    public typealias Module = SystemModule<S>
+    public typealias Value = DispatchInfo<S.TWeight>.Class
+    
+    public static var FIELD: String { "BlockWeight" }
+}
