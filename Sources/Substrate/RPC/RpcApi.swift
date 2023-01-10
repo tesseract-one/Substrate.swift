@@ -6,69 +6,54 @@
 //
 
 import Foundation
-import SubstrateRpc
 import ScaleCodec
+import JsonRPC
+#if !COCOAPODS
+import JsonRPCSerializable
+#endif
 
-public protocol SubstrateRpcApi {
-    associatedtype S: SubstrateProtocol
+public protocol RpcApi {
+    associatedtype S: AnySubstrate
     
     static var id: String { get }
     
     var substrate: S! { get }
     
-    init(substrate: S)
+    init(substrate: S) async
 }
 
-extension SubstrateRpcApi {
+extension RpcApi {
     public static var id: String { String(describing: self) }
-    
-    func _encode<V: ScaleDynamicEncodable>(_ value: V) -> SRpcApiResult<Data> {
-        return Result {
-            let encoder = SCALE.default.encoder()
-            try value.encode(in: encoder, registry: substrate.registry)
-            return encoder.output
-        }.mapError(SubstrateRpcApiError.from)
-    }
-    
-    func _try<R>(_ f: @escaping () throws -> R) -> SRpcApiResult<R> {
-        return Result { try f() }.mapError(SubstrateRpcApiError.from)
-    }
 }
 
-public typealias SRpcApiResult<R> = Result<R, SubstrateRpcApiError>
-public typealias SRpcApiCallback<R> = (SRpcApiResult<R>) -> Void
-
-public enum SubstrateRpcApiError: Error {
-    case encoding(error: SEncodingError)
-    case decoding(error: SDecodingError)
-    case type(error: DTypeParsingError)
-    case registry(error: TypeRegistryError)
-    case unsupportedRuntimeVersion(UInt32)
-    case rpc(error: RpcClientError)
-    case unknown(error: Error)
-    
-    public static func from(error: Error) -> SubstrateRpcApiError {
-        switch error {
-        case let e as SEncodingError: return .encoding(error: e)
-        case let e as SDecodingError: return .decoding(error: e)
-        case let e as RpcClientError: return .rpc(error: e)
-        case let e as DTypeParsingError: return .type(error: e)
-        case let e as TypeRegistryError: return .registry(error: e)
-        default: return .unknown(error: error)
-        }
-    }
-}
-
-public final class SubstrateRpcApiRegistry<S: SubstrateProtocol> {
+public actor RpcApiRegistry<S: AnySubstrate>: CallableClient {    
     private var _apis: [String: Any] = [:]
-    public internal(set) weak var substrate: S!
+    public weak var substrate: S!
     
-    public func getRpcApi<A>(_ t: A.Type) -> A where A: SubstrateRpcApi, A.S == S {
-        if let api = _apis[A.id] as? A {
+    public func setSubstrate(substrate: S) async {
+        self.substrate = substrate
+    }
+    
+    public func getRpcApi<A>(_ t: A.Type) async -> A where A: RpcApi, A.S == S {
+        if let api = _apis[t.id] as? A {
             return api
         }
-        let api = A(substrate: substrate)
-        _apis[A.id] = api
+        let api = await t.init(substrate: substrate)
+        _apis[t.id] = api
         return api
+    }
+    
+    public func call<Params: Encodable, Res: Decodable>(
+        method: String, params: Params
+    ) async throws -> Res {
+        try await substrate.client.call(method: method, params: params)
+    }
+}
+
+extension RpcApiRegistry: SubscribableClient where S.CL: SubscribableClient {
+    public func subscribe<P: Encodable, E: Decodable>(
+        method: String, params: P, unsubsribe umethod: String
+    ) async throws -> AsyncThrowingStream<E, Error> {
+        try await substrate.client.subscribe(method: method, params: params, unsubsribe: umethod)
     }
 }

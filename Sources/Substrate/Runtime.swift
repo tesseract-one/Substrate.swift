@@ -2,25 +2,25 @@
 //  Runtime.swift
 //  
 //
-//  Created by Yehor Popovych on 1/11/21.
+//  Created by Yehor Popovych on 29.12.2022.
 //
 
 import Foundation
 import ScaleCodec
-import SubstratePrimitives
 
-public protocol Runtime: System, ModuleBase, DynamicTypeId {    
-    var supportedSpecVersions: Range<UInt32> { get }
-    
-    var modules: [ModuleBase] { get }
+public protocol Runtime {
+    associatedtype THash: Hash
+    associatedtype TBlockNumber: AnyBlockNumber
+    associatedtype TRuntimeVersion: RuntimeVersion
+    associatedtype TSystemProperties: SystemProperties
 }
 
-extension Runtime {
-    public static var NAME: String { Self.id }
+public struct DynamicRuntime: Runtime {
+    public typealias THash = DynamicHash
+    public typealias TBlockNumber = UInt256
+    public typealias TRuntimeVersion = DynamicRuntimeVersion
+    public typealias TSystemProperties = DynamicSystemProperties
     
-    public func registerEventsCallsAndTypes<R: TypeRegistryProtocol>(in registry: R) throws {
-        for module in modules {
-            try module.registerEventsCallsAndTypes(in: registry)
-        }
-    }
+    public init() {}
 }
+
