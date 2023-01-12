@@ -13,8 +13,6 @@ extension Value {
         case variantNotFound(UInt8, RuntimeTypeId)
         /// The type we're trying to encode into cannot be found in the type registry provided.
         case typeNotFound(RuntimeTypeId)
-        /// There was an error trying to encode the bit sequence provided.
-        case bitSequenceError(Error)
         /// The type ID given is supposed to be compact encoded, but this is not possible to do automatically.
         case cannotCompactDecode(RuntimeTypeId)
     }

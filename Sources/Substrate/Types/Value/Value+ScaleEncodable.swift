@@ -50,8 +50,6 @@ extension Value {
             /// The type we're trying to encode it into.
             expected: RuntimeTypeId
         )
-        /// There was an error trying to encode the bit sequence provided.
-        case bitSequenceError(Error)
         /// The type ID given is supposed to be compact encoded, but this is not possible to do automatically.
         case cannotCompactEncode(RuntimeTypeId)
     }
@@ -78,7 +76,7 @@ extension Value: RegistryScaleDynamicEncodable {
         case .compact(of: let type):
             try _encodeCompact(id: type, type: type, registry: registry, in: encoder)
         case .bitsequence(store: let store, order: let order):
-            fatalError()
+            try _encodeBitSequence(id: type, store: store, order: order, registry: registry, in: encoder)
         }
     }
 }
