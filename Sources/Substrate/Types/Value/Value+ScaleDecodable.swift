@@ -42,7 +42,10 @@ extension Value: RegistryScaleDynamicDecodable where C == RuntimeTypeId {
             self = try Self._decodePrimitive(from: decoder, type: type, prim: pType, registry: registry)
         case .compact(of: let cType):
             self = try Self._decodeCompact(from: decoder, type: type, of: cType, registry: registry)
-        case .bitsequence(store: let store, order: let order): fatalError()
+        case .bitsequence(store: let store, order: let order):
+            self = try Self._decodeBitSequence(
+                from: decoder, type: type, store: store, order: order, registry: registry
+            )
         }
     }
 }
@@ -225,5 +228,12 @@ private extension Value where C == RuntimeTypeId {
             }
         }
         return value!
+    }
+    
+    static func _decodeBitSequence(
+        from decoder: ScaleDecoder, type: RuntimeTypeId, store: RuntimeTypeId, order: RuntimeTypeId, registry: Registry
+    ) throws -> Self {
+        let format = try BitSequence.Format(store: store, order: order, registry: registry)
+        return try Value(value: .bitSequence(decoder.decode(.format(format))), context: type)
     }
 }

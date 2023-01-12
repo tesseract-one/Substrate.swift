@@ -14,7 +14,7 @@ public struct Value<C> {
         case sequence(_ values: [Value<C>])
         case variant(Variant)
         case primitive(Primitive)
-        case bitSequence(BitVec)
+        case bitSequence(BitSequence)
     }
     
     public enum Variant {
@@ -22,7 +22,7 @@ public struct Value<C> {
         case sequence(name: String, values: [Value<C>])
     }
     
-    public enum Primitive {
+    public enum Primitive: Hashable, Equatable {
         /// A boolean value.
         case bool(Bool)
         /// A single character. (char in Rust)
@@ -69,7 +69,7 @@ extension Value {
         }
     }
     
-    public var bitSequence: BitVec? {
+    public var bitSequence: BitSequence? {
         switch value {
         case .bitSequence(let seq): return seq
         default: return nil
@@ -181,6 +181,10 @@ extension Value where C == Void {
              context: ())
     }
     
+    public static func bits<CL: Collection>(_ seq: CL) -> Self where CL.Element == Bool {
+        Self(value: .bitSequence(BitSequence(seq)), context: ())
+    }
+    
     public static func bool(_ val: Bool) -> Self {
         Self(value: .primitive(.bool(val)), context: ())
     }
@@ -270,3 +274,11 @@ extension Value.Variant {
         }
     }
 }
+
+extension Value: Equatable where C: Equatable {}
+extension Value.Def: Equatable where C: Equatable {}
+extension Value.Variant: Equatable where C: Equatable {}
+
+extension Value: Hashable where C: Hashable {}
+extension Value.Def: Hashable where C: Hashable {}
+extension Value.Variant: Hashable where C: Hashable {}

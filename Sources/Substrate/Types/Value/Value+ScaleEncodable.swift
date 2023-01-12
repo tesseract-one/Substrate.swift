@@ -420,6 +420,26 @@ private extension Value {
             )
         }
     }
+    
+    func _encodeBitSequence(
+        id: RuntimeTypeId, store: RuntimeTypeId, order: RuntimeTypeId,
+        registry: Registry, in encoder: ScaleEncoder
+    ) throws {
+        let format = try BitSequence.Format(store: store, order: order, registry: registry)
+        switch value {
+        case .bitSequence(let seq):
+            try encoder.encode(seq, .format(format))
+        case .sequence(let values):
+            let seq = try values.map {
+                guard case .primitive(.bool(let bool)) = $0.value else {
+                    throw EncodingError.wrongShape(actual: self, expected: id)
+                }
+                return bool
+            }
+            try encoder.encode(BitSequence(seq), .format(format))
+        default: throw EncodingError.wrongShape(actual: self, expected: id)
+        }
+    }
 }
 
 private enum CompactTy {
