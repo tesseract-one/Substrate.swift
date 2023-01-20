@@ -169,8 +169,12 @@ extension Value where C == Void {
     public static func variant<CL: Collection>(name: String, fields: CL) -> Self
         where  CL.Element == (String, Value<C>)
     {
+        .variant(name: name, fields: Dictionary(uniqueKeysWithValues: fields))
+    }
+    
+    public static func variant(name: String, fields: [String: Value<C>]) -> Self {
         Self(value: .variant(.map(name: name,
-                                  fields: Dictionary(uniqueKeysWithValues: fields))),
+                                  fields: fields)),
              context: ())
     }
     

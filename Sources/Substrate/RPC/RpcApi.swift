@@ -12,7 +12,7 @@ import JsonRPC
 import JsonRPCSerializable
 #endif
 
-public protocol RpcApi {
+public protocol RpcApi<S> {
     associatedtype S: AnySubstrate
     
     static var id: String { get }
@@ -26,21 +26,35 @@ extension RpcApi {
     public static var id: String { String(describing: self) }
 }
 
-public actor RpcApiRegistry<S: AnySubstrate>: CallableClient {    
-    private var _apis: [String: Any] = [:]
+public class RpcApiRegistry<S: AnySubstrate>: CallableClient {
+    private actor Registry {
+        private var _apis: [String: any RpcApi] = [:]
+        public func getRpcApi<A, S: AnySubstrate>(substrate: S) async -> A
+            where A: RpcApi, A.S == S
+        {
+            if let api = _apis[A.id] as? A {
+                return api
+            }
+            let api = await A(substrate: substrate)
+            _apis[A.id] = api
+            return api
+        }
+    }
+    private var _apis: Registry
+    
     public weak var substrate: S!
     
-    public func setSubstrate(substrate: S) async {
+    public init(substrate: S? = nil) {
+        self.substrate = substrate
+        self._apis = Registry()
+    }
+    
+    public func setSubstrate(substrate: S) {
         self.substrate = substrate
     }
     
     public func getRpcApi<A>(_ t: A.Type) async -> A where A: RpcApi, A.S == S {
-        if let api = _apis[t.id] as? A {
-            return api
-        }
-        let api = await t.init(substrate: substrate)
-        _apis[t.id] = api
-        return api
+        await _apis.getRpcApi(substrate: substrate)
     }
     
     public func call<Params: Encodable, Res: Decodable>(

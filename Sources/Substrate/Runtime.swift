@@ -7,20 +7,37 @@
 
 import Foundation
 import ScaleCodec
+import Serializable
 
-public protocol Runtime {
-    associatedtype THash: Hash
-    associatedtype TBlockNumber: AnyBlockNumber
+public protocol Runtime: System {
     associatedtype TRuntimeVersion: RuntimeVersion
-    associatedtype TSystemProperties: SystemProperties
+    
+    func extrinsicManager() throws -> TExtrinsicManager
 }
 
 public struct DynamicRuntime: Runtime {
-    public typealias THash = DynamicHash
-    public typealias TBlockNumber = UInt256
     public typealias TRuntimeVersion = DynamicRuntimeVersion
-    public typealias TSystemProperties = DynamicSystemProperties
-    
     public init() {}
+    
+    public func extrinsicManager() throws -> TExtrinsicManager {
+        TExtrinsicManager(extensions: [])
+    }
 }
 
+extension DynamicRuntime: System {    
+    public typealias THash = DynamicHash
+    public typealias TIndex = UInt64
+    public typealias TBlockNumber = UInt256
+    public typealias TSystemProperties = DynamicSystemProperties
+    public typealias TAccountId = DynamicHash
+    
+    public typealias TExtrinsicManager = DynamicExtrinsicManagerV4<Self>
+    
+    // RPC Types
+    public typealias TChainType = SerializableValue
+    public typealias THealth = [String: SerializableValue]
+    public typealias TNetworkState = [String: SerializableValue]
+    public typealias TNodeRole = SerializableValue
+    public typealias TNetworkPeerInfo = [String: SerializableValue]
+    public typealias TSyncState = [String: SerializableValue]
+}

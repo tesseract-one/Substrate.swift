@@ -9,80 +9,39 @@ import Foundation
 import ScaleCodec
 import JsonRPC
 
-public struct RpcSystemApi<S: AnySubstrate>: RpcApi {
+public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RT: System {
     public weak var substrate: S!
     
     public init(substrate: S) {
         self.substrate = substrate
     }
     
-//    public func accountNextIndex(
-//        accountId: S.R.TAccountId,
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<S.R.TIndex>
-//    ) {
-//        substrate.client.call(
-//            method: "system_accountNextIndex",
-//            params: RpcCallParams(accountId.bytes),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<S.R.TIndex>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func addLogFilter(
-//        directives: String,
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<DNull>
-//    ) {
-//        substrate.client.call(
-//            method: "system_addLogFilter",
-//            params: RpcCallParams(directives),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<DNull>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func addReservedPeer(
-//        peer: String,
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<String>
-//    ) {
-//        substrate.client.call(
-//            method: "system_addReservedPeer",
-//            params: RpcCallParams(peer),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<String>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func chain(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<String>
-//    ) {
-//        substrate.client.call(
-//            method: "system_chain",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<String>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func chainType(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<ChainType>
-//    ) {
-//        substrate.client.call(
-//            method: "system_chainType",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<ChainType>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
+    public func accountNextIndex(id: S.RT.TAccountId) async throws -> S.RT.TIndex {
+        try await substrate.client.call(
+            method: "system_accountNextIndex",
+            params: Params(id),
+            HexOrNumber<S.RT.TIndex>.self
+        ).value
+    }
+
+    public func addLogFilter(directives: String) async throws {
+        let _: Nil = try await substrate.client.call(
+            method: "system_addLogFilter",
+            params: Params(directives)
+        )
+    }
+    
+    public func addReservedPeer(peer: String) async throws -> String {
+        try await substrate.client.call(method: "system_addReservedPeer", params: Params(peer))
+    }
+
+    public func chain() async throws -> String {
+        try await substrate.client.call(method: "system_chain", params: Params())
+    }
+
+    public func chainType() async throws -> S.RT.TChainType {
+        try await substrate.client.call(method: "system_chainType", params: Params())
+    }
 //
 //    public func dryRun(
 //        extrinsic: S.R.TExtrinsic, at hash: S.R.THash?,
@@ -102,166 +61,72 @@ public struct RpcSystemApi<S: AnySubstrate>: RpcApi {
 //            }
 //    }
 //
-//    public func health(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<Health>
-//    ) {
-//        substrate.client.call(
-//            method: "system_health",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<Health>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func localListenAddresses(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<Array<String>>
-//    ) {
-//        substrate.client.call(
-//            method: "system_localListenAddresses",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<Array<String>>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func localPeerId(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<String>
-//    ) {
-//        substrate.client.call(
-//            method: "system_localPeerId",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<String>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func name(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<String>
-//    ) {
-//        substrate.client.call(
-//            method: "system_name",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<String>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func networkState(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<NetworkState>
-//    ) {
-//        substrate.client.call(
-//            method: "system_networkState",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<NetworkState>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func nodeRoles(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<Array<NodeRole>>
-//    ) {
-//        substrate.client.call(
-//            method: "system_nodeRoles",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<Array<NodeRole>>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func peers(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<Array<NetworkPeerInfo<S.R.THash, S.R.TBlockNumber>>>
-//    ) {
-//        substrate.client.call(
-//            method: "system_peers",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<Array<NetworkPeerInfo<S.R.THash, S.R.TBlockNumber>>>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func properties(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<SystemProperties>) {
-//        Self.properties(client: substrate.client, timeout: timeout ?? substrate.callTimeout, cb)
-//    }
-//
-//    public func removeReservedPeer(
-//        peerId: String,
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<String>
-//    ) {
-//        substrate.client.call(
-//            method: "system_removeReservedPeer",
-//            params: RpcCallParams(peerId),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<String>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func reservedPeers(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<Array<String>>
-//    ) {
-//        substrate.client.call(
-//            method: "system_reservedPeers",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<Array<String>>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func resetLogFilter(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<DNull>
-//    ) {
-//        substrate.client.call(
-//            method: "system_resetLogFilter",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<DNull>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func syncState(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<SyncState<S.R.TBlockNumber>>
-//    ) {
-//        substrate.client.call(
-//            method: "system_syncState",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<SyncState<S.R.TBlockNumber>>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func version(
-//        timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<String>
-//    ) {
-//        substrate.client.call(
-//            method: "system_version",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<String>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
+    public func health() async throws -> S.RT.THealth {
+        try await substrate.client.call(method: "system_health", params: Params())
+    }
+
+    public func localListenAddresses() async throws -> [String] {
+        try await substrate.client.call(
+            method: "system_localListenAddresses",
+            params: Params()
+        )
+    }
+
+    public func localPeerId() async throws -> String {
+        try await substrate.client.call(method: "system_localPeerId", params: Params())
+    }
+
+    public func name() async throws -> String {
+        try await substrate.client.call(method: "system_name", params: Params())
+    }
+
+    public func networkState() async throws -> S.RT.TNetworkState {
+        try await substrate.client.call(method: "system_networkState", params: Params())
+    }
+
+    public func nodeRoles() async throws -> [S.RT.TNodeRole] {
+        try await substrate.client.call(method: "system_nodeRoles", params: Params())
+    }
+
+    public func peers() async throws -> [S.RT.TNetworkPeerInfo] {
+        try await substrate.client.call(method: "system_peers", params: Params())
+    }
+
+    public func properties() async throws -> S.RT.TSystemProperties {
+        try await Self.properties(with: substrate.client)
+    }
+
+    public func removeReservedPeer(peer: String) async throws -> String {
+        try await substrate.client.call(
+            method: "system_removeReservedPeer",
+            params: Params(peer)
+        )
+    }
+
+    public func reservedPeers() async throws -> [String] {
+        try await substrate.client.call(
+            method: "system_reservedPeers",
+            params: Params()
+        )
+    }
+
+    public func resetLogFilter() async throws {
+        let _: Nil = try await substrate.client.call(
+            method: "system_resetLogFilter",
+            params: Params()
+        )
+    }
+
+    public func syncState() async throws -> S.RT.TSyncState {
+        try await substrate.client.call(
+            method: "system_syncState",
+            params: Params()
+        )
+    }
+
+    public func version() async throws -> String {
+        try await substrate.client.call(method: "system_version", params: Params())
+    }
 }
 
 extension RpcSystemApi { //Static calls
@@ -270,7 +135,7 @@ extension RpcSystemApi { //Static calls
     }
 }
 
-extension RpcApiRegistry {
+extension RpcApiRegistry where S.RT: System {
     public var system: RpcSystemApi<S> { get async { await getRpcApi(RpcSystemApi<S>.self) } }
 }
 //

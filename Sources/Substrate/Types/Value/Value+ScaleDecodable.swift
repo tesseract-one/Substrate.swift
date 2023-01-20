@@ -20,10 +20,10 @@ extension Value {
 
 extension Value: RegistryScaleDynamicDecodable where C == RuntimeTypeId {
     public init(from decoder: ScaleDecoder, `as` type: RuntimeTypeId, registry: Registry) throws {
-        guard let typeInfo = registry.types[type] else {
+        guard let typeInfo = registry.resolve(type: type) else {
             throw DecodingError.typeNotFound(type)
         }
-        switch typeInfo.typeDefinition {
+        switch typeInfo.definition {
         case .composite(fields: let fields):
             self = try Self._decodeComposite(from: decoder, type: type, fields: fields, registry: registry)
         case .sequence(of: let vType):
@@ -78,10 +78,10 @@ private extension Value where C == RuntimeTypeId {
     static func _decodeSequence(
         from decoder: ScaleDecoder, type: RuntimeTypeId, valueType: RuntimeTypeId, registry: Registry
     ) throws -> Self {
-        guard let vTypeInfo = registry.types[valueType] else {
+        guard let vTypeInfo = registry.resolve(type: valueType) else {
             throw DecodingError.typeNotFound(valueType)
         }
-        if case .primitive(is: .u8) = vTypeInfo.typeDefinition {
+        if case .primitive(is: .u8) = vTypeInfo.definition {
             return try Value(value: .primitive(.bytes(decoder.decode())), context: type)
         } else {
             let values = try Array(from: decoder) { decoder in
@@ -109,10 +109,10 @@ private extension Value where C == RuntimeTypeId {
         from decoder: ScaleDecoder, type: RuntimeTypeId,
         valueType: RuntimeTypeId, count: UInt32, registry: Registry
     ) throws -> Self {
-        guard let vTypeInfo = registry.types[valueType] else {
+        guard let vTypeInfo = registry.resolve(type: valueType) else {
             throw DecodingError.typeNotFound(valueType)
         }
-        if case .primitive(is: .u8) = vTypeInfo.typeDefinition {
+        if case .primitive(is: .u8) = vTypeInfo.definition {
             return try Value(value: .primitive(.bytes(decoder.decode(.fixed(UInt(count))))), context: type)
         } else {
             var values: [Value<C>] = []
@@ -181,7 +181,7 @@ private extension Value where C == RuntimeTypeId {
         var innerTypeId = of
         var value: Value<C>? = nil
         while value == nil {
-            guard let innerType = registry.types[innerTypeId]?.typeDefinition else {
+            guard let innerType = registry.resolve(type: innerTypeId)?.definition else {
                 throw DecodingError.typeNotFound(type)
             }
             switch innerType {

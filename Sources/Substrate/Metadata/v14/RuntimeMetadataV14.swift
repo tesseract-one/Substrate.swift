@@ -1,19 +1,19 @@
 //
-//  RuntimeMetadataV13.swift
+//  RuntimeMetadataV14.swift
 //  
 //
-//  Created by Yehor Popovych on 12/29/20.
+//  Created by Yehor Popovych on 12/29/22.
 //
 
 import Foundation
 import ScaleCodec
 
-public struct PalletMetadataV14: ScaleCodable {
+public struct RuntimePalletMetadataV14: ScaleCodable {
     public let name: String
-    public let storage: Optional<PalletStorageMedatadaV14>
+    public let storage: Optional<RuntimePalletStorageMedatadaV14>
     public let call: Optional<RuntimeTypeId>
     public let event: Optional<RuntimeTypeId>
-    public let constants: [PalletConstantMetadataV14]
+    public let constants: [RuntimePalletConstantMetadataV14]
     public let error: Optional<RuntimeTypeId>
     public let index: UInt8
     
@@ -38,9 +38,9 @@ public struct PalletMetadataV14: ScaleCodable {
     }
 }
 
-public struct PalletStorageMedatadaV14: ScaleCodable {
+public struct RuntimePalletStorageMedatadaV14: ScaleCodable {
     public let prefix: String
-    public let entries: [PalletStorageEntryMedatadaV14]
+    public let entries: [RuntimePalletStorageEntryMedatadaV14]
     
     public init(from decoder: ScaleDecoder) throws {
         prefix = try decoder.decode()
@@ -52,7 +52,7 @@ public struct PalletStorageMedatadaV14: ScaleCodable {
     }
 }
 
-public enum PalletStorageEntryTypeV14: ScaleCodable {
+public enum RuntimePalletStorageEntryTypeV14: ScaleCodable {
     case plain(_ value: RuntimeTypeId)
     case map(hashers: [StorageHasher], key: RuntimeTypeId, value: RuntimeTypeId)
     
@@ -77,10 +77,10 @@ public enum PalletStorageEntryTypeV14: ScaleCodable {
     }
 }
 
-public struct PalletStorageEntryMedatadaV14: ScaleCodable {
+public struct RuntimePalletStorageEntryMedatadaV14: ScaleCodable {
     public let name: String
     public let modifier: StorageEntryModifier
-    public let type: PalletStorageEntryTypeV14
+    public let type: RuntimePalletStorageEntryTypeV14
     public let defaultValue: Data
     public let documentation: [String]
     
@@ -98,7 +98,7 @@ public struct PalletStorageEntryMedatadaV14: ScaleCodable {
     }
 }
 
-public struct PalletConstantMetadataV14: ScaleCodable {
+public struct RuntimePalletConstantMetadataV14: ScaleCodable {
     public let name: String
     public let type: RuntimeTypeId
     public let value: Data
@@ -117,10 +117,10 @@ public struct PalletConstantMetadataV14: ScaleCodable {
     }
 }
 
-public struct ExtrinsicMetadataV14: ScaleCodable {
+public struct RuntimeExtrinsicMetadataV14: ScaleCodable {
     public let type: RuntimeTypeId
     public let version: UInt8
-    public let signedExtensions: [ExtrinsicSignedExtensionV14]
+    public let signedExtensions: [RuntimeExtrinsicSignedExtensionV14]
     
     public init(from decoder: ScaleDecoder) throws {
         type = try decoder.decode()
@@ -133,7 +133,7 @@ public struct ExtrinsicMetadataV14: ScaleCodable {
     }
 }
 
-public struct ExtrinsicSignedExtensionV14: ScaleCodable {
+public struct RuntimeExtrinsicSignedExtensionV14: ScaleCodable {
     public let identifier: String
     public let type: RuntimeTypeId
     public let additionalSigned: RuntimeTypeId
@@ -151,11 +151,11 @@ public struct ExtrinsicSignedExtensionV14: ScaleCodable {
     }
 }
 
-public struct RuntimeMetadataV14: ScaleCodable, Metadata {
-    public var version: UInt8 { 14 }
+public struct RuntimeMetadataV14: ScaleCodable, RuntimeMetadata {
+    public let version: UInt8 = 14
     public let types: [RuntimeTypeInfo]
-    public let pallets: [PalletMetadataV14]
-    public let extrinsic: ExtrinsicMetadataV14
+    public let pallets: [RuntimePalletMetadataV14]
+    public let extrinsic: RuntimeExtrinsicMetadataV14
     public let runtimeType: RuntimeTypeId
     
     public init(from decoder: ScaleDecoder) throws {
@@ -168,5 +168,9 @@ public struct RuntimeMetadataV14: ScaleCodable, Metadata {
     public func encode(in encoder: ScaleEncoder) throws {
         try encoder.encode(types).encode(pallets)
             .encode(extrinsic).encode(runtimeType)
+    }
+    
+    public func asMetadata() -> Metadata {
+        MetadataV14(runtime: self)
     }
 }

@@ -56,7 +56,7 @@ public class CallableRpcClient: CallableClient, RegistryOwner {
         try await client.call(method: method, params: params)
     }
     
-    public var registry: Registry {
+    public var registry: any Registry {
         get { self.client.contentEncoder.registry }
         set {
             self.client.contentEncoder.registry = newValue
@@ -129,8 +129,9 @@ public class SubscribableRpcClient: CallableRpcClient, NotificationDelegate, Err
         }
         
         func remove(id: String) throws {
-            guard subscriptions[id] != nil else { throw Error.unknown(subscription: id) }
-            subscriptions.removeValue(forKey: id)
+            guard subscriptions.removeValue(forKey: id) != nil else {
+                throw Error.unknown(subscription: id)
+            }
         }
         
         func clear() -> [String: (Result<Parsable, Error>) -> Void] {

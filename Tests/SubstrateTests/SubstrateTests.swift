@@ -15,8 +15,7 @@ final class SubstrateTests: XCTestCase {
         let client = RpcClient(.http(url: URL(string: "https://rpc.polkadot.io")!), queue: .global())
         
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Substrate<DynamicRuntime, CallableRpcClient>(client: client)
-            print(substrate.types.types)
+            let _ = try await Substrate<DynamicRuntime, CallableRpcClient>(client: client)
         }
     }
     

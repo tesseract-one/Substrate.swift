@@ -8,13 +8,14 @@
 import Foundation
 import JsonRPC
 
-public protocol AnySubstrate: AnyObject {
+public protocol AnySubstrate<RT>: AnyObject {
     associatedtype RT: Runtime
     associatedtype CL: CallableClient & RegistryOwner
     
     // Dependencies
     var client: CL { get }
     var types: Registry { get }
+    var extrinsicManager: RT.TExtrinsicManager { get }
     var signer: Optional<Signer> { get set }
     
     // Chain properties
@@ -33,12 +34,14 @@ public protocol AnySubstrate: AnyObject {
 //    var tx: SubstrateExtrinsicApiRegistry<Self> { get }
 }
 
-public final class Substrate<R: Runtime, CL: CallableClient & RegistryOwner>: AnySubstrate {
+public final class Substrate<R: Runtime, CL: CallableClient & RegistryOwner>: AnySubstrate
+{
     public typealias RT = R
     public typealias CL = CL
     
     public private(set) var client: CL
     public let types: Registry
+    public private(set) var extrinsicManager: RT.TExtrinsicManager
     public var signer: Signer?
 
     public let genesisHash: RT.THash
@@ -47,25 +50,29 @@ public final class Substrate<R: Runtime, CL: CallableClient & RegistryOwner>: An
     
     public let rpc: RpcApiRegistry<Substrate<R, CL>>
     
-    public init(client: CL, signer: Signer? = nil) async throws {
+    public init(client: CL, runtime: R, signer: Signer? = nil) async throws {
         self.signer = signer
         self.client = client
         
         // Obtain initial data from the RPC
         self.runtimeVersion = try await RpcStateApi<Self>.runtimeVersion(at: nil, with: client)
         self.properties = try await RpcSystemApi<Self>.properties(with: client)
-        self.genesisHash = try await RpcChainApi<Self>.blockHash(block: .firstBlock, client: client)
+        self.genesisHash = try await RpcChainApi<Self>.blockHash(block: 0, client: client)
         
         let metadata = try await RpcStateApi<Self>.metadata(with: client)
+        self.extrinsicManager = try runtime.extrinsicManager()
         
-        self.types = try DynamicTypeRegistry(metadata: metadata, addressFormat: self.properties.ss58Format)
-        self.client.registry = self.types
+        self.types = TypeRegistry(metadata: metadata,
+                                  addressFormat: self.properties.ss58Format,
+                                  decoder: self.extrinsicManager)
+        //self.client.registry = self.types
         
         // Init registries
         self.rpc = RpcApiRegistry()
         
-        // Pass substrate to them
-        await rpc.setSubstrate(substrate: self)
+        // Inject substrate
+        try extrinsicManager.setSubstrate(substrate: self)
+        rpc.setSubstrate(substrate: self)
     }
 }
 

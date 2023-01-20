@@ -6,7 +6,43 @@
 //
 
 import Foundation
+import ScaleCodec
 import JsonRPC
+@_exported import struct JsonRPC.Nil
+
+extension Nil: ScaleCodable, RegistryScaleCodable {
+    public init(from decoder: ScaleCodec.ScaleDecoder) throws {
+        self = .nil
+    }
+    public func encode(in encoder: ScaleCodec.ScaleEncoder) throws {}
+}
+
+extension Nil: ValueConvertible {
+    public init<C>(value: Value<C>) throws {
+        switch value.value {
+        case .sequence(let vals):
+            guard vals.count == 0 else {
+                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
+                                                                  expected: 0,
+                                                                  for: "Nil")
+            }
+            self = .nil
+        case .map(let fields):
+            guard fields.count == 0 else {
+                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
+                                                                  expected: 0,
+                                                                  for: "Nil")
+            }
+            self = .nil
+        default:
+            throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "Nil")
+        }
+    }
+    
+    public func asValue() throws -> Value<Void> {
+        .sequence([])
+    }
+}
 
 extension JSONEncoder {
     public static var substrate: JSONEncoder = {
@@ -30,6 +66,14 @@ extension JSONDecoder {
 
 extension CodingUserInfoKey {
     public static let registry = CodingUserInfoKey(rawValue: "SubstrateTypeRegistry")!
+}
+
+extension Encoder {
+    public var registry: Registry { userInfo[.registry]! as! Registry }
+}
+
+extension Decoder {
+    public var registry: Registry { userInfo[.registry]! as! Registry }
 }
 
 extension ContentEncoder {

@@ -57,10 +57,10 @@ extension Value {
 
 extension Value: RegistryScaleDynamicEncodable {
     public func encode(in encoder: ScaleEncoder, as type: RuntimeTypeId, registry: Registry) throws {
-        guard let typeInfo = registry.types[type] else {
+        guard let typeInfo = registry.resolve(type: type) else {
             throw EncodingError.typeNotFound(type)
         }
-        switch typeInfo.typeDefinition {
+        switch typeInfo.definition {
         case .composite(fields: let fields):
             try _encodeComposite(id: type, fields: fields, registry: registry, in: encoder)
         case .sequence(of: let seqTypeId):
@@ -138,10 +138,10 @@ private extension Value {
         case .primitive(let primitive):
             switch primitive {
             case .bytes(let bytes):
-                guard let vTypeInfo = registry.types[valueType] else {
+                guard let vTypeInfo = registry.resolve(type: valueType) else {
                     throw EncodingError.typeNotFound(valueType)
                 }
-                guard case .primitive(is: .u8) = vTypeInfo.typeDefinition else {
+                guard case .primitive(is: .u8) = vTypeInfo.definition else {
                     throw EncodingError.wrongShape(actual: self, expected: id)
                 }
                 try encoder.encode(bytes)
@@ -173,10 +173,10 @@ private extension Value {
                 guard bytes.count == count else {
                     throw EncodingError.wrongShape(actual: self, expected: id)
                 }
-                guard let vTypeInfo = registry.types[valueType] else {
+                guard let vTypeInfo = registry.resolve(type: valueType) else {
                     throw EncodingError.typeNotFound(valueType)
                 }
-                guard case .primitive(is: .u8) = vTypeInfo.typeDefinition else {
+                guard case .primitive(is: .u8) = vTypeInfo.definition else {
                     throw EncodingError.wrongShape(actual: self, expected: id)
                 }
                 try encoder.encode(bytes, .fixed(UInt(count)))
@@ -334,7 +334,7 @@ private extension Value {
         var innerTypeId = type
         var innerType: CompactTy? = nil
         while innerType == nil {
-            guard let typeDef = registry.types[innerTypeId]?.typeDefinition else {
+            guard let typeDef = registry.resolve(type: innerTypeId)?.definition else {
                 throw EncodingError.typeNotFound(innerTypeId)
             
             }

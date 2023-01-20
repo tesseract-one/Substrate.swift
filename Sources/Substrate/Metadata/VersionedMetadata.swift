@@ -24,7 +24,7 @@ public struct VersionedMetadata: ScaleDecodable {
         let version = try decoder.decode(UInt8.self)
         switch version {
         case 14:
-            metadata = try decoder.decode(RuntimeMetadataV14.self)
+            self.metadata = try decoder.decode(RuntimeMetadataV14.self).asMetadata()
         default: throw SDecodingError.dataCorrupted(
             SDecodingError.Context(
                 path: decoder.path,

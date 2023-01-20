@@ -61,18 +61,18 @@ extension RuntimeTypeInfo: ScaleCodable {
 public struct RuntimeType {
     public let path: [String]
     public let parameters: [RuntimeTypeParameter]
-    public let typeDefinition: RuntimeTypeDefinition
+    public let definition: RuntimeTypeDefinition
     public let docs: [String]
 
     public init(
         path: [String],
         parameters: [RuntimeTypeParameter],
-        typeDefinition: RuntimeTypeDefinition,
+        definition: RuntimeTypeDefinition,
         docs: [String]
     ) {
         self.path = path
         self.parameters = parameters
-        self.typeDefinition = typeDefinition
+        self.definition = definition
         self.docs = docs
     }
 }
@@ -87,13 +87,13 @@ extension RuntimeType: ScaleCodable {
     public init(from decoder: ScaleDecoder) throws {
         path = try decoder.decode()
         parameters = try decoder.decode()
-        typeDefinition = try decoder.decode()
+        definition = try decoder.decode()
         docs = try decoder.decode()
     }
     
     public func encode(in encoder: ScaleEncoder) throws {
         try encoder.encode(path).encode(parameters)
-            .encode(typeDefinition).encode(docs)
+            .encode(definition).encode(docs)
     }
 }
 

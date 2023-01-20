@@ -10,13 +10,15 @@ import ScaleCodec
 
 private let maxJsonSafeInteger: UInt64 = 2^53 - 1
 
-public struct UIntHex<T: UnsignedInteger & DataConvertible>: Codable {
+public struct UIntHex<T: UnsignedInteger> {
     public let value: T
     
     public init(_ value: T) {
         self.value = value
     }
-    
+}
+
+extension UIntHex: Decodable where T: DataInitalizable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         var string = try container.decode(String.self)
@@ -42,7 +44,9 @@ public struct UIntHex<T: UnsignedInteger & DataConvertible>: Codable {
             self.init(val)
         }
     }
-    
+}
+
+extension UIntHex: Encodable where T: DataSerializable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if value == 0 {
@@ -58,13 +62,15 @@ public struct UIntHex<T: UnsignedInteger & DataConvertible>: Codable {
     }
 }
 
-public struct HexOrNumber<T: UnsignedInteger & DataConvertible & Codable>: Codable {
+public struct HexOrNumber<T: UnsignedInteger> {
     public let value: T
     
     public init(_ value: T) {
         self.value = value
     }
-    
+}
+
+extension HexOrNumber: Decodable where T: Decodable & DataInitalizable {
     public init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let value = try? container.decode(T.self) {
@@ -73,7 +79,9 @@ public struct HexOrNumber<T: UnsignedInteger & DataConvertible & Codable>: Codab
             self.init(try container.decode(UIntHex<T>.self).value)
         }
     }
-    
+}
+
+extension HexOrNumber: Encodable where T: Encodable & DataSerializable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         if UInt64(clamping: value) > maxJsonSafeInteger {
