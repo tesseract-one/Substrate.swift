@@ -27,5 +27,7 @@ public protocol System {
     associatedtype TNodeRole: Decodable
     associatedtype TNetworkPeerInfo: Decodable
     associatedtype TSyncState: Decodable
+    associatedtype TDispatchError: Decodable
+    associatedtype TTransactionValidityError: Decodable
 }
 

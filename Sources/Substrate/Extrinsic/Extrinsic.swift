@@ -67,6 +67,9 @@ public extension ExtrinsicDecoder {
     var version: UInt8 { Self.version }
 }
 
+public typealias SignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.TSignedExtra>
+public typealias UnsignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.TUnsignedExtra>
+
 public protocol ExtrinsicManager<RT>: ExtrinsicDecoder {
     associatedtype RT: System
     associatedtype TUnsignedParams

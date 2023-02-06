@@ -8,6 +8,7 @@
 import Foundation
 import ScaleCodec
 import JsonRPC
+import Serializable
 #if !COCOAPODS
 import JsonRPCSerializable
 #endif

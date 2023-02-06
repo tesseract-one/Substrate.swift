@@ -8,6 +8,7 @@
 import Foundation
 import ScaleCodec
 import JsonRPC
+import Serializable
 
 public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RT: System {
     public weak var substrate: S!
@@ -42,25 +43,15 @@ public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RT: System {
     public func chainType() async throws -> S.RT.TChainType {
         try await substrate.client.call(method: "system_chainType", params: Params())
     }
-//
-//    public func dryRun(
-//        extrinsic: S.R.TExtrinsic, at hash: S.R.THash?,
-//        timeout: TimeInterval? = nil,
-//        cb: @escaping SRpcApiCallback<ApplyExtrinsicResult>
-//    ) {
-//        _encode(extrinsic)
-//            .pour(error: cb)
-//            .onSuccess { data in
-//                substrate.client.call(
-//                    method: "system_dryRun",
-//                    params: RpcCallParams(data, hash),
-//                    timeout: timeout ?? substrate.callTimeout
-//                ) { (res: RpcClientResult<ApplyExtrinsicResult>) in
-//                    cb(res.mapError(SubstrateRpcApiError.rpc))
-//                }
-//            }
-//    }
-//
+
+    public func dryRun<C: Call>(
+        extrinsic: SignedExtrinsic<C, S.RT.TExtrinsicManager>, at hash: S.RT.THash?
+    ) async throws -> RpcResult<RpcResult<Nil, S.RT.TDispatchError>, S.RT.TTransactionValidityError> {
+        let encoder = substrate.types.encoder()
+        try substrate.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        return try await substrate.client.call(method: "system_dryRun", params: Params(encoder.output, hash))
+    }
+
     public func health() async throws -> S.RT.THealth {
         try await substrate.client.call(method: "system_health", params: Params())
     }
@@ -138,6 +129,3 @@ extension RpcSystemApi { //Static calls
 extension RpcApiRegistry where S.RT: System {
     public var system: RpcSystemApi<S> { get async { await getRpcApi(RpcSystemApi<S>.self) } }
 }
-//
-//public typealias DispatchOutcome = RpcResult<DNull, DispatchError>
-//public typealias ApplyExtrinsicResult = RpcResult<DispatchOutcome, TransactionValidityError>

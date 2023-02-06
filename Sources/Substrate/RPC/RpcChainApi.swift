@@ -41,15 +41,9 @@ public struct RpcChainApi<S: AnySubstrate>: RpcApi {
 //        }
 //    }
 //
-//    public func getBlockHash(
-//        block: S.R.TBlockNumber?, timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<S.R.THash>
-//    ) {
-//        Self.getBlockHash(
-//            block: block, client: substrate.client,
-//            timeout: timeout ?? substrate.callTimeout, cb
-//        )
-//    }
+    public func blockHash(block: S.RT.TBlockNumber?) async throws -> S.RT.THash {
+        try await Self.blockHash(block: block, client: substrate.client)
+    }
 //
 //    public func getFinalizedHead(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THash>) {
 //        substrate.client.call(

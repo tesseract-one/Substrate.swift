@@ -20,11 +20,21 @@ public struct DynamicRuntime: Runtime {
     public init() {}
     
     public func extrinsicManager() throws -> TExtrinsicManager {
-        TExtrinsicManager(extensions: [])
+        TExtrinsicManager(extensions: [
+            DynamicCheckSpecVersionExtension(),
+            DynamicCheckTxVersionExtension(),
+            DynamicCheckGenesisExtension(),
+            DynamicCheckNonZeroSenderExtension(),
+            DynamicCheckNonceExtension(),
+            DynamicCheckMortalitySignedExtension(),
+            DynamicCheckWeightExtension(),
+            DynamicChargeTransactionPaymentExtension(),
+            DynamicPrevalidateAttestsExtension()
+        ])
     }
 }
 
-extension DynamicRuntime: System {    
+extension DynamicRuntime: System {
     public typealias THash = DynamicHash
     public typealias TIndex = UInt64
     public typealias TBlockNumber = UInt256
@@ -40,4 +50,9 @@ extension DynamicRuntime: System {
     public typealias TNodeRole = SerializableValue
     public typealias TNetworkPeerInfo = [String: SerializableValue]
     public typealias TSyncState = [String: SerializableValue]
+    
+    public typealias TAddress = Value<Void>
+    public typealias TSignature = DynamicHash
+    public typealias TDispatchError = SerializableValue
+    public typealias TTransactionValidityError = SerializableValue
 }
