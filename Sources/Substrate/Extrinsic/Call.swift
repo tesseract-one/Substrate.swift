@@ -17,8 +17,8 @@ public protocol StaticCall: Call, RegistryScaleDecodable {
     static var pallet: String { get }
     static var name: String { get }
     
-    init<R: Registry>(decodingParams decoder: ScaleDecoder, registry: R) throws
-    func encodeParams<R: Registry>(in encoder: ScaleEncoder, registry: R) throws
+    init(decodingParams decoder: ScaleDecoder, registry: Registry) throws
+    func encodeParams(in encoder: ScaleEncoder, registry: Registry) throws
 }
 
 public extension StaticCall {

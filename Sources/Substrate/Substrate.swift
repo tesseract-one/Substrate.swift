@@ -23,6 +23,9 @@ public protocol AnySubstrate<RT>: AnyObject {
     var runtimeVersion: RT.TRuntimeVersion { get }
     var properties: RT.TSystemProperties { get }
     
+    // Runtime
+    var runtime: RT { get }
+    
 //    // Default settings
 //    var pageSize: UInt { get set }
 //    var callTimeout: TimeInterval { get set }
@@ -34,8 +37,7 @@ public protocol AnySubstrate<RT>: AnyObject {
 //    var tx: SubstrateExtrinsicApiRegistry<Self> { get }
 }
 
-public final class Substrate<R: Runtime, CL: CallableClient & RegistryOwner>: AnySubstrate
-{
+public final class Substrate<R: Runtime, CL: CallableClient & RegistryOwner>: AnySubstrate {
     public typealias RT = R
     public typealias CL = CL
     
@@ -47,12 +49,14 @@ public final class Substrate<R: Runtime, CL: CallableClient & RegistryOwner>: An
     public let genesisHash: RT.THash
     public let runtimeVersion: RT.TRuntimeVersion
     public let properties: RT.TSystemProperties
+    public let runtime: RT
     
     public let rpc: RpcApiRegistry<Substrate<R, CL>>
     
     public init(client: CL, runtime: R, signer: Signer? = nil) async throws {
         self.signer = signer
         self.client = client
+        self.runtime = runtime
         
         // Obtain initial data from the RPC
         self.runtimeVersion = try await RpcStateApi<Self>.runtimeVersion(at: nil, with: client)
@@ -65,7 +69,7 @@ public final class Substrate<R: Runtime, CL: CallableClient & RegistryOwner>: An
         self.types = TypeRegistry(metadata: metadata,
                                   addressFormat: self.properties.ss58Format,
                                   decoder: self.extrinsicManager)
-        //self.client.registry = self.types
+        self.client.registry = self.types
         
         // Init registries
         self.rpc = RpcApiRegistry()

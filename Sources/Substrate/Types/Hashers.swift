@@ -13,7 +13,7 @@ import Blake2
 public protocol Hasher {
     static var hashPartByteLength: Int { get }
     static var isConcat: Bool { get }
-    static var hasher: Hasher { get }
+    static var hasher: any Hasher { get }
     
     var hashPartByteLength: Int { get }
     var isConcat: Bool { get }
@@ -26,6 +26,8 @@ extension Hasher {
 }
 
 public protocol NormalHasher: Hasher {
+    associatedtype THash: Hash
+    
     static var bitWidth: Int { get }
 }
 
@@ -44,6 +46,8 @@ extension ConcatHasher {
 }
 
 public struct HBlake2b128: NormalHasher {
+    public typealias THash = Hash128
+    
     public func hash(data: Data) -> Data {
         return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
     }
@@ -62,6 +66,8 @@ public struct HBlake2b128Concat: ConcatHasher {
 }
 
 public struct HBlake2b256: NormalHasher {
+    public typealias THash = Hash256
+    
     public func hash(data: Data) -> Data {
         return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
     }
@@ -71,6 +77,8 @@ public struct HBlake2b256: NormalHasher {
 }
 
 public struct HBlake2b512: NormalHasher {
+    public typealias THash = Hash512
+    
     public func hash(data: Data) -> Data {
         return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
     }
@@ -89,6 +97,8 @@ public struct HXX64Concat: ConcatHasher {
 }
 
 public struct HXX128: NormalHasher {
+    public typealias THash = Hash128
+    
     public func hash(data: Data) -> Data {
         return xxHash(data: data, bitWidth: Self.bitWidth)
     }
@@ -98,6 +108,8 @@ public struct HXX128: NormalHasher {
 }
 
 public struct HXX256: NormalHasher {
+    public typealias THash = Hash256
+    
     public func hash(data: Data) -> Data {
         return xxHash(data: data, bitWidth: Self.bitWidth)
     }

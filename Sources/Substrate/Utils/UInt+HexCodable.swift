@@ -11,6 +11,10 @@ import ScaleCodec
 private let maxJsonSafeInteger: UInt64 = 2^53 - 1
 
 public struct UIntHex<T: UnsignedInteger> {
+    public struct InitError: Error {
+        public let desc: String
+    }
+    
     public let value: T
     
     public init(_ value: T) {
@@ -19,12 +23,11 @@ public struct UIntHex<T: UnsignedInteger> {
 }
 
 extension UIntHex: Decodable where T: DataInitalizable {
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        var string = try container.decode(String.self)
+    public init(string: String) throws {
         if string == "0x0" {
             self.init(0)
         } else {
+            var string = string
             if string.hasPrefix("0x") {
                 string.removeFirst(2)
             }
@@ -32,16 +35,22 @@ extension UIntHex: Decodable where T: DataInitalizable {
                 string.insert("0", at: string.startIndex)
             }
             guard let data = Data(hex: string) else {
-                throw DecodingError.dataCorruptedError(
-                    in: container, debugDescription: "Bad hex value \(string)"
-                )
+                throw InitError(desc: "Bad hex value \(string)")
             }
             guard let val = T(data: data, littleEndian: false, trimmed: true) else {
-                throw DecodingError.dataCorruptedError(
-                    in: container, debugDescription: "Can't initialize \(T.self) from \(string)"
-                )
+                throw InitError(desc: "Can't initialize \(T.self) from \(string)")
             }
             self.init(val)
+        }
+    }
+    
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let string = try container.decode(String.self)
+        do {
+            try self.init(string: string)
+        } catch let e as InitError {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: e.desc)
         }
     }
 }

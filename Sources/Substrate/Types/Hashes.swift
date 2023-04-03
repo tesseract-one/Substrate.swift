@@ -54,6 +54,19 @@ extension StaticHash {
     }
 }
 
+public struct Hash128: StaticHash {
+    public let data: Data
+    
+    public init(_ data: Data) throws {
+        guard data.count == Self.fixedBytesCount else {
+            throw SizeMismatchError(size: data.count, expected: Self.fixedBytesCount)
+        }
+        self.data = data
+    }
+    
+    public static var fixedBytesCount: Int = 16
+}
+
 public struct Hash160: StaticHash {
     public let data: Data
     

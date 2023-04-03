@@ -26,9 +26,12 @@ public protocol PalletMetadata {
     var name: String { get }
     var index: UInt8 { get }
     var call: RuntimeTypeInfo? { get }
+    var event: RuntimeTypeInfo? { get }
     
     func callName(index: UInt8) -> String?
     func callIndex(name: String) -> UInt8?
+    func eventName(index: UInt8) -> String?
+    func eventIndex(name: String) -> UInt8?
 }
 
 public protocol ExtrinsicMetadata {

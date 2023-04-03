@@ -42,19 +42,31 @@ public class PalletMetadataV14: PalletMetadata {
     @inlinable public var name: String { runtime.name }
     @inlinable public var index: UInt8 { runtime.index }
     public let call: RuntimeTypeInfo?
+    public let event: RuntimeTypeInfo?
     
     public let callIdxByName: [String: UInt8]?
     public let callNameByIdx: [UInt8: String]?
     
+    public let eventIdxByName: [String: UInt8]?
+    public let eventNameByIdx: [UInt8: String]?
+    
     public init(runtime: RuntimePalletMetadataV14, types: [RuntimeTypeId: RuntimeType]) {
         self.runtime = runtime
         //self.metadata = metadata
-        self.call = runtime.call.map { RuntimeTypeInfo(id: $0, type: types[$0]!)  }
+        self.call = runtime.call.map { RuntimeTypeInfo(id: $0, type: types[$0]!) }
+        self.event = runtime.event.map { RuntimeTypeInfo(id: $0, type: types[$0]!) }
         let calls = self.call.flatMap { Self.variants(for: $0.type.definition) }
         self.callIdxByName = calls.map {
             Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0.index) })
         }
         self.callNameByIdx = calls.map {
+            Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
+        }
+        let events = self.event.flatMap { Self.variants(for:$0.type.definition) }
+        self.eventIdxByName = events.map {
+            Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0.index) })
+        }
+        self.eventNameByIdx = events.map {
             Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
         }
     }
@@ -64,6 +76,12 @@ public class PalletMetadataV14: PalletMetadata {
     
     @inlinable
     public func callIndex(name: String) -> UInt8? { callIdxByName?[name] }
+    
+    @inlinable
+    public func eventName(index: UInt8) -> String? { eventNameByIdx?[index] }
+    
+    @inlinable
+    public func eventIndex(name: String) -> UInt8? { eventIdxByName?[name] }
     
     private static func variants(for def: RuntimeTypeDefinition) -> [RuntimeTypeVariantItem]? {
         switch def {

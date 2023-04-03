@@ -55,4 +55,8 @@ extension DynamicRuntime: System {
     public typealias TSignature = DynamicHash
     public typealias TDispatchError = SerializableValue
     public typealias TTransactionValidityError = SerializableValue
+    
+    public var eventsStorageKey: any StorageKey<Data> {
+        SystemEventsStorageKey()
+    }
 }

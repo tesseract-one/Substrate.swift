@@ -218,18 +218,19 @@ public struct RpcStateApi<S: AnySubstrate>: RpcApi {
 //        }
 //    }
 //
-//    public func getStorage(
-//        key: Data, at hash: S.R.THash? = nil, timeout: TimeInterval? = nil,
-//        _ cb: @escaping SRpcApiCallback<Data>
-//    ) {
-//        substrate.client.call(
-//            method: "state_getStorage",
-//            params: RpcCallParams(key, hash),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<Data>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
+    public func storage(raw key: Data, at hash: S.RT.THash? = nil) async throws -> Data {
+        try await substrate.client.call(method: "state_getStorage", params: Params(key, hash))
+    }
+    
+    public func storage<K: StorageKey>(key: K, at hash: S.RT.THash? = nil) async throws -> K.TValue {
+        let data = try await storage(raw: key.hash(registry: substrate.types), at: hash)
+        return try key.decode(valueFrom: substrate.types.decoder(with: data), registry: substrate.types)
+    }
+    
+    public func events(at hash: S.RT.THash? = nil) async throws -> Any {
+        let data = try await storage(raw: substrate.runtime.eventsStorageKey.hash(registry: substrate.types), at: hash)
+        return data
+    }
 //
 //    public func getStorage<K: StorageKey>(
 //        for key: K, at hash: S.R.THash? = nil, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<K.Value>
