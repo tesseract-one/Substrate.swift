@@ -27,15 +27,20 @@ extension Value where C == RuntimeTypeId {
         case .sequence(of: let vType):
             self = try Self._decodeSequence(from: &container, type: type, valueType: vType, registry: registry)
         case .variant(variants: let vars):
-            self = try Self._decodeVariant(from: &container, path: typeInfo.pathBasedName, type: type, variants: vars, registry: registry)
+            self = try Self._decodeVariant(from: &container, path: typeInfo.pathBasedName,
+                                           type: type, variants: vars, registry: registry)
         case .array(count: let count, of: let vType):
-            self = try Self._decodeArray(from: &container, type: type, count: count, valueType: vType, registry: registry)
+            self = try Self._decodeArray(from: &container, type: type, count: count,
+                                         valueType: vType, registry: registry)
         case .tuple(components: let fields):
             self = try Self._decodeTuple(from: &container, type: type, fields: fields, registry: registry)
         case .primitive(is: let vType):
             self = try Self._decodePrimitive(from: &container, type: type, prim: vType, registry: registry)
         case .compact(of: let vType):
-            
+            self = try Self._decodeCompact(from: &container, type: type, of: vType, registry: registry)
+        case .bitsequence(store: let store, order: let order):
+            self = try Self._decodeBitSequence(from: &container, type: type, store: store,
+                                               order: order, registry: registry)
         }
     }
 }
@@ -244,10 +249,7 @@ private extension Value where C == RuntimeTypeId {
                 container = from
                 variant = found
             } else {
-                let found = try variants.reduce(nil) { prev, cur in
-                    try prev ?? (container.contains(key: cur.name) ? cur : nil)
-                }
-                guard let found = found else {
+                guard let found = try variants.first(where: { try container.contains(key: $0.name) }) else {
                     throw try container.newError("variant not found")
                 }
                 try container.next(key: found.name)
@@ -341,5 +343,50 @@ private extension Value where C == RuntimeTypeId {
             return Value(value: .primitive(.i256(Int256(try from.decode(Int64.self)))),
                          context: type)
         }
+    }
+    
+    static func _decodeCompact(
+        from: inout ValueDecodingContainer, type: RuntimeTypeId, of: RuntimeTypeId, registry: Registry
+    ) throws -> Self {
+        var innerTypeId = of
+        var value: Self? = nil
+        while value == nil {
+            guard let innerType = registry.resolve(type: innerTypeId)?.definition else {
+                throw DecodingError.typeNotFound(type)
+            }
+            switch innerType {
+            case .primitive(is: let prim):
+                switch prim {
+                case .u8, .u16, .u32, .u64, .u128, .u256:
+                    value = try Self._decodePrimitive(from: &from, type: type,
+                                                      prim: prim, registry: registry)
+                default: throw try from.newError("Can't compact decode: \(innerType)")
+                }
+            case .composite(fields: let fields):
+                guard fields.count == 1 else {
+                    throw try from.newError("Can't compact decode: \(innerType)")
+                }
+                innerTypeId = fields[0].type
+            case .tuple(components: let fields):
+                guard fields.count == 1 else {
+                    throw try from.newError("Can't compact decode: \(innerType)")
+                }
+                innerTypeId = fields[0]
+            default: throw try from.newError("Can't compact decode: \(innerType)")
+            }
+        }
+        return value!
+    }
+    
+    static func _decodeBitSequence(
+        from: inout ValueDecodingContainer, type: RuntimeTypeId,
+        store: RuntimeTypeId, order: RuntimeTypeId, registry: Registry
+    ) throws -> Self {
+        if let data = try? from.decode(Data.self) { // SCALE serialized
+            return try Value(from: registry.decoder(with: data), as: type, registry: registry)
+        }
+        let bools = try from.decode([Bool].self)
+        return Value(value: .bitSequence(BitSequence(bits: bools, order: .lsb0)),
+                     context: type)
     }
 }

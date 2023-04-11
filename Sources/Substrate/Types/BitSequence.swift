@@ -102,6 +102,13 @@ extension BitSequence {
         self.init(bools)
     }
     
+    public init(bits: [Bool], order: Format.Order) {
+        switch order {
+        case .lsb0: self.init(bits)
+        case .msb0: self.init(bits.reversed())
+        }
+    }
+    
     public func store<U: UnsignedInteger & FixedWidthInteger>(order: Format.Order) -> [U] {
         guard count > 0 else { return [] }
         switch order {
