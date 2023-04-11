@@ -8,27 +8,14 @@
 import Foundation
 import JsonRPC
 
-public protocol AnySubstrate<RT>: AnyObject {
-    associatedtype RT: Runtime
-    associatedtype CL: CallableClient & RegistryOwner
+public protocol AnySubstrate<RC>: AnyObject {
+    associatedtype RC: RuntimeConfig
+    associatedtype CL: CallableClient & RuntimeOwner
     
     // Dependencies
     var client: CL { get }
-    var types: Registry { get }
-    var extrinsicManager: RT.TExtrinsicManager { get }
+    var runtime: ExtendedRuntime<RC> { get }
     var signer: Optional<Signer> { get set }
-    
-    // Chain properties
-    var genesisHash: RT.THash { get }
-    var runtimeVersion: RT.TRuntimeVersion { get }
-    var properties: RT.TSystemProperties { get }
-    
-    // Runtime
-    var runtime: RT { get }
-    
-//    // Default settings
-//    var pageSize: UInt { get set }
-//    var callTimeout: TimeInterval { get set }
     
 //    // API objects
      var rpc: RpcApiRegistry<Self> { get }
@@ -37,46 +24,47 @@ public protocol AnySubstrate<RT>: AnyObject {
 //    var tx: SubstrateExtrinsicApiRegistry<Self> { get }
 }
 
-public final class Substrate<R: Runtime, CL: CallableClient & RegistryOwner>: AnySubstrate {
-    public typealias RT = R
+public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeOwner>: AnySubstrate {
+    public typealias RC = RC
     public typealias CL = CL
     
     public private(set) var client: CL
-    public let types: Registry
-    public private(set) var extrinsicManager: RT.TExtrinsicManager
+    public let runtime: ExtendedRuntime<RC>
     public var signer: Signer?
-
-    public let genesisHash: RT.THash
-    public let runtimeVersion: RT.TRuntimeVersion
-    public let properties: RT.TSystemProperties
-    public let runtime: RT
     
-    public let rpc: RpcApiRegistry<Substrate<R, CL>>
+    public let rpc: RpcApiRegistry<Substrate<RC, CL>>
     
-    public init(client: CL, runtime: R, signer: Signer? = nil) async throws {
+    public init(client: CL, runtime: ExtendedRuntime<RC>, signer: Signer? = nil) throws {
         self.signer = signer
         self.client = client
         self.runtime = runtime
         
-        // Obtain initial data from the RPC
-        self.runtimeVersion = try await RpcStateApi<Self>.runtimeVersion(at: nil, with: client)
-        self.properties = try await RpcSystemApi<Self>.properties(with: client)
-        self.genesisHash = try await RpcChainApi<Self>.blockHash(block: 0, client: client)
+        // Set runtime for JSON decoders
+        self.client.runtime = runtime
         
-        let metadata = try await RpcStateApi<Self>.metadata(with: client)
-        self.extrinsicManager = try runtime.extrinsicManager()
-        
-        self.types = TypeRegistry(metadata: metadata,
-                                  addressFormat: self.properties.ss58Format,
-                                  decoder: self.extrinsicManager)
-        self.client.registry = self.types
-        
-        // Init registries
+        // Create registries
         self.rpc = RpcApiRegistry()
         
-        // Inject substrate
-        try extrinsicManager.setSubstrate(substrate: self)
+        // Init runtime
+        try runtime.setSubstrate(substrate: self)
+        
+        // Init registries
         rpc.setSubstrate(substrate: self)
+    }
+    
+    public convenience init(client: CL, config: RC, signer: Signer? = nil) async throws {
+        // Obtain initial data from the RPC
+        let runtimeVersion = try await RpcStateApi<Self>.runtimeVersion(at: nil, with: client)
+        let properties = try await RpcSystemApi<Self>.properties(with: client)
+        let genesisHash = try await RpcChainApi<Self>.blockHash(block: 0, client: client)
+        
+        let metadata = try await RpcStateApi<Self>.metadata(with: client)
+        
+        let runtime = try ExtendedRuntime(config: config, metadata: metadata,
+                                          genesisHash: genesisHash,
+                                          version: runtimeVersion,
+                                          properties: properties)
+        try self.init(client: client, runtime: runtime, signer: signer)
     }
 }
 

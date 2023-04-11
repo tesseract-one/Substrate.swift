@@ -24,7 +24,7 @@ public extension Block {
 
 public protocol BlockHeader: Decodable {
     associatedtype TNumber: UnsignedInteger & DataConvertible
-    associatedtype THasher: NormalHasher
+    associatedtype THasher: FixedHasher
     
     var number: TNumber { get }
     var hash: THasher.THash { get }

@@ -218,17 +218,19 @@ public struct RpcStateApi<S: AnySubstrate>: RpcApi {
 //        }
 //    }
 //
-    public func storage(raw key: Data, at hash: S.RT.THash? = nil) async throws -> Data {
+    public func storage(raw key: Data, at hash: S.RC.THasher.THash? = nil) async throws -> Data {
         try await substrate.client.call(method: "state_getStorage", params: Params(key, hash))
     }
     
-    public func storage<K: StorageKey>(key: K, at hash: S.RT.THash? = nil) async throws -> K.TValue {
-        let data = try await storage(raw: key.hash(registry: substrate.types), at: hash)
-        return try key.decode(valueFrom: substrate.types.decoder(with: data), registry: substrate.types)
+    public func storage<K: StorageKey>(key: K, at hash: S.RC.THasher.THash? = nil) async throws -> K.TValue {
+        let data = try await storage(raw: key.hash(runtime: substrate.runtime), at: hash)
+        return try key.decode(valueFrom: substrate.runtime.decoder(with: data),
+                              runtime: substrate.runtime)
     }
     
-    public func events(at hash: S.RT.THash? = nil) async throws -> Any {
-        let data = try await storage(raw: substrate.runtime.eventsStorageKey.hash(registry: substrate.types), at: hash)
+    public func events(at hash: S.RC.THasher.THash? = nil) async throws -> Any {
+        let data = try await storage(raw: substrate.runtime.eventsStorageKey.hash(runtime: substrate.runtime),
+                                     at: hash)
         return data
     }
 //
@@ -452,8 +454,8 @@ public struct RpcStateApi<S: AnySubstrate>: RpcApi {
 
 extension RpcStateApi { // Static
     public static func runtimeVersion(
-        at hash: S.RT.THash?, with client: CallableClient
-    ) async throws -> S.RT.TRuntimeVersion {
+        at hash: S.RC.THasher.THash?, with client: CallableClient
+    ) async throws -> S.RC.TRuntimeVersion {
         try await client.call(method: "state_getRuntimeVersion", params: Params(hash))
     }
     

@@ -41,7 +41,7 @@ public struct RuntimeTypeInfo {
     public let id: RuntimeTypeId
     public let type: RuntimeType
 
-    init(id: RuntimeTypeId, type: RuntimeType) {
+    public init(id: RuntimeTypeId, type: RuntimeType) {
         self.id = id
         self.type = type
     }

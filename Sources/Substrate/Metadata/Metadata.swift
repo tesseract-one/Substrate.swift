@@ -18,6 +18,7 @@ public protocol Metadata {
     var extrinsic: ExtrinsicMetadata { get }
     
     func resolve(type id: RuntimeTypeId) -> RuntimeType?
+    func resolve(type path: [String]) -> RuntimeTypeInfo?
     func resolve(pallet index: UInt8) -> PalletMetadata?
     func resolve(pallet name: String) -> PalletMetadata?
 }
@@ -32,6 +33,16 @@ public protocol PalletMetadata {
     func callIndex(name: String) -> UInt8?
     func eventName(index: UInt8) -> String?
     func eventIndex(name: String) -> UInt8?
+    
+    func storage(name: String) -> StorageMetadata?
+}
+
+public protocol StorageMetadata {
+    var name: String { get }
+    var modifier: StorageEntryModifier { get }
+    var types: (keys: [(StorageHasher, RuntimeTypeInfo)], value: RuntimeTypeInfo) { get }
+    var defaultValue: Data { get }
+    var documentation: [String] { get }
 }
 
 public protocol ExtrinsicMetadata {

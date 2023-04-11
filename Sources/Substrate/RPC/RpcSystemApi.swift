@@ -10,18 +10,18 @@ import ScaleCodec
 import JsonRPC
 import Serializable
 
-public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RT: System {
+public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RC: System {
     public weak var substrate: S!
     
     public init(substrate: S) {
         self.substrate = substrate
     }
     
-    public func accountNextIndex(id: S.RT.TAccountId) async throws -> S.RT.TIndex {
+    public func accountNextIndex(id: S.RC.TAccountId) async throws -> S.RC.TIndex {
         try await substrate.client.call(
             method: "system_accountNextIndex",
             params: Params(id),
-            HexOrNumber<S.RT.TIndex>.self
+            HexOrNumber<S.RC.TIndex>.self
         ).value
     }
 
@@ -40,19 +40,19 @@ public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RT: System {
         try await substrate.client.call(method: "system_chain", params: Params())
     }
 
-    public func chainType() async throws -> S.RT.TChainType {
+    public func chainType() async throws -> S.RC.TChainType {
         try await substrate.client.call(method: "system_chainType", params: Params())
     }
 
     public func dryRun<C: Call>(
-        extrinsic: SignedExtrinsic<C, S.RT.TExtrinsicManager>, at hash: S.RT.THash?
-    ) async throws -> RpcResult<RpcResult<Nil, S.RT.TDispatchError>, S.RT.TTransactionValidityError> {
-        let encoder = substrate.types.encoder()
-        try substrate.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        extrinsic: SignedExtrinsic<C, S.RC.TExtrinsicManager>, at hash: S.RC.THasher.THash?
+    ) async throws -> RpcResult<RpcResult<Nil, S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
+        let encoder = substrate.runtime.encoder()
+        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
         return try await substrate.client.call(method: "system_dryRun", params: Params(encoder.output, hash))
     }
 
-    public func health() async throws -> S.RT.THealth {
+    public func health() async throws -> S.RC.THealth {
         try await substrate.client.call(method: "system_health", params: Params())
     }
 
@@ -71,19 +71,19 @@ public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RT: System {
         try await substrate.client.call(method: "system_name", params: Params())
     }
 
-    public func networkState() async throws -> S.RT.TNetworkState {
+    public func networkState() async throws -> S.RC.TNetworkState {
         try await substrate.client.call(method: "system_networkState", params: Params())
     }
 
-    public func nodeRoles() async throws -> [S.RT.TNodeRole] {
+    public func nodeRoles() async throws -> [S.RC.TNodeRole] {
         try await substrate.client.call(method: "system_nodeRoles", params: Params())
     }
 
-    public func peers() async throws -> [S.RT.TNetworkPeerInfo] {
+    public func peers() async throws -> [S.RC.TNetworkPeerInfo] {
         try await substrate.client.call(method: "system_peers", params: Params())
     }
 
-    public func properties() async throws -> S.RT.TSystemProperties {
+    public func properties() async throws -> S.RC.TSystemProperties {
         try await Self.properties(with: substrate.client)
     }
 
@@ -108,7 +108,7 @@ public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RT: System {
         )
     }
 
-    public func syncState() async throws -> S.RT.TSyncState {
+    public func syncState() async throws -> S.RC.TSyncState {
         try await substrate.client.call(
             method: "system_syncState",
             params: Params()
@@ -121,11 +121,11 @@ public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RT: System {
 }
 
 extension RpcSystemApi { //Static calls
-    public static func properties(with client: CallableClient) async throws -> S.RT.TSystemProperties {
+    public static func properties(with client: CallableClient) async throws -> S.RC.TSystemProperties {
         try await client.call(method: "system_properties", params: Params())
     }
 }
 
-extension RpcApiRegistry where S.RT: System {
+extension RpcApiRegistry where S.RC: System {
     public var system: RpcSystemApi<S> { get async { await getRpcApi(RpcSystemApi<S>.self) } }
 }

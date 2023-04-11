@@ -55,43 +55,43 @@ extension Value {
     }
 }
 
-extension Value: RegistryScaleDynamicEncodable {
-    public func encode(in encoder: ScaleEncoder, as type: RuntimeTypeId, registry: Registry) throws {
-        guard let typeInfo = registry.resolve(type: type) else {
+extension Value: ScaleRuntimeDynamicEncodable {
+    public func encode(in encoder: ScaleEncoder, as type: RuntimeTypeId, runtime: Runtime) throws {
+        guard let typeInfo = runtime.resolve(type: type) else {
             throw EncodingError.typeNotFound(type)
         }
         switch typeInfo.definition {
         case .composite(fields: let fields):
-            try _encodeComposite(id: type, fields: fields, registry: registry, in: encoder)
+            try _encodeComposite(id: type, fields: fields, runtime: runtime, in: encoder)
         case .sequence(of: let seqTypeId):
-            try _encodeSequence(id: type, valueType: seqTypeId, registry: registry, in: encoder)
+            try _encodeSequence(id: type, valueType: seqTypeId, runtime: runtime, in: encoder)
         case .array(count: let count, of: let arrTypeId):
-            try _encodeArray(id: type, valueType: arrTypeId, count: count, registry: registry, in: encoder)
+            try _encodeArray(id: type, valueType: arrTypeId, count: count, runtime: runtime, in: encoder)
         case .tuple(components: let fields):
-            try _encodeTuple(id: type, fields: fields, registry: registry, in: encoder)
+            try _encodeTuple(id: type, fields: fields, runtime: runtime, in: encoder)
         case .variant(variants: let variants):
-            try _encodeVariant(id: type, variants: variants, registry: registry, in: encoder)
+            try _encodeVariant(id: type, variants: variants, runtime: runtime, in: encoder)
         case .primitive(is: let primitive):
-            try _encodePrimitive(id: type, type: primitive, registry: registry, in: encoder)
+            try _encodePrimitive(id: type, type: primitive, runtime: runtime, in: encoder)
         case .compact(of: let type):
-            try _encodeCompact(id: type, type: type, registry: registry, in: encoder)
+            try _encodeCompact(id: type, type: type, runtime: runtime, in: encoder)
         case .bitsequence(store: let store, order: let order):
-            try _encodeBitSequence(id: type, store: store, order: order, registry: registry, in: encoder)
+            try _encodeBitSequence(id: type, store: store, order: order, runtime: runtime, in: encoder)
         }
     }
 }
 
-extension Registry {
+extension Runtime {
     @discardableResult
     public func encode<C>(value: Value<C>, `as` type: RuntimeTypeId, in encoder: ScaleEncoder) throws -> ScaleEncoder {
-        try value.encode(in: encoder, as: type, registry: self)
+        try value.encode(in: encoder, as: type, runtime: self)
         return encoder
     }
 }
 
 private extension Value {
     func _encodeComposite(
-        id: RuntimeTypeId, fields: [RuntimeTypeField], registry: Registry, in encoder: ScaleEncoder
+        id: RuntimeTypeId, fields: [RuntimeTypeField], runtime: Runtime, in encoder: ScaleEncoder
     ) throws {
         switch value {
         case .map(let mFields):
@@ -100,9 +100,9 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                try encode(in: encoder, as: fields[0].type, registry: registry)
+                try encode(in: encoder, as: fields[0].type, runtime: runtime)
             } else {
-                try _encodeCompositeFields(id: id, fields: fields, registry: registry, in: encoder)
+                try _encodeCompositeFields(id: id, fields: fields, runtime: runtime, in: encoder)
             }
         case .sequence(let values):
             if fields.count == 1 && values.count != 1 {
@@ -110,9 +110,9 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                try encode(in: encoder, as: fields[0].type, registry: registry)
+                try encode(in: encoder, as: fields[0].type, runtime: runtime)
             } else {
-                try _encodeCompositeFields(id: id, fields: fields, registry: registry, in: encoder)
+                try _encodeCompositeFields(id: id, fields: fields, runtime: runtime, in: encoder)
             }
         default:
             if fields.count == 1 {
@@ -120,7 +120,7 @@ private extension Value {
                 // aiming for has exactly 1 field. Perhaps it's a wrapper type, so let's
                 // aim to encode to the contents of it instead (1 field composites are
                 // transparent anyway in SCALE terms).
-                try encode(in: encoder, as: fields[0].type, registry: registry)
+                try encode(in: encoder, as: fields[0].type, runtime: runtime)
             } else {
                 throw EncodingError.wrongShape(actual: self, expected: id)
             }
@@ -128,17 +128,17 @@ private extension Value {
     }
     
     func _encodeSequence(
-        id: RuntimeTypeId, valueType: RuntimeTypeId, registry: Registry, in encoder: ScaleEncoder
+        id: RuntimeTypeId, valueType: RuntimeTypeId, runtime: Runtime, in encoder: ScaleEncoder
     ) throws {
         switch value {
         case .sequence(let values):
             try values.encode(in: encoder) { value, encoder in
-                try value.encode(in: encoder, as: valueType, registry: registry)
+                try value.encode(in: encoder, as: valueType, runtime: runtime)
             }
         case .primitive(let primitive):
             switch primitive {
             case .bytes(let bytes):
-                guard let vTypeInfo = registry.resolve(type: valueType) else {
+                guard let vTypeInfo = runtime.resolve(type: valueType) else {
                     throw EncodingError.typeNotFound(valueType)
                 }
                 guard case .primitive(is: .u8) = vTypeInfo.definition else {
@@ -155,7 +155,7 @@ private extension Value {
     
     func _encodeArray(
         id: RuntimeTypeId, valueType: RuntimeTypeId, count: UInt32,
-        registry: Registry, in encoder: ScaleEncoder
+        runtime: Runtime, in encoder: ScaleEncoder
     ) throws {
         switch value {
         case .sequence(let values):
@@ -165,7 +165,7 @@ private extension Value {
                 )
             }
             for value in values {
-                try value.encode(in: encoder, as: valueType, registry: registry)
+                try value.encode(in: encoder, as: valueType, runtime: runtime)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -173,7 +173,7 @@ private extension Value {
                 guard bytes.count == count else {
                     throw EncodingError.wrongShape(actual: self, expected: id)
                 }
-                guard let vTypeInfo = registry.resolve(type: valueType) else {
+                guard let vTypeInfo = runtime.resolve(type: valueType) else {
                     throw EncodingError.typeNotFound(valueType)
                 }
                 guard case .primitive(is: .u8) = vTypeInfo.definition else {
@@ -189,7 +189,7 @@ private extension Value {
     }
     
     func _encodeTuple(
-        id: RuntimeTypeId, fields: [RuntimeTypeId], registry: Registry, in encoder: ScaleEncoder
+        id: RuntimeTypeId, fields: [RuntimeTypeId], runtime: Runtime, in encoder: ScaleEncoder
     ) throws {
         switch value {
         case .sequence(let values):
@@ -200,12 +200,12 @@ private extension Value {
             }
             guard values.count > 0 else { return }
             for (field, value) in zip(fields, values) {
-                try value.encode(in: encoder, as: field,registry: registry)
+                try value.encode(in: encoder, as: field, runtime: runtime)
             }
         default:
             if fields.count == 1 {
                 // A 1-field tuple? try encoding inner content then.
-                try encode(in: encoder, as: fields[0], registry: registry)
+                try encode(in: encoder, as: fields[0], runtime: runtime)
             } else {
                 throw EncodingError.wrongShape(actual: self, expected: id)
             }
@@ -213,7 +213,7 @@ private extension Value {
     }
     
     func _encodeVariant(
-        id: RuntimeTypeId, variants: [RuntimeTypeVariantItem], registry: Registry, in encoder: ScaleEncoder
+        id: RuntimeTypeId, variants: [RuntimeTypeVariantItem], runtime: Runtime, in encoder: ScaleEncoder
     ) throws {
         guard case .variant(let variant) = value else {
             throw EncodingError.wrongShape(actual: self, expected: id)
@@ -225,17 +225,17 @@ private extension Value {
         switch variant {
         case .map(name: _, fields: let map):
             try Value(value: .map(map), context: context)._encodeCompositeFields(
-                id: id, fields: varType.fields, registry: registry, in: encoder
+                id: id, fields: varType.fields, runtime: runtime, in: encoder
             )
         case .sequence(name: _, values: let seq):
             try Value(value: .sequence(seq), context: context)._encodeCompositeFields(
-                id: id, fields: varType.fields, registry: registry, in: encoder
+                id: id, fields: varType.fields, runtime: runtime, in: encoder
             )
         }
     }
     
     func _encodeCompositeFields(
-        id: RuntimeTypeId, fields: [RuntimeTypeField], registry: Registry, in encoder: ScaleEncoder
+        id: RuntimeTypeId, fields: [RuntimeTypeField], runtime: Runtime, in encoder: ScaleEncoder
     ) throws {
         if let map = self.map {
             guard map.count == fields.count else {
@@ -252,7 +252,7 @@ private extension Value {
                 guard let value = map[name] else {
                     throw EncodingError.mapFieldIsMissing(missingFieldName: name, expected: field.type)
                 }
-                try value.encode(in: encoder, as: field.type, registry: registry)
+                try value.encode(in: encoder, as: field.type, runtime: runtime)
             }
         } else {
             let values = self.sequence!
@@ -263,13 +263,13 @@ private extension Value {
             }
             guard values.count > 0 else { return }
             for (field, value) in zip(fields, values) {
-                try value.encode(in: encoder, as: field.type, registry: registry)
+                try value.encode(in: encoder, as: field.type, runtime: runtime)
             }
         }
     }
     
     func _encodePrimitive(
-        id: RuntimeTypeId, type: RuntimeTypePrimitive, registry: Registry, in encoder: ScaleEncoder
+        id: RuntimeTypeId, type: RuntimeTypePrimitive, runtime: Runtime, in encoder: ScaleEncoder
     ) throws {
         guard case .primitive(let primitive) = value else {
             throw EncodingError.wrongShape(actual: self, expected: id)
@@ -327,14 +327,14 @@ private extension Value {
     }
     
     func _encodeCompact(
-        id: RuntimeTypeId, type: RuntimeTypeId, registry: Registry, in encoder: ScaleEncoder
+        id: RuntimeTypeId, type: RuntimeTypeId, runtime: Runtime, in encoder: ScaleEncoder
     ) throws {
         // Resolve to a primitive type inside the compact encoded type (or fail if
         // we hit some type we wouldn't know how to work with).
         var innerTypeId = type
         var innerType: CompactTy? = nil
         while innerType == nil {
-            guard let typeDef = registry.resolve(type: innerTypeId)?.definition else {
+            guard let typeDef = runtime.resolve(type: innerTypeId)?.definition else {
                 throw EncodingError.typeNotFound(innerTypeId)
             
             }
@@ -421,9 +421,9 @@ private extension Value {
     
     func _encodeBitSequence(
         id: RuntimeTypeId, store: RuntimeTypeId, order: RuntimeTypeId,
-        registry: Registry, in encoder: ScaleEncoder
+        runtime: Runtime, in encoder: ScaleEncoder
     ) throws {
-        let format = try BitSequence.Format(store: store, order: order, registry: registry)
+        let format = try BitSequence.Format(store: store, order: order, runtime: runtime)
         switch value {
         case .bitSequence(let seq):
             try encoder.encode(seq, .format(format))

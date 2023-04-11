@@ -14,25 +14,25 @@ public protocol StorageKey<TValue> {
     var pallet: String { get }
     var name: String { get }
     
-    func hash(registry: Registry) throws -> Data
-    func decode(valueFrom decoder: ScaleDecoder, registry: Registry) throws -> TValue
+    func hash(runtime: Runtime) throws -> Data
+    func decode(valueFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TValue
 }
 
 extension StorageKey {
     public var prefix: Data { Self.prefix(name: self.name, pallet: self.pallet) }
     
     public static func prefix(name: String, pallet: String) -> Data {
-        HXX128.hasher.hash(data: Data(pallet.utf8)) +
-            HXX128.hasher.hash(data: Data(name.utf8))
+        HXX128.instance.hash(data: Data(pallet.utf8)) +
+            HXX128.instance.hash(data: Data(name.utf8))
     }
 }
 
-public protocol StaticStorageKey: StorageKey, RegistryScaleDecodable {
+public protocol StaticStorageKey: StorageKey, ScaleRuntimeDecodable {
     static var pallet: String { get }
     static var name: String { get }
     
-    init(decodingPath decoder: ScaleDecoder, registry: Registry) throws
-    func encodePath(in encoder: ScaleEncoder, registry: Registry) throws
+    init(decodingPath decoder: ScaleDecoder, runtime: Runtime) throws
+    func encodePath(in encoder: ScaleEncoder, runtime: Runtime) throws
 }
 
 extension StaticStorageKey {
@@ -43,25 +43,25 @@ extension StaticStorageKey {
 }
 
 extension StaticStorageKey {
-    public init(from decoder: ScaleDecoder, registry: Registry) throws {
+    public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
         let prefix = Self.prefix
         let decodedPrefix = try decoder.decode(.fixed(UInt(prefix.count)))
         guard decodedPrefix == prefix else {
             throw StorageKeyCodingError.badPrefix(has: decodedPrefix, expected: prefix)
         }
-        try self.init(decodingPath: decoder, registry: registry)
+        try self.init(decodingPath: decoder, runtime: runtime)
     }
     
-    public func hash(registry: Registry) throws -> Data {
-        let encoder = registry.encoder()
-        try self.encodePath(in: encoder, registry: registry)
+    public func hash(runtime: Runtime) throws -> Data {
+        let encoder = runtime.encoder()
+        try self.encodePath(in: encoder, runtime: runtime)
         return self.prefix + encoder.output
     }
 }
 
-extension StaticStorageKey where TValue: RegistryScaleDecodable {
-    public func decode(valueFrom decoder: ScaleDecoder, registry: Registry) throws -> TValue {
-        try TValue(from: decoder, registry: registry)
+extension StaticStorageKey where TValue: ScaleRuntimeDecodable {
+    public func decode(valueFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TValue {
+        try TValue(from: decoder, runtime: runtime)
     }
 }
 
@@ -108,14 +108,14 @@ public struct DynamicStorageKey<C>: StorageKey {
         self.path = path.map { .value($0) }
     }
     
-    public func hash(registry: Registry) throws -> Data {
-        try hashes(registry: registry).reduce(self.prefix) { data, hash in
+    public func hash(runtime: Runtime) throws -> Data {
+        try hashes(runtime: runtime).reduce(self.prefix) { data, hash in
             data + hash
         }
     }
     
-    public func hashes(registry: Registry) throws -> [Data] {
-        guard let (keys, _) = registry.resolve(storage: name, pallet: pallet) else {
+    public func hashes(runtime: Runtime) throws -> [Data] {
+        guard let (keys, _) = runtime.resolve(storage: name, pallet: pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
         }
         guard keys.count == path.count else {
@@ -126,24 +126,24 @@ public struct DynamicStorageKey<C>: StorageKey {
             case .full(_, let hash): return hash
             case .hash(let hash): return hash
             case .value(let val):
-                let encoder = registry.encoder()
-                try val.encode(in: encoder, as: keys[idx].1, registry: registry)
+                let encoder = runtime.encoder()
+                try val.encode(in: encoder, as: keys[idx].1, runtime: runtime)
                 return keys[idx].0.hasher.hash(data: encoder.output)
             }
         }
     }
     
-    public func decode(valueFrom decoder: ScaleDecoder, registry: Registry) throws -> TValue {
-        guard let (_, value) = registry.resolve(storage: self.name, pallet: self.pallet) else {
+    public func decode(valueFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TValue {
+        guard let (_, value) = runtime.resolve(storage: self.name, pallet: self.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
         }
-        return try TValue(from: decoder, as: value, registry: registry)
+        return try TValue(from: decoder, as: value, runtime: runtime)
     }
 }
 
 extension DynamicStorageKey where C == RuntimeTypeId {
-    public init(from decoder: ScaleDecoder, pallet: String, name: String, registry: Registry) throws {
-        guard let (keys, _) = registry.resolve(storage: name, pallet: pallet) else {
+    public init(from decoder: ScaleDecoder, pallet: String, name: String, runtime: Runtime) throws {
+        guard let (keys, _) = runtime.resolve(storage: name, pallet: pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
         }
         self.pallet = pallet
@@ -151,7 +151,7 @@ extension DynamicStorageKey where C == RuntimeTypeId {
         self.path = try keys.map { (hash, tId) in
             let raw: Data = try decoder.decode(.fixed(UInt(hash.hasher.hashPartByteLength)))
             return hash.hasher.isConcat
-                ? try .full(registry.decode(from: decoder, type: tId), raw)
+                ? try .full(runtime.decode(from: decoder, type: tId), raw)
                 : .hash(raw)
         }
     }

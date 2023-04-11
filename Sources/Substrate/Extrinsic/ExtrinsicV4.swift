@@ -31,9 +31,9 @@ public class DynamicExtrinsicManagerV4<S: System>: ExtrinsicManager {
     }
     
     public func encode<C: Call>(unsigned extrinsic: Extrinsic<C, TUnsignedExtra>, in encoder: ScaleEncoder) throws {
-        let inner = substrate.registry.encoder()
+        let inner = substrate.runtime.encoder()
         try inner.encode(Self.version & 0b0111_1111)
-        try extrinsic.call.encode(in: inner, registry: substrate.registry)
+        try extrinsic.call.encode(in: inner, runtime: substrate.runtime)
         try encoder.encode(inner.output)
     }
     
@@ -47,8 +47,8 @@ public class DynamicExtrinsicManagerV4<S: System>: ExtrinsicManager {
     }
     
     public func encode<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>, in encoder: ScaleEncoder) throws {
-        try payload.call.encode(in: encoder, registry: substrate.registry)
-        try payload.extra.extra.encode(in: encoder, as: substrate.extraType, registry: substrate.registry)
+        try payload.call.encode(in: encoder, runtime: substrate.runtime)
+        try payload.extra.extra.encode(in: encoder, as: substrate.extraType, runtime: substrate.runtime)
         guard let additionals = payload.extra.additional.sequence else {
             throw ExtrinsicCodingError.badExtraType(expected: "Value<Void>.sequence",
                                                     got: String(describing: payload.extra.additional))
@@ -58,19 +58,19 @@ public class DynamicExtrinsicManagerV4<S: System>: ExtrinsicManager {
                                                       got: additionals.count)
         }
         for (addl, info) in zip(additionals, substrate.extrinsic.extensions) {
-            try addl.encode(in: encoder, as: info.additionalSigned.id, registry: substrate.registry)
+            try addl.encode(in: encoder, as: info.additionalSigned.id, runtime: substrate.runtime)
         }
     }
     
-    public func decode<C: Call & RegistryScaleDecodable>(
+    public func decode<C: Call & ScaleRuntimeDecodable>(
         payload decoder: ScaleDecoder
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra> {
-        let call = try C(from: decoder, registry: substrate.registry)
-        let extra = try substrate.registry
+        let call = try C(from: decoder, runtime: substrate.runtime)
+        let extra = try substrate.runtime
                 .decode(from: decoder, type: substrate.extraType)
                 .removingContext()
         let additional = try substrate.extrinsic.extensions.map { info in
-            try substrate.registry
+            try substrate.runtime
                 .decode(from: decoder, type: info.additionalSigned.id)
                 .removingContext()
         }
@@ -84,18 +84,18 @@ public class DynamicExtrinsicManagerV4<S: System>: ExtrinsicManager {
     }
     
     public func encode<C: Call>(signed extrinsic: Extrinsic<C, TSignedExtra>, in encoder: ScaleEncoder) throws {
-        let inner = substrate.registry.encoder()
+        let inner = substrate.runtime.encoder()
         try inner.encode(Self.version | 0b1000_0000)
         try extrinsic.extra.address.asValue().encode(in: inner,
                                                      as: substrate.addressType,
-                                                     registry: substrate.registry)
+                                                     runtime: substrate.runtime)
         try extrinsic.extra.signature.asValue().encode(in: inner,
                                                        as: substrate.signatureType,
-                                                       registry: substrate.registry)
+                                                       runtime: substrate.runtime)
         try extrinsic.extra.extra.encode(in: inner,
                                          as: substrate.extraType,
-                                         registry: substrate.registry)
-        try extrinsic.call.encode(in: inner, registry: substrate.registry)
+                                         runtime: substrate.runtime)
+        try extrinsic.call.encode(in: inner, runtime: substrate.runtime)
         try encoder.encode(inner.output)
     }
     
@@ -112,7 +112,9 @@ public class DynamicExtrinsicManagerV4<S: System>: ExtrinsicManager {
         return Extrinsic(call: ext.call, extra: extra, signed: ext.isSigned)
     }
     
-    public func decode<C: Call & RegistryScaleDecodable, E>(static decoder: ScaleDecoder) throws -> Extrinsic<C, E> {
+    public func decode<C: Call & ScaleRuntimeDecodable, E>(
+        static decoder: ScaleDecoder
+    ) throws -> Extrinsic<C, E> {
         let ext = try self.decode(decoder: decoder, call: C.self)
         if ext.isSigned && E.self != TSignedExtra.self {
             throw ExtrinsicCodingError.badExtraType(
@@ -136,14 +138,14 @@ public class DynamicExtrinsicManagerV4<S: System>: ExtrinsicManager {
         }
     }
     
-    private func decode<C: Call & RegistryScaleDecodable>(
+    private func decode<C: Call & ScaleRuntimeDecodable>(
         decoder: ScaleDecoder,
         call: C.Type
     ) throws -> Extrinsic<
         C,
         (addr: Value<RuntimeTypeId>, sig: Value<RuntimeTypeId>, extra: Value<RuntimeTypeId>)?>
     {
-        let decoder = try substrate.registry.decoder(with: decoder.decode(Data.self))
+        let decoder = try substrate.runtime.decoder(with: decoder.decode(Data.self))
         let version = try decoder.decode(UInt8.self)
         let isSigned = version & 0b1000_0000 > 0
         guard version == Self.version else {
@@ -151,13 +153,13 @@ public class DynamicExtrinsicManagerV4<S: System>: ExtrinsicManager {
                                                            got: version)
         }
         if isSigned {
-            let address = try substrate.registry.decode(from: decoder, type: substrate.addressType)
-            let signature = try substrate.registry.decode(from: decoder, type: substrate.signatureType)
-            let extra = try substrate.registry.decode(from: decoder, type: substrate.extraType)
-            return Extrinsic(call: try C(from: decoder, registry: substrate.registry),
+            let address = try substrate.runtime.decode(from: decoder, type: substrate.addressType)
+            let signature = try substrate.runtime.decode(from: decoder, type: substrate.signatureType)
+            let extra = try substrate.runtime.decode(from: decoder, type: substrate.extraType)
+            return Extrinsic(call: try C(from: decoder, runtime: substrate.runtime),
                              extra: (address, signature, extra), signed: true)
         } else {
-            return Extrinsic(call: try C(from: decoder, registry: substrate.registry),
+            return Extrinsic(call: try C(from: decoder, runtime: substrate.runtime),
                              extra: nil, signed: false)
         }
     }
@@ -172,7 +174,7 @@ public class DynamicExtrinsicManagerV4<S: System>: ExtrinsicManager {
 }
 
 private protocol DynamicExtrinsicManagerSubstrateWrapper {
-    var registry: any Registry { get }
+    var runtime: any Runtime { get }
     var extrinsic: ExtrinsicMetadata { get }
     var addressType: RuntimeTypeId { get }
     var signatureType: RuntimeTypeId { get }
@@ -194,12 +196,12 @@ private struct DynamicSubstrateWrapper<ST: AnySubstrate>: DynamicExtrinsicManage
         var extraTypeId: RuntimeTypeId? = nil
         var addressTypeId: RuntimeTypeId? = nil
         var sigTypeId: RuntimeTypeId? = nil
-        guard substrate.types.metadata.extrinsic.version == version else {
+        guard substrate.runtime.metadata.extrinsic.version == version else {
             throw ExtrinsicCodingError.badExtrinsicVersion(
                 supported: version,
-                got: substrate.types.metadata.extrinsic.version)
+                got: substrate.runtime.metadata.extrinsic.version)
         }
-        for param in substrate.types.metadata.extrinsic.type.type.parameters {
+        for param in substrate.runtime.metadata.extrinsic.type.type.parameters {
             switch param.name {
             case "Address": addressTypeId = param.type
             case "Signature": sigTypeId = param.type
@@ -214,7 +216,7 @@ private struct DynamicSubstrateWrapper<ST: AnySubstrate>: DynamicExtrinsicManage
                 reason: "Bad Extrinsic type. Can't obtain signature parameters"
             )
         }
-        self.extensions = try substrate.types.metadata.extrinsic.extensions.map { info in
+        self.extensions = try substrate.runtime.metadata.extrinsic.extensions.map { info in
             guard let ext = extensions[info.identifier] else {
                 throw  ExtrinsicCodingError.unknownExtension(identifier: info.identifier)
             }
@@ -227,10 +229,10 @@ private struct DynamicSubstrateWrapper<ST: AnySubstrate>: DynamicExtrinsicManage
     }
     
     @inlinable
-    var registry: any Registry { substrate.types }
+    var runtime: any Runtime { substrate.runtime }
     
     @inlinable
-    var extrinsic: ExtrinsicMetadata { substrate.types.metadata.extrinsic }
+    var extrinsic: ExtrinsicMetadata { substrate.runtime.metadata.extrinsic }
     
     func extra(params: [DynamicExtrinsicExtensionKey: Value<Void>]) async throws -> Value<Void> {
         var extra: [Value<Void>] = []

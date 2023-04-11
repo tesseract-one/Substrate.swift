@@ -105,7 +105,7 @@ extension ExtrinsicEra: ScaleCodable {
     }
 }
 
-extension ExtrinsicEra: RegistryScaleCodable {}
+extension ExtrinsicEra: ScaleRuntimeCodable {}
 
 extension ExtrinsicEra: ValueConvertible {
     public init<C>(value: Value<C>) throws {

@@ -210,9 +210,9 @@ extension BitSequence {
 }
 
 extension BitSequence.Format {
-    public init<R: Registry>(store: RuntimeTypeId, order: RuntimeTypeId, registry: R) throws {
-        try self.init(store: Store(type: store, registry: registry),
-                      order: Order(type: order, registry: registry))
+    public init(store: RuntimeTypeId, order: RuntimeTypeId, runtime: Runtime) throws {
+        try self.init(store: Store(type: store, runtime: runtime),
+                      order: Order(type: order, runtime: runtime))
     }
     public static let u8msb0 = Self(store: .u8, order: .msb0)
     public static let u8lsb0 = Self(store: .u8, order: .lsb0)
@@ -225,8 +225,8 @@ extension BitSequence.Format {
 }
 
 extension BitSequence.Format.Store {
-    public init<R: Registry>(type: RuntimeTypeId, registry: R) throws {
-        guard let bitStore = registry.resolve(type: type) else {
+    public init(type: RuntimeTypeId, runtime: Runtime) throws {
+        guard let bitStore = runtime.resolve(type: type) else {
             throw BitSequence.Format.Error.storeFormatNotFound(type)
         }
         switch bitStore.definition {
@@ -244,8 +244,8 @@ extension BitSequence.Format.Store {
 }
 
 extension BitSequence.Format.Order {
-    public init<R: Registry>(type: RuntimeTypeId, registry: R) throws {
-        guard let orderStore = registry.resolve(type: type) else {
+    public init(type: RuntimeTypeId, runtime: Runtime) throws {
+        guard let orderStore = runtime.resolve(type: type) else {
             throw BitSequence.Format.Error.orderFormatNotFound(type)
         }
         switch orderStore.path.last {

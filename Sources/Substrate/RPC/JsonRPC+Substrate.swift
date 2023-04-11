@@ -10,7 +10,7 @@ import ScaleCodec
 import JsonRPC
 @_exported import struct JsonRPC.Nil
 
-extension Nil: ScaleCodable, RegistryScaleCodable {
+extension Nil: ScaleCodable, ScaleRuntimeCodable {
     public init(from decoder: ScaleCodec.ScaleDecoder) throws {
         self = .nil
     }
@@ -65,28 +65,28 @@ extension JSONDecoder {
 }
 
 extension CodingUserInfoKey {
-    public static let registry = CodingUserInfoKey(rawValue: "SubstrateTypeRegistry")!
+    public static let substrateRuntime = CodingUserInfoKey(rawValue: "SubstrateDynamicRuntime")!
 }
 
 extension Encoder {
-    public var registry: Registry { userInfo[.registry]! as! Registry }
+    public var runtime: any Runtime { userInfo[.substrateRuntime]! as! any Runtime }
 }
 
 extension Decoder {
-    public var registry: Registry { userInfo[.registry]! as! Registry }
+    public var runtime: any Runtime { userInfo[.substrateRuntime]! as! any Runtime }
 }
 
 extension ContentEncoder {
-    public var registry: Registry {
-        get { context[.registry]! as! Registry }
-        set { context[.registry] = newValue }
+    public var runtime: any Runtime {
+        get { context[.substrateRuntime]! as! any Runtime }
+        set { context[.substrateRuntime] = newValue }
     }
 }
 
 extension ContentDecoder {
-    public var registry: Registry {
-        get { context[.registry]! as! Registry }
-        set { context[.registry] = newValue }
+    public var runtime: any Runtime {
+        get { context[.substrateRuntime]! as! any Runtime }
+        set { context[.substrateRuntime] = newValue }
     }
 }
 

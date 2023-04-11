@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Event: RegistryScaleDecodable {
+public protocol Event: ScaleRuntimeDecodable {
     var pallet: String { get }
     var name: String { get }
 }
@@ -17,24 +17,24 @@ public protocol StaticEvent: Event {
     static var pallet: String { get }
     static var name: String { get }
     
-    init(decodingBody decoder: ScaleDecoder, registry: Registry) throws
+    init(decodingBody decoder: ScaleDecoder, runtime: Runtime) throws
 }
 
 public extension StaticEvent {
     var pallet: String { Self.pallet }
     var name: String { Self.name }
     
-    init(from decoder: ScaleDecoder, registry: Registry) throws {
+    init(from decoder: ScaleDecoder, runtime: Runtime) throws {
         let modIndex = try decoder.decode(UInt8.self)
         let evIndex = try decoder.decode(UInt8.self)
-        guard let info = registry.resolve(eventName: evIndex, pallet: modIndex) else {
+        guard let info = runtime.resolve(eventName: evIndex, pallet: modIndex) else {
             throw EventDecodingError.eventNotFound(index: evIndex, pallet: modIndex)
         }
         guard Self.pallet == info.pallet && Self.name == info.name else {
             throw EventDecodingError.foundWrongEvent(found: (name: info.name, pallet: info.pallet),
                                                      expected: (name: Self.name, pallet: Self.pallet))
         }
-        try self.init(decodingBody: decoder, registry: registry)
+        try self.init(decodingBody: decoder, runtime: runtime)
     }
 }
 
@@ -50,15 +50,15 @@ public struct DynamicEvent: Event {
         self.params = params
     }
     
-    public init(from decoder: ScaleDecoder, registry: Registry) throws {
+    public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
         let palletIdx = try decoder.decode(UInt8.self)
-        guard let pallet = registry.resolve(palletName: palletIdx) else {
+        guard let pallet = runtime.resolve(palletName: palletIdx) else {
             throw EventDecodingError.palletNotFound(index: palletIdx)
         }
-        guard let type = registry.resolve(eventType: pallet) else {
+        guard let type = runtime.resolve(eventType: pallet) else {
             throw EventDecodingError.noEventsInPallet(pallet: pallet)
         }
-        let value = try Value(from: decoder, as: type.id, registry: registry)
+        let value = try Value(from: decoder, as: type.id, runtime: runtime)
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
             self.init(name: name,

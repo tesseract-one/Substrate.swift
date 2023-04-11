@@ -207,7 +207,7 @@ public struct SS58 {
         }
         
         public func hash(data: Data) -> Data {
-            HBlake2b512.hasher.hash(data: Self.prefix + data)
+            HBlake2b512.instance.hash(data: Self.prefix + data)
         }
         
         public func checksumLength(for dataLength: Int, prefix: Int) throws -> Int {

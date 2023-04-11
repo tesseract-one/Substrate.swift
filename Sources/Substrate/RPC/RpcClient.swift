@@ -40,7 +40,7 @@ public extension SubscribableClient {
     }
 }
 
-public class CallableRpcClient: CallableClient, RegistryOwner {
+public class CallableRpcClient: CallableClient, RuntimeOwner {
     public private (set) var client: Client & ContentCodersProvider
     
     public init(client: Client & ContentCodersProvider) {
@@ -56,11 +56,11 @@ public class CallableRpcClient: CallableClient, RegistryOwner {
         try await client.call(method: method, params: params)
     }
     
-    public var registry: any Registry {
-        get { self.client.contentEncoder.registry }
+    public var runtime: Runtime {
+        get { self.client.contentEncoder.runtime }
         set {
-            self.client.contentEncoder.registry = newValue
-            self.client.contentDecoder.registry = newValue
+            self.client.contentEncoder.runtime = newValue
+            self.client.contentDecoder.runtime = newValue
         }
     }
     

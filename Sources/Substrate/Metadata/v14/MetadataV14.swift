@@ -30,8 +30,15 @@ public class MetadataV14: Metadata {
     @inlinable
     public func resolve(type id: RuntimeTypeId) -> RuntimeType? { types[id] }
     
+    @inlinable
+    public func resolve(type path: [String]) -> RuntimeTypeInfo? {
+        types.first { $0.value.path == path }.flatMap { RuntimeTypeInfo(id: $0.key, type: $0.value) }
+    }
+    
+    @inlinable
     public func resolve(pallet index: UInt8) -> PalletMetadata? { palletsByIndex[index] }
     
+    @inlinable
     public func resolve(pallet name: String) -> PalletMetadata? { palletsByName[name] }
 }
 
@@ -49,6 +56,8 @@ public class PalletMetadataV14: PalletMetadata {
     
     public let eventIdxByName: [String: UInt8]?
     public let eventNameByIdx: [UInt8: String]?
+    
+    public let storageByName: [String: StorageMetadataV14]?
     
     public init(runtime: RuntimePalletMetadataV14, types: [RuntimeTypeId: RuntimeType]) {
         self.runtime = runtime
@@ -69,6 +78,9 @@ public class PalletMetadataV14: PalletMetadata {
         self.eventNameByIdx = events.map {
             Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
         }
+        self.storageByName = runtime.storage
+            .flatMap { $0.entries.map { ($0.name, StorageMetadataV14(runtime: $0, types: types)) } }
+            .flatMap { Dictionary(uniqueKeysWithValues: $0) }
     }
     
     @inlinable
@@ -83,10 +95,46 @@ public class PalletMetadataV14: PalletMetadata {
     @inlinable
     public func eventIndex(name: String) -> UInt8? { eventIdxByName?[name] }
     
+    @inlinable
+    public func storage(name: String) -> StorageMetadata? { storageByName?[name] }
+    
     private static func variants(for def: RuntimeTypeDefinition) -> [RuntimeTypeVariantItem]? {
         switch def {
         case .variant(variants: let vars): return vars
         default: return nil
+        }
+    }
+}
+
+public class StorageMetadataV14: StorageMetadata {
+    public let name: String
+    public let modifier: StorageEntryModifier
+    public let types: (keys: [(StorageHasher, RuntimeTypeInfo)], value: RuntimeTypeInfo)
+    public let defaultValue: Data
+    public let documentation: [String]
+    
+    public init(runtime: RuntimePalletStorageEntryMedatadaV14, types: [RuntimeTypeId: RuntimeType]) {
+        self.name = runtime.name
+        self.modifier = runtime.modifier
+        self.defaultValue = runtime.defaultValue
+        self.documentation = runtime.documentation
+        switch runtime.type {
+        case .plain(let vType):
+            self.types = (keys: [], value: RuntimeTypeInfo(id: vType, type: types[vType]!))
+        case .map(hashers: let hashers, key: let kType, value: let vType):
+            var keys: [(StorageHasher, RuntimeTypeInfo)]
+            switch types[kType]!.definition {
+            case .composite(fields: let fields):
+                keys = zip(hashers, fields).map { hash, field in
+                    (hash, RuntimeTypeInfo(id: field.type, type: types[field.type]!))
+                }
+            case .tuple(components: let fields):
+                keys = zip(hashers, fields).map { hash, field in
+                    (hash, RuntimeTypeInfo(id: field, type: types[field]!))
+                }
+            default: fatalError("Unknown storage key type: \(types[kType]!)")
+            }
+            self.types = (keys: keys, value: RuntimeTypeInfo(id: vType, type: types[vType]!))
         }
     }
 }

@@ -8,10 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public protocol System {
-    associatedtype THash: Hash
-    associatedtype TIndex: UnsignedInteger & DataConvertible & Codable & RegistryScaleCodable
-    associatedtype TBlockNumber: UnsignedInteger & DataConvertible
+public protocol System where TBlock.THeader.THasher == THasher {
+    associatedtype THasher: FixedHasher
+    associatedtype TIndex: UnsignedInteger & DataConvertible & Codable & ScaleRuntimeCodable
     associatedtype TSystemProperties: SystemProperties
     associatedtype TAccountId: Encodable & ValueConvertible
     associatedtype TAddress: ValueConvertible
@@ -43,6 +42,6 @@ public struct SystemEventsStorageKey: StaticStorageKey {
     
     public init() {}
     
-    public init(decodingPath decoder: ScaleDecoder, registry: Registry) throws {}
-    public func encodePath(in encoder: ScaleCodec.ScaleEncoder, registry: Registry) throws {}
+    public init(decodingPath decoder: ScaleDecoder, runtime: Runtime) throws {}
+    public func encodePath(in encoder: ScaleCodec.ScaleEncoder, runtime: Runtime) throws {}
 }

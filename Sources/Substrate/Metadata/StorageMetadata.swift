@@ -19,13 +19,13 @@ public enum StorageHasher: CaseIterable, ScaleCodable, CustomStringConvertible {
     
     public var hasher: Hasher {
         switch self {
-        case .blake2b128: return HBlake2b128.hasher
-        case .blake2b256: return HBlake2b256.hasher
-        case .blake2b128concat: return HBlake2b128Concat.hasher
-        case .xx128: return HXX128.hasher
-        case .xx256: return HXX256.hasher
-        case .xx64concat: return HXX64Concat.hasher
-        case .identity: return HIdentity.hasher
+        case .blake2b128: return HBlake2b128.instance
+        case .blake2b256: return HBlake2b256.instance
+        case .blake2b128concat: return HBlake2b128Concat.instance
+        case .xx128: return HXX128.instance
+        case .xx256: return HXX256.instance
+        case .xx64concat: return HXX64Concat.instance
+        case .identity: return HIdentity.instance
         }
     }
     

@@ -42,7 +42,7 @@ public protocol OpaqueExtrinsic: Decodable {
 public protocol StaticOpaqueExtrinsic: OpaqueExtrinsic {
     associatedtype TManager: ExtrinsicManager
     
-    func decode<C: Call & RegistryScaleDecodable>() throws -> Extrinsic<C, TManager.TSignedExtra>
+    func decode<C: Call & ScaleRuntimeDecodable>() throws -> Extrinsic<C, TManager.TSignedExtra>
 }
 
 public enum ExtrinsicCodingError: Error {
@@ -58,7 +58,7 @@ public protocol ExtrinsicDecoder {
     var version: UInt8 { get }
     
     func decode(dynamic decoder: ScaleDecoder) throws -> Extrinsic<DynamicCall<RuntimeTypeId>, Value<RuntimeTypeId>>
-    func decode<C: Call & RegistryScaleDecodable, E>(static decoder: ScaleDecoder) throws -> Extrinsic<C, E>
+    func decode<C: Call & ScaleRuntimeDecodable, E>(static decoder: ScaleDecoder) throws -> Extrinsic<C, E>
     
     static var version: UInt8 { get }
 }
@@ -88,7 +88,7 @@ public protocol ExtrinsicManager<RT>: ExtrinsicDecoder {
         params: TSigningParams
     ) async throws -> ExtrinsicSignPayload<C, TSigningExtra>
     func encode<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>, in encoder: ScaleEncoder) throws
-    func decode<C: Call & RegistryScaleDecodable>(
+    func decode<C: Call & ScaleRuntimeDecodable>(
         payload decoder: ScaleDecoder
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra>
     
@@ -127,20 +127,20 @@ public struct BlockExtrinsic<S: System>: StaticOpaqueExtrinsic {
     public typealias TManager = S.TExtrinsicManager
     
     public let data: Data
-    public let registry: Registry
+    public let runtime: any Runtime
     
     public init(from decoder: Decoder) throws {
-        self.registry = decoder.registry
+        self.runtime = decoder.runtime
         let container = try decoder.singleValueContainer()
         self.data = try container.decode(Data.self)
     }
     
     public func decode() throws -> Extrinsic<DynamicCall<RuntimeTypeId>, Value<RuntimeTypeId>> {
-        try registry.extrinsicDecoder.decode(dynamic: registry.decoder(with: data))
+        try runtime.extrinsicDecoder.decode(dynamic: runtime.decoder(with: data))
     }
     
-    public func decode<C: Call & RegistryScaleDecodable>() throws -> Extrinsic<C, TManager.TSignedExtra> {
-        try registry.extrinsicDecoder.decode(static: registry.decoder(with: data))
+    public func decode<C: Call & ScaleRuntimeDecodable>() throws -> Extrinsic<C, TManager.TSignedExtra> {
+        try runtime.extrinsicDecoder.decode(static: runtime.decoder(with: data))
     }
     
     public static var version: UInt8 { TManager.version }

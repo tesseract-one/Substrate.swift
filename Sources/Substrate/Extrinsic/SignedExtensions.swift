@@ -21,7 +21,7 @@ public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
     public func additionalSigned<S: AnySubstrate>(
         substrate: S, params: [DynamicExtrinsicExtensionKey: Value<Void>]
     ) async throws -> Value<Void> {
-        .u256(UInt256(substrate.runtimeVersion.specVersion))
+        .u256(UInt256(substrate.runtime.version.specVersion))
     }
 }
 
@@ -38,7 +38,7 @@ public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
     public func additionalSigned<S: AnySubstrate>(
         substrate: S, params: [DynamicExtrinsicExtensionKey: Value<Void>]
     ) async throws -> Value<Void> {
-        .u256(UInt256(substrate.runtimeVersion.transactionVersion))
+        .u256(UInt256(substrate.runtime.version.transactionVersion))
     }
 }
 
@@ -55,7 +55,7 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     public func additionalSigned<S: AnySubstrate>(
         substrate: S, params: [DynamicExtrinsicExtensionKey: Value<Void>]
     ) async throws -> Value<Void> {
-        .bytes(substrate.genesisHash.data)
+        .bytes(substrate.runtime.genesisHash.data)
     }
 }
 
@@ -88,7 +88,7 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
         guard let from = params[.origin] else {
             throw ExtrinsicCodingError.valueNotFound(key: DynamicExtrinsicExtensionKey.origin.rawValue)
         }
-        let account = try S.RT.TAccountId(value: from)
+        let account = try S.RC.TAccountId(value: from)
         let nonce = try await substrate.rpc.system.accountNextIndex(id: account)
         return .u256(UInt256(nonce))
     }
@@ -131,17 +131,17 @@ public struct DynamicCheckMortalitySignedExtension: DynamicExtrinsicExtension {
             return hash
         }
         guard let era = params[.era] else {
-            return .bytes(substrate.genesisHash.data)
+            return .bytes(substrate.runtime.genesisHash.data)
         }
         let pEra = try ExtrinsicEra(value: era) // Normalize era
         switch pEra {
-        case .immortal:  return .bytes(substrate.genesisHash.data)
+        case .immortal:  return .bytes(substrate.runtime.genesisHash.data)
         case .mortal(period: _, phase: _):
             //let currentBlock = try await substrate.rpc.chain.getBlock().header.number
             //let birthBlock = pEra.birth(UInt64(currentBlock))
             //let hash = try await substrate.rpc.chain.getBlockHash(birthBlock)
             //return .bytes(hash.data)
-            return .bytes(substrate.genesisHash.data)
+            return .bytes(substrate.runtime.genesisHash.data)
         }
     }
 }

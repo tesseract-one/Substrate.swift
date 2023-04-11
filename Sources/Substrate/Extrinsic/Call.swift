@@ -8,42 +8,42 @@
 import Foundation
 import ScaleCodec
 
-public protocol Call: RegistryScaleEncodable {
+public protocol Call: ScaleRuntimeEncodable {
     var pallet: String { get }
     var name: String { get }
 }
 
-public protocol StaticCall: Call, RegistryScaleDecodable {
+public protocol StaticCall: Call, ScaleRuntimeDecodable {
     static var pallet: String { get }
     static var name: String { get }
     
-    init(decodingParams decoder: ScaleDecoder, registry: Registry) throws
-    func encodeParams(in encoder: ScaleEncoder, registry: Registry) throws
+    init(decodingParams decoder: ScaleDecoder, runtime: Runtime) throws
+    func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws
 }
 
 public extension StaticCall {
     var pallet: String { Self.pallet }
     var name: String { Self.name }
     
-    init(from decoder: ScaleDecoder, registry: Registry) throws {
+    init(from decoder: ScaleDecoder, runtime: Runtime) throws {
         let modIndex = try decoder.decode(UInt8.self)
         let callIndex = try decoder.decode(UInt8.self)
-        guard let info = registry.resolve(callName: callIndex, pallet: modIndex) else {
+        guard let info = runtime.resolve(callName: callIndex, pallet: modIndex) else {
             throw CallCodingError.callNotFound(index: callIndex, pallet: modIndex)
         }
         guard Self.pallet == info.pallet && Self.name == info.name else {
             throw CallCodingError.foundWrongCall(found: (name: info.name, pallet: info.pallet),
                                                  expected: (name: Self.name, pallet: Self.pallet))
         }
-        try self.init(decodingParams: decoder, registry: registry)
+        try self.init(decodingParams: decoder, runtime: runtime)
     }
     
-    func encode(in encoder: ScaleEncoder, registry: Registry) throws {
-        guard let info = registry.resolve(callIndex: name, pallet: pallet) else {
+    func encode(in encoder: ScaleEncoder, runtime: Runtime) throws {
+        guard let info = runtime.resolve(callIndex: name, pallet: pallet) else {
             throw CallCodingError.callNotFound(name: name, pallet: pallet)
         }
         try encodeParams(in: encoder.encode(info.pallet).encode(info.index),
-                         registry: registry)
+                         runtime: runtime)
     }
 }
 
@@ -59,11 +59,11 @@ public struct DynamicCall<C>: Call {
         self.params = params
     }
     
-    public func encode(in encoder: ScaleEncoder, registry: Registry) throws {
-        guard let palletIdx = registry.resolve(palletIndex: pallet) else {
+    public func encode(in encoder: ScaleEncoder, runtime: Runtime) throws {
+        guard let palletIdx = runtime.resolve(palletIndex: pallet) else {
             throw CallCodingError.palletNotFound(name: pallet)
         }
-        guard let type = registry.resolve(callType: palletIdx) else {
+        guard let type = runtime.resolve(callType: palletIdx) else {
             throw CallCodingError.noCallsInPallet(pallet: pallet)
         }
         try encoder.encode(palletIdx)
@@ -85,20 +85,20 @@ public struct DynamicCall<C>: Call {
             variant = Value(value: .variant(.sequence(name: name, values: [params])),
                             context: params.context)
         }
-        try variant.encode(in: encoder, as: type.id, registry: registry)
+        try variant.encode(in: encoder, as: type.id, runtime: runtime)
     }
 }
 
-extension DynamicCall: RegistryScaleDecodable where C == RuntimeTypeId {
-    public init(from decoder: ScaleDecoder, registry: Registry) throws {
+extension DynamicCall: ScaleRuntimeDecodable where C == RuntimeTypeId {
+    public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
         let palletIdx = try decoder.decode(UInt8.self)
-        guard let pallet = registry.resolve(palletName: palletIdx) else {
+        guard let pallet = runtime.resolve(palletName: palletIdx) else {
             throw CallCodingError.palletNotFound(index: palletIdx)
         }
-        guard let type = registry.resolve(callType: pallet) else {
+        guard let type = runtime.resolve(callType: pallet) else {
             throw CallCodingError.noCallsInPallet(pallet: pallet)
         }
-        let value = try Value(from: decoder, as: type.id, registry: registry)
+        let value = try Value(from: decoder, as: type.id, runtime: runtime)
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
             self.init(name: name,
