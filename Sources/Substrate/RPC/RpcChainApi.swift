@@ -17,6 +17,8 @@ public struct RpcChainApi<S: AnySubstrate>: RpcApi {
         self.substrate = substrate
     }
     
+    //public func block(at hash: S.RT.THash? = nil) async throws -> S.RT.T
+    
 //    public func getBlock(hash: S.R.THash?, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<ChainBlock<S.R.TExtrinsic>>) {
 //        substrate.client.call(
 //            method: "chain_getBlock",
@@ -41,7 +43,7 @@ public struct RpcChainApi<S: AnySubstrate>: RpcApi {
 //        }
 //    }
 //
-    public func blockHash(block: S.RT.TBlockNumber?) async throws -> S.RT.THash {
+    public func blockHash(block: S.RC.TBlock.THeader.TNumber?) async throws -> S.RC.THasher.THash {
         try await Self.blockHash(block: block, client: substrate.client)
     }
 //
@@ -100,8 +102,8 @@ public struct RpcChainApi<S: AnySubstrate>: RpcApi {
 
 extension RpcChainApi { // Static
     public static func blockHash(
-        block: S.RT.TBlockNumber?, client: CallableClient
-    ) async throws -> S.RT.THash {
+        block: S.RC.TBlock.THeader.TNumber?, client: CallableClient
+    ) async throws -> S.RC.THasher.THash {
         try await client.call(method: "chain_getBlockHash", params: Params(block.map(UIntHex.init)))
     }
 }
