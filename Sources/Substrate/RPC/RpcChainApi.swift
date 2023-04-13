@@ -19,62 +19,38 @@ public struct RpcChainApi<S: AnySubstrate>: RpcApi {
         try await substrate.client.call(method: "chain_getBlock", params: Params(hash))
     }
     
+    public func header(at hash: S.RC.THasher.THash? = nil) async throws -> S.RC.TBlock.THeader? {
+        try await substrate.client.call(method: "chain_getHeader", params: Params(hash))
+    }
+    
+    public func finalizedHead() async throws -> S.RC.THasher.THash {
+        try await substrate.client.call(method: "chain_getFinalizedHead", params: Params())
+    }
+    
     public func blockHash(block: S.RC.TBlock.THeader.TNumber?) async throws -> S.RC.THasher.THash {
         try await Self.blockHash(block: block, client: substrate.client)
     }
-//
-//    public func getFinalizedHead(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THash>) {
-//        substrate.client.call(
-//            method: "chain_getFinalizedHead",
-//            params: RpcCallParams(),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<S.R.THash>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func getHeader(hash: S.R.THash?, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THeader>) {
-//        substrate.client.call(
-//            method: "chain_getHeader",
-//            params: RpcCallParams(hash),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<S.R.THeader>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
 }
-//
-//extension SubstrateRpcChainApi where S.C: SubscribableRpcClient {
-//    public func subscribeAllHeads(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THeader>) -> RpcSubscription {
-//        return substrate.client.subscribe(
-//            method: "chain_subscribeAllHeads",
-//            params: RpcCallParams(),
-//            unsubscribe: "chain_unsubscribeAllHeads"
-//        ) { (res: RpcClientResult<S.R.THeader>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func subscribeFinalizedHeads(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THeader>) -> RpcSubscription {
-//        return substrate.client.subscribe(
-//            method: "chain_subscribeFinalizedHeads",
-//            params: RpcCallParams(),
-//            unsubscribe: "chain_unsubscribeFinalizedHeads"
-//        ) { (res: RpcClientResult<S.R.THeader>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//
-//    public func subscribeNewHeads(timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<S.R.THeader>) -> RpcSubscription {
-//        return substrate.client.subscribe(
-//            method: "chain_subscribeNewHeads",
-//            params: RpcCallParams(),
-//            unsubscribe: "chain_unsubscribeNewHeads"
-//        ) { (res: RpcClientResult<S.R.THeader>) in
-//            cb(res.mapError(SubstrateRpcApiError.rpc))
-//        }
-//    }
-//}
+
+extension RpcChainApi where S.CL: SubscribableClient {
+    public func subscribeAllHeads() async throws -> AsyncThrowingStream<S.RC.TBlock.THeader, Error> {
+        try await substrate.client.subscribe(method: "chain_subscribeAllHeads",
+                                             params: Params(),
+                                             unsubsribe: "chain_unsubscribeAllHeads")
+    }
+    
+    public func subscribeFinalizedHeads() async throws -> AsyncThrowingStream<S.RC.TBlock.THeader, Error> {
+        try await substrate.client.subscribe(method: "chain_subscribeFinalizedHeads",
+                                             params: Params(),
+                                             unsubsribe: "chain_unsubscribeFinalizedHeads")
+    }
+    
+    public func subscribeNewHeads() async throws -> AsyncThrowingStream<S.RC.TBlock.THeader, Error> {
+        try await substrate.client.subscribe(method: "chain_unsubscribeNewHeads",
+                                             params: Params(),
+                                             unsubsribe: "chain_unsubscribeNewHeads")
+    }
+}
 
 extension RpcChainApi { // Static
     public static func blockHash(

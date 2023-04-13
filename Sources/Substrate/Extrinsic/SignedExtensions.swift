@@ -137,11 +137,10 @@ public struct DynamicCheckMortalitySignedExtension: DynamicExtrinsicExtension {
         switch pEra {
         case .immortal:  return .bytes(substrate.runtime.genesisHash.data)
         case .mortal(period: _, phase: _):
-            //let currentBlock = try await substrate.rpc.chain.getBlock().header.number
-            //let birthBlock = pEra.birth(UInt64(currentBlock))
-            //let hash = try await substrate.rpc.chain.getBlockHash(birthBlock)
-            //return .bytes(hash.data)
-            return .bytes(substrate.runtime.genesisHash.data)
+            let currentBlock = try await substrate.rpc.chain.header()!.number
+            let birthBlock = pEra.birth(current: UInt64(currentBlock))
+            let hash = try await substrate.rpc.chain.blockHash(block: S.RC.TBlock.THeader.TNumber(birthBlock))
+            return .bytes(hash.data)
         }
     }
 }

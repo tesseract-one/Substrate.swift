@@ -36,13 +36,23 @@ public struct ExtrinsicSignPayload<C: Call, Extra> {
 public protocol OpaqueExtrinsic: Decodable {
     func decode() throws -> Extrinsic<DynamicCall<RuntimeTypeId>, Value<RuntimeTypeId>>
     
+    func hash() -> Data
+    
     static var version: UInt8 { get }
 }
 
 public protocol StaticOpaqueExtrinsic: OpaqueExtrinsic {
     associatedtype TManager: ExtrinsicManager
     
+    func hash() -> TManager.RT.THasher.THash
+    
     func decode<C: Call & ScaleRuntimeDecodable>() throws -> Extrinsic<C, TManager.TSignedExtra>
+}
+
+public extension StaticOpaqueExtrinsic {
+    func hash() -> TManager.RT.THasher.THash {
+        try! TManager.RT.THasher.THash(self.hash())
+    }
 }
 
 public enum ExtrinsicCodingError: Error {
@@ -133,6 +143,10 @@ public struct BlockExtrinsic<S: System>: StaticOpaqueExtrinsic {
         self.runtime = decoder.runtime
         let container = try decoder.singleValueContainer()
         self.data = try container.decode(Data.self)
+    }
+    
+    public func hash() -> Data {
+        runtime.hasher.hash(data: data)
     }
     
     public func decode() throws -> Extrinsic<DynamicCall<RuntimeTypeId>, Value<RuntimeTypeId>> {
