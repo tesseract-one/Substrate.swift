@@ -48,12 +48,6 @@ extension Value: ScaleRuntimeDynamicDecodable where C == RuntimeTypeId {
     }
 }
 
-extension Runtime {
-    public func decode(from decoder: ScaleDecoder, type: RuntimeTypeId) throws -> Value<RuntimeTypeId> {
-        try Value(from: decoder, as: type, runtime: self)
-    }
-}
-
 private extension Value where C == RuntimeTypeId {
     static func _decodeComposite(
         from decoder: ScaleDecoder, type: RuntimeTypeId, fields: [RuntimeTypeField], runtime: Runtime

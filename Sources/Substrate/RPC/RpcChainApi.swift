@@ -11,38 +11,14 @@ import JsonRPC
 public struct RpcChainApi<S: AnySubstrate>: RpcApi {
     public weak var substrate: S!
     
-//    public typealias ChainBlock<Extrinsic> = SignedBlock<Block<S.R.THeader, Extrinsic>>
-    
     public init(substrate: S) {
         self.substrate = substrate
     }
     
-    //public func block(at hash: S.RT.THash? = nil) async throws -> S.RT.T
+    public func block(at hash: S.RC.THasher.THash? = nil) async throws -> S.RC.TSignedBlock {
+        try await substrate.client.call(method: "chain_getBlock", params: Params(hash))
+    }
     
-//    public func getBlock(hash: S.R.THash?, timeout: TimeInterval? = nil, _ cb: @escaping SRpcApiCallback<ChainBlock<S.R.TExtrinsic>>) {
-//        substrate.client.call(
-//            method: "chain_getBlock",
-//            params: RpcCallParams(hash),
-//            timeout: timeout ?? substrate.callTimeout
-//        ) { (res: RpcClientResult<ChainBlock<Data>>) in
-//            let response = res.mapError(SubstrateRpcApiError.rpc).flatMap { cbd in
-//                Result {
-//                    ChainBlock<S.R.TExtrinsic>(
-//                        block: Block(
-//                            header: cbd.block.header,
-//                            extrinsics: try cbd.block.extrinsics.map {
-//                                try S.R.TExtrinsic(from: SCALE.default.decoder(data: $0),
-//                                                   registry: self.substrate.registry)
-//                            }
-//                        ),
-//                        justification: cbd.justification
-//                    )
-//                }.mapError(SubstrateRpcApiError.from)
-//            }
-//            cb(response)
-//        }
-//    }
-//
     public func blockHash(block: S.RC.TBlock.THeader.TNumber?) async throws -> S.RC.THasher.THash {
         try await Self.blockHash(block: block, client: substrate.client)
     }

@@ -10,7 +10,7 @@ import JsonRPC
 
 public protocol AnySubstrate<RC>: AnyObject {
     associatedtype RC: RuntimeConfig
-    associatedtype CL: CallableClient & RuntimeOwner
+    associatedtype CL: CallableClient & RuntimeHolder
     
     // Dependencies
     var client: CL { get }
@@ -24,7 +24,7 @@ public protocol AnySubstrate<RC>: AnyObject {
 //    var tx: SubstrateExtrinsicApiRegistry<Self> { get }
 }
 
-public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeOwner>: AnySubstrate {
+public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHolder>: AnySubstrate {
     public typealias RC = RC
     public typealias CL = CL
     
@@ -40,7 +40,7 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeOwne
         self.runtime = runtime
         
         // Set runtime for JSON decoders
-        self.client.runtime = runtime
+        try self.client.setRuntime(runtime: runtime)
         
         // Create registries
         self.rpc = RpcApiRegistry()

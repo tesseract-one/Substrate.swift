@@ -15,7 +15,7 @@ public protocol System where TBlock.THeader.THasher == THasher {
     associatedtype TAccountId: Encodable & ValueConvertible
     associatedtype TAddress: ValueConvertible
     associatedtype TSignature: ValueConvertible
-    associatedtype TBlock: Block
+    associatedtype TBlock: AnyBlock
     associatedtype TSignedBlock: AnyChainBlock<TBlock>
     
     // Helpers

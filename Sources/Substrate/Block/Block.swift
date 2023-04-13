@@ -9,8 +9,8 @@ import Foundation
 import ScaleCodec
 import Serializable
 
-public protocol Block: Decodable {
-    associatedtype THeader: BlockHeader
+public protocol AnyBlock: Decodable {
+    associatedtype THeader: AnyBlockHeader
     associatedtype TExtrinsic: OpaqueExtrinsic
     
     var hash: THeader.THasher.THash { get }
@@ -18,11 +18,17 @@ public protocol Block: Decodable {
     var extrinsics: [TExtrinsic] { get }
 }
 
-public extension Block {
+extension AnyBlock {
+    public func dynamicExtrinsics() throws -> [Extrinsic<DynamicCall<RuntimeTypeId>, Value<RuntimeTypeId>>] {
+        try extrinsics.map { try $0.decode() }
+    }
+}
+
+public extension AnyBlock {
     var hash: THeader.THasher.THash { header.hash }
 }
 
-public protocol BlockHeader: Decodable {
+public protocol AnyBlockHeader: Decodable {
     associatedtype TNumber: UnsignedInteger & DataConvertible
     associatedtype THasher: FixedHasher
     
@@ -31,12 +37,17 @@ public protocol BlockHeader: Decodable {
 }
 
 public protocol AnyChainBlock<TBlock>: Decodable {
-    associatedtype TBlock: Block
+    associatedtype TBlock: AnyBlock
     
     var block: TBlock { get }
 }
 
-public struct ChainBlock<B: Block>: Decodable, AnyChainBlock {
+public struct Block<H: AnyBlockHeader, E: OpaqueExtrinsic>: AnyBlock {
+    public let header: H
+    public let extrinsics: [E]
+}
+
+public struct ChainBlock<B: AnyBlock>: AnyChainBlock {
     public let block: B
     public let justifications: SerializableValue
 }

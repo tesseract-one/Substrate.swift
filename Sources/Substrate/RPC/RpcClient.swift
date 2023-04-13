@@ -40,7 +40,7 @@ public extension SubscribableClient {
     }
 }
 
-public class CallableRpcClient: CallableClient, RuntimeOwner {
+public class CallableRpcClient: CallableClient, RuntimeHolder {
     public private (set) var client: Client & ContentCodersProvider
     
     public init(client: Client & ContentCodersProvider) {
@@ -56,12 +56,13 @@ public class CallableRpcClient: CallableClient, RuntimeOwner {
         try await client.call(method: method, params: params)
     }
     
-    public var runtime: Runtime {
-        get { self.client.contentEncoder.runtime }
-        set {
-            self.client.contentEncoder.runtime = newValue
-            self.client.contentDecoder.runtime = newValue
-        }
+    public var runtime: any Runtime {
+       self.client.contentEncoder.runtime
+    }
+    
+    public func setRuntime(runtime: any Runtime) throws {
+        self.client.contentEncoder.runtime = runtime
+        self.client.contentDecoder.runtime = runtime
     }
     
     deinit {

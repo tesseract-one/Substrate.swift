@@ -76,7 +76,9 @@ extension DynamicRuntimeConfig: System {
     public typealias TIndex = UInt64
     public typealias TSystemProperties = DynamicSystemProperties
     public typealias TAccountId = DynamicHash
-    public typealias TBlock = DynamicBlock<BlockExtrinsic<Self>>
+    public typealias TAddress = Value<Void>
+    public typealias TSignature = DynamicHash
+    public typealias TBlock = Block<DynamicBlockHeader, BlockExtrinsic<Self>>
     public typealias TSignedBlock = ChainBlock<TBlock>
     
     public typealias TExtrinsicManager = DynamicExtrinsicManagerV4<Self>
@@ -88,9 +90,6 @@ extension DynamicRuntimeConfig: System {
     public typealias TNodeRole = SerializableValue
     public typealias TNetworkPeerInfo = [String: SerializableValue]
     public typealias TSyncState = [String: SerializableValue]
-    
-    public typealias TAddress = Value<Void>
-    public typealias TSignature = DynamicHash
     public typealias TDispatchError = SerializableValue
     public typealias TTransactionValidityError = SerializableValue
     

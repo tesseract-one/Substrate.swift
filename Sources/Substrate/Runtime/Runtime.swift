@@ -19,7 +19,6 @@ public protocol Runtime: AnyObject {
     func decoder(with data: Data) -> any ScaleDecoder
     
     func resolve(type id: RuntimeTypeId) -> RuntimeType?
-//    func resolve(type path: String) -> RuntimeTypeInfo?
     func resolve(palletName index: UInt8) -> String?
     func resolve(palletIndex name: String) -> UInt8?
         
@@ -41,8 +40,12 @@ public protocol Runtime: AnyObject {
     ) -> (keys: [(StorageHasher, RuntimeTypeId)], value: RuntimeTypeId)?
 }
 
-public protocol RuntimeOwner {
-    var runtime: any Runtime { get set }
+public protocol RuntimeAware {
+    var runtime: any Runtime { get }
+}
+
+public protocol RuntimeHolder: RuntimeAware {
+    func setRuntime(runtime: any Runtime) throws
 }
 
 public extension Runtime {

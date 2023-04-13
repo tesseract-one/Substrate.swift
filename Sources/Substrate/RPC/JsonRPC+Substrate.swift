@@ -65,7 +65,7 @@ extension JSONDecoder {
 }
 
 extension CodingUserInfoKey {
-    public static let substrateRuntime = CodingUserInfoKey(rawValue: "SubstrateDynamicRuntime")!
+    public static let substrateRuntime = CodingUserInfoKey(rawValue: "SubstrateRuntimeKey")!
 }
 
 extension Encoder {

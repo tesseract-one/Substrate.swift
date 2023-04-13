@@ -9,9 +9,9 @@ import Foundation
 import ScaleCodec
 
 extension Value: RuntimeDynamicDecodable where C == RuntimeTypeId {
-    public init(from decoder: Decoder, `as` type: RuntimeTypeId, runtime: Runtime) throws {
+    public init(from decoder: Decoder, `as` type: RuntimeTypeId) throws {
         var value = ValueDecodingContainer(decoder)
-        try self.init(from: &value, as: type, runtime: runtime)
+        try self.init(from: &value, as: type, runtime: decoder.runtime)
     }
     
     
@@ -353,7 +353,7 @@ private extension Value where C == RuntimeTypeId {
         var value: Self? = nil
         while value == nil {
             guard let innerType = runtime.resolve(type: innerTypeId)?.definition else {
-                throw DecodingError.typeNotFound(type)
+                throw try from.newError("Type not found: \(type)")
             }
             switch innerType {
             case .primitive(is: let prim):

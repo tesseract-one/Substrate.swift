@@ -1,5 +1,5 @@
 //
-//  Scale+RuntimeCodable.swift
+//  Types+RuntimeCodable.swift
 //  
 //
 //  Created by Yehor Popovych on 10/10/20.
@@ -7,6 +7,7 @@
 
 import Foundation
 import ScaleCodec
+import Serializable
 
 extension Bool: ScaleRuntimeCodable {}
 extension Data: ScaleRuntimeCodable {}
@@ -18,8 +19,8 @@ extension UInt8: ScaleRuntimeCodable {}
 extension UInt16: ScaleRuntimeCodable {}
 extension UInt32: ScaleRuntimeCodable {}
 extension UInt64: ScaleRuntimeCodable {}
-extension Compact: ScaleRuntimeCodable {}
 extension String: ScaleRuntimeCodable {}
+extension Compact: ScaleRuntimeCodable {}
 extension DoubleWidth: ScaleRuntimeCodable {}
 
 extension CaseIterable where Self: Equatable & ScaleEncodable, Self.AllCases.Index == Int {
