@@ -11,7 +11,7 @@ public protocol Signer {
     func account(type: KeyTypeId, algos: [CryptoTypeId]) async throws -> PublicKey
     func sign<RC: RuntimeConfig, C: Call>(
         payload: SigningPayload<C, RC.TExtrinsicManager>,
-        with account: RC.TAccountId,
+        with account: PublicKey,
         config: RC
     ) async throws -> RC.TSignature
 }

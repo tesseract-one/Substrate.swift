@@ -23,9 +23,7 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
         self.extensions = extensions
     }
     
-    public func build<C: Call>(
-        unsigned call: C, params: TUnsignedParams
-    ) async throws -> Extrinsic<C, TUnsignedExtra> {
+    public func unsigned<C: Call>(call: C, params: TUnsignedParams) async throws -> Extrinsic<C, TUnsignedExtra> {
         Extrinsic(call: call, extra: (), signed: false)
     }
     
@@ -36,15 +34,15 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
         try encoder.encode(inner.output)
     }
     
-    public func build<C: Call>(
-        params extrinsic: Extrinsic<C, TUnsignedExtra>,
+    public func params<C: Call>(
+        unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
         overrides: TSigningParams?
     ) async throws -> TSigningParams {
         try await extensions.params(merged: overrides)
     }
     
-    public func build<C: Call>(
-        payload extrinsic: Extrinsic<C, TUnsignedExtra>,
+    public func payload<C: Call>(
+        unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
         params: TSigningParams
     ) async throws -> ExtrinsicSignPayload<C, TSigningExtra> {
         return try await ExtrinsicSignPayload(call: extrinsic.call,
@@ -67,23 +65,17 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
         return ExtrinsicSignPayload(call: call, extra: (extra, additional))
     }
     
-    public func build<C: Call>(signed payload: ExtrinsicSignPayload<C, TSigningExtra>,
-                               address: RT.TAddress,
-                               signature: RT.TSignature) throws -> Extrinsic<C, TSignedExtra> {
+    public func signed<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
+                                address: RT.TAddress,
+                                signature: RT.TSignature) throws -> Extrinsic<C, TSignedExtra> {
         Extrinsic(call: payload.call, extra: (address, signature, payload.extra.extra), signed: true)
     }
     
     public func encode<C: Call>(signed extrinsic: Extrinsic<C, TSignedExtra>, in encoder: ScaleEncoder) throws {
         let inner = runtime.encoder()
         try inner.encode(Self.version | 0b1000_0000)
-        try extrinsic.extra.address.encode(in: inner,
-                                                     runtime: runtime) { _ in
-            try self.runtime.addressType.id
-        }
-        try extrinsic.extra.signature.encode(in: inner,
-                                             runtime: runtime) { _ in
-            try self.runtime.signatureType.id
-        }
+        try extrinsic.extra.address.encode(in: inner, runtime: runtime)
+        try extrinsic.extra.signature.encode(in: inner, runtime: runtime)
         try extensions.encode(extra: extrinsic.extra.extra, in: inner)
         try extrinsic.call.encode(in: inner, runtime: runtime)
         try encoder.encode(inner.output)
@@ -131,12 +123,8 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
                                                            got: version)
         }
         if isSigned {
-            let address = try RC.TAddress(from: decoder, runtime: runtime) { _ in
-                try self.runtime.addressType.id
-            }
-            let signature = try RC.TSignature(from: decoder, runtime: runtime) { _ in
-                try self.runtime.signatureType.id
-            }
+            let address = try RC.TAddress(from: decoder, runtime: runtime)
+            let signature = try RC.TSignature(from: decoder, runtime: runtime)
             let extra = try extensions.extra(from: decoder)
             return Extrinsic(call: try C(from: decoder, runtime: runtime),
                              extra: (address, signature, extra), signed: true)
@@ -148,7 +136,6 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
     
     public func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws {
         try self.extensions.setSubstrate(substrate: substrate)
-        let runtime = substrate.runtime
         self.runtime = substrate.runtime
     }
     

@@ -10,7 +10,7 @@ import Foundation
 import Foundation
 import ScaleCodec
 
-public protocol Address: ScaleRuntimeDynamicDecodable, ScaleRuntimeDynamicEncodable {
+public protocol Address: ScaleRuntimeCodable, ScaleRuntimeDynamicDecodable, ScaleRuntimeDynamicEncodable {
     associatedtype TAccountId: AccountId
     
     init(accountId: TAccountId, runtime: any Runtime) throws
@@ -42,7 +42,7 @@ public enum MultiAddress<Id, Index>: Equatable, Hashable
     }
 }
 
-extension MultiAddress: Address where Id: ScaleRuntimeCodable {
+extension MultiAddress: Address {
     public typealias TAccountId = Id
     
     public init(accountId: Id, runtime: Runtime) throws {
@@ -50,7 +50,7 @@ extension MultiAddress: Address where Id: ScaleRuntimeCodable {
     }
 }
 
-extension MultiAddress: ScaleRuntimeCodable where TAccountId: ScaleRuntimeCodable {
+extension MultiAddress: ScaleRuntimeCodable {
     public init(from decoder: ScaleDecoder, runtime: any Runtime) throws {
         let type = try decoder.decode(.enumCaseId)
         switch type {
@@ -73,5 +73,3 @@ extension MultiAddress: ScaleRuntimeCodable where TAccountId: ScaleRuntimeCodabl
         }
     }
 }
-
-extension MultiAddress: ScaleRuntimeDynamicEncodable, ScaleRuntimeDynamicDecodable where TAccountId: ScaleRuntimeCodable {}

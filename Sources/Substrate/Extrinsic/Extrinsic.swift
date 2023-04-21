@@ -66,21 +66,19 @@ public protocol ExtrinsicManager<RT> {
     
     var version: UInt8 { get }
     
-    func build<C: Call>(
-        unsigned call: C, params: TUnsignedParams
-    ) async throws -> Extrinsic<C, TUnsignedExtra>
+    func unsigned<C: Call>(call: C, params: TUnsignedParams) async throws -> Extrinsic<C, TUnsignedExtra>
     func encode<C: Call>(unsigned extrinsic: Extrinsic<C, TUnsignedExtra>, in encoder: ScaleEncoder) throws
     func decode<C: Call & ScaleRuntimeDecodable>(
         unsigned decoder: ScaleDecoder
     ) throws -> Extrinsic<C, TUnsignedExtra>
     
-    func build<C: Call>(
-        params extrinsic: Extrinsic<C, TUnsignedExtra>,
+    func params<C: Call>(
+        unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
         overrides: TSigningParams?
     ) async throws -> TSigningParams
     
-    func build<C: Call>(
-        payload extrinsic: Extrinsic<C, TUnsignedExtra>,
+    func payload<C: Call>(
+        unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
         params: TSigningParams
     ) async throws -> ExtrinsicSignPayload<C, TSigningExtra>
     func encode<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>, in encoder: ScaleEncoder) throws
@@ -88,9 +86,9 @@ public protocol ExtrinsicManager<RT> {
         payload decoder: ScaleDecoder
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra>
     
-    func build<C: Call>(signed payload: ExtrinsicSignPayload<C, TSigningExtra>,
-                        address: RT.TAddress,
-                        signature: RT.TSignature) throws -> Extrinsic<C, TSignedExtra>
+    func signed<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
+                         address: RT.TAddress,
+                         signature: RT.TSignature) throws -> Extrinsic<C, TSignedExtra>
     func encode<C: Call>(signed extrinsic: Extrinsic<C, TSignedExtra>, in encoder: ScaleEncoder) throws
     func decode<C: Call & ScaleRuntimeDecodable>(signed decoder: ScaleDecoder) throws -> Extrinsic<C, TSignedExtra>
     
