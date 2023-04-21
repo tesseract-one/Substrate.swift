@@ -29,8 +29,19 @@ extension ExtrinsicBuilder where E == S.RC.TExtrinsicManager.TUnsignedExtra {
         self.init(substrate: substrate, extinsic: ext)
     }
     
-    public func paymentInfo() async throws {
-        
+    public func dryRun(account: PublicKey,
+                       at block: S.RC.TBlock.THeader.THasher.THash? = nil,
+                       overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
+    ) async throws -> RpcResult<RpcResult<Nil, S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
+        let signed = try await fakeSign(account: account, overrides: overrides)
+        return try await signed.dryRun(at: block)
+    }
+    
+    public func paymentInfo(account: PublicKey,
+                            overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
+    ) async throws {
+        let signed = try await fakeSign(account: account, overrides: overrides)
+        return try await signed.paymentInfo()
     }
     
     public func fakeSign(account: PublicKey,
@@ -78,6 +89,18 @@ extension ExtrinsicBuilder where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     }
     
     public func send() async throws {
+        
+    }
+}
+
+extension ExtrinsicBuilder where E == S.RC.TExtrinsicManager.TSignedExtra {
+    public func dryRun(
+        at block: S.RC.TBlock.THeader.THasher.THash? = nil
+    ) async throws -> RpcResult<RpcResult<Nil, S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
+        try await substrate.rpc.system.dryRun(extrinsic: extrinsic, at: block)
+    }
+    
+    public func paymentInfo() async throws {
         
     }
 }
