@@ -70,7 +70,7 @@ public extension StaticAccountId {
     }
 }
 
-public struct AccountId32: StaticAccountId {
+public struct AccountId32: StaticAccountId, Hashable, Equatable {
     public let raw: Data
     
     public init(checked raw: Data) throws {

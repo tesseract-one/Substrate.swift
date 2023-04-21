@@ -12,9 +12,9 @@ public protocol SignedExtensionsProvider<RT> {
     associatedtype RT: System
     associatedtype TExtra
     associatedtype TAdditionalSigned
-    associatedtype TSigningParams: NonceSigningParameter
+    associatedtype TSigningParams
     
-//    func new() async throws -> TSigningParams
+    func params(merged params: TSigningParams?) async throws -> TSigningParams
     func extra(params: TSigningParams) async throws -> TExtra
     func additionalSigned(params: TSigningParams) async throws -> TAdditionalSigned
     
@@ -26,16 +26,29 @@ public protocol SignedExtensionsProvider<RT> {
     mutating func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws
 }
 
-public enum AccountIdOrNonce<A: AccountId, N: UnsignedInteger> {
-    case id(A)
-    case nonce(N)
+//public enum AccountIdOrNonce<A: AccountId, N: UnsignedInteger> {
+//    case id(A)
+//    case nonce(N)
+//}
+
+public protocol AnyNonceSigningParameter {
+    var hasNonce: Bool { get }
+    var anyNonce: UInt256?  { get set }
 }
 
-public protocol NonceSigningParameter<TAccountId, TNonce> {
-    associatedtype TAccountId: AccountId
+public protocol NonceSigningParameter<TNonce>: AnyNonceSigningParameter {
     associatedtype TNonce: UnsignedInteger
-    
-    var nonce: AccountIdOrNonce<TAccountId, TNonce>? { get set }
+    var nonce: TNonce? { get set }
+    func nonce(_ nonce: TNonce) -> Self
+    static func nonce(_ nonce: TNonce) -> Self
+}
+
+public extension NonceSigningParameter {
+    var hasNonce: Bool { nonce != nil }
+    var anyNonce: UInt256? {
+        get { nonce.map { UInt256($0) } }
+        set { nonce = newValue.map { TNonce($0) } }
+    }
 }
 
 public protocol EraSigningParameter<TEra, THash> {
@@ -43,13 +56,20 @@ public protocol EraSigningParameter<TEra, THash> {
     associatedtype THash: Hash
     
     var era: TEra? { get set }
+    func era(_ era: TEra) -> Self
+    static func era(_ era: TEra) -> Self
+    
     var blockHash: THash? { get set }
+    func blockHash(_ hash: THash) -> Self
+    static func blockHash(_ hash: THash) -> Self
 }
 
 public protocol PaymentSigningParameter<TPayment> {
     associatedtype TPayment: ValueRepresentable
-   
+    
     var tip: TPayment? { get set }
+    func tip(_ tip: TPayment) -> Self
+    static func tip(_ tip: TPayment) -> Self
 }
 
 public struct AnySigningParams<RT: System> {
@@ -66,11 +86,20 @@ public struct AnySigningParams<RT: System> {
 }
 
 extension AnySigningParams: NonceSigningParameter {
-    public typealias TAccountId = RT.TAccountId
     public typealias TNonce = RT.TIndex
-    public var nonce: AccountIdOrNonce<TAccountId, TNonce>? {
-        get { self["nonce"] as? AccountIdOrNonce<TAccountId, TNonce> }
+    public var nonce: TNonce? {
+        get { self["nonce"] as? TNonce }
         set { self["nonce"] = newValue }
+    }
+    public func nonce(_ nonce: TNonce) -> Self {
+        var new = self
+        new.nonce = nonce
+        return new
+    }
+    public static func nonce(_ nonce: TNonce) -> Self {
+        var new = Self()
+        new.nonce = nonce
+        return new
     }
 }
 
@@ -81,9 +110,29 @@ extension AnySigningParams: EraSigningParameter {
         get { params["era"] as? TEra }
         set { params["era"] = newValue }
     }
+    public func era(_ era: TEra) -> Self {
+        var new = self
+        new.era = era
+        return new
+    }
+    public static func era(_ era: TEra) -> Self {
+        var new = Self()
+        new.era = era
+        return new
+    }
     public var blockHash: THash? {
         get { params["blockHash"] as? THash }
         set { params["blockHash"] = newValue }
+    }
+    public func blockHash(_ hash: THash) -> Self {
+        var new = self
+        new.blockHash = hash
+        return new
+    }
+    public static func blockHash(_ hash: THash) -> Self {
+        var new = Self()
+        new.blockHash = hash
+        return new
     }
 }
 
@@ -92,6 +141,16 @@ extension AnySigningParams: PaymentSigningParameter {
     public var tip: TPayment? {
         get { self["tip"] as? TPayment }
         set { self["tip"] = newValue }
+    }
+    public func tip(_ tip: TPayment) -> Self {
+        var new = self
+        new.tip = tip
+        return new
+    }
+    public static func tip(_ tip: TPayment) -> Self {
+        var new = Self()
+        new.tip = tip
+        return new
     }
 }
 
@@ -143,9 +202,11 @@ public class DynamicSignedExtensionsProvider<RT: System>: SignedExtensionsProvid
         self.version = version
     }
     
-//    public func new() async throws -> TSigningParams {
-//        AnySigningParams()
-//    }
+    public func params(merged params: TSigningParams?) async throws -> TSigningParams {
+        params ?? AnySigningParams()
+    }
+    
+    public func defaultParams() async throws -> TSigningParams { AnySigningParams() }
     
     public func extra(params: TSigningParams) async throws -> TExtra {
         try await _substrate.extra(params: params)
@@ -207,30 +268,18 @@ private struct _SubstrateWrapper<ST: SomeSubstrate>: _SomeSubstrateWrapper {
     var runtime: any Runtime { substrate.runtime }
     
     init(substrate: ST, version: UInt8, extensions: [String: DynamicExtrinsicExtension]) throws {
-        var extraTypeId: RuntimeTypeId? = nil
         guard substrate.runtime.metadata.extrinsic.version == version else {
             throw ExtrinsicCodingError.badExtrinsicVersion(
                 supported: version,
                 got: substrate.runtime.metadata.extrinsic.version)
         }
-        for param in substrate.runtime.metadata.extrinsic.type.type.parameters {
-            switch param.name {
-            case "Extra": extraTypeId = param.type
-            default: continue
-            }
-        }
-        guard let extraTypeId = extraTypeId else {
-            throw ExtrinsicCodingError.unsupportedSubstrate(
-                reason: "Bad Extrinsic type. Can't obtain signature parameters"
-            )
-        }
+        self.extraType = try substrate.runtime.extrinsicExtraType.id
         self.extensions = try substrate.runtime.metadata.extrinsic.extensions.map { info in
             guard let ext = extensions[info.identifier] else {
                 throw  ExtrinsicCodingError.unknownExtension(identifier: info.identifier)
             }
             return (ext, info.type.id, info.additionalSigned.id)
         }
-        self.extraType = extraTypeId
         self.additionalSignedTypes = self.extensions.map { $0.aId }
         self.substrate = substrate
     }

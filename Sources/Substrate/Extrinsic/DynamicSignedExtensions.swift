@@ -85,14 +85,16 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         guard let nonce = params.nonce else {
-            throw ExtrinsicCodingError.valueNotFound(key: "nonce")
+            throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
+                                                         parameter: "nonce")
         }
-        switch nonce {
-        case .nonce(let nonce): return Value(value: .primitive(.u256(UInt256(nonce))), context: id)
-        case .id(let accId):
-            let nonce = try await substrate.rpc.system.accountNextIndex(id: accId)
-            return Value(value: .primitive(.u256(UInt256(nonce))), context: id)
-        }
+        return Value(value: .primitive(.u256(UInt256(nonce))), context: id)
+//        switch params.nonce {
+//        case .nonce(let nonce): return Value(value: .primitive(.u256(UInt256(nonce))), context: id)
+//        case .id(let accId):
+//            let nonce = try await substrate.rpc.system.accountNextIndex(id: accId)
+//            return Value(value: .primitive(.u256(UInt256(nonce))), context: id)
+//        }
     }
     
     public func additionalSigned<S: SomeSubstrate>(
@@ -151,7 +153,8 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         guard let tip = params.tip else {
-            throw ExtrinsicCodingError.valueNotFound(key: "tip")
+            throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
+                                                         parameter: "tip")
         }
         return try tip.asValue().mapContext { id }
     }

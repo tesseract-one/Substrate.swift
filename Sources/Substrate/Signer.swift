@@ -9,5 +9,9 @@ import Foundation
 
 public protocol Signer {
     func account(type: KeyTypeId, algos: [CryptoTypeId]) async throws -> PublicKey
-    func sign(tx: Data) async throws -> Data
+    func sign<RC: RuntimeConfig, C: Call>(
+        payload: SigningPayload<C, RC.TExtrinsicManager>,
+        with account: RC.TAccountId,
+        config: RC
+    ) async throws -> RC.TSignature
 }

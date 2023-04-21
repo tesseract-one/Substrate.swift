@@ -14,6 +14,9 @@ public protocol RuntimeConfig: System {
     
     func extrinsicManager() throws -> TExtrinsicManager
     func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo
+    func extrinsicTypes(
+        metadata: Metadata
+    ) throws -> (addr: RuntimeTypeInfo, signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
     func hasher(metadata: Metadata) throws -> THasher
 }
 
@@ -33,6 +36,7 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
     public enum Error: Swift.Error {
         case headerTypeNotFound(String)
         case hashTypeNotFound(header: RuntimeTypeInfo)
+        case extrinsicInfoNotFound
         case unknownHashName(String)
     }
     
@@ -70,6 +74,33 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
         return type
     }
     
+    public func extrinsicTypes(
+        metadata: Metadata
+    ) throws -> (addr: RuntimeTypeInfo, signature: RuntimeTypeInfo, extra: RuntimeTypeInfo) {
+        var addressTypeId: RuntimeTypeId? = nil
+        var sigTypeId: RuntimeTypeId? = nil
+        var extraTypeId: RuntimeTypeId? = nil
+        for param in metadata.extrinsic.type.type.parameters {
+            switch param.name.lowercased() {
+            case "address": addressTypeId = param.type
+            case "signature": sigTypeId = param.type
+            case "extra": extraTypeId = param.type
+            default: continue
+            }
+        }
+        guard let addressTypeId = addressTypeId,
+              let sigTypeId = sigTypeId,
+              let extraTypeId = extraTypeId,
+              let addressType = metadata.resolve(type: addressTypeId),
+              let sigType = metadata.resolve(type: sigTypeId),
+              let extraType = metadata.resolve(type: extraTypeId) else {
+            throw Error.extrinsicInfoNotFound
+        }
+        return (addr: RuntimeTypeInfo(id: addressTypeId, type: addressType),
+                signature: RuntimeTypeInfo(id: sigTypeId, type: sigType),
+                extra: RuntimeTypeInfo(id: extraTypeId, type: extraType))
+    }
+    
     public static let allExtensions: [DynamicExtrinsicExtension] = [
         DynamicCheckSpecVersionExtension(),
         DynamicCheckTxVersionExtension(),
@@ -85,10 +116,10 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
 
 extension DynamicRuntimeConfig: System {
     public typealias THasher = AnyFixedHasher
-    public typealias TIndex = UInt64
+    public typealias TIndex = UInt256
     public typealias TSystemProperties = AnySystemProperties
     public typealias TAccountId = AccountId32
-    public typealias TAddress = Value<Void>
+    public typealias TAddress = MultiAddress<TAccountId, TIndex>
     public typealias TSignature = AnySignature
     public typealias TBlock = Block<AnyBlockHeader<THasher>, BlockExtrinsic<TExtrinsicManager>>
     public typealias TSignedBlock = ChainBlock<TBlock, SerializableValue>

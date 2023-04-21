@@ -18,11 +18,9 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
     
     private var extensions: SE
     private var runtime: (any Runtime)!
-    private var dynamicTypes: LazyProperty<(addr: RuntimeTypeId, sig: RuntimeTypeId)>!
-    
+
     public init(extensions: SE) {
         self.extensions = extensions
-        self.dynamicTypes = nil
     }
     
     public func build<C: Call>(
@@ -36,6 +34,13 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
         try inner.encode(Self.version & 0b0111_1111)
         try extrinsic.call.encode(in: inner, runtime: runtime)
         try encoder.encode(inner.output)
+    }
+    
+    public func build<C: Call>(
+        params extrinsic: Extrinsic<C, TUnsignedExtra>,
+        overrides: TSigningParams?
+    ) async throws -> TSigningParams {
+        try await extensions.params(merged: overrides)
     }
     
     public func build<C: Call>(
@@ -71,13 +76,13 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
     public func encode<C: Call>(signed extrinsic: Extrinsic<C, TSignedExtra>, in encoder: ScaleEncoder) throws {
         let inner = runtime.encoder()
         try inner.encode(Self.version | 0b1000_0000)
-        try extrinsic.extra.address.asValue().encode(in: inner,
+        try extrinsic.extra.address.encode(in: inner,
                                                      runtime: runtime) { _ in
-            try self.dynamicTypes.value.addr
+            try self.runtime.addressType.id
         }
         try extrinsic.extra.signature.encode(in: inner,
                                              runtime: runtime) { _ in
-            try self.dynamicTypes.value.sig
+            try self.runtime.signatureType.id
         }
         try extensions.encode(extra: extrinsic.extra.extra, in: inner)
         try extrinsic.call.encode(in: inner, runtime: runtime)
@@ -107,10 +112,7 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
                 got: String(describing: TUnsignedExtra.self)
             )
         }
-        let extra: TSignedExtra = try (RT.TAddress(value: ext.extra!.addr),
-                                       ext.extra!.sig,
-                                       ext.extra!.extra)
-        return Extrinsic(call: ext.call, extra: extra, signed: true)
+        return Extrinsic(call: ext.call, extra: ext.extra!, signed: true)
 
     }
     
@@ -119,7 +121,7 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
         call: C.Type
     ) throws -> Extrinsic<
         C,
-        (addr: Value<RuntimeTypeId>, sig: RC.TSignature, extra: SE.TExtra)?>
+        (address: RC.TAddress, signature: RC.TSignature, extra: SE.TExtra)?>
     {
         let decoder = try runtime.decoder(with: decoder.decode(Data.self))
         let version = try decoder.decode(UInt8.self)
@@ -129,11 +131,11 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
                                                            got: version)
         }
         if isSigned {
-            let address = try Value(from: decoder, runtime: runtime) { _ in
-                try self.dynamicTypes.value.addr
+            let address = try RC.TAddress(from: decoder, runtime: runtime) { _ in
+                try self.runtime.addressType.id
             }
             let signature = try RC.TSignature(from: decoder, runtime: runtime) { _ in
-                try self.dynamicTypes.value.sig
+                try self.runtime.signatureType.id
             }
             let extra = try extensions.extra(from: decoder)
             return Extrinsic(call: try C(from: decoder, runtime: runtime),
@@ -148,35 +150,6 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
         try self.extensions.setSubstrate(substrate: substrate)
         let runtime = substrate.runtime
         self.runtime = substrate.runtime
-        self.dynamicTypes = LazyProperty {
-            try Self.runtimeDynamicTypes(runtime: runtime)
-        }
-    }
-    
-    private static func runtimeDynamicTypes(
-        runtime: any Runtime
-    ) throws -> (addr: RuntimeTypeId, sig: RuntimeTypeId) {
-        var addressTypeId: RuntimeTypeId? = nil
-        var sigTypeId: RuntimeTypeId? = nil
-        guard runtime.metadata.extrinsic.version == version else {
-            throw ExtrinsicCodingError.badExtrinsicVersion(
-                supported: version,
-                got: runtime.metadata.extrinsic.version)
-        }
-        for param in runtime.metadata.extrinsic.type.type.parameters {
-            switch param.name {
-            case "Address": addressTypeId = param.type
-            case "Signature": sigTypeId = param.type
-            default: continue
-            }
-        }
-        guard let addressTypeId = addressTypeId,
-              let sigTypeId = sigTypeId else {
-            throw ExtrinsicCodingError.unsupportedSubstrate(
-                reason: "Bad Extrinsic type. Can't obtain signature parameters"
-            )
-        }
-        return (addressTypeId, sigTypeId)
     }
     
     public static var version: UInt8 { 4 }

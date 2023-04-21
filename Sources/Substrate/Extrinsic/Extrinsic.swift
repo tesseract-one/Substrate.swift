@@ -47,13 +47,14 @@ public enum ExtrinsicCodingError: Error {
     case badExtraType(expected: String, got: String)
     case badExtrinsicVersion(supported: UInt8, got: UInt8)
     case badExtrasCount(expected: Int, got: Int)
-    case valueNotFound(key: String)
+    case parameterNotFound(extension: ExtrinsicExtensionId, parameter: String)
     case unknownExtension(identifier: String)
     case unsupportedSubstrate(reason: String)
 }
 
 public typealias SignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.TSignedExtra>
 public typealias UnsignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.TUnsignedExtra>
+public typealias SigningPayload<C: Call, M: ExtrinsicManager> = ExtrinsicSignPayload<C, M.TSigningExtra>
 
 public protocol ExtrinsicManager<RT> {
     associatedtype RT: System
@@ -72,6 +73,11 @@ public protocol ExtrinsicManager<RT> {
     func decode<C: Call & ScaleRuntimeDecodable>(
         unsigned decoder: ScaleDecoder
     ) throws -> Extrinsic<C, TUnsignedExtra>
+    
+    func build<C: Call>(
+        params extrinsic: Extrinsic<C, TUnsignedExtra>,
+        overrides: TSigningParams?
+    ) async throws -> TSigningParams
     
     func build<C: Call>(
         payload extrinsic: Extrinsic<C, TUnsignedExtra>,

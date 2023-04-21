@@ -10,9 +10,9 @@ import ScaleCodec
 
 public protocol System {
     associatedtype THasher: FixedHasher
-    associatedtype TIndex: UnsignedInteger & DataConvertible & Codable & ScaleRuntimeCodable
+    associatedtype TIndex: UnsignedInteger & DataConvertible & CompactCodable & Codable & ScaleRuntimeCodable
     associatedtype TAccountId: AccountId
-    associatedtype TAddress: ValueConvertible
+    associatedtype TAddress: Address where TAddress.TAccountId == TAccountId
     associatedtype TSignature: Signature
     associatedtype TBlock: SomeBlock where TBlock.THeader.THasher == THasher
     associatedtype TSignedBlock: SomeChainBlock<TBlock>
