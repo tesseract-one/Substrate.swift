@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import JsonRPC
 
-public struct RpcStateApi<S: AnySubstrate>: RpcApi {
+public struct RpcStateApi<S: SomeSubstrate>: RpcApi {
     public weak var substrate: S!
     
     public init(substrate: S) {
@@ -467,5 +467,5 @@ extension RpcStateApi { // Static
 }
 
 extension RpcApiRegistry {
-    public var state: RpcStateApi<S> { get async { await getRpcApi(RpcStateApi<S>.self) } }
+    public var state: RpcStateApi<S> { get async { await getApi(RpcStateApi<S>.self) } }
 }

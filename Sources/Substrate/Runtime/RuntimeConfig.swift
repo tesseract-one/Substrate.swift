@@ -13,12 +13,22 @@ public protocol RuntimeConfig: System {
     associatedtype TRuntimeVersion: RuntimeVersion
     
     func extrinsicManager() throws -> TExtrinsicManager
-    func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo?
+    func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo
     func hasher(metadata: Metadata) throws -> THasher
 }
 
+public extension RuntimeConfig where THasher: StaticHasher {
+    func hasher(metadata: Metadata) throws -> THasher { THasher.instance }
+}
+
+public extension RuntimeConfig where TBlock.THeader: StaticBlockHeader {
+    func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo {
+        fatalError("Should not be called for StaticBlockHeader!")
+    }
+}
+
 public struct DynamicRuntimeConfig: RuntimeConfig {
-    public typealias TRuntimeVersion = DynamicRuntimeVersion
+    public typealias TRuntimeVersion = AnyRuntimeVersion
     
     public enum Error: Swift.Error {
         case headerTypeNotFound(String)
@@ -36,22 +46,24 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
     }
     
     public func extrinsicManager() throws -> TExtrinsicManager {
-        TExtrinsicManager(extensions: extrinsicExtensions)
+        let provider = DynamicSignedExtensionsProvider<Self>(extensions: extrinsicExtensions,
+                                                             version: TExtrinsicManager.version)
+        return TExtrinsicManager(extensions: provider)
     }
     
-    public func hasher(metadata: Metadata) throws -> DynamicHasher {
-        let header = try blockHeaderType(metadata: metadata)!
+    public func hasher(metadata: Metadata) throws -> AnyFixedHasher {
+        let header = try blockHeaderType(metadata: metadata)
         let hashType = header.type.parameters.first { $0.name == "Hash" }?.type
         guard let hashType = hashType, let hashName = metadata.resolve(type: hashType)?.path.last else {
             throw Error.hashTypeNotFound(header: header)
         }
-        guard let hasher = DynamicHasher(name: hashName) else {
+        guard let hasher = AnyFixedHasher(name: hashName) else {
             throw Error.unknownHashName(hashName)
         }
         return hasher
     }
     
-    public func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo? {
+    public func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo {
         guard let type = metadata.resolve(type: headerPath.components(separatedBy: ".")) else {
             throw Error.headerTypeNotFound(headerPath)
         }
@@ -72,16 +84,19 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
 }
 
 extension DynamicRuntimeConfig: System {
-    public typealias THasher = DynamicHasher
+    public typealias THasher = AnyFixedHasher
     public typealias TIndex = UInt64
-    public typealias TSystemProperties = DynamicSystemProperties
-    public typealias TAccountId = DynamicHash
+    public typealias TSystemProperties = AnySystemProperties
+    public typealias TAccountId = AccountId32
     public typealias TAddress = Value<Void>
-    public typealias TSignature = DynamicHash
-    public typealias TBlock = Block<DynamicBlockHeader, BlockExtrinsic<Self>>
-    public typealias TSignedBlock = ChainBlock<TBlock>
+    public typealias TSignature = AnySignature
+    public typealias TBlock = Block<AnyBlockHeader<THasher>, BlockExtrinsic<TExtrinsicManager>>
+    public typealias TSignedBlock = ChainBlock<TBlock, SerializableValue>
     
-    public typealias TExtrinsicManager = DynamicExtrinsicManagerV4<Self>
+    public typealias TExtrinsicManager = ExtrinsicV4Manager<Self, DynamicSignedExtensionsProvider<Self>>
+    
+    public typealias TExtrinsicEra = ExtrinsicEra
+    public typealias TExtrinsicPayment = Value<Void>
     
     // RPC Types
     public typealias TChainType = SerializableValue

@@ -18,15 +18,27 @@ public protocol ScaleRuntimeDecodable {
 
 public typealias ScaleRuntimeCodable = ScaleRuntimeEncodable & ScaleRuntimeDecodable
 
-extension ScaleEncodable {
-    public func encode(in encoder: ScaleEncoder, runtime: Runtime) throws {
+public extension ScaleEncodable {
+    func encode(in encoder: ScaleEncoder, runtime: Runtime) throws {
         try encode(in: encoder)
     }
 }
 
-extension ScaleDecodable {
-    public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
+public extension ScaleDecodable {
+    init(from decoder: ScaleDecoder, runtime: Runtime) throws {
         try self.init(from: decoder)
+    }
+}
+
+public extension ScaleRuntimeDecodable {
+    init(from decoder: ScaleDecoder, `as` type: RuntimeTypeId, runtime: Runtime) throws {
+        try self.init(from: decoder, runtime: runtime)
+    }
+}
+
+public extension ScaleRuntimeEncodable {
+    func encode(in encoder: ScaleEncoder, `as` type: RuntimeTypeId, runtime: Runtime) throws {
+        try self.encode(in: encoder, runtime: runtime)
     }
 }
 

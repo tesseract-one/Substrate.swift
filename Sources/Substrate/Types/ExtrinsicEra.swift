@@ -8,11 +8,19 @@
 import Foundation
 import ScaleCodec
 
-public enum ExtrinsicEra {
+public protocol SomeExtrinsicEra: ValueRepresentable {
+    var isImmortal: Bool { get }
+    
+    func blockHash<S: SomeSubstrate>(substrate: S) async throws -> S.RC.TBlock.THeader.THasher.THash
+    
+    static var immortal: Self { get }
+}
+
+public enum ExtrinsicEra: SomeExtrinsicEra {
     case immortal
     case mortal(period: UInt64, phase: UInt64)
     
-    var isImmortal: Bool {
+    public var isImmortal: Bool {
         switch self {
         case .immortal: return true
         default: return false
@@ -77,6 +85,16 @@ public enum ExtrinsicEra {
             }
         }
     }
+    
+    public func blockHash<S: SomeSubstrate>(substrate: S) async throws -> S.RC.TBlock.THeader.THasher.THash {
+        switch self {
+        case .immortal:  return substrate.runtime.genesisHash
+        case .mortal(period: _, phase: _):
+            let currentBlock = try await substrate.rpc.chain.header()!.number
+            let birthBlock = self.birth(current: UInt64(currentBlock))
+            return try await substrate.rpc.chain.blockHash(block: S.RC.TBlock.THeader.TNumber(birthBlock))
+        }
+    }
 }
 
 extension ExtrinsicEra: ScaleCodable {
@@ -105,7 +123,7 @@ extension ExtrinsicEra: ScaleCodable {
     }
 }
 
-extension ExtrinsicEra: ScaleRuntimeCodable {}
+extension ExtrinsicEra: ScaleRuntimeCodable, ScaleRuntimeDynamicDecodable, ScaleRuntimeDynamicEncodable {}
 
 extension ExtrinsicEra: ValueConvertible {
     public init<C>(value: Value<C>) throws {
@@ -190,9 +208,9 @@ extension ExtrinsicEra: ValueConvertible {
     public func asValue() throws -> Value<Void> {
         switch self {
         case .immortal: return .variant(name: "Immortal", fields: [])
-        case .mortal(period: let period, phase: let phase):
-            return .variant(name: "Mortal",
-                            fields: ["period": .u256(UInt256(period)), "phase": .u256(UInt256(phase))])
+        case .mortal(period: _, phase: _):
+            let (first, second) = self.serialize()
+            return .variant(name: "Mortal\(first)", values: [.u256(UInt256(second!))])
         }
     }
 }

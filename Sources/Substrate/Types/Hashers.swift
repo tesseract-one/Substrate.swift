@@ -151,7 +151,7 @@ public struct HIdentity: StaticConcatHasher {
     public static let instance = Self()
 }
 
-public struct DynamicHasher: FixedHasher {
+public struct AnyFixedHasher: FixedHasher {
     public enum HashType {
         case blake2b128
         case blake2b256
@@ -181,7 +181,7 @@ public struct DynamicHasher: FixedHasher {
         }
     }
     
-    public typealias THash = DynamicHash
+    public typealias THash = AnyHash
     
     public let hasher: any Hasher
     

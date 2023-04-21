@@ -8,6 +8,6 @@
 import Foundation
 
 public protocol Signer {
-    func getAccount() async throws -> Data
+    func account(type: KeyTypeId, algos: [CryptoTypeId]) async throws -> PublicKey
     func sign(tx: Data) async throws -> Data
 }

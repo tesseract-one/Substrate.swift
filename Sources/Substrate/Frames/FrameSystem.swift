@@ -8,20 +8,23 @@
 import Foundation
 import ScaleCodec
 
-public protocol System where TBlock.THeader.THasher == THasher {
+public protocol System {
     associatedtype THasher: FixedHasher
     associatedtype TIndex: UnsignedInteger & DataConvertible & Codable & ScaleRuntimeCodable
-    associatedtype TSystemProperties: SystemProperties
-    associatedtype TAccountId: Encodable & ValueConvertible
+    associatedtype TAccountId: AccountId
     associatedtype TAddress: ValueConvertible
-    associatedtype TSignature: ValueConvertible
-    associatedtype TBlock: AnyBlock
-    associatedtype TSignedBlock: AnyChainBlock<TBlock>
+    associatedtype TSignature: Signature
+    associatedtype TBlock: SomeBlock where TBlock.THeader.THasher == THasher
+    associatedtype TSignedBlock: SomeChainBlock<TBlock>
+    
+    associatedtype TExtrinsicEra: SomeExtrinsicEra
+    associatedtype TExtrinsicPayment: ValueRepresentable
     
     // Helpers
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
     
     // RPC structures
+    associatedtype TSystemProperties: SystemProperties
     associatedtype TChainType: Decodable
     associatedtype THealth: Decodable
     associatedtype TNetworkState: Decodable

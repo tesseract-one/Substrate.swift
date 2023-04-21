@@ -8,7 +8,7 @@
 import Foundation
 import JsonRPC
 
-public protocol AnySubstrate<RC>: AnyObject {
+public protocol SomeSubstrate<RC>: AnyObject {
     associatedtype RC: RuntimeConfig
     associatedtype CL: CallableClient & RuntimeHolder
     
@@ -21,10 +21,10 @@ public protocol AnySubstrate<RC>: AnyObject {
      var rpc: RpcApiRegistry<Self> { get }
 //    var query: SubstrateStorageApiRegistry<Self> { get }
 //    var consts: SubstrateConstantApiRegistry<Self> { get }
-//    var tx: SubstrateExtrinsicApiRegistry<Self> { get }
+     var tx: ExtrinsicApiRegistry<Self> { get }
 }
 
-public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHolder>: AnySubstrate {
+public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHolder>: SomeSubstrate {
     public typealias RC = RC
     public typealias CL = CL
     
@@ -33,6 +33,7 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
     public var signer: Signer?
     
     public let rpc: RpcApiRegistry<Substrate<RC, CL>>
+    public let tx: ExtrinsicApiRegistry<Substrate<RC, CL>>
     
     public init(client: CL, runtime: ExtendedRuntime<RC>, signer: Signer? = nil) throws {
         self.signer = signer
@@ -44,12 +45,14 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
         
         // Create registries
         self.rpc = RpcApiRegistry()
+        self.tx = ExtrinsicApiRegistry()
         
         // Init runtime
         try runtime.setSubstrate(substrate: self)
         
         // Init registries
         rpc.setSubstrate(substrate: self)
+        tx.setSubstrate(substrate: self)
     }
     
     public convenience init(client: CL, config: RC, signer: Signer? = nil) async throws {

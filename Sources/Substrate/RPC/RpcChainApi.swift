@@ -8,7 +8,7 @@
 import Foundation
 import JsonRPC
 
-public struct RpcChainApi<S: AnySubstrate>: RpcApi {
+public struct RpcChainApi<S: SomeSubstrate>: RpcApi {
     public weak var substrate: S!
     
     public init(substrate: S) {
@@ -61,5 +61,5 @@ extension RpcChainApi { // Static
 }
 
 extension RpcApiRegistry {
-    public var chain: RpcChainApi<S> { get async { await getRpcApi(RpcChainApi<S>.self) } }
+    public var chain: RpcChainApi<S> { get async { await getApi(RpcChainApi<S>.self) } }
 }

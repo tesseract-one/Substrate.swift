@@ -38,7 +38,7 @@ public extension StaticEvent {
     }
 }
 
-public struct DynamicEvent: Event {
+public struct AnyEvent: Event {
     public let pallet: String
     public let name: String
     

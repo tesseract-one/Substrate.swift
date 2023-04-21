@@ -1,5 +1,5 @@
 //
-//  DynamicBlockHeader.swift
+//  AnyBlockHeader.swift
 //  
 //
 //  Created by Yehor Popovych on 20.03.2023.
@@ -8,31 +8,32 @@
 import Foundation
 import ScaleCodec
 
-public struct DynamicBlockHeader: AnyBlockHeader {
-    public typealias THasher = DynamicHasher
+public struct AnyBlockHeader<THasher: FixedHasher>: SomeBlockHeader {
+    public typealias THasher = THasher
     public typealias TNumber = UInt256
     
     private var _runtime: any Runtime
     
     public let fields: [String: Value<RuntimeTypeId>]
-    public var number: UInt256
+    public let number: UInt256
     public let type: RuntimeTypeInfo
     
-    public var hash: DynamicHash {
+    public var hash: THasher.THash {
         let value = Value<RuntimeTypeId>(value: .map(fields), context: type.id)
         let encoder = _runtime.encoder()
         try! value.encode(in: encoder,
                           as: type.id,
                           runtime: _runtime)
-        return try! DynamicHash(_runtime.hasher.hash(data: encoder.output))
+        return try! THasher.THash(_runtime.hasher.hash(data: encoder.output))
     }
     
     public init(from decoder: Decoder) throws {
         self._runtime = decoder.runtime
         var container = ValueDecodingContainer(decoder)
-        guard let type = _runtime.blockHeaderType else {
-            throw try container.newError("Block header type is nil")
-        }
+        let type = try _runtime.blockHeaderType
+//        guard let type = _runtime.blockHeaderType else {
+//            throw try container.newError("Block header type is nil")
+//        }
         self.type = type
         let value = try Value<RuntimeTypeId>(from: &container, as: type.id, runtime: _runtime)
         guard let map = value.map else {

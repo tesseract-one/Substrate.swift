@@ -10,7 +10,7 @@ import ScaleCodec
 import JsonRPC
 import Serializable
 
-public struct RpcSystemApi<S: AnySubstrate>: RpcApi where S.RC: System {
+public struct RpcSystemApi<S: SomeSubstrate>: RpcApi where S.RC: System {
     public weak var substrate: S!
     
     public init(substrate: S) {
@@ -127,5 +127,5 @@ extension RpcSystemApi { //Static calls
 }
 
 extension RpcApiRegistry where S.RC: System {
-    public var system: RpcSystemApi<S> { get async { await getRpcApi(RpcSystemApi<S>.self) } }
+    public var system: RpcSystemApi<S> { get async { await getApi(RpcSystemApi<S>.self) } }
 }

@@ -13,7 +13,7 @@ import Serializable
 import JsonRPCSerializable
 #endif
 
-public protocol RpcApi<S> {
+public protocol ExtrinsicApi<S> {
     associatedtype S: SomeSubstrate
     
     static var id: String { get }
@@ -23,15 +23,15 @@ public protocol RpcApi<S> {
     init(substrate: S) async
 }
 
-extension RpcApi {
+extension ExtrinsicApi {
     public static var id: String { String(describing: self) }
 }
 
-public class RpcApiRegistry<S: SomeSubstrate>: CallableClient {
+public class ExtrinsicApiRegistry<S: SomeSubstrate> {
     private actor Registry {
-        private var _apis: [String: any RpcApi] = [:]
+        private var _apis: [String: any ExtrinsicApi] = [:]
         public func getApi<A, S: SomeSubstrate>(substrate: S) async -> A
-            where A: RpcApi, A.S == S
+            where A: ExtrinsicApi, A.S == S
         {
             if let api = _apis[A.id] as? A {
                 return api
@@ -54,21 +54,21 @@ public class RpcApiRegistry<S: SomeSubstrate>: CallableClient {
         self.substrate = substrate
     }
     
-    public func getApi<A>(_ t: A.Type) async -> A where A: RpcApi, A.S == S {
+    public func getApi<A>(_ t: A.Type) async -> A where A: ExtrinsicApi, A.S == S {
         await _apis.getApi(substrate: substrate)
     }
     
-    public func call<Params: Encodable, Res: Decodable>(
-        method: String, params: Params
-    ) async throws -> Res {
-        try await substrate.client.call(method: method, params: params)
+    public func signer() throws -> any Signer {
+        guard let signer = substrate.signer else {
+            throw CocoaError(CocoaError.Code(rawValue: 124)) // TODO: FIX
+        }
+        return signer
     }
 }
 
-extension RpcApiRegistry: SubscribableClient where S.CL: SubscribableClient {
-    public func subscribe<P: Encodable, E: Decodable>(
-        method: String, params: P, unsubsribe umethod: String
-    ) async throws -> AsyncThrowingStream<E, Error> {
-        try await substrate.client.subscribe(method: method, params: params, unsubsribe: umethod)
+public extension ExtrinsicApiRegistry {
+    func account() async throws -> PublicKey {
+        try await signer().account(type: .account,
+                                   algos: S.RC.TSignature.algorithms(runtime: substrate.runtime))
     }
 }

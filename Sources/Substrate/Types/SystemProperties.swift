@@ -12,7 +12,7 @@ public protocol SystemProperties: Decodable {
     var ss58Format: SS58.AddressFormat { get }
 }
 
-public struct DynamicSystemProperties: SystemProperties {
+public struct AnySystemProperties: SystemProperties {
     /// The address format
     public let ss58Format: SS58.AddressFormat
     /// Other properties

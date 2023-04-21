@@ -440,6 +440,12 @@ private extension Value {
     }
 }
 
+extension Value: ScaleRuntimeEncodable where C == RuntimeTypeId {
+    public func encode(in encoder: ScaleEncoder, runtime: Runtime) throws {
+        try self.encode(in: encoder, as: context, runtime: runtime)
+    }
+}
+
 private enum CompactTy {
     case u8
     case u16

@@ -138,6 +138,10 @@ extension Value {
             case .bytes(let b): return b
             default: return nil
             }
+        case .sequence(let vals):
+            let arr = vals.compactMap { $0.u256.flatMap { UInt8(exactly: $0) } }
+            guard arr.count == vals.count else { return nil }
+            return Data(arr)
         default: return nil
         }
     }

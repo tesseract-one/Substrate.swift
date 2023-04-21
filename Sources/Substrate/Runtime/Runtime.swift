@@ -12,8 +12,9 @@ public protocol Runtime: AnyObject {
     var addressFormat: SS58.AddressFormat { get }
     var metadata: any Metadata { get }
     var hasher: any Hasher { get }
-    var extrinsicDecoder: any ExtrinsicDecoder { get }
-    var blockHeaderType: RuntimeTypeInfo? { get }
+    
+    // configurations
+    var blockHeaderType: RuntimeTypeInfo { get throws }
     
     func encoder() -> any ScaleEncoder
     func decoder(with data: Data) -> any ScaleDecoder
@@ -130,37 +131,40 @@ public extension Runtime {
 }
 
 open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
+    public let config: RC
     public let metadata: any Metadata
-    public let eventsStorageKey: any StorageKey<Data>
-    public let hasher: any Hasher
-    public let blockHeaderType: RuntimeTypeInfo?
-    
     public let genesisHash: RC.THasher.THash
     public let version: RC.TRuntimeVersion
     public let properties: RC.TSystemProperties
     public private(set) var extrinsicManager: RC.TExtrinsicManager
     
+    public var blockHeaderType: RuntimeTypeInfo { get throws { try _blockHeaderType.value } }
+    public let hasher: any Hasher
+    @inlinable
+    public var eventsStorageKey: any StorageKey<Data> { config.eventsStorageKey }
+    
+    
     @inlinable
     public var addressFormat: SS58.AddressFormat { properties.ss58Format }
-    @inlinable
-    public var extrinsicDecoder: any ExtrinsicDecoder { extrinsicManager }
+    
+    private let _blockHeaderType: LazyProperty<RuntimeTypeInfo>
     
     public init(config: RC, metadata: any Metadata,
                          genesisHash: RC.THasher.THash,
                          version: RC.TRuntimeVersion,
                          properties: RC.TSystemProperties) throws
     {
+        self.config = config
         self.metadata = metadata
         self.genesisHash = genesisHash
         self.version = version
         self.properties = properties
-        self.eventsStorageKey = config.eventsStorageKey
-        self.blockHeaderType = try config.blockHeaderType(metadata: metadata)
         self.hasher = try config.hasher(metadata: metadata)
         self.extrinsicManager = try config.extrinsicManager()
+        self._blockHeaderType = LazyProperty { try config.blockHeaderType(metadata: metadata) }
     }
     
-    open func setSubstrate<S: AnySubstrate<RC>>(substrate: S) throws {
+    open func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws {
         try self.extrinsicManager.setSubstrate(substrate: substrate)
     }
 }
@@ -179,7 +183,7 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
 //         runtimeVersion: RC.TRuntimeVersion,
 //         properties: RC.TSystemProperties) throws
 //    
-//    func setSubstrate<S: AnySubstrate<RC>>(substrate: S) throws
+//    func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws
 //}
 //
 //public extension ExtendedRuntime {
@@ -216,7 +220,7 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
 //        self.extrinsicManager = try config.extrinsicManager()
 //    }
 //    
-//    public func setSubstrate<S: AnySubstrate<RC>>(substrate: S) throws {
+//    public func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws {
 //        try self.extrinsicManager.setSubstrate(substrate: substrate)
 //    }
 //}

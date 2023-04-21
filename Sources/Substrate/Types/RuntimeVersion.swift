@@ -13,7 +13,7 @@ public protocol RuntimeVersion: Decodable {
     var transactionVersion: UInt32 { get }
 }
 
-public struct DynamicRuntimeVersion: RuntimeVersion {
+public struct AnyRuntimeVersion: RuntimeVersion {
     public let specVersion: UInt32
     public let transactionVersion: UInt32
     public let other: [String: SerializableValue]

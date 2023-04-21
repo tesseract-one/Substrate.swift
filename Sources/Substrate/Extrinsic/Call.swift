@@ -47,7 +47,7 @@ public extension StaticCall {
     }
 }
 
-public struct DynamicCall<C>: Call {
+public struct AnyCall<C>: Call {
     public let pallet: String
     public let name: String
     
@@ -89,7 +89,7 @@ public struct DynamicCall<C>: Call {
     }
 }
 
-extension DynamicCall: ScaleRuntimeDecodable where C == RuntimeTypeId {
+extension AnyCall: ScaleRuntimeDecodable where C == RuntimeTypeId {
     public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
         let palletIdx = try decoder.decode(UInt8.self)
         guard let pallet = runtime.resolve(palletName: palletIdx) else {

@@ -242,4 +242,14 @@ public struct SS58 {
         case formatNotAllowed
         case invalidChecksum
     }
+    
+    @inlinable
+    public static func decode(string: String) throws -> (Data, AddressFormat) {
+        try AddressCodec.instance.decode(string: string)
+    }
+    
+    @inlinable
+    public static func encode(data: Data, format: AddressFormat) -> String {
+        AddressCodec.instance.encode(data: data, format: format)
+    }
 }

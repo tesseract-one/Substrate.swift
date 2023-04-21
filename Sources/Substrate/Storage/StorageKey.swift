@@ -65,7 +65,7 @@ extension StaticStorageKey where TValue: ScaleRuntimeDecodable {
     }
 }
 
-public struct DynamicStorageKey<C>: StorageKey {
+public struct AnyStorageKey<C>: StorageKey {
     public typealias TValue = Value<RuntimeTypeId>
     
     public enum Component {
@@ -141,7 +141,7 @@ public struct DynamicStorageKey<C>: StorageKey {
     }
 }
 
-extension DynamicStorageKey where C == RuntimeTypeId {
+extension AnyStorageKey where C == RuntimeTypeId {
     public init(from decoder: ScaleDecoder, pallet: String, name: String, runtime: Runtime) throws {
         guard let (keys, _) = runtime.resolve(storage: name, pallet: pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)

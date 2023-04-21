@@ -106,7 +106,7 @@ public struct Hash512: StaticHash {
     public static var fixedBytesCount: Int = 64
 }
 
-public struct DynamicHash: Hash {
+public struct AnyHash: Hash {
     public let data: Data
     
     public init(_ data: Data) throws {
