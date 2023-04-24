@@ -12,6 +12,8 @@ public class MetadataV14: Metadata {
     public let runtime: RuntimeMetadata
     public let extrinsic: ExtrinsicMetadata
     public let types: [RuntimeTypeId: RuntimeType]
+    public let typesByName: [String: RuntimeTypeInfo]
+    public let typesByPath: [String: RuntimeTypeInfo] // joined by "."
     public let palletsByIndex: [UInt8: PalletMetadataV14]
     public let palletsByName: [String: PalletMetadataV14]
     
@@ -21,6 +23,12 @@ public class MetadataV14: Metadata {
         )
         self.runtime = runtime
         self.types = types
+        self.typesByName = Dictionary(
+            uniqueKeysWithValues: runtime.types.map { ($0.type.path.last!, $0) }
+        )
+        self.typesByPath = Dictionary(
+            uniqueKeysWithValues: runtime.types.map { ($0.type.path.joined(separator: "."), $0) }
+        )
         self.extrinsic = ExtrinsicMetadataV14(runtime: runtime.extrinsic, types: types)
         let pallets = runtime.pallets.map { PalletMetadataV14(runtime: $0, types: types) }
         self.palletsByName = Dictionary(uniqueKeysWithValues: pallets.map { ($0.runtime.name, $0) })
@@ -32,8 +40,11 @@ public class MetadataV14: Metadata {
     
     @inlinable
     public func resolve(type path: [String]) -> RuntimeTypeInfo? {
-        types.first { $0.value.path == path }.flatMap { RuntimeTypeInfo(id: $0.key, type: $0.value) }
+        typesByPath[path.joined(separator: ".")]
     }
+    
+    @inlinable
+    public func resolve(type name: String) -> RuntimeTypeInfo? { typesByName[name] }
     
     @inlinable
     public func resolve(pallet index: UInt8) -> PalletMetadata? { palletsByIndex[index] }

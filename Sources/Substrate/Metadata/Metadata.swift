@@ -19,6 +19,7 @@ public protocol Metadata {
     
     func resolve(type id: RuntimeTypeId) -> RuntimeType?
     func resolve(type path: [String]) -> RuntimeTypeInfo?
+    func resolve(type name: String) -> RuntimeTypeInfo?
     func resolve(pallet index: UInt8) -> PalletMetadata?
     func resolve(pallet name: String) -> PalletMetadata?
 }

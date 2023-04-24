@@ -23,6 +23,8 @@ public protocol Runtime: AnyObject {
     func decoder(with data: Data) -> any ScaleDecoder
     
     func resolve(type id: RuntimeTypeId) -> RuntimeType?
+    func resolve(type named: String) -> RuntimeTypeInfo?
+    func resolve(type path: [String]) -> RuntimeTypeInfo?
     func resolve(palletName index: UInt8) -> String?
     func resolve(palletIndex name: String) -> UInt8?
         
@@ -56,6 +58,16 @@ public extension Runtime {
     @inlinable
     func resolve(type id: RuntimeTypeId) -> RuntimeType? {
         metadata.resolve(type: id)
+    }
+    
+    @inlinable
+    func resolve(type named: String) -> RuntimeTypeInfo? {
+        metadata.resolve(type: named)
+    }
+    
+    @inlinable
+    func resolve(type path: [String]) -> RuntimeTypeInfo? {
+        metadata.resolve(type: path)
     }
     
     @inlinable
@@ -139,6 +151,8 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
     public let genesisHash: RC.THasher.THash
     public let version: RC.TRuntimeVersion
     public let properties: RC.TSystemProperties
+    public var rpcMethods: Set<String> { get async throws { try await _rpcMethods.value } }
+    
     public private(set) var extrinsicManager: RC.TExtrinsicManager
     
     public var blockHeaderType: RuntimeTypeInfo { get throws { try _blockHeaderType.value } }
@@ -157,6 +171,7 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
     private let _extrinsicTypes: LazyProperty<
         (addr: RuntimeTypeInfo, signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
     >
+    private var _rpcMethods: LazyAsyncProperty<Set<String>>!
     
     public init(config: RC, metadata: any Metadata,
                          genesisHash: RC.THasher.THash,
@@ -172,65 +187,13 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
         self.extrinsicManager = try config.extrinsicManager()
         self._blockHeaderType = LazyProperty { try config.blockHeaderType(metadata: metadata) }
         self._extrinsicTypes = LazyProperty { try config.extrinsicTypes(metadata: metadata) }
+        self._rpcMethods = nil
     }
     
     open func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws {
         try self.extrinsicManager.setSubstrate(substrate: substrate)
+        self._rpcMethods = LazyAsyncProperty { [unowned substrate] in
+            try await substrate.rpc.rpc.methods().methods
+        }
     }
 }
-//
-//public protocol ExtendedRuntime<RC>: Runtime {
-//    associatedtype RC: RuntimeConfig
-//    
-//    var genesisHash: RC.THasher.THash { get }
-//    var runtimeVersion: RC.TRuntimeVersion { get }
-//    var properties: RC.TSystemProperties { get }
-//    var eventsStorageKey: any StorageKey<Data> { get }
-//    var extrinsicManager: RC.TExtrinsicManager { get }
-//    
-//    init(config: RC, metadata: any Metadata,
-//         genesisHash: RC.THasher.THash,
-//         runtimeVersion: RC.TRuntimeVersion,
-//         properties: RC.TSystemProperties) throws
-//    
-//    func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws
-//}
-//
-//public extension ExtendedRuntime {
-//    @inlinable
-//    var addressFormat: SS58.AddressFormat { properties.ss58Format }
-//    @inlinable
-//    var extrinsicDecoder: any ExtrinsicDecoder { extrinsicManager }
-//}
-//
-//open class SubstrateRuntime<RC: RuntimeConfig>: ExtendedRuntime {
-//    public typealias RC = RC
-//    
-//    public let metadata: any Metadata
-//    public let eventsStorageKey: any StorageKey<Data>
-//    public let hasher: any Hasher
-//    public let genesisHash: RC.THasher.THash
-//    public let runtimeVersion: RC.TRuntimeVersion
-//    public let properties: RC.TSystemProperties
-//    public private(set) var extrinsicManager: RC.TExtrinsicManager
-//    
-//    public var extrinsicDecoder: ExtrinsicDecoder { extrinsicManager }
-//    
-//    required public init(config: RC, metadata: any Metadata,
-//                         genesisHash: RC.THasher.THash,
-//                         runtimeVersion: RC.TRuntimeVersion,
-//                         properties: RC.TSystemProperties) throws
-//    {
-//        self.metadata = metadata
-//        self.genesisHash = genesisHash
-//        self.runtimeVersion = runtimeVersion
-//        self.properties = properties
-//        self.eventsStorageKey = config.eventsStorageKey
-//        self.hasher = try config.hasher(metadata: metadata)
-//        self.extrinsicManager = try config.extrinsicManager()
-//    }
-//    
-//    public func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws {
-//        try self.extrinsicManager.setSubstrate(substrate: substrate)
-//    }
-//}

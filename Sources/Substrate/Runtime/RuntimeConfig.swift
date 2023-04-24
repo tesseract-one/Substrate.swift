@@ -41,12 +41,12 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
     }
     
     public let extrinsicExtensions: [DynamicExtrinsicExtension]
-    public let headerPath: String
+    public let headerName: String
     
     public init(extrinsicExtensions: [DynamicExtrinsicExtension] = Self.allExtensions,
-                headerPath: String = "sp_runtime.generic.header.Header") {
+                headerName: String = "Header") {
         self.extrinsicExtensions = extrinsicExtensions
-        self.headerPath = headerPath
+        self.headerName = headerName
     }
     
     public func extrinsicManager() throws -> TExtrinsicManager {
@@ -68,8 +68,8 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
     }
     
     public func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo {
-        guard let type = metadata.resolve(type: headerPath.components(separatedBy: ".")) else {
-            throw Error.headerTypeNotFound(headerPath)
+        guard let type = metadata.resolve(type: headerName) else {
+            throw Error.headerTypeNotFound(headerName)
         }
         return type
     }

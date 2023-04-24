@@ -43,6 +43,10 @@ public struct RpcSystemApi<S: SomeSubstrate>: RpcApi where S.RC: System {
     public func chainType() async throws -> S.RC.TChainType {
         try await substrate.client.call(method: "system_chainType", params: Params())
     }
+    
+    public func hasDryRun() async throws -> Bool {
+        try await substrate.runtime.rpcMethods.contains("system_dryRun")
+    }
 
     public func dryRun<C: Call>(
         extrinsic: SignedExtrinsic<C, S.RC.TExtrinsicManager>, at hash: S.RC.THasher.THash?
