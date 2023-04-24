@@ -14,14 +14,16 @@ public protocol RuntimeMetadata {
 
 public protocol Metadata {
     var runtime: RuntimeMetadata { get }
-    
     var extrinsic: ExtrinsicMetadata { get }
+    var pallets: [String] { get }
+    var apis: [String] { get }
     
     func resolve(type id: RuntimeTypeId) -> RuntimeType?
     func resolve(type path: [String]) -> RuntimeTypeInfo?
     func resolve(type name: String) -> RuntimeTypeInfo?
     func resolve(pallet index: UInt8) -> PalletMetadata?
     func resolve(pallet name: String) -> PalletMetadata?
+    func resolve(api name: String) -> RuntimeApiMetadata?
 }
 
 public protocol PalletMetadata {
@@ -29,6 +31,7 @@ public protocol PalletMetadata {
     var index: UInt8 { get }
     var call: RuntimeTypeInfo? { get }
     var event: RuntimeTypeInfo? { get }
+    var storage: [String] { get }
     
     func callName(index: UInt8) -> String?
     func callIndex(name: String) -> UInt8?
@@ -56,4 +59,11 @@ public protocol ExtrinsicExtensionMetadata {
     var identifier: String { get }
     var type: RuntimeTypeInfo { get }
     var additionalSigned: RuntimeTypeInfo { get }
+}
+
+public protocol RuntimeApiMetadata {
+    var name: String { get }
+    var methods: [String] { get }
+    
+    func resolve(method name: String) -> (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)?
 }

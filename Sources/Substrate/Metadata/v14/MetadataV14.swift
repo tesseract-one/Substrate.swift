@@ -11,6 +11,9 @@ import Foundation
 public class MetadataV14: Metadata {
     public let runtime: RuntimeMetadata
     public let extrinsic: ExtrinsicMetadata
+    public var pallets: [String] { Array(palletsByName.keys) }
+    public var apis: [String] { [] }
+    
     public let types: [RuntimeTypeId: RuntimeType]
     public let typesByName: [String: RuntimeTypeInfo]
     public let typesByPath: [String: RuntimeTypeInfo] // joined by "."
@@ -51,6 +54,9 @@ public class MetadataV14: Metadata {
     
     @inlinable
     public func resolve(pallet name: String) -> PalletMetadata? { palletsByName[name] }
+    
+    @inlinable
+    public func resolve(api name: String) -> RuntimeApiMetadata? { nil }
 }
 
 public class PalletMetadataV14: PalletMetadata {
@@ -69,6 +75,9 @@ public class PalletMetadataV14: PalletMetadata {
     public let eventNameByIdx: [UInt8: String]?
     
     public let storageByName: [String: StorageMetadataV14]?
+    public var storage: [String] {
+        storageByName.map { Array($0.keys) } ?? []
+    }
     
     public init(runtime: RuntimePalletMetadataV14, types: [RuntimeTypeId: RuntimeType]) {
         self.runtime = runtime

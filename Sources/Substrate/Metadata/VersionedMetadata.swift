@@ -25,12 +25,16 @@ public struct VersionedMetadata: ScaleDecodable {
         switch version {
         case 14:
             self.metadata = try decoder.decode(RuntimeMetadataV14.self).asMetadata()
+        case 15:
+            self.metadata = try decoder.decode(RuntimeMetadataV15.self).asMetadata()
         default: throw SDecodingError.dataCorrupted(
             SDecodingError.Context(
                 path: decoder.path,
                 description: "Unsupported metadata version \(version)"))
         }
     }
+    
+    public let supportedVersions: [UInt8] = [14, 15]
     
     public static let magickNumber: UInt32 = 0x6174656d
 }
