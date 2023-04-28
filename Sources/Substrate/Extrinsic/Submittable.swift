@@ -70,7 +70,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
             nonce.anyNonce = UInt256(nextIndex)
             params = nonce as! S.RC.TExtrinsicManager.TSigningParams
         }
-        // TODO: calculate payment info
+        // TODO: provide Era and BlockHash
         return params
     }
     

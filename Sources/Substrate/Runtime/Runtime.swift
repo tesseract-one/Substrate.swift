@@ -34,6 +34,11 @@ public protocol Runtime: AnyObject {
     func resolve(callName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(callIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
     
+    // Runtime Calls
+    func resolve(
+        runtimeCall method: String, api: String
+    ) -> (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)?
+    
     // Events
     func resolve(eventType pallet: UInt8) -> RuntimeTypeInfo?
     func resolve(eventType pallet: String) -> RuntimeTypeInfo?
@@ -92,6 +97,13 @@ public extension Runtime {
         metadata.resolve(pallet: pallet).flatMap { pallet in
             pallet.callIndex(name: name).map { (pallet.index, $0) }
         }
+    }
+    
+    @inlinable
+    func resolve(
+        runtimeCall method: String, api: String
+    ) -> (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)? {
+        metadata.resolve(api: api)?.resolve(method: method)
     }
     
     @inlinable

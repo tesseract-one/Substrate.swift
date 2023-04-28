@@ -18,10 +18,11 @@ public protocol SomeSubstrate<RC>: AnyObject {
     var signer: Optional<Signer> { get set }
     
 //    // API objects
-     var rpc: RpcApiRegistry<Self> { get }
+    var rpc: RpcApiRegistry<Self> { get }
+    var call: RuntimeApiRegistry<Self> { get }
 //    var query: SubstrateStorageApiRegistry<Self> { get }
 //    var consts: SubstrateConstantApiRegistry<Self> { get }
-     var tx: ExtrinsicApiRegistry<Self> { get }
+    var tx: ExtrinsicApiRegistry<Self> { get }
 }
 
 public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHolder>: SomeSubstrate {
@@ -33,6 +34,7 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
     public var signer: Signer?
     
     public let rpc: RpcApiRegistry<Substrate<RC, CL>>
+    public let call: RuntimeApiRegistry<Substrate<RC, CL>>
     public let tx: ExtrinsicApiRegistry<Substrate<RC, CL>>
     
     public init(client: CL, runtime: ExtendedRuntime<RC>, signer: Signer? = nil) throws {
@@ -46,6 +48,7 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
         // Create registries
         self.rpc = RpcApiRegistry()
         self.tx = ExtrinsicApiRegistry()
+        self.call = RuntimeApiRegistry()
         
         // Init runtime
         try runtime.setSubstrate(substrate: self)
@@ -53,6 +56,7 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
         // Init registries
         rpc.setSubstrate(substrate: self)
         tx.setSubstrate(substrate: self)
+        call.setSubstrate(substrate: self)
     }
     
     public convenience init(client: CL, config: RC, signer: Signer? = nil) async throws {
@@ -61,8 +65,12 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
         let properties = try await RpcSystemApi<Self>.properties(with: client)
         let genesisHash = try await RpcChainApi<Self>.blockHash(block: 0, client: client)
         
-        let metadata = try await RpcStateApi<Self>.metadata(with: client)
-        
+        let metadata: Metadata
+        do {
+            metadata = try await RuntimeApiRegistry<Self>.metadata(with: client)
+        } catch {
+            metadata = try await RpcStateApi<Self>.metadata(with: client)
+        }
         let runtime = try ExtendedRuntime(config: config, metadata: metadata,
                                           genesisHash: genesisHash,
                                           version: runtimeVersion,
@@ -70,71 +78,3 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
         try self.init(client: client, runtime: runtime, signer: signer)
     }
 }
-
-//extension Substrate where CL: SubscribableClient {
-//    public convenience init(
-//        client: Client & Persistent & ContentCodersProvider,
-//        signer: Optional<Signer> = nil
-//    ) async throws {
-//        try await self.init(client, signer)
-//    }
-//}
-//
-//extension Substrate where CT == BasicClient {
-//    public convenience init(
-//        client: Client & ContentCodersProvider,
-//        signer: Optional<Signer> = nil
-//    ) async throws {
-//        try await self.init(client, signer)
-//    }
-//}
-
-//public final class Substrate<R: Runtime, C: RpcClient>: SubstrateProtocol {
-//    public let client: C
-//    public let registry: TypeRegistryProtocol
-//    public var signer: Optional<SubstrateSigner>
-//    public let genesisHash: R.THash
-//    public let runtimeVersion: RuntimeVersion
-//    public let properties: SystemProperties
-//
-//    public let rpc: SubstrateRpcApiRegistry<Substrate<R, C>>
-//    public let query: SubstrateStorageApiRegistry<Substrate<R, C>>
-//    public let consts: SubstrateConstantApiRegistry<Substrate<R, C>>
-//    public let tx: SubstrateExtrinsicApiRegistry<Substrate<R, C>>
-//
-//    public var pageSize: UInt = 10
-//    public var callTimeout: TimeInterval = 60
-//
-//    public init(
-//        registry: TypeRegistryProtocol, genesisHash: R.THash,
-//        runtimeVersion: RuntimeVersion, properties: SystemProperties,
-//        client: C, signer: SubstrateSigner?
-//    ) {
-//        var client = client
-//        client.parsingContext[.typeRegistry] = registry
-//
-//        self.registry = registry
-//        self.genesisHash = genesisHash
-//        self.runtimeVersion = runtimeVersion
-//        self.properties = properties
-//        self.client = client
-//        self.rpc = SubstrateRpcApiRegistry()
-//        self.query = SubstrateStorageApiRegistry()
-//        self.consts = SubstrateConstantApiRegistry()
-//        self.tx = SubstrateExtrinsicApiRegistry()
-//        self.signer = signer
-//
-//        rpc.substrate = self
-//        query.substrate = self
-//        consts.substrate = self
-//        tx.substrate = self
-//
-//        registry.ss58AddressFormat = properties.ss58Format
-//    }
-//
-//    deinit {
-//        if let client = client as? WebSocketRpcClient {
-//            client.disconnect()
-//        }
-//    }
-//}

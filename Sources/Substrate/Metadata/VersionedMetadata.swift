@@ -34,7 +34,6 @@ public struct VersionedMetadata: ScaleDecodable {
         }
     }
     
-    public let supportedVersions: [UInt8] = [14, 15]
-    
+    public static let supportedVersions: Set<UInt32> = [14, 15]
     public static let magickNumber: UInt32 = 0x6174656d
 }
