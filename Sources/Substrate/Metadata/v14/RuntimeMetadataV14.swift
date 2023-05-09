@@ -173,4 +173,6 @@ public class RuntimeMetadataV14: ScaleCodable, RuntimeMetadata {
     public func asMetadata() -> Metadata {
         MetadataV14(runtime: self)
     }
+    
+    public class var versions: Set<UInt32> { [14] }
 }

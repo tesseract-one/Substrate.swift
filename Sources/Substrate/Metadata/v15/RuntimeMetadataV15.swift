@@ -25,6 +25,8 @@ public class RuntimeMetadataV15: RuntimeMetadataV14 {
     public override func asMetadata() -> Metadata {
         MetadataV15(runtime: self)
     }
+    
+    public override class var versions: Set<UInt32> { [15, UInt32.max] }
 }
 
 public struct RuntimeRuntimeApiMetadataV15: ScaleCodable {

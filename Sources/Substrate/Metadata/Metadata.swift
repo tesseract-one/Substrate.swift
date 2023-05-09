@@ -10,6 +10,8 @@ import Foundation
 public protocol RuntimeMetadata {
     var version: UInt8 { get }
     func asMetadata() -> Metadata
+    
+    static var versions: Set<UInt32> { get }
 }
 
 public protocol Metadata {
