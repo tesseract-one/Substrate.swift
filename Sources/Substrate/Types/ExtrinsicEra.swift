@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeExtrinsicEra: ValueRepresentable {
+public protocol SomeExtrinsicEra: ValueRepresentable, Default {
     var isImmortal: Bool { get }
     
     func blockHash<S: SomeSubstrate>(substrate: S) async throws -> S.RC.TBlock.THeader.THasher.THash
@@ -16,7 +16,11 @@ public protocol SomeExtrinsicEra: ValueRepresentable {
     static var immortal: Self { get }
 }
 
-public enum ExtrinsicEra: SomeExtrinsicEra {
+public extension SomeExtrinsicEra {
+    static var `default`: Self { Self.immortal }
+}
+
+public enum ExtrinsicEra: SomeExtrinsicEra, Default {
     case immortal
     case mortal(period: UInt64, phase: UInt64)
     

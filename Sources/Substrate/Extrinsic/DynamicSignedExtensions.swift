@@ -15,14 +15,13 @@ public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
     public func extra<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
     
     public func additionalSigned<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .primitive(.u256(UInt256(substrate.runtime.version.specVersion))),
-              context: id)
+        .u256(UInt256(substrate.runtime.version.specVersion), id)
     }
 }
 
@@ -33,14 +32,13 @@ public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
     public func extra<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
     
     public func additionalSigned<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .primitive(.u256(UInt256(substrate.runtime.version.transactionVersion))),
-              context: id)
+        .u256(UInt256(substrate.runtime.version.transactionVersion), id)
     }
 }
 
@@ -51,13 +49,13 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     public func extra<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
     
     public func additionalSigned<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .primitive(.bytes(substrate.runtime.genesisHash.data)), context: id)
+        .bytes(substrate.runtime.genesisHash.data, id)
     }
 }
 
@@ -67,13 +65,13 @@ public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
     public func extra<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
     
     public func additionalSigned<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
 }
 
@@ -88,19 +86,13 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
             throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
                                                          parameter: "nonce")
         }
-        return Value(value: .primitive(.u256(UInt256(nonce))), context: id)
-//        switch params.nonce {
-//        case .nonce(let nonce): return Value(value: .primitive(.u256(UInt256(nonce))), context: id)
-//        case .id(let accId):
-//            let nonce = try await substrate.rpc.system.accountNextIndex(id: accId)
-//            return Value(value: .primitive(.u256(UInt256(nonce))), context: id)
-//        }
+        return .u256(UInt256(nonce), id)
     }
     
     public func additionalSigned<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
 }
 
@@ -111,18 +103,20 @@ public struct DynamicCheckMortalitySignedExtension: DynamicExtrinsicExtension {
     public func extra<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        let era = params.era ?? S.RC.TExtrinsicEra.immortal
+        guard let era = params.era else {
+            throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
+                                                         parameter: "era")
+        }
         return try era.asValue().mapContext { id }
     }
     
     public func additionalSigned<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        if let hash = params.blockHash {
-            return try hash.asValue().mapContext { id }
+        guard let hash = params.blockHash else {
+            throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
+                                                         parameter: "blockHash")
         }
-        let era = params.era ?? S.RC.TExtrinsicEra.immortal
-        let hash = try await era.blockHash(substrate: substrate)
         return try hash.asValue().mapContext { id }
     }
 }
@@ -134,13 +128,13 @@ public struct DynamicCheckWeightExtension: DynamicExtrinsicExtension {
     public func extra<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
     
     public func additionalSigned<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
 }
 
@@ -162,7 +156,7 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
     public func additionalSigned<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
 }
 
@@ -172,12 +166,12 @@ public struct DynamicPrevalidateAttestsExtension: DynamicExtrinsicExtension {
     public func extra<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
     
     public func additionalSigned<S: SomeSubstrate>(
         substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        Value(value: .sequence([]), context: id)
+        .nil(id)
     }
 }

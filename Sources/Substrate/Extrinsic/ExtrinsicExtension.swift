@@ -26,14 +26,10 @@ public protocol SignedExtensionsProvider<RT> {
     mutating func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws
 }
 
-//public enum AccountIdOrNonce<A: AccountId, N: UnsignedInteger> {
-//    case id(A)
-//    case nonce(N)
-//}
-
 public protocol AnyNonceSigningParameter {
     var hasNonce: Bool { get }
-    var anyNonce: UInt256?  { get set }
+    func getNonce<N: UnsignedInteger>() throws -> N?
+    mutating func setNonce<N: UnsignedInteger>(_ nonce: N?) throws
 }
 
 public protocol NonceSigningParameter<TNonce>: AnyNonceSigningParameter {
@@ -45,13 +41,30 @@ public protocol NonceSigningParameter<TNonce>: AnyNonceSigningParameter {
 
 public extension NonceSigningParameter {
     var hasNonce: Bool { nonce != nil }
-    var anyNonce: UInt256? {
-        get { nonce.map { UInt256($0) } }
-        set { nonce = newValue.map { TNonce($0) } }
+    func getNonce<N: UnsignedInteger>() throws -> N? {
+        guard N.self == TNonce.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: TNonce.self, got: N.self)
+        }
+        return nonce as! N?
+    }
+    mutating func setNonce<N: UnsignedInteger>(_ nonce: N?) throws {
+        guard N.self == TNonce.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: TNonce.self, got: N.self)
+        }
+        self.nonce = nonce as! TNonce?
     }
 }
 
-public protocol EraSigningParameter<TEra, THash> {
+public protocol AnyEraSigningParameter {
+    var hasEra: Bool { get }
+    var hasBlockHash: Bool { get }
+    func getEra<E: SomeExtrinsicEra>() throws -> E?
+    mutating func setEra<E: SomeExtrinsicEra>(_ era: E?) throws
+    func getBlockHash<H: Hash>() throws -> H?
+    mutating func setBlockHash<H: Hash>(_ hash: H?) throws
+}
+
+public protocol EraSigningParameter<TEra, THash>: AnyEraSigningParameter {
     associatedtype TEra: SomeExtrinsicEra
     associatedtype THash: Hash
     
@@ -64,12 +77,63 @@ public protocol EraSigningParameter<TEra, THash> {
     static func blockHash(_ hash: THash) -> Self
 }
 
-public protocol PaymentSigningParameter<TPayment> {
-    associatedtype TPayment: ValueRepresentable
+public extension EraSigningParameter {
+    var hasEra: Bool { era != nil }
+    var hasBlockHash: Bool { blockHash != nil }
+    func getEra<E: SomeExtrinsicEra>() throws -> E? {
+        guard E.self == TEra.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: TEra.self, got: E.self)
+        }
+        return era as! E?
+    }
+    mutating func setEra<E: SomeExtrinsicEra>(_ era: E?) throws {
+        guard E.self == TEra.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: TEra.self, got: E.self)
+        }
+        self.era = era as! TEra?
+    }
+    func getBlockHash<H: Hash>() throws -> H? {
+        guard H.self == THash.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: THash.self, got: H.self)
+        }
+        return blockHash as! H?
+    }
+    mutating func setBlockHash<H: Hash>(_ hash: H?) throws {
+        guard H.self == THash.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: THash.self, got: H.self)
+        }
+        self.blockHash = hash as! THash?
+    }
+}
+
+public protocol AnyPaymentSigningParameter {
+    var hasTip: Bool { get }
+    func getTip<T: ValueRepresentable & Default>() throws -> T?
+    mutating func setTip<T: ValueRepresentable & Default>(_ tip: T?) throws
+}
+
+public protocol PaymentSigningParameter<TPayment>: AnyPaymentSigningParameter {
+    associatedtype TPayment: ValueRepresentable & Default
     
     var tip: TPayment? { get set }
     func tip(_ tip: TPayment) -> Self
     static func tip(_ tip: TPayment) -> Self
+}
+
+public extension PaymentSigningParameter {
+    var hasTip: Bool { tip != nil }
+    func getTip<T: ValueRepresentable & Default>() throws -> T? {
+        guard T.self == TPayment.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: TPayment.self, got: T.self)
+        }
+        return tip as! T?
+    }
+    mutating func setTip<T: ValueRepresentable & Default>(_ tip: T?) throws {
+        guard T.self == TPayment.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: TPayment.self, got: T.self)
+        }
+        self.tip = tip as! TPayment?
+    }
 }
 
 public struct AnySigningParams<RT: System> {

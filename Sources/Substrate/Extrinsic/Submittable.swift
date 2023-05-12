@@ -60,17 +60,34 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     public func fetchParameters(
         account: PublicKey? = nil, overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> S.RC.TExtrinsicManager.TSigningParams {
-        var params = try await substrate.runtime.extrinsicManager.params(unsigned: self.extrinsic, overrides: overrides)
+        var params = try await substrate.runtime.extrinsicManager.params(unsigned: self.extrinsic,
+                                                                         overrides: overrides)
         if var nonce = params as? AnyNonceSigningParameter, !nonce.hasNonce {
             guard let account = account else {
                 throw Error.accountAndNonceAreNil
             }
             let accountId: S.RC.TAccountId = try account.account(runtime: substrate.runtime)
             let nextIndex = try await substrate.rpc.system.accountNextIndex(id: accountId)
-            nonce.anyNonce = UInt256(nextIndex)
+            try nonce.setNonce(nextIndex)
             params = nonce as! S.RC.TExtrinsicManager.TSigningParams
         }
-        // TODO: provide Era and BlockHash
+        if var era = params as? AnyEraSigningParameter {
+            if !era.hasEra {
+                try era.setEra(S.RC.TExtrinsicEra.immortal)
+            }
+            if !era.hasBlockHash {
+                let eera: S.RC.TExtrinsicEra = try era.getEra()!
+                let hash = try await eera.blockHash(substrate: substrate)
+                try era.setBlockHash(hash)
+            }
+            params = era as! S.RC.TExtrinsicManager.TSigningParams
+        }
+        if var tip = params as? AnyPaymentSigningParameter {
+            if !tip.hasTip {
+                try tip.setTip(S.RC.TExtrinsicPayment.default)
+            }
+            params = tip as! S.RC.TExtrinsicManager.TSigningParams
+        }
         return params
     }
     

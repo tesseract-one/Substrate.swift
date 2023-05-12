@@ -48,6 +48,7 @@ public enum ExtrinsicCodingError: Error {
     case badExtrinsicVersion(supported: UInt8, got: UInt8)
     case badExtrasCount(expected: Int, got: Int)
     case parameterNotFound(extension: ExtrinsicExtensionId, parameter: String)
+    case typeMismatch(expected: Any.Type, got: Any.Type)
     case unknownExtension(identifier: String)
     case unsupportedSubstrate(reason: String)
 }

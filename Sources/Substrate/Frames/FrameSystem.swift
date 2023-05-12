@@ -18,7 +18,7 @@ public protocol System {
     associatedtype TSignedBlock: SomeChainBlock<TBlock>
     
     associatedtype TExtrinsicEra: SomeExtrinsicEra
-    associatedtype TExtrinsicPayment: ValueRepresentable
+    associatedtype TExtrinsicPayment: ValueRepresentable & Default
     
     // Helpers
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
