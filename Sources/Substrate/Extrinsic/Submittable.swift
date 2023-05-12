@@ -17,6 +17,7 @@ public struct Submittable<S: SomeSubstrate, C: Call, E> {
         case signerIsNil
         case dryRunIsNotSupported
         case queryInfoIsNotSupported
+        case queryFeeDetailsIsNotSupported
     }
     
     public init(substrate: S, extinsic: Extrinsic<C, E>) {
@@ -134,7 +135,8 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
     public func paymentInfo(
         at block: S.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> S.RC.TDispatchInfo {
-        guard substrate.runtime.resolve(runtimeCall: "query_info", api: "TransactionPaymentApi") != nil else {
+        guard substrate.runtime.resolve(runtimeCall: "query_info",
+                                        api: "TransactionPaymentApi") != nil else {
             throw Error.queryInfoIsNotSupported
         }
         let encoder = substrate.runtime.encoder()
@@ -151,8 +153,9 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
     public func feeDetails(
         at block: S.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> S.RC.TFeeDetails {
-        guard substrate.runtime.resolve(runtimeCall: "query_fee_details", api: "TransactionPaymentApi") != nil else {
-            throw Error.queryInfoIsNotSupported
+        guard substrate.runtime.resolve(runtimeCall: "query_fee_details",
+                                        api: "TransactionPaymentApi") != nil else {
+            throw Error.queryFeeDetailsIsNotSupported
         }
         let encoder = substrate.runtime.encoder()
         try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
