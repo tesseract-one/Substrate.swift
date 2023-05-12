@@ -116,8 +116,9 @@ public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<
         (address: RC.TAddress, signature: RC.TSignature, extra: SE.TExtra)?>
     {
         let decoder = try runtime.decoder(with: decoder.decode(Data.self))
-        let version = try decoder.decode(UInt8.self)
+        var version = try decoder.decode(UInt8.self)
         let isSigned = version & 0b1000_0000 > 0
+        version &= 0b0111_1111
         guard version == Self.version else {
             throw ExtrinsicCodingError.badExtrinsicVersion(supported: Self.version,
                                                            got: version)
