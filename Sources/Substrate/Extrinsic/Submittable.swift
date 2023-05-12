@@ -16,6 +16,7 @@ public struct Submittable<S: SomeSubstrate, C: Call, E> {
         case accountAndNonceAreNil
         case signerIsNil
         case dryRunIsNotSupported
+        case queryInfoIsNotSupported
     }
     
     public init(substrate: S, extinsic: Extrinsic<C, E>) {
@@ -39,10 +40,19 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     }
     
     public func paymentInfo(account: PublicKey,
+                            at block: S.RC.TBlock.THeader.THasher.THash? = nil,
                             overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
-    ) async throws {
+    ) async throws -> S.RC.TDispatchInfo {
         let signed = try await fakeSign(account: account, overrides: overrides)
-        return try await signed.paymentInfo()
+        return try await signed.paymentInfo(at: block)
+    }
+    
+    public func feeDetails(account: PublicKey,
+                           at block: S.RC.TBlock.THeader.THasher.THash? = nil,
+                           overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
+    ) async throws -> S.RC.TFeeDetails {
+        let signed = try await fakeSign(account: account, overrides: overrides)
+        return try await signed.feeDetails(at: block)
     }
     
     public func fakeSign(account: PublicKey,
@@ -121,7 +131,37 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
         return try await substrate.rpc.system.dryRun(extrinsic: extrinsic, at: block)
     }
     
-    public func paymentInfo() async throws {
-        
+    public func paymentInfo(
+        at block: S.RC.TBlock.THeader.THasher.THash? = nil
+    ) async throws -> S.RC.TDispatchInfo {
+        guard substrate.runtime.resolve(runtimeCall: "query_info", api: "TransactionPaymentApi") != nil else {
+            throw Error.queryInfoIsNotSupported
+        }
+        let encoder = substrate.runtime.encoder()
+        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        let call = AnyRuntimeCall<S.RC.TDispatchInfo>(api: "TransactionPaymentApi",
+                                                      method: "query_info",
+                                                      params: .sequence(
+                                                        [.bytes(encoder.output),
+                                                         .u256(UInt256(encoder.output.count))]
+                                                      ))
+        return try await substrate.call.execute(call: call, at: block)
+    }
+    
+    public func feeDetails(
+        at block: S.RC.TBlock.THeader.THasher.THash? = nil
+    ) async throws -> S.RC.TFeeDetails {
+        guard substrate.runtime.resolve(runtimeCall: "query_fee_details", api: "TransactionPaymentApi") != nil else {
+            throw Error.queryInfoIsNotSupported
+        }
+        let encoder = substrate.runtime.encoder()
+        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        let call = AnyRuntimeCall<S.RC.TFeeDetails>(api: "TransactionPaymentApi",
+                                                    method: "query_fee_details",
+                                                    params: .sequence(
+                                                        [.bytes(encoder.output),
+                                                        .u256(UInt256(encoder.output.count))]
+                                                    ))
+        return try await substrate.call.execute(call: call, at: block)
     }
 }

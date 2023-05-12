@@ -55,8 +55,8 @@ public extension StaticCodableRuntimeCall {
     }
 }
 
-public struct AnyRuntimeCall: RuntimeCall {
-    public typealias TReturn = Value<RuntimeTypeId>
+public struct AnyRuntimeCall<Return: ScaleRuntimeDynamicDecodable>: RuntimeCall {
+    public typealias TReturn = Return
     
     public let api: String
     public let method: String
@@ -98,13 +98,17 @@ public struct AnyRuntimeCall: RuntimeCall {
         }
     }
     
-    public func decode(returnFrom decoder: ScaleDecoder, runtime: Runtime) throws -> Value<RuntimeTypeId> {
-        guard let call = runtime.resolve(runtimeCall: method, api: api) else {
-            throw RuntimeCallCodingError.callNotFound(method: method, api: api)
+    public func decode(returnFrom decoder: ScaleDecoder, runtime: Runtime) throws -> Return {
+        return try Return(from: decoder, runtime: runtime) { runtime in
+            guard let call = runtime.resolve(runtimeCall: method, api: api) else {
+                throw RuntimeCallCodingError.callNotFound(method: method, api: api)
+            }
+            return call.result.id
         }
-        return try Value(from: decoder, as: call.result.id, runtime: runtime)
     }
 }
+
+public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<RuntimeTypeId>>
 
 public enum RuntimeCallCodingError: Error {
     case callNotFound(method: String, api: String)

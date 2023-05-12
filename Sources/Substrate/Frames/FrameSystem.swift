@@ -19,6 +19,8 @@ public protocol System {
     
     associatedtype TExtrinsicEra: SomeExtrinsicEra
     associatedtype TExtrinsicPayment: ValueRepresentable & Default
+    associatedtype TDispatchInfo: ScaleRuntimeDynamicDecodable
+    associatedtype TFeeDetails: ScaleRuntimeDynamicDecodable
     
     // Helpers
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>

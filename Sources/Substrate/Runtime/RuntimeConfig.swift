@@ -114,7 +114,7 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
     ]
 }
 
-extension DynamicRuntimeConfig: System {
+extension DynamicRuntimeConfig: System {    
     public typealias THasher = AnyFixedHasher
     public typealias TIndex = UInt256
     public typealias TSystemProperties = AnySystemProperties
@@ -127,7 +127,9 @@ extension DynamicRuntimeConfig: System {
     public typealias TExtrinsicManager = ExtrinsicV4Manager<Self, DynamicSignedExtensionsProvider<Self>>
     
     public typealias TExtrinsicEra = ExtrinsicEra
-    public typealias TExtrinsicPayment = Value<Void>
+    public typealias TExtrinsicPayment = UInt256
+    public typealias TFeeDetails = Value<RuntimeTypeId>
+    public typealias TDispatchInfo = Value<RuntimeTypeId>
     
     // RPC Types
     public typealias TChainType = SerializableValue
