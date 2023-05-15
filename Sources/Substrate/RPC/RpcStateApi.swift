@@ -16,18 +16,6 @@ public struct RpcStateApi<S: SomeSubstrate>: RpcApi {
         self.substrate = substrate
     }
     
-    public func call<C: RuntimeCall>(
-        call: C, at hash: S.RC.THasher.THash? = nil
-    ) async throws -> C.TReturn {
-        let encoder = substrate.runtime.encoder()
-        try call.encodeParams(in: encoder, runtime: substrate.runtime)
-        let data = try await self.call(method: call.fullName,
-                                       data: encoder.output,
-                                       at: hash)
-        return try call.decode(returnFrom: substrate.runtime.decoder(with: data),
-                               runtime: substrate.runtime)
-    }
-    
     public func call(method: String,
                      data: Data,
                      at hash: S.RC.THasher.THash? = nil) async throws -> Data {
@@ -222,20 +210,8 @@ public struct RpcStateApi<S: SomeSubstrate>: RpcApi {
 //        }
 //    }
 //
-    public func storage(raw key: Data, at hash: S.RC.THasher.THash? = nil) async throws -> Data {
+    public func storage(key: Data, at hash: S.RC.THasher.THash? = nil) async throws -> Data {
         try await substrate.client.call(method: "state_getStorage", params: Params(key, hash))
-    }
-    
-    public func storage<K: StorageKey>(key: K, at hash: S.RC.THasher.THash? = nil) async throws -> K.TValue {
-        let data = try await storage(raw: key.hash(runtime: substrate.runtime), at: hash)
-        return try key.decode(valueFrom: substrate.runtime.decoder(with: data),
-                              runtime: substrate.runtime)
-    }
-    
-    public func events(at hash: S.RC.THasher.THash? = nil) async throws -> Any {
-        let data = try await storage(raw: substrate.runtime.eventsStorageKey.hash(runtime: substrate.runtime),
-                                     at: hash)
-        return data
     }
 //
 //    public func getStorage<K: StorageKey>(
@@ -456,38 +432,27 @@ public struct RpcStateApi<S: SomeSubstrate>: RpcApi {
 //    }
 }
 
-extension RpcStateApi { // Static
-    public static func runtimeVersion(
+public extension RpcStateApi { // Static
+    static func runtimeVersion(
         at hash: S.RC.THasher.THash?, with client: CallableClient
     ) async throws -> S.RC.TRuntimeVersion {
         try await client.call(method: "state_getRuntimeVersion", params: Params(hash))
     }
     
-    public static func call<C: StaticCodableRuntimeCall>(
-        call: C, at hash: S.RC.THasher.THash?, with client: CallableClient
-    ) async throws -> C.TReturn {
-        let encoder = SCALE.default.encoder()
-        try call.encodeParams(in: encoder)
-        let data = try await Self.call(method: call.fullName,
-                                       data: encoder.output,
-                                       at: hash, with: client)
-        return try call.decode(returnFrom: SCALE.default.decoder(data: data))
-    }
-    
-    public static func call(method: String,
+    static func call(method: String,
                             data: Data,
                             at hash: S.RC.THasher.THash?,
                             with client: CallableClient) async throws -> Data {
         try await client.call(method: "state_call", params: Params(method, data, hash))
     }
     
-    public static func metadata(with client: CallableClient) async throws -> Metadata {
+    static func metadata(with client: CallableClient) async throws -> Metadata {
         let data: Data = try await client.call(method: "state_getMetadata", params: Params())
         let versioned = try SCALE.default.decode(VersionedMetadata.self, from: data)
         return versioned.metadata
     }
 }
 
-extension RpcApiRegistry {
-    public var state: RpcStateApi<S> { get async { await getApi(RpcStateApi<S>.self) } }
+public extension RpcApiRegistry {
+    var state: RpcStateApi<S> { get async { await getApi(RpcStateApi<S>.self) } }
 }

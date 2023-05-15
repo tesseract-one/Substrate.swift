@@ -17,10 +17,10 @@ public protocol SomeSubstrate<RC>: AnyObject {
     var runtime: ExtendedRuntime<RC> { get }
     var signer: Optional<Signer> { get set }
     
-//    // API objects
+    // API objects
     var rpc: RpcApiRegistry<Self> { get }
     var call: RuntimeApiRegistry<Self> { get }
-//    var query: SubstrateStorageApiRegistry<Self> { get }
+    var query: StorageApiRegistry<Self> { get }
 //    var consts: SubstrateConstantApiRegistry<Self> { get }
     var tx: ExtrinsicApiRegistry<Self> { get }
 }
@@ -36,6 +36,7 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
     public let rpc: RpcApiRegistry<Substrate<RC, CL>>
     public let call: RuntimeApiRegistry<Substrate<RC, CL>>
     public let tx: ExtrinsicApiRegistry<Substrate<RC, CL>>
+    public let query: StorageApiRegistry<Substrate<RC, CL>>
     
     public init(client: CL, runtime: ExtendedRuntime<RC>, signer: Signer? = nil) throws {
         self.signer = signer
@@ -49,6 +50,7 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
         self.rpc = RpcApiRegistry()
         self.tx = ExtrinsicApiRegistry()
         self.call = RuntimeApiRegistry()
+        self.query = StorageApiRegistry()
         
         // Init runtime
         try runtime.setSubstrate(substrate: self)
@@ -57,6 +59,7 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
         rpc.setSubstrate(substrate: self)
         tx.setSubstrate(substrate: self)
         call.setSubstrate(substrate: self)
+        query.setSubstrate(substrate: self)
     }
     
     public convenience init(client: CL, config: RC, signer: Signer? = nil) async throws {

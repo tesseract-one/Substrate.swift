@@ -62,12 +62,29 @@ public class RuntimeApiRegistry<S: SomeSubstrate> {
 public extension RuntimeApiRegistry {
     func execute<C: RuntimeCall>(call: C,
                                  at hash: S.RC.THasher.THash? = nil) async throws -> C.TReturn {
-        try await substrate.rpc.state.call(call: call, at: hash)
+        let encoder = substrate.runtime.encoder()
+        try call.encodeParams(in: encoder, runtime: substrate.runtime)
+        let data = try await substrate.rpc.state.call(method: call.fullName,
+                                                      data: encoder.output,
+                                                      at: hash)
+        return try call.decode(returnFrom: substrate.runtime.decoder(with: data),
+                               runtime: substrate.runtime)
+    }
+    
+    static func execute<C: StaticCodableRuntimeCall>(
+        call: C, at hash: S.RC.THasher.THash?, with client: CallableClient
+    ) async throws -> C.TReturn {
+        let encoder = SCALE.default.encoder()
+        try call.encodeParams(in: encoder)
+        let data = try await RpcStateApi<S>.call(method: call.fullName,
+                                                 data: encoder.output,
+                                                 at: hash, with: client)
+        return try call.decode(returnFrom: SCALE.default.decoder(data: data))
     }
     
     static func metadata(with client: CallableClient) async throws -> Metadata {
-        let versions = try await RpcStateApi<S>.call(call: MetadataRuntimeApi.MetadataVersions(),
-                                                     at: nil, with: client)
+        let versions = try await Self.execute(call: MetadataRuntimeApi.MetadataVersions(),
+                                              at: nil, with: client)
         let supported = VersionedMetadata.supportedVersions.intersection(versions)
         guard let max = supported.max() else {
             throw SDecodingError.dataCorrupted(
@@ -75,8 +92,8 @@ public extension RuntimeApiRegistry {
                     path: [],
                     description: "Unsupported metadata versions \(versions)"))
         }
-        let data = try await RpcStateApi<S>.call(call: MetadataRuntimeApi.MetadataAtVersion(version: max),
-                                                 at: nil, with: client)
+        let data = try await Self.execute(call: MetadataRuntimeApi.MetadataAtVersion(version: max),
+                                          at: nil, with: client)
         guard let data = data else {
             throw SDecodingError.dataCorrupted(
                 SDecodingError.Context(
