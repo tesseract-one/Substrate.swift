@@ -21,6 +21,7 @@ public protocol System {
     associatedtype TExtrinsicPayment: ValueRepresentable & Default
     associatedtype TDispatchInfo: ScaleRuntimeDynamicDecodable
     associatedtype TFeeDetails: ScaleRuntimeDynamicDecodable
+    associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
     
     // Helpers
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>

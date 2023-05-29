@@ -125,6 +125,7 @@ extension DynamicRuntimeConfig: System {
     public typealias TSignedBlock = ChainBlock<TBlock, SerializableValue>
     
     public typealias TExtrinsicManager = ExtrinsicV4Manager<Self, DynamicSignedExtensionsProvider<Self>>
+    public typealias TTransactionStatus = TransactionStatus<THasher.THash, THasher.THash>
     
     public typealias TExtrinsicEra = ExtrinsicEra
     public typealias TExtrinsicPayment = UInt256

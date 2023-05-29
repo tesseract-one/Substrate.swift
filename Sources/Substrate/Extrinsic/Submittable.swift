@@ -117,8 +117,20 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
         return Submittable<_, _, _>(substrate: substrate, extinsic: signed)
     }
     
-    public func send() async throws {
-        
+    public func signAndSend(
+        account: PublicKey,
+        overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
+    ) async throws -> S.RC.TBlock.THeader.THasher.THash {
+        return try await sign(account: account, overrides: overrides).send()
+    }
+}
+
+extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra, S.CL: SubscribableRpcClient {
+    public func signSendAndWatch(
+        account: PublicKey,
+        overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
+    ) async throws -> ExtrinsicProgress<S> {
+        return try await sign(account: account, overrides: overrides).sendAndWatch()
     }
 }
 
@@ -166,5 +178,20 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
                                                         .u256(UInt256(encoder.output.count))]
                                                     ))
         return try await substrate.call.execute(call: call, at: block)
+    }
+    
+    public func send() async throws -> S.RC.TBlock.THeader.THasher.THash {
+        let encoder = substrate.runtime.encoder()
+        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        return try await substrate.rpc.author.submit(extrinsic: encoder.output)
+    }
+}
+
+extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra, S.CL: SubscribableRpcClient {
+    public func sendAndWatch() async throws -> ExtrinsicProgress<S> {
+        let encoder = substrate.runtime.encoder()
+        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        let stream = try await substrate.rpc.author.submitAndWatch(extrinsic: encoder.output)
+        return ExtrinsicProgress(substrate: substrate, stream: stream)
     }
 }
