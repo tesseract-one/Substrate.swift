@@ -13,12 +13,18 @@ public struct ExtrinsicProgress<S: SomeSubstrate> {
     }
 
     private let substrate: S
+    private let hash: S.RC.THasher.THash
     private let stream: AsyncThrowingStream<S.RC.TTransactionStatus, Swift.Error>
     
-    public init(substrate: S, stream: AsyncThrowingStream<S.RC.TTransactionStatus, Swift.Error>) {
+    public init(substrate: S,
+                hash: S.RC.THasher.THash,
+                stream: AsyncThrowingStream<S.RC.TTransactionStatus, Swift.Error>) {
         self.substrate = substrate
         self.stream = stream
+        self.hash = hash
     }
+    
+    public var progress: AsyncThrowingStream<S.RC.TTransactionStatus, Swift.Error> { stream }
     
     public func waitForInBlockHash() async throws -> S.RC.TBlock.THeader.THasher.THash {
         for try await status in stream {
@@ -42,7 +48,13 @@ public struct ExtrinsicProgress<S: SomeSubstrate> {
         fatalError("Should be unreachable!")
     }
     
-    public mutating func waitForInBlock() async throws -> S.RC.TBlock.THeader.THasher.THash {
-        try await waitForInBlockHash()
+    public func waitForInBlock() async throws -> ExtrinsicEvents<S.RC.THasher.THash, S.RC.TExtrinsicFailureEvent> {
+        let hash = try await waitForInBlockHash()
+        return try await ExtrinsicEvents(substrate: substrate, blockHash: hash, extrinsicHash: self.hash)
+    }
+    
+    public func waitForFinalized() async throws -> ExtrinsicEvents<S.RC.THasher.THash, S.RC.TExtrinsicFailureEvent> {
+        let hash = try await waitForFinalizedHash()
+        return try await ExtrinsicEvents(substrate: substrate, blockHash: hash, extrinsicHash: self.hash)
     }
 }

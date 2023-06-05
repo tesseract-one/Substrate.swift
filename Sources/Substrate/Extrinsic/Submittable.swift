@@ -191,7 +191,8 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra, S.CL: Subs
     public func sendAndWatch() async throws -> ExtrinsicProgress<S> {
         let encoder = substrate.runtime.encoder()
         try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        let hash = substrate.runtime.typedHasher.hash(data: encoder.output)
         let stream = try await substrate.rpc.author.submitAndWatch(extrinsic: encoder.output)
-        return ExtrinsicProgress(substrate: substrate, stream: stream)
+        return ExtrinsicProgress(substrate: substrate, hash: hash, stream: stream)
     }
 }

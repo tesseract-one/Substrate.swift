@@ -66,10 +66,11 @@ public extension StorageApiRegistry {
                               runtime: substrate.runtime)
     }
     
-    func events(at hash: S.RC.THasher.THash? = nil) async throws -> Any {
+    func events(at hash: S.RC.THasher.THash? = nil) async throws -> Array<EventRecord<S.RC.THasher.THash, AnyEvent>> {
         let data = try await substrate.rpc.state.storage(
             key: substrate.runtime.eventsStorageKey.hash(runtime: substrate.runtime), at: hash
         )
-        return data
+        let decoder = substrate.runtime.decoder(with: data)
+        return try Array<EventRecord<S.RC.THasher.THash, AnyEvent>>(from: decoder, runtime: substrate.runtime)
     }
 }

@@ -131,6 +131,8 @@ extension DynamicRuntimeConfig: System {
     public typealias TExtrinsicPayment = UInt256
     public typealias TFeeDetails = Value<RuntimeTypeId>
     public typealias TDispatchInfo = Value<RuntimeTypeId>
+    public typealias TDispatchError = AnyDispatchError
+    public typealias TExtrinsicFailureEvent = ExtrinsicFailureEvent<TDispatchError>
     
     // RPC Types
     public typealias TChainType = SerializableValue
@@ -139,7 +141,7 @@ extension DynamicRuntimeConfig: System {
     public typealias TNodeRole = SerializableValue
     public typealias TNetworkPeerInfo = [String: SerializableValue]
     public typealias TSyncState = [String: SerializableValue]
-    public typealias TDispatchError = SerializableValue
+    
     public typealias TTransactionValidityError = SerializableValue
     
     public var eventsStorageKey: any StorageKey<Data> { SystemEventsStorageKey() }

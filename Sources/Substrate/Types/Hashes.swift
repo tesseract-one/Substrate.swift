@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Hash: Codable, ValueConvertible {
+public protocol Hash: Codable, ValueConvertible, Equatable {
     var data: Data { get }
     init(_ data: Data) throws
 }

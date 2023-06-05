@@ -19,11 +19,13 @@ public protocol System {
     
     associatedtype TExtrinsicEra: SomeExtrinsicEra
     associatedtype TExtrinsicPayment: ValueRepresentable & Default
+    associatedtype TDispatchError: SomeDispatchError
     associatedtype TDispatchInfo: ScaleRuntimeDynamicDecodable
     associatedtype TFeeDetails: ScaleRuntimeDynamicDecodable
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
     
     // Helpers
+    associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent<TDispatchError>
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
     
     // RPC structures
@@ -34,17 +36,41 @@ public protocol System {
     associatedtype TNodeRole: Decodable
     associatedtype TNetworkPeerInfo: Decodable
     associatedtype TSyncState: Decodable
-    associatedtype TDispatchError: Decodable
     associatedtype TTransactionValidityError: Decodable
     
     var eventsStorageKey: any StorageKey<Data> { get }
 }
 
+public protocol SomeExtrinsicFailureEvent<Err>: StaticEvent {
+    associatedtype Err: SomeDispatchError
+    func asError() throws -> Err
+}
+
+public struct ExtrinsicFailureEvent<Err: SomeDispatchError>: SomeExtrinsicFailureEvent {
+    public typealias Err = Err
+    public static var pallet: String { "System" }
+    public static var name: String { "ExtrinsicFailure" }
+    
+    public let error: Value<RuntimeTypeId>
+    
+    public init(params: [Value<RuntimeTypeId>]) throws {
+        guard params.count == 1, let err = params.first else {
+            
+        }
+        self.error = err
+    }
+    
+    public func asError() throws -> Err {
+        try Err(value: error)
+    }
+}
+
+
 public struct SystemEventsStorageKey: StaticStorageKey {
     public typealias TValue = Data
     
-    public static var name: String = "Events"
-    public static var pallet: String = "System"
+    public static let name: String = "Events"
+    public static let pallet: String = "System"
     
     public init() {}
     

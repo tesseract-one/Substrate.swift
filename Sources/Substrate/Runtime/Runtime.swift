@@ -172,9 +172,12 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
     public var signatureType: RuntimeTypeInfo { get throws { try _extrinsicTypes.value.signature } }
     public var extrinsicExtraType: RuntimeTypeInfo { get throws { try _extrinsicTypes.value.extra }}
     
-    public let hasher: any Hasher
+    @inlinable
+    public var hasher: any Hasher { typedHasher }
     @inlinable
     public var eventsStorageKey: any StorageKey<Data> { config.eventsStorageKey }
+    
+    public let typedHasher: RC.THasher
     
     @inlinable
     public var addressFormat: SS58.AddressFormat { properties.ss58Format }
@@ -195,7 +198,7 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
         self.genesisHash = genesisHash
         self.version = version
         self.properties = properties
-        self.hasher = try config.hasher(metadata: metadata)
+        self.typedHasher = try config.hasher(metadata: metadata)
         self.extrinsicManager = try config.extrinsicManager()
         self._blockHeaderType = LazyProperty { try config.blockHeaderType(metadata: metadata) }
         self._extrinsicTypes = LazyProperty { try config.extrinsicTypes(metadata: metadata) }
