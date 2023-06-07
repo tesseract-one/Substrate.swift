@@ -47,9 +47,9 @@ var package = Package(
                 "Substrate"
             ],
             path: "Sources/Keychain"),
-//        .testTarget(
-//            name: "KeychainTests",
-//            dependencies: ["SubstrateKeychain"]),
+        .testTarget(
+            name: "KeychainTests",
+            dependencies: ["SubstrateKeychain"]),
         .testTarget(
             name: "SubstrateTests",
             dependencies: ["Substrate"]),

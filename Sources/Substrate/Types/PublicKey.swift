@@ -19,9 +19,13 @@ public protocol PublicKey: ScaleRuntimeCodable, Hashable, Equatable {
 }
 
 public extension PublicKey {
-    init(ss58: String) throws {
-        let (raw, _) = try SS58.decode(string: ss58)
-        try self.init(raw)
+    static func from(ss58: String) throws -> (Self, SS58.AddressFormat){
+        let (raw, format) = try SS58.decode(string: ss58)
+        return try (Self(raw), format)
+    }
+    
+    func ss58(format: SS58.AddressFormat) -> String {
+        SS58.encode(data: raw, format: format)
     }
     
     func account<A: AccountId>(runtime: any Runtime) throws -> A {

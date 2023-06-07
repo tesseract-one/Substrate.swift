@@ -29,7 +29,7 @@ extension PublicKey where Self: KeyDerivable {
         let path: String? = Range(match.range(at: 2), in: string).map {String(string[$0])}
         var parsed: Self
         do {
-            parsed = try Self(ss58: ss58)
+            parsed = try Self.from(ss58: ss58).0
         } catch let e as SS58.Error {
             throw KeyPairError.publicParsing(error: .ss58(error: e))
         } catch {
