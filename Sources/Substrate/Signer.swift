@@ -20,7 +20,8 @@ public enum SignerError: Error {
     case accountNotFound(any PublicKey)
     case badPayload(error: String)
     case cantCreateSignature(error: String)
+    case noAccounts(for: KeyTypeId, and: [CryptoTypeId])
     case cantBeConnected
     case cancelledByUser
-    case unknown(error: String)
+    case other(error: String)
 }
