@@ -55,7 +55,9 @@ public struct ExtrinsicFailureEvent<Err: SomeDispatchError>: SomeExtrinsicFailur
     
     public init(params: [Value<RuntimeTypeId>]) throws {
         guard params.count == 1, let err = params.first else {
-            
+            throw ValueInitializableError<RuntimeTypeId>.wrongValuesCount(in: .sequence(params),
+                                                                          expected: 1,
+                                                                          for: Self.name)
         }
         self.error = err
     }

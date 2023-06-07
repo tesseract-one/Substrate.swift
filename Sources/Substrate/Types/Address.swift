@@ -16,10 +16,7 @@ public protocol Address: ScaleRuntimeCodable, ScaleRuntimeDynamicDecodable, Scal
     init(accountId: TAccountId, runtime: any Runtime) throws
 }
 
-public enum MultiAddress<Id, Index>: Equatable, Hashable
-    where
-        Id: AccountId & Hashable, Index: CompactCodable & Hashable
-{
+public enum MultiAddress<Id: AccountId & Hashable, Index: CompactCodable & Hashable>: Equatable, Hashable {
     case id(Id)
     case index(Index)
     case raw(Data)

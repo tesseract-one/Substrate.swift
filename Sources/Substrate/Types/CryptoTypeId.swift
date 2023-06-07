@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum CryptoTypeId: String {
+public enum CryptoTypeId: String, Hashable, Equatable {
     case ed25519 = "ed25"
     case sr25519 = "sr25"
     case ecdsa = "ecds"

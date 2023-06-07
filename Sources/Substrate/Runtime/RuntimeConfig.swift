@@ -120,7 +120,7 @@ extension DynamicRuntimeConfig: System {
     public typealias TSystemProperties = AnySystemProperties
     public typealias TAccountId = AccountId32
     public typealias TAddress = MultiAddress<TAccountId, TIndex>
-    public typealias TSignature = AnySignature
+    public typealias TSignature = MultiSignature
     public typealias TBlock = Block<AnyBlockHeader<THasher>, BlockExtrinsic<TExtrinsicManager>>
     public typealias TSignedBlock = ChainBlock<TBlock, SerializableValue>
     

@@ -10,9 +10,9 @@ var package = Package(
         .library(
             name: "Substrate",
             targets: ["Substrate"]),
-//        .library(
-//            name: "SubstrateKeychain",
-//            targets: ["SubstrateKeychain"]),
+        .library(
+            name: "SubstrateKeychain",
+            targets: ["SubstrateKeychain"]),
     ],
     dependencies: [
         .package(url: "https://github.com/tesseract-one/swift-scale-codec.git", branch: "main"),
@@ -36,10 +36,17 @@ var package = Package(
                 .product(name: "Blake2", package: "Blake2.swift"),
                 "xxHash-Swift"
             ]),
-//        .target(
-//            name: "SubstrateKeychain",
-//            dependencies: ["Substrate", "Sr25519", "Ed25519", "CSecp256k1", "Bip39", "UncommonCrypto"],
-//            path: "Sources/Keychain"),
+        .target(
+            name: "SubstrateKeychain",
+            dependencies: [
+                .product(name: "Sr25519", package: "Sr25519.swift"),
+                .product(name: "Ed25519", package: "Sr25519.swift"),
+                .product(name: "CSecp256k1", package: "CSecp256k1.swift"),
+                .product(name: "Bip39", package: "Bip39.swift"),
+                .product(name: "UncommonCrypto", package: "UncommonCrypto.swift"),
+                "Substrate"
+            ],
+            path: "Sources/Keychain"),
 //        .testTarget(
 //            name: "KeychainTests",
 //            dependencies: ["SubstrateKeychain"]),

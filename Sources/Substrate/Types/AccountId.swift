@@ -10,7 +10,7 @@ import ScaleCodec
 
 public protocol AccountId: ScaleRuntimeCodable, Codable {
     init(from string: String, runtime: any Runtime) throws
-    init(pub: PublicKey, runtime: any Runtime) throws
+    init(pub: any PublicKey, runtime: any Runtime) throws
     init(raw: Data, runtime: any Runtime) throws
     
     var raw: Data { get }
@@ -82,8 +82,8 @@ public struct AccountId32: StaticAccountId, Hashable, Equatable {
         self.runtime = runtime
     }
     
-    public init(pub: PublicKey, runtime: any Runtime) throws {
-        switch pub.type {
+    public init(pub: any PublicKey, runtime: any Runtime) throws {
+        switch pub.algorithm {
         case .ed25519, .sr25519:
             try self.init(raw: pub.raw, runtime: runtime)
         case .ecdsa:

@@ -32,7 +32,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
         self.init(substrate: substrate, extinsic: ext)
     }
     
-    public func dryRun(account: PublicKey,
+    public func dryRun(account: any PublicKey,
                        at block: S.RC.TBlock.THeader.THasher.THash? = nil,
                        overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> RpcResult<RpcResult<Nil, S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
@@ -40,7 +40,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
         return try await signed.dryRun(at: block)
     }
     
-    public func paymentInfo(account: PublicKey,
+    public func paymentInfo(account: any PublicKey,
                             at block: S.RC.TBlock.THeader.THasher.THash? = nil,
                             overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> S.RC.TDispatchInfo {
@@ -48,7 +48,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
         return try await signed.paymentInfo(at: block)
     }
     
-    public func feeDetails(account: PublicKey,
+    public func feeDetails(account: any PublicKey,
                            at block: S.RC.TBlock.THeader.THasher.THash? = nil,
                            overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> S.RC.TFeeDetails {
@@ -56,12 +56,12 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
         return try await signed.feeDetails(at: block)
     }
     
-    public func fakeSign(account: PublicKey,
+    public func fakeSign(account: any PublicKey,
                          overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> Submittable<S, C, S.RC.TExtrinsicManager.TSignedExtra> {
         let params = try await fetchParameters(account: account, overrides: overrides)
         let payload = try await substrate.runtime.extrinsicManager.payload(unsigned: extrinsic, params: params)
-        let signature = try S.RC.TSignature(fake: account.type, runtime: substrate.runtime)
+        let signature = try S.RC.TSignature(fake: account.algorithm, runtime: substrate.runtime)
         let signed = try substrate.runtime.extrinsicManager.signed(payload: payload,
                                                                    address: account.address(runtime: substrate.runtime),
                                                                    signature: signature)
@@ -69,7 +69,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     }
     
     public func fetchParameters(
-        account: PublicKey? = nil, overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
+        account: (any PublicKey)? = nil, overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> S.RC.TExtrinsicManager.TSigningParams {
         var params = try await substrate.runtime.extrinsicManager.params(unsigned: self.extrinsic,
                                                                          overrides: overrides)
@@ -102,7 +102,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
         return params
     }
     
-    public func sign(account: PublicKey,
+    public func sign(account: any PublicKey,
                      overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> Submittable<S, C, S.RC.TExtrinsicManager.TSignedExtra> {
         guard let signer = substrate.signer else {
@@ -110,7 +110,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
         }
         let params = try await fetchParameters(account: account, overrides: overrides)
         let payload = try await substrate.runtime.extrinsicManager.payload(unsigned: extrinsic, params: params)
-        let signature = try await signer.sign(payload: payload, with: account, config: substrate.runtime.config)
+        let signature = try await signer.sign(payload: payload, with: account, runtime: substrate.runtime)
         let signed = try substrate.runtime.extrinsicManager.signed(payload: payload,
                                                                    address: account.address(runtime: substrate.runtime),
                                                                    signature: signature)
@@ -118,7 +118,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     }
     
     public func signAndSend(
-        account: PublicKey,
+        account: any PublicKey,
         overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> S.RC.TBlock.THeader.THasher.THash {
         return try await sign(account: account, overrides: overrides).send()
@@ -127,7 +127,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
 
 extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra, S.CL: SubscribableRpcClient {
     public func signSendAndWatch(
-        account: PublicKey,
+        account: any PublicKey,
         overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> ExtrinsicProgress<S> {
         return try await sign(account: account, overrides: overrides).sendAndWatch()

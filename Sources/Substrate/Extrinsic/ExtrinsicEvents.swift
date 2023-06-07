@@ -9,6 +9,10 @@ import Foundation
 
 
 public struct ExtrinsicEvents<H: Hash, Failure: SomeExtrinsicFailureEvent> {
+    public enum Error: Swift.Error {
+        case extrinsicNotFound(H)
+    }
+    
     private let _events: Array<EventRecord<H, AnyEvent>>
     public let blockHash: H
     public let extrinsicHash: H
@@ -26,7 +30,7 @@ public struct ExtrinsicEvents<H: Hash, Failure: SomeExtrinsicFailureEvent> {
     {
         let block = try await substrate.rpc.chain.block(at: blockHash)
         guard let idx = block.block.extrinsics.firstIndex(where: { $0.hash().data == extrinsicHash.data }) else {
-            
+            throw Error.extrinsicNotFound(extrinsicHash)
         }
         let events = try await substrate.query.events(at: blockHash)
         self.init(events: events, blockHash: blockHash, extrinsicHash: extrinsicHash, index: idx)
