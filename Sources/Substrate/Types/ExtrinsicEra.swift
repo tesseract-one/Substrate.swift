@@ -94,9 +94,11 @@ public enum ExtrinsicEra: SomeExtrinsicEra, Default {
         switch self {
         case .immortal:  return substrate.runtime.genesisHash
         case .mortal(period: _, phase: _):
-            let currentBlock = try await substrate.client.block(header: nil)!.number
+            let currentBlock = try await substrate.client.block(header: nil,
+                                                                runtime: substrate.runtime)!.number
             let birthBlock = self.birth(current: UInt64(currentBlock))
-            return try await substrate.client.block(hash: S.RC.TBlock.THeader.TNumber(birthBlock))!
+            return try await substrate.client.block(hash: S.RC.TBlock.THeader.TNumber(birthBlock),
+                                                    runtime: substrate.runtime)!
         }
     }
 }

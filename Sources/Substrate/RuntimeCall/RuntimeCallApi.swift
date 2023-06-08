@@ -53,6 +53,6 @@ public class RuntimeCallApiRegistry<S: SomeSubstrate> {
 public extension RuntimeCallApiRegistry {
     func execute<C: RuntimeCall>(call: C,
                                  at hash: S.RC.THasher.THash? = nil) async throws -> C.TReturn {
-        try await substrate.client.execute(call: call, at: hash)
+        try await substrate.client.execute(call: call, at: hash, runtime: substrate.runtime)
     }
 }

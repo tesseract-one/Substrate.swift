@@ -60,41 +60,47 @@ extension RpcClient: Client {
     }
     
     @inlinable
-    public func accountNextIndex(id: C.TAccountId) async throws -> C.TIndex {
+    public func accountNextIndex(id: C.TAccountId, runtime: ExtendedRuntime<C>) async throws -> C.TIndex {
         try await call(method: "system_accountNextIndex", params: Params(id))
     }
     
     @inlinable
-    public func runtimeVersion(at hash: C.THasher.THash?) async throws -> C.TRuntimeVersion {
+    public func runtimeVersion(at hash: C.THasher.THash?, config: C) async throws -> C.TRuntimeVersion {
         try await call(method: "state_getRuntimeVersion", params: Params(hash))
     }
     
     @inlinable
-    public func metadata(at hash: C.THasher.THash?) async throws -> Metadata {
+    public func metadata(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
         do {
-            return try await metadataFromRuntimeApi(at: hash)
+            return try await metadataFromRuntimeApi(at: hash, config: config)
         } catch {
-           return try await metadataFromRpc(at: hash)
+           return try await metadataFromRpc(at: hash, config: config)
         }
     }
     
     @inlinable
-    public func systemProperties() async throws -> C.TSystemProperties {
+    public func systemProperties(config: C) async throws -> C.TSystemProperties {
         try await call(method: "system_properties", params: Params())
     }
     
     @inlinable
-    public func block(hash index: C.TBlock.THeader.TNumber?) async throws -> C.TBlock.THeader.THasher.THash? {
+    public func block(
+        hash index: C.TBlock.THeader.TNumber?, config: C
+    ) async throws -> C.TBlock.THeader.THasher.THash? {
         try await call(method: "chain_getBlockHash", params: Params(index.map(UIntHex.init)))
     }
     
     @inlinable
-    public func block(at hash: C.TBlock.THeader.THasher.THash? = nil) async throws -> C.TSignedBlock? {
+    public func block(
+        at hash: C.TBlock.THeader.THasher.THash? = nil, config: C
+    ) async throws -> C.TSignedBlock? {
         try await call(method: "chain_getBlock", params: Params(hash))
     }
     
     @inlinable
-    public func block(header hash: C.TBlock.THeader.THasher.THash?) async throws -> C.TBlock.THeader? {
+    public func block(
+        header hash: C.TBlock.THeader.THasher.THash?, config: C
+    ) async throws -> C.TBlock.THeader? {
         try await call(method: "chain_getHeader", params: Params(hash))
     }
     
@@ -113,10 +119,10 @@ extension RpcClient: Client {
     public func dryRun<CL: Call>(
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         at hash: C.TBlock.THeader.THasher.THash?,
-        manager: C.TExtrinsicManager
+        runtime: ExtendedRuntime<C>
     ) async throws -> RpcResult<RpcResult<(), C.TDispatchError>, C.TTransactionValidityError> {
         let encoder = runtime.encoder()
-        try manager.encode(signed: extrinsic, in: encoder)
+        try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
         let result: RpcResult<RpcResult<Nil, C.TDispatchError>, C.TTransactionValidityError> =
             try await call(method: "system_dryRun", params: Params(encoder.output, hash))
         if let value = result.value {
@@ -130,17 +136,19 @@ extension RpcClient: Client {
     }
     
     public func execute<CL: StaticCodableRuntimeCall>(call: CL,
-                                               at hash: C.THasher.THash?) async throws -> CL.TReturn
+                                                      at hash: C.THasher.THash?,
+                                                      config: C) async throws -> CL.TReturn
     {
-        let encoder = SCALE.default.encoder()
+        let encoder = config.encoder()
         try call.encodeParams(in: encoder)
         let data: Data = try await self.call(method: "state_call",
                                              params: Params(call.fullName, encoder.output, hash))
-        return try call.decode(returnFrom: SCALE.default.decoder(data: data))
+        return try call.decode(returnFrom: config.decoder(data: data))
     }
     
     public func execute<CL: RuntimeCall>(call: CL,
-                                         at hash: C.THasher.THash?) async throws -> CL.TReturn {
+                                         at hash: C.THasher.THash?,
+                                         runtime: ExtendedRuntime<C>) async throws -> CL.TReturn {
         let encoder = runtime.encoder()
         try call.encodeParams(in: encoder, runtime: runtime)
         let data: Data = try await self.call(method: "state_call",
@@ -151,15 +159,16 @@ extension RpcClient: Client {
     
     public func submit<CL: Call>(
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
-        manager: C.TExtrinsicManager
+        runtime: ExtendedRuntime<C>
     ) async throws -> C.THasher.THash {
         let encoder = runtime.encoder()
-        try manager.encode(signed: extrinsic, in: encoder)
+        try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
         return try await call(method: "author_submitExtrinsic", params: Params(encoder.output))
     }
     
-    public func metadataFromRuntimeApi(at hash: C.THasher.THash?) async throws -> Metadata {
-        let versions = try await execute(call: MetadataRuntimeApi.MetadataVersions(), at: hash)
+    public func metadataFromRuntimeApi(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
+        let versions = try await execute(call: MetadataRuntimeApi.MetadataVersions(),
+                                         at: hash, config: config)
         let supported = VersionedMetadata.supportedVersions.intersection(versions)
         guard let max = supported.max() else {
             throw SDecodingError.dataCorrupted(
@@ -168,19 +177,20 @@ extension RpcClient: Client {
                     description: "Unsupported metadata versions \(versions)"))
         }
         let data = try await execute(call: MetadataRuntimeApi.MetadataAtVersion(version: max),
-                                     at: hash)
+                                     at: hash,
+                                     config: config)
         guard let data = data else {
             throw SDecodingError.dataCorrupted(
                 SDecodingError.Context(
                     path: [],
                     description: "Null metadata"))
         }
-        return try VersionedMetadata(from: SCALE.default.decoder(data: data)).metadata
+        return try config.decoder(data: data).decode(VersionedMetadata.self).metadata
     }
     
-    public func metadataFromRpc(at hash: C.THasher.THash?) async throws -> Metadata {
+    public func metadataFromRpc(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
         let data: Data = try await call(method: "state_getMetadata", params: Params(hash))
-        let versioned = try SCALE.default.decode(VersionedMetadata.self, from: data)
+        let versioned = try config.decoder(data: data).decode(VersionedMetadata.self)
         return versioned.metadata
     }
 }
@@ -197,10 +207,10 @@ extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
 extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
     public func submitAndWatch<CL: Call>(
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
-        manager: C.TExtrinsicManager
+        runtime: ExtendedRuntime<C>
     ) async throws -> AsyncThrowingStream<C.TTransactionStatus, Swift.Error> {
         let encoder = runtime.encoder()
-        try manager.encode(signed: extrinsic, in: encoder)
+        try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
         return try await subscribe(method: "author_submitAndWatchExtrinsic",
                                    params: Params(encoder.output),
                                    unsubsribe: "author_unwatchExtrinsic")

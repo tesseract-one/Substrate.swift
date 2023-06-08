@@ -38,6 +38,15 @@ public protocol Config {
     ) throws -> (addr: RuntimeTypeInfo, signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
     func hasher(metadata: Metadata) throws -> THasher
     func extrinsicManager() throws -> TExtrinsicManager
+    func encoder() -> ScaleEncoder
+    func decoder(data: Data) -> ScaleDecoder
+}
+
+public extension Config {
+    @inlinable
+    func encoder() -> ScaleEncoder { SCALE.default.encoder() }
+    @inlinable
+    func decoder(data: Data) -> ScaleDecoder { SCALE.default.decoder(data: data) }
 }
 
 public extension Config where THasher: StaticHasher {

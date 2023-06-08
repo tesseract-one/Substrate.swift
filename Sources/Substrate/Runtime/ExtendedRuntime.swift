@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ScaleCodec
 
 open class ExtendedRuntime<RC: Config>: Runtime {
     public let config: RC
@@ -30,6 +31,12 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     
     @inlinable
     public var addressFormat: SS58.AddressFormat { properties.ss58Format }
+    
+    @inlinable
+    public func encoder() -> ScaleEncoder { config.encoder() }
+    
+    @inlinable
+    public func decoder(with data: Data) -> ScaleDecoder { config.decoder(data: data) }
     
     private let _blockHeaderType: LazyProperty<RuntimeTypeInfo>
     private let _extrinsicTypes: LazyProperty<

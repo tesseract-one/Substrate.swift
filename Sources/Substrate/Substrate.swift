@@ -65,10 +65,10 @@ public final class Substrate<RC: Config, CL: Client>: SomeSubstrate where CL.C =
     public convenience init(client: CL, config: RC, signer: Signer? = nil,
                             at hash: RC.THasher.THash? = nil) async throws {
         // Obtain initial data
-        let runtimeVersion = try await client.runtimeVersion(at: hash)
-        let properties = try await client.systemProperties()
-        let genesisHash = try await client.block(hash: 0)!
-        let metadata = try await client.metadata(at: hash)
+        let runtimeVersion = try await client.runtimeVersion(at: hash, config: config)
+        let properties = try await client.systemProperties(config: config)
+        let genesisHash = try await client.block(hash: 0, config: config)!
+        let metadata = try await client.metadata(at: hash, config: config)
         let runtime = try ExtendedRuntime(config: config,
                                           metadata: metadata,
                                           metadataHash: hash,

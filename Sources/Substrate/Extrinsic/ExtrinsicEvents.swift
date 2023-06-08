@@ -32,7 +32,7 @@ public struct ExtrinsicEvents<H: Hash, BE: SomeBlockEvents, Failure: SomeExtrins
     public init<S>(substrate: S, blockHash: H, extrinsicHash: H) async throws
         where S: SomeSubstrate, H == S.RC.THasher.THash, BE == S.RC.TBlockEvents
     {
-        let block = try await substrate.client.block(at: blockHash)
+        let block = try await substrate.client.block(at: blockHash, runtime: substrate.runtime)
         guard let idx = block?.block.extrinsics.firstIndex(where: { $0.hash().data == extrinsicHash.data }) else {
             throw Error.extrinsicNotFound(extrinsicHash)
         }

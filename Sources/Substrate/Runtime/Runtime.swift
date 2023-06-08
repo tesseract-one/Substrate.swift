@@ -149,10 +149,4 @@ public extension Runtime {
             return (keys.map { ($0.0, $0.1.id) }, value.id)
         }
     }
-    
-    @inlinable
-    func encoder() -> ScaleEncoder { SCALE.default.encoder() }
-    
-    @inlinable
-    func decoder(with data: Data) -> ScaleDecoder { SCALE.default.decoder(data: data) }
 }
