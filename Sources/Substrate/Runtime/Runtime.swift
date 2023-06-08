@@ -45,6 +45,9 @@ public protocol Runtime: AnyObject {
     func resolve(eventName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(eventIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
     
+    //Constants
+    func resolve(constant name: String, pallet: String) -> (value: Data, type: RuntimeTypeInfo)?
+    
     // Storage
     func resolve(
         storage name: String, pallet: String
@@ -138,6 +141,14 @@ public extension Runtime {
     @inlinable
     func resolve(palletIndex name: String) -> UInt8? {
         metadata.resolve(pallet: name)?.index
+    }
+    
+    @inlinable
+    func resolve(constant name: String, pallet: String) -> (value: Data, type: RuntimeTypeInfo)? {
+        guard let constant = metadata.resolve(pallet: pallet)?.constant(name: name) else {
+            return nil
+        }
+        return (constant.value, constant.type)
     }
     
     @inlinable

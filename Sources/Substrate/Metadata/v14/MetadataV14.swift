@@ -79,6 +79,11 @@ public class PalletMetadataV14: PalletMetadata {
         storageByName.map { Array($0.keys) } ?? []
     }
     
+    public let constantByName: [String: ConstantMetadataV14]
+    public var constants: [String] {
+        Array(constantByName.keys)
+    }
+    
     public init(runtime: RuntimePalletMetadataV14, types: [RuntimeTypeId: RuntimeType]) {
         self.runtime = runtime
         //self.metadata = metadata
@@ -101,6 +106,11 @@ public class PalletMetadataV14: PalletMetadata {
         self.storageByName = runtime.storage
             .flatMap { $0.entries.map { ($0.name, StorageMetadataV14(runtime: $0, types: types)) } }
             .flatMap { Dictionary(uniqueKeysWithValues: $0) }
+        self.constantByName = Dictionary(
+            uniqueKeysWithValues: runtime.constants.map {
+                ($0.name, ConstantMetadataV14(runtime: $0, types: types))
+            }
+        )
     }
     
     @inlinable
@@ -114,6 +124,9 @@ public class PalletMetadataV14: PalletMetadata {
     
     @inlinable
     public func eventIndex(name: String) -> UInt8? { eventIdxByName?[name] }
+    
+    @inlinable
+    public func constant(name: String) -> ConstantMetadata? { constantByName[name] }
     
     @inlinable
     public func storage(name: String) -> StorageMetadata? { storageByName?[name] }
@@ -156,6 +169,20 @@ public class StorageMetadataV14: StorageMetadata {
             }
             self.types = (keys: keys, value: RuntimeTypeInfo(id: vType, type: types[vType]!))
         }
+    }
+}
+
+public class ConstantMetadataV14: ConstantMetadata {
+    public let name: String
+    public let type: RuntimeTypeInfo
+    public let value: Data
+    public let documentation: [String]
+    
+    public init(runtime: RuntimePalletConstantMetadataV14, types: [RuntimeTypeId: RuntimeType]) {
+        self.name = runtime.name
+        self.value = runtime.value
+        self.documentation = runtime.documentation
+        self.type = RuntimeTypeInfo(id: runtime.type, type: types[runtime.type]!)
     }
 }
 

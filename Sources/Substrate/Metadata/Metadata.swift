@@ -34,6 +34,7 @@ public protocol PalletMetadata {
     var call: RuntimeTypeInfo? { get }
     var event: RuntimeTypeInfo? { get }
     var storage: [String] { get }
+    var constants: [String] { get }
     
     func callName(index: UInt8) -> String?
     func callIndex(name: String) -> UInt8?
@@ -41,6 +42,7 @@ public protocol PalletMetadata {
     func eventIndex(name: String) -> UInt8?
     
     func storage(name: String) -> StorageMetadata?
+    func constant(name: String) -> ConstantMetadata?
 }
 
 public protocol StorageMetadata {
@@ -55,6 +57,13 @@ public protocol ExtrinsicMetadata {
     var version: UInt8 { get }
     var type: RuntimeTypeInfo { get }
     var extensions: [ExtrinsicExtensionMetadata] { get }
+}
+
+public protocol ConstantMetadata {
+    var name: String { get }
+    var type: RuntimeTypeInfo { get }
+    var value: Data { get }
+    var documentation: [String] { get }
 }
 
 public protocol ExtrinsicExtensionMetadata {
