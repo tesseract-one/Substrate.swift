@@ -60,7 +60,7 @@ public class ExtrinsicApiRegistry<S: SomeSubstrate> {
     
     public func signer() throws -> any Signer {
         guard let signer = substrate.signer else {
-            throw CocoaError(CocoaError.Code(rawValue: 124)) // TODO: FIX
+            throw SubmittableError.signerIsNil
         }
         return signer
     }

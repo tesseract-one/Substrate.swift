@@ -163,7 +163,7 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
     public let genesisHash: RC.THasher.THash
     public let version: RC.TRuntimeVersion
     public let properties: RC.TSystemProperties
-    public var rpcMethods: Set<String> { get async throws { try await _rpcMethods.value } }
+    public let metadataHash: RC.THasher.THash?
     
     public private(set) var extrinsicManager: RC.TExtrinsicManager
     
@@ -174,9 +174,8 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
     
     @inlinable
     public var hasher: any Hasher { typedHasher }
-    @inlinable
-    public var eventsStorageKey: any StorageKey<Data> { config.eventsStorageKey }
     
+    public let eventsStorageKey: any StorageKey<RC.TBlockEvents>
     public let typedHasher: RC.THasher
     
     @inlinable
@@ -186,15 +185,16 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
     private let _extrinsicTypes: LazyProperty<
         (addr: RuntimeTypeInfo, signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
     >
-    private var _rpcMethods: LazyAsyncProperty<Set<String>>!
     
     public init(config: RC, metadata: any Metadata,
-                         genesisHash: RC.THasher.THash,
-                         version: RC.TRuntimeVersion,
-                         properties: RC.TSystemProperties) throws
+                metadataHash: RC.THasher.THash?,
+                genesisHash: RC.THasher.THash,
+                version: RC.TRuntimeVersion,
+                properties: RC.TSystemProperties) throws
     {
         self.config = config
         self.metadata = metadata
+        self.metadataHash = metadataHash
         self.genesisHash = genesisHash
         self.version = version
         self.properties = properties
@@ -202,13 +202,10 @@ open class ExtendedRuntime<RC: RuntimeConfig>: Runtime {
         self.extrinsicManager = try config.extrinsicManager()
         self._blockHeaderType = LazyProperty { try config.blockHeaderType(metadata: metadata) }
         self._extrinsicTypes = LazyProperty { try config.extrinsicTypes(metadata: metadata) }
-        self._rpcMethods = nil
+        self.eventsStorageKey = try config.eventsStorageKey(metadata: metadata)
     }
     
     open func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws {
         try self.extrinsicManager.setSubstrate(substrate: substrate)
-        self._rpcMethods = LazyAsyncProperty { [unowned substrate] in
-            try await substrate.rpc.rpc.methods().methods
-        }
     }
 }

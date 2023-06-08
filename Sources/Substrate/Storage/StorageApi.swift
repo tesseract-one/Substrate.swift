@@ -58,19 +58,3 @@ public class StorageApiRegistry<S: SomeSubstrate> {
         await _apis.getApi(substrate: substrate)
     }
 }
-
-public extension StorageApiRegistry {
-    func get<K: StorageKey>(key: K, at hash: S.RC.THasher.THash? = nil) async throws -> K.TValue {
-        let data = try await substrate.rpc.state.storage(key: key.hash(runtime: substrate.runtime), at: hash)
-        return try key.decode(valueFrom: substrate.runtime.decoder(with: data),
-                              runtime: substrate.runtime)
-    }
-    
-    func events(at hash: S.RC.THasher.THash? = nil) async throws -> Array<EventRecord<S.RC.THasher.THash, AnyEvent>> {
-        let data = try await substrate.rpc.state.storage(
-            key: substrate.runtime.eventsStorageKey.hash(runtime: substrate.runtime), at: hash
-        )
-        let decoder = substrate.runtime.decoder(with: data)
-        return try Array<EventRecord<S.RC.THasher.THash, AnyEvent>>(from: decoder, runtime: substrate.runtime)
-    }
-}

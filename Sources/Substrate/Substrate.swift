@@ -10,7 +10,7 @@ import JsonRPC
 
 public protocol SomeSubstrate<RC>: AnyObject {
     associatedtype RC: RuntimeConfig
-    associatedtype CL: CallableClient & RuntimeHolder
+    associatedtype CL: SystemApiClient where CL.C == RC
     
     // Dependencies
     var client: CL { get }
@@ -25,7 +25,7 @@ public protocol SomeSubstrate<RC>: AnyObject {
     var tx: ExtrinsicApiRegistry<Self> { get }
 }
 
-public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHolder>: SomeSubstrate {
+public final class Substrate<RC: RuntimeConfig, CL: SystemApiClient>: SomeSubstrate where CL.C == RC {
     public typealias RC = RC
     public typealias CL = CL
     
@@ -62,22 +62,26 @@ public final class Substrate<RC: RuntimeConfig, CL: CallableClient & RuntimeHold
         query.setSubstrate(substrate: self)
     }
     
-    public convenience init(client: CL, config: RC, signer: Signer? = nil) async throws {
-        // Obtain initial data from the RPC
-        let runtimeVersion = try await RpcStateApi<Self>.runtimeVersion(at: nil, with: client)
-        let properties = try await RpcSystemApi<Self>.properties(with: client)
-        let genesisHash = try await RpcChainApi<Self>.blockHash(block: 0, client: client)
-        
-        let metadata: Metadata
-        do {
-            metadata = try await RuntimeApiRegistry<Self>.metadata(with: client)
-        } catch {
-            metadata = try await RpcStateApi<Self>.metadata(with: client)
-        }
-        let runtime = try ExtendedRuntime(config: config, metadata: metadata,
+    public convenience init(client: CL, config: RC, signer: Signer? = nil,
+                            at hash: RC.THasher.THash? = nil) async throws {
+        // Obtain initial data
+        let runtimeVersion = try await client.runtimeVersion(at: hash)
+        let properties = try await client.systemProperties()
+        let genesisHash = try await client.block(hash: 0)!
+        let metadata = try await client.metadata(at: hash)
+        let runtime = try ExtendedRuntime(config: config,
+                                          metadata: metadata,
+                                          metadataHash: hash,
                                           genesisHash: genesisHash,
                                           version: runtimeVersion,
                                           properties: properties)
         try self.init(client: client, runtime: runtime, signer: signer)
+    }
+    
+    public convenience init<CCL: CallableClient & RuntimeHolder>(
+        client: CCL, config: RC, signer: Signer? = nil, at hash: RC.THasher.THash? = nil
+    ) async throws where CL == RpcSystemApiClient<RC, CCL> {
+        let systemClient = RpcSystemApiClient<RC, CCL>(client: client)
+        try await self.init(client: systemClient, config: config, signer: signer, at: hash)
     }
 }

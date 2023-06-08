@@ -17,10 +17,34 @@ public enum EventPhase: Equatable, Hashable {
     case initialization
 }
 
-public struct EventRecord<H: Hash, E: Event> {
+public protocol SomeEventRecord: ScaleRuntimeDecodable {
+    var extrinsicIndex: UInt32? { get }
+    func header() -> (name: String, pallet: String)
+    func any() throws -> AnyEvent
+    func typed<E: StaticEvent>(_ type: E.Type) throws -> E
+}
+
+public struct EventRecord<H: Hash>: SomeEventRecord {
     public let phase: EventPhase
-    public let event: E
+    public let event: AnyEvent
     public let topics: [H]
+    
+    public var extrinsicIndex: UInt32? {
+        switch phase {
+        case .applyExtrinsic(let index): return index
+        default: return nil
+        }
+    }
+    
+    public func header() -> (name: String, pallet: String) {
+        (event.name, event.pallet)
+    }
+    
+    public func any() throws -> AnyEvent { event }
+    
+    public func typed<E: StaticEvent>(_ type: E.Type) throws -> E {
+        try event.typed(type)
+    }
 }
 
 extension EventPhase: ScaleDecodable {
@@ -38,21 +62,9 @@ extension EventPhase: ScaleDecodable {
 extension EventRecord: ScaleRuntimeDecodable {
     public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
         self.phase = try decoder.decode()
-        self.event = try E(from: decoder, runtime: runtime)
+        self.event = try AnyEvent(from: decoder, runtime: runtime)
         self.topics = try Array(from: decoder) { decoder in
             try H(decoder.decode(.fixed(UInt(runtime.hasher.hashPartByteLength))))
         }
-    }
-}
-
-extension EventRecord where E == AnyEvent {
-    public func typed<SE: StaticEvent>(_ type: SE.Type) throws -> EventRecord<H, SE> {
-        guard SE.pallet == event.pallet && SE.name == event.name else {
-            throw EventDecodingError.foundWrongEvent(found: (SE.name, SE.pallet),
-                                                     expected: (event.name, event.pallet))
-        }
-        return try EventRecord<H, SE>(phase: phase,
-                                      event: SE(params: event.params, info: event.info),
-                                      topics: topics)
     }
 }

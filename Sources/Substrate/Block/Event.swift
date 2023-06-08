@@ -129,6 +129,14 @@ public struct AnyEvent: Event {
         default: throw EventDecodingError.decodedNonVariantValue(value, type.id)
         }
     }
+    
+    public func typed<E: StaticEvent>(_ type: E.Type) throws -> E {
+        guard E.pallet == pallet && E.name == name else {
+            throw EventDecodingError.foundWrongEvent(found: (E.name, E.pallet),
+                                                     expected: (name, pallet))
+        }
+        return try E(params: params, info: info)
+    }
 }
 
 public enum EventDecodingError: Error {

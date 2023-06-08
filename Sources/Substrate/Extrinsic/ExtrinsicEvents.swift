@@ -8,17 +8,17 @@
 import Foundation
 
 
-public struct ExtrinsicEvents<H: Hash, Failure: SomeExtrinsicFailureEvent> {
+public struct ExtrinsicEvents<H: Hash, BE: SomeBlockEvents, Failure: SomeExtrinsicFailureEvent> {
     public enum Error: Swift.Error {
         case extrinsicNotFound(H)
     }
     
-    private let _events: Array<EventRecord<H, AnyEvent>>
+    private let _events: BE
     public let blockHash: H
     public let extrinsicHash: H
-    public let index: Int
+    public let index: UInt32
     
-    public init(events: Array<EventRecord<H, AnyEvent>>, blockHash: H, extrinsicHash: H, index: Int) {
+    public init(events: BE, blockHash: H, extrinsicHash: H, index: UInt32) {
         self._events = events
         self.blockHash = blockHash
         self.extrinsicHash = extrinsicHash
@@ -26,25 +26,25 @@ public struct ExtrinsicEvents<H: Hash, Failure: SomeExtrinsicFailureEvent> {
     }
     
     public init<S>(substrate: S, blockHash: H, extrinsicHash: H) async throws
-        where S: SomeSubstrate, H == S.RC.THasher.THash
+        where S: SomeSubstrate, H == S.RC.THasher.THash, BE == S.RC.TBlockEvents
     {
-        let block = try await substrate.rpc.chain.block(at: blockHash)
-        guard let idx = block.block.extrinsics.firstIndex(where: { $0.hash().data == extrinsicHash.data }) else {
+        let block = try await substrate.client.block(at: blockHash)
+        guard let idx = block?.block.extrinsics.firstIndex(where: { $0.hash().data == extrinsicHash.data }) else {
             throw Error.extrinsicNotFound(extrinsicHash)
         }
-        let events = try await substrate.query.events(at: blockHash)
-        self.init(events: events, blockHash: blockHash, extrinsicHash: extrinsicHash, index: idx)
+        let events = try await substrate.client.events(at: blockHash, runtime: substrate.runtime) ?? .default
+        self.init(events: events, blockHash: blockHash, extrinsicHash: extrinsicHash, index: UInt32(idx))
     }
     
-    public var events: Array<EventRecord<H, AnyEvent>> {
-        _events.filter { $0.phase == .applyExtrinsic(UInt32(index)) }
+    public var events: [BE.ER] {
+        _events.events(extrinsic: index)
     }
     
-    public var allBlockEvents: Array<EventRecord<H, AnyEvent>> { _events }
+    public var blockEvents: BE { _events }
     
     public func success() throws -> Self {
-        if let error = try first(Failure.self) {
-            throw try error.event.asError()
+        if let error = try first(event: Failure.self) {
+            throw try error.asError()
         }
         return self
     }
@@ -53,34 +53,58 @@ public struct ExtrinsicEvents<H: Hash, Failure: SomeExtrinsicFailureEvent> {
 
 public extension ExtrinsicEvents {
     func has(event: String, pallet: String) -> Bool {
-        events.first { $0.event.name == event && $0.event.pallet == pallet } != nil
+        _events.has(event: event, pallet: pallet, extrinsic: index)
     }
     
     func has<E: StaticEvent>(_ type: E.Type) -> Bool {
-        has(event: E.name, pallet: E.pallet)
+        _events.has(type, extrinsic: index)
     }
     
-    func all(event: String, pallet: String) -> [EventRecord<H, AnyEvent>] {
-        events.filter { $0.event.name == event && $0.event.pallet == pallet }
+    func all(records event: String, pallet: String) -> [BE.ER] {
+        _events.all(records: event, pallet: pallet, extrinsic: index)
     }
     
-    func all<E: StaticEvent>(_ type: E.Type) throws -> [EventRecord<H, E>] {
-        try events.filter { $0.event.name == E.name && $0.event.pallet == E.pallet }.map { try $0.typed(type) }
+    func all(events event: String, pallet: String) throws -> [AnyEvent] {
+        try _events.all(events: event, pallet: pallet, extrinsic: index)
     }
     
-    func first(event: String, pallet: String) -> EventRecord<H, AnyEvent>? {
-        events.first { $0.event.name == event && $0.event.pallet == pallet }
+    func all<E: StaticEvent>(records type: E.Type) -> [BE.ER] {
+        _events.all(records: type)
     }
     
-    func first<E: StaticEvent>(_ type: E.Type) throws -> EventRecord<H, E>? {
-        try events.first { $0.event.name == E.name && $0.event.pallet == E.pallet }?.typed(type)
+    func all<E: StaticEvent>(events type: E.Type) throws -> [E] {
+        try _events.all(events: type, extrinsic: index)
     }
     
-    func last(event: String, pallet: String) -> EventRecord<H, AnyEvent>? {
-        events.last { $0.event.name == event && $0.event.pallet == pallet }
+    func first(record event: String, pallet: String) -> BE.ER? {
+        _events.first(record: event, pallet: pallet, extrinsic: index)
     }
     
-    func last<E: StaticEvent>(_ type: E.Type) throws -> EventRecord<H, E>? {
-        try events.last { $0.event.name == E.name && $0.event.pallet == E.pallet }?.typed(type)
+    func first(event name: String, pallet: String) throws -> AnyEvent? {
+        try _events.first(event: name, pallet: pallet, extrinsic: index)
+    }
+    
+    func first<E: StaticEvent>(record type: E.Type) -> BE.ER? {
+        _events.first(record: type, extrinsic: index)
+    }
+    
+    func first<E: StaticEvent>(event type: E.Type) throws -> E? {
+        try _events.first(event: type, extrinsic: index)
+    }
+    
+    func last(record event: String, pallet: String) -> BE.ER? {
+        _events.last(record: event, pallet: pallet, extrinsic: index)
+    }
+    
+    func last(event name: String, pallet: String) throws -> AnyEvent? {
+        try _events.last(event: name, pallet: pallet, extrinsic: index)
+    }
+    
+    func last<E: StaticEvent>(record type: E.Type) -> BE.ER? {
+        _events.last(record: type, extrinsic: index)
+    }
+    
+    func last<E: StaticEvent>(event type: E.Type) throws -> E? {
+        try _events.last(event: type, extrinsic: index)
     }
 }

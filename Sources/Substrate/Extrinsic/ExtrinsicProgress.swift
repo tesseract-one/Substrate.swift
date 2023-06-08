@@ -48,12 +48,12 @@ public struct ExtrinsicProgress<S: SomeSubstrate> {
         fatalError("Should be unreachable!")
     }
     
-    public func waitForInBlock() async throws -> ExtrinsicEvents<S.RC.THasher.THash, S.RC.TExtrinsicFailureEvent> {
+    public func waitForInBlock() async throws -> ExtrinsicEvents<S.RC.THasher.THash, S.RC.TBlockEvents, S.RC.TExtrinsicFailureEvent> {
         let hash = try await waitForInBlockHash()
         return try await ExtrinsicEvents(substrate: substrate, blockHash: hash, extrinsicHash: self.hash)
     }
     
-    public func waitForFinalized() async throws -> ExtrinsicEvents<S.RC.THasher.THash, S.RC.TExtrinsicFailureEvent> {
+    public func waitForFinalized() async throws -> ExtrinsicEvents<S.RC.THasher.THash, S.RC.TBlockEvents, S.RC.TExtrinsicFailureEvent> {
         let hash = try await waitForFinalizedHash()
         return try await ExtrinsicEvents(substrate: substrate, blockHash: hash, extrinsicHash: self.hash)
     }

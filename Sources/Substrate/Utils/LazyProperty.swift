@@ -17,7 +17,7 @@ public struct LazyProperty<Value> {
         self._value = Synced(value: nil)
     }
     
-    var value: Value {
+    public var value: Value {
         get throws {
             try _value.sync { value in
                 if let value = value { return value }
@@ -37,7 +37,7 @@ public actor LazyAsyncProperty<Value> {
         self._value = nil
     }
     
-    var value: Value {
+    public var value: Value {
         get async throws {
             if let value = _value { return value }
             _value = try await _initializer()

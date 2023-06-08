@@ -114,7 +114,7 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
     ]
 }
 
-extension DynamicRuntimeConfig: System {    
+extension DynamicRuntimeConfig: System {
     public typealias THasher = AnyFixedHasher
     public typealias TIndex = UInt256
     public typealias TSystemProperties = AnySystemProperties
@@ -133,6 +133,7 @@ extension DynamicRuntimeConfig: System {
     public typealias TDispatchInfo = Value<RuntimeTypeId>
     public typealias TDispatchError = AnyDispatchError
     public typealias TExtrinsicFailureEvent = ExtrinsicFailureEvent<TDispatchError>
+    public typealias TBlockEvents = BlockEvents<EventRecord<THasher.THash>>
     
     // RPC Types
     public typealias TChainType = SerializableValue
@@ -144,5 +145,7 @@ extension DynamicRuntimeConfig: System {
     
     public typealias TTransactionValidityError = SerializableValue
     
-    public var eventsStorageKey: any StorageKey<Data> { SystemEventsStorageKey() }
+    public func eventsStorageKey(metadata: Metadata) throws -> any StorageKey<TBlockEvents> {
+        SystemEventsStorageKey<TBlockEvents>()
+    }
 }

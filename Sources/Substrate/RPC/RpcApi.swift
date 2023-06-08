@@ -27,7 +27,7 @@ extension RpcApi {
     public static var id: String { String(describing: self) }
 }
 
-public class RpcApiRegistry<S: SomeSubstrate>: CallableClient {
+public class RpcApiRegistry<S: SomeSubstrate> {
     private actor Registry {
         private var _apis: [String: any RpcApi] = [:]
         public func getApi<A, S: SomeSubstrate>(substrate: S) async -> A
@@ -57,7 +57,9 @@ public class RpcApiRegistry<S: SomeSubstrate>: CallableClient {
     public func getApi<A>(_ t: A.Type) async -> A where A: RpcApi, A.S == S {
         await _apis.getApi(substrate: substrate)
     }
-    
+}
+
+extension RpcApiRegistry: CallableClient where S.CL: CallableClient {
     public func call<Params: Encodable, Res: Decodable>(
         method: String, params: Params
     ) async throws -> Res {
@@ -70,5 +72,16 @@ extension RpcApiRegistry: SubscribableClient where S.CL: SubscribableClient {
         method: String, params: P, unsubsribe umethod: String
     ) async throws -> AsyncThrowingStream<E, Error> {
         try await substrate.client.subscribe(method: method, params: params, unsubsribe: umethod)
+    }
+}
+
+public extension RpcApiRegistry where S.CL: CallableClient {
+    private struct Methods: Codable {
+        public let methods: Set<String>
+    }
+    
+    func methods() async throws -> Set<String> {
+        let methods: Methods = try await call(method: "rpc_methods", params: Params())
+        return methods.methods
     }
 }

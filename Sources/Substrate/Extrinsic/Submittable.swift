@@ -12,18 +12,18 @@ public struct Submittable<S: SomeSubstrate, C: Call, E> {
     public let extrinsic: Extrinsic<C, E>
     public let substrate: S
     
-    public enum Error: Swift.Error {
-        case accountAndNonceAreNil
-        case signerIsNil
-        case dryRunIsNotSupported
-        case queryInfoIsNotSupported
-        case queryFeeDetailsIsNotSupported
-    }
-    
     public init(substrate: S, extinsic: Extrinsic<C, E>) {
         self.substrate = substrate
         self.extrinsic = extinsic
     }
+}
+
+public enum SubmittableError: Swift.Error {
+    case accountAndNonceAreNil
+    case signerIsNil
+    case dryRunIsNotSupported
+    case queryInfoIsNotSupported
+    case queryFeeDetailsIsNotSupported
 }
 
 extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
@@ -35,7 +35,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     public func dryRun(account: any PublicKey,
                        at block: S.RC.TBlock.THeader.THasher.THash? = nil,
                        overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
-    ) async throws -> RpcResult<RpcResult<Nil, S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
+    ) async throws -> RpcResult<RpcResult<(), S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
         let signed = try await fakeSign(account: account, overrides: overrides)
         return try await signed.dryRun(at: block)
     }
@@ -75,10 +75,10 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
                                                                          overrides: overrides)
         if var nonce = params as? AnyNonceSigningParameter, !nonce.hasNonce {
             guard let account = account else {
-                throw Error.accountAndNonceAreNil
+                throw SubmittableError.accountAndNonceAreNil
             }
             let accountId: S.RC.TAccountId = try account.account(runtime: substrate.runtime)
-            let nextIndex = try await substrate.rpc.system.accountNextIndex(id: accountId)
+            let nextIndex = try await substrate.client.accountNextIndex(id: accountId)
             try nonce.setNonce(nextIndex)
             params = nonce as! S.RC.TExtrinsicManager.TSigningParams
         }
@@ -106,7 +106,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
                      overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> Submittable<S, C, S.RC.TExtrinsicManager.TSignedExtra> {
         guard let signer = substrate.signer else {
-            throw Error.signerIsNil
+            throw SubmittableError.signerIsNil
         }
         return try await sign(signer: signer, account: account, overrides: overrides)
     }
@@ -147,7 +147,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     }
 }
 
-extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra, S.CL: SubscribableRpcClient {
+extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra, S.CL: SubscribableSystemApiClient {
     public func signSendAndWatch(
         account: any PublicKey,
         overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
@@ -166,11 +166,12 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra, S.CL: Su
 extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
     public func dryRun(
         at block: S.RC.TBlock.THeader.THasher.THash? = nil
-    ) async throws -> RpcResult<RpcResult<Nil, S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
-        guard try await substrate.rpc.system.hasDryRun() else {
-            throw Error.dryRunIsNotSupported
+    ) async throws -> RpcResult<RpcResult<(), S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
+        guard try await substrate.client.hasDryRun else {
+            throw SubmittableError.dryRunIsNotSupported
         }
-        return try await substrate.rpc.system.dryRun(extrinsic: extrinsic, at: block)
+        return try await substrate.client.dryRun(extrinsic: extrinsic, at: block,
+                                                 manager: substrate.runtime.extrinsicManager)
     }
     
     public func paymentInfo(
@@ -178,7 +179,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
     ) async throws -> S.RC.TDispatchInfo {
         guard substrate.runtime.resolve(runtimeCall: "query_info",
                                         api: "TransactionPaymentApi") != nil else {
-            throw Error.queryInfoIsNotSupported
+            throw SubmittableError.queryInfoIsNotSupported
         }
         let encoder = substrate.runtime.encoder()
         try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
@@ -188,7 +189,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
                                                         [.bytes(encoder.output),
                                                          .u256(UInt256(encoder.output.count))]
                                                       ))
-        return try await substrate.call.execute(call: call, at: block)
+        return try await substrate.client.execute(call: call, at: block)
     }
     
     public func feeDetails(
@@ -196,7 +197,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
     ) async throws -> S.RC.TFeeDetails {
         guard substrate.runtime.resolve(runtimeCall: "query_fee_details",
                                         api: "TransactionPaymentApi") != nil else {
-            throw Error.queryFeeDetailsIsNotSupported
+            throw SubmittableError.queryFeeDetailsIsNotSupported
         }
         let encoder = substrate.runtime.encoder()
         try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
@@ -206,22 +207,22 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
                                                         [.bytes(encoder.output),
                                                         .u256(UInt256(encoder.output.count))]
                                                     ))
-        return try await substrate.call.execute(call: call, at: block)
+        return try await substrate.client.execute(call: call, at: block)
     }
     
     public func send() async throws -> S.RC.TBlock.THeader.THasher.THash {
-        let encoder = substrate.runtime.encoder()
-        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
-        return try await substrate.rpc.author.submit(extrinsic: encoder.output)
+        try await substrate.client.submit(extrinsic: extrinsic,
+                                          manager: substrate.runtime.extrinsicManager)
     }
 }
 
-extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra, S.CL: SubscribableRpcClient {
+extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra, S.CL: SubscribableSystemApiClient {
     public func sendAndWatch() async throws -> ExtrinsicProgress<S> {
         let encoder = substrate.runtime.encoder()
         try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
         let hash = substrate.runtime.typedHasher.hash(data: encoder.output)
-        let stream = try await substrate.rpc.author.submitAndWatch(extrinsic: encoder.output)
+        let stream = try await substrate.client.submitAndWatch(extrinsic: extrinsic,
+                                                               manager: substrate.runtime.extrinsicManager)
         return ExtrinsicProgress(substrate: substrate, hash: hash, stream: stream)
     }
 }

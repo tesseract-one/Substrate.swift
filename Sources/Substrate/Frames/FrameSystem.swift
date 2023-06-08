@@ -19,10 +19,12 @@ public protocol System {
     
     associatedtype TExtrinsicEra: SomeExtrinsicEra
     associatedtype TExtrinsicPayment: ValueRepresentable & Default
+    associatedtype TBlockEvents: SomeBlockEvents
     associatedtype TDispatchError: SomeDispatchError
     associatedtype TDispatchInfo: ScaleRuntimeDynamicDecodable
     associatedtype TFeeDetails: ScaleRuntimeDynamicDecodable
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
+   
     
     // Helpers
     associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent<TDispatchError>
@@ -38,7 +40,7 @@ public protocol System {
     associatedtype TSyncState: Decodable
     associatedtype TTransactionValidityError: Decodable
     
-    var eventsStorageKey: any StorageKey<Data> { get }
+    func eventsStorageKey(metadata: Metadata) throws -> any StorageKey<TBlockEvents>
 }
 
 public protocol SomeExtrinsicFailureEvent<Err>: StaticEvent {
@@ -68,11 +70,11 @@ public struct ExtrinsicFailureEvent<Err: SomeDispatchError>: SomeExtrinsicFailur
 }
 
 
-public struct SystemEventsStorageKey: StaticStorageKey {
-    public typealias TValue = Data
+public struct SystemEventsStorageKey<BE: SomeBlockEvents>: StaticStorageKey {
+    public typealias TValue = BE
     
-    public static let name: String = "Events"
-    public static let pallet: String = "System"
+    public static var name: String { "Events" }
+    public static var pallet: String { "System" }
     
     public init() {}
     
