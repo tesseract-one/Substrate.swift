@@ -12,38 +12,10 @@ import Serializable
 import JsonRPCSerializable
 #endif
 
-public protocol CallableClient: AnyObject {
-    func call<Params: Encodable, Res: Decodable>(
-        method: String, params: Params
-    ) async throws -> Res
-}
-
-public protocol SubscribableClient: CallableClient {
-    func subscribe<Params: Encodable, Event: Decodable>(
-        method: String, params: Params, unsubsribe umethod: String
-    ) async throws -> AsyncThrowingStream<Event, Error>
-}
-
-public extension CallableClient {
-    func call<Params: Encodable, Res: Decodable>(
-        method: String, params: Params, _ res: Res.Type
-    ) async throws -> Res {
-        return try await call(method: method, params: params)
-    }
-}
-
-public extension SubscribableClient {
-    func subscribe<Params: Encodable, Event: Decodable>(
-        method: String, params: Params, unsubsribe umethod: String, _ event: Event.Type
-    ) async throws -> AsyncThrowingStream<Event, Error> {
-        return try await subscribe(method: method, params: params, unsubsribe: umethod)
-    }
-}
-
-public class CallableRpcClient: CallableClient, RuntimeHolder {
-    public private (set) var client: Client & ContentCodersProvider
+public class JsonRpcCallableClient: RpcCallableClient, RuntimeHolder {
+    public private (set) var client: JsonRPC.Client & ContentCodersProvider
     
-    public init(client: Client & ContentCodersProvider) {
+    public init(client: JsonRPC.Client & ContentCodersProvider) {
         self.client = client
         if let connectable = self.client as? Connectable {
             connectable.connect()
@@ -72,17 +44,17 @@ public class CallableRpcClient: CallableClient, RuntimeHolder {
     }
 }
 
-public protocol SubscribableRpcClientDelegate: AnyObject {
-    func rpcClientStateUpdated(client: SubscribableRpcClient, state: ConnectableState)
-    func rpcClientSubscriptionError(client: SubscribableRpcClient, error: SubscribableRpcClient.Error)
+public protocol JsonRpcClientDelegate: AnyObject {
+    func rpcClientStateUpdated(client: JsonRpcSubscribableClient, state: ConnectableState)
+    func rpcClientSubscriptionError(client: JsonRpcSubscribableClient, error: JsonRpcSubscribableClient.Error)
 }
 
-public extension SubscribableRpcClientDelegate {
-    func rpcClientStateUpdated(client: SubscribableRpcClient, state: ConnectableState) {}
-    func rpcClientSubscriptionError(client: SubscribableRpcClient, error: SubscribableRpcClient.Error) {}
+public extension JsonRpcClientDelegate {
+    func rpcClientStateUpdated(client: JsonRpcSubscribableClient, state: ConnectableState) {}
+    func rpcClientSubscriptionError(client: JsonRpcSubscribableClient, error: JsonRpcSubscribableClient.Error) {}
 }
 
-public class SubscribableRpcClient: CallableRpcClient, NotificationDelegate, ErrorDelegate, ConnectableDelegate {
+public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDelegate, ErrorDelegate, ConnectableDelegate {
     public enum Error: Swift.Error {
         case codec(CodecError)
         case request(RequestError<[CallParam], SerializableValue>)
@@ -141,10 +113,12 @@ public class SubscribableRpcClient: CallableRpcClient, NotificationDelegate, Err
         }
     }
     
-    public weak var delegate: SubscribableRpcClientDelegate?
+    public weak var delegate: JsonRpcClientDelegate?
     private var subscriptions: Subscriptions
     
-    public init(client: Client & Persistent & ContentCodersProvider, delegate: SubscribableRpcClientDelegate?) {
+    public init(client: JsonRPC.Client & Persistent & ContentCodersProvider,
+                delegate: JsonRpcClientDelegate?)
+    {
         self.subscriptions = Subscriptions()
         super.init(client: client)
         client.delegate = self
@@ -239,4 +213,21 @@ public class SubscribableRpcClient: CallableRpcClient, NotificationDelegate, Err
             cb(.failure(reason))
         }
     }
+}
+
+public func JsonRpcClient<Factory: ServiceFactory>(
+    _ cfp: ServiceFactoryProvider<Factory>, queue: DispatchQueue = .global(),
+    encoder: ContentEncoder = JSONEncoder.substrate,
+    decoder: ContentDecoder = JSONDecoder.substrate
+) -> JsonRpcCallableClient where Factory.Connection: SingleShotConnection {
+    JsonRpcCallableClient(client: JsonRpc(cfp, queue: queue, encoder: encoder, decoder: decoder))
+}
+
+public func JsonRpcClient<Factory: ServiceFactory>(
+    _ cfp: ServiceFactoryProvider<Factory>, queue: DispatchQueue = .global(),
+    encoder: ContentEncoder = JSONEncoder.substrate,
+    decoder: ContentDecoder = JSONDecoder.substrate
+) -> JsonRpcSubscribableClient where Factory.Connection: PersistentConnection, Factory.Delegate == AnyObject {
+    JsonRpcSubscribableClient(client: JsonRpc(cfp, queue: queue, encoder: encoder, decoder: decoder),
+                              delegate: nil)
 }

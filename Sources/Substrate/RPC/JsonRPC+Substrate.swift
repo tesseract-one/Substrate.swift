@@ -89,11 +89,3 @@ extension ContentDecoder {
         set { context[.substrateRuntime] = newValue }
     }
 }
-
-public func RpcClient<Factory: ServiceFactory>(_ cfp: ServiceFactoryProvider<Factory>, queue: DispatchQueue, encoder: ContentEncoder = JSONEncoder.substrate, decoder: ContentDecoder = JSONDecoder.substrate) -> SubscribableRpcClient where Factory.Connection: PersistentConnection, Factory.Delegate == AnyObject {
-    SubscribableRpcClient(client: JsonRpc(cfp, queue: queue, encoder: encoder, decoder: decoder), delegate: nil)
-}
-
-public func RpcClient<Factory: ServiceFactory>(_ cfp: ServiceFactoryProvider<Factory>, queue: DispatchQueue, encoder: ContentEncoder = JSONEncoder.substrate, decoder: ContentDecoder = JSONDecoder.substrate) -> CallableRpcClient where Factory.Connection: SingleShotConnection {
-    CallableRpcClient(client: JsonRpc(cfp, queue: queue, encoder: encoder, decoder: decoder))
-}

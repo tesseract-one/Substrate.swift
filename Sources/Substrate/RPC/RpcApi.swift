@@ -15,12 +15,9 @@ import JsonRPCSerializable
 
 public protocol RpcApi<S> {
     associatedtype S: SomeSubstrate
-    
-    static var id: String { get }
-    
     var substrate: S! { get }
-    
-    init(substrate: S) async
+    init(substrate: S)
+    static var id: String { get }
 }
 
 extension RpcApi {
@@ -28,38 +25,32 @@ extension RpcApi {
 }
 
 public class RpcApiRegistry<S: SomeSubstrate> {
-    private actor Registry {
-        private var _apis: [String: any RpcApi] = [:]
-        public func getApi<A, S: SomeSubstrate>(substrate: S) async -> A
-            where A: RpcApi, A.S == S
-        {
-            if let api = _apis[A.id] as? A {
-                return api
-            }
-            let api = await A(substrate: substrate)
-            _apis[A.id] = api
-            return api
-        }
-    }
-    private var _apis: Registry
+    private let _apis: Synced<[String: any RpcApi]>
     
     public weak var substrate: S!
     
     public init(substrate: S? = nil) {
         self.substrate = substrate
-        self._apis = Registry()
+        self._apis = Synced(value: [:])
     }
     
     public func setSubstrate(substrate: S) {
         self.substrate = substrate
     }
     
-    public func getApi<A>(_ t: A.Type) async -> A where A: RpcApi, A.S == S {
-        await _apis.getApi(substrate: substrate)
+    public func getApi<A>(_ t: A.Type) -> A where A: RpcApi, A.S == S {
+        _apis.sync { apis in
+            if let api = apis[A.id] as? A {
+                return api
+            }
+            let api = A(substrate: substrate)
+            apis[A.id] = api
+            return api
+        }
     }
 }
 
-extension RpcApiRegistry: CallableClient where S.CL: CallableClient {
+extension RpcApiRegistry: RpcCallableClient where S.CL: RpcCallableClient {
     public func call<Params: Encodable, Res: Decodable>(
         method: String, params: Params
     ) async throws -> Res {
@@ -67,7 +58,7 @@ extension RpcApiRegistry: CallableClient where S.CL: CallableClient {
     }
 }
 
-extension RpcApiRegistry: SubscribableClient where S.CL: SubscribableClient {
+extension RpcApiRegistry: RpcSubscribableClient where S.CL: RpcSubscribableClient {
     public func subscribe<P: Encodable, E: Decodable>(
         method: String, params: P, unsubsribe umethod: String
     ) async throws -> AsyncThrowingStream<E, Error> {
@@ -75,7 +66,7 @@ extension RpcApiRegistry: SubscribableClient where S.CL: SubscribableClient {
     }
 }
 
-public extension RpcApiRegistry where S.CL: CallableClient {
+public extension RpcApiRegistry where S.CL: RpcCallableClient {
     private struct Methods: Codable {
         public let methods: Set<String>
     }

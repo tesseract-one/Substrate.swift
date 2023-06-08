@@ -7,6 +7,10 @@
 
 import Foundation
 
+public protocol SomeExtrinsicFailureEvent<Err>: StaticEvent {
+    associatedtype Err: SomeDispatchError
+    func asError() throws -> Err
+}
 
 public struct ExtrinsicEvents<H: Hash, BE: SomeBlockEvents, Failure: SomeExtrinsicFailureEvent> {
     public enum Error: Swift.Error {

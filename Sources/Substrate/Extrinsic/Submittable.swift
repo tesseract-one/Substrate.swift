@@ -147,7 +147,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     }
 }
 
-extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra, S.CL: SubscribableSystemApiClient {
+extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra, S.CL: SubscribableClient {
     public func signSendAndWatch(
         account: any PublicKey,
         overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
@@ -216,7 +216,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
     }
 }
 
-extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra, S.CL: SubscribableSystemApiClient {
+extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra, S.CL: SubscribableClient {
     public func sendAndWatch() async throws -> ExtrinsicProgress<S> {
         let encoder = substrate.runtime.encoder()
         try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)

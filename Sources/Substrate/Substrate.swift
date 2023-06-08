@@ -9,8 +9,8 @@ import Foundation
 import JsonRPC
 
 public protocol SomeSubstrate<RC>: AnyObject {
-    associatedtype RC: RuntimeConfig
-    associatedtype CL: SystemApiClient where CL.C == RC
+    associatedtype RC: Config
+    associatedtype CL: Client where CL.C == RC
     
     // Dependencies
     var client: CL { get }
@@ -19,13 +19,13 @@ public protocol SomeSubstrate<RC>: AnyObject {
     
     // API objects
     var rpc: RpcApiRegistry<Self> { get }
-    var call: RuntimeApiRegistry<Self> { get }
+    var call: RuntimeCallApiRegistry<Self> { get }
     var query: StorageApiRegistry<Self> { get }
 //    var consts: SubstrateConstantApiRegistry<Self> { get }
     var tx: ExtrinsicApiRegistry<Self> { get }
 }
 
-public final class Substrate<RC: RuntimeConfig, CL: SystemApiClient>: SomeSubstrate where CL.C == RC {
+public final class Substrate<RC: Config, CL: Client>: SomeSubstrate where CL.C == RC {
     public typealias RC = RC
     public typealias CL = CL
     
@@ -34,7 +34,7 @@ public final class Substrate<RC: RuntimeConfig, CL: SystemApiClient>: SomeSubstr
     public var signer: Signer?
     
     public let rpc: RpcApiRegistry<Substrate<RC, CL>>
-    public let call: RuntimeApiRegistry<Substrate<RC, CL>>
+    public let call: RuntimeCallApiRegistry<Substrate<RC, CL>>
     public let tx: ExtrinsicApiRegistry<Substrate<RC, CL>>
     public let query: StorageApiRegistry<Substrate<RC, CL>>
     
@@ -49,7 +49,7 @@ public final class Substrate<RC: RuntimeConfig, CL: SystemApiClient>: SomeSubstr
         // Create registries
         self.rpc = RpcApiRegistry()
         self.tx = ExtrinsicApiRegistry()
-        self.call = RuntimeApiRegistry()
+        self.call = RuntimeCallApiRegistry()
         self.query = StorageApiRegistry()
         
         // Init runtime
@@ -78,10 +78,10 @@ public final class Substrate<RC: RuntimeConfig, CL: SystemApiClient>: SomeSubstr
         try self.init(client: client, runtime: runtime, signer: signer)
     }
     
-    public convenience init<CCL: CallableClient & RuntimeHolder>(
-        client: CCL, config: RC, signer: Signer? = nil, at hash: RC.THasher.THash? = nil
-    ) async throws where CL == RpcSystemApiClient<RC, CCL> {
-        let systemClient = RpcSystemApiClient<RC, CCL>(client: client)
+    public convenience init<RPC>(
+        rpc client: RPC, config: RC, signer: Signer? = nil, at hash: RC.THasher.THash? = nil
+    ) async throws where RPC: RpcCallableClient & RuntimeHolder, CL == RpcClient<RC, RPC> {
+        let systemClient = RpcClient<RC, RPC>(client: client)
         try await self.init(client: systemClient, config: config, signer: signer, at: hash)
     }
 }

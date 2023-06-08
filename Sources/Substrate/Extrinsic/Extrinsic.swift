@@ -58,7 +58,7 @@ public typealias UnsignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, 
 public typealias SigningPayload<C: Call, M: ExtrinsicManager> = ExtrinsicSignPayload<C, M.TSigningExtra>
 
 public protocol ExtrinsicManager<RT> {
-    associatedtype RT: System
+    associatedtype RT: Config
     associatedtype TUnsignedParams
     associatedtype TSigningParams
     associatedtype TUnsignedExtra
@@ -102,7 +102,7 @@ public protocol ExtrinsicManager<RT> {
 public extension ExtrinsicManager {
     var version: UInt8 { Self.version }
     
-    static func get(from runtime: any Runtime) throws -> Self where RT: RuntimeConfig {
+    static func get(from runtime: any Runtime) throws -> Self where RT: Config {
         guard let extended = runtime as? ExtendedRuntime<RT> else {
             throw ExtrinsicCodingError.unsupportedSubstrate(reason: "Runtime is not ER or different config")
         }
@@ -113,7 +113,7 @@ public extension ExtrinsicManager {
     }
 }
 
-public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where TManager.RT: RuntimeConfig {
+public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where TManager.RT: Config {
     public typealias TManager = TManager
     
     public let data: Data

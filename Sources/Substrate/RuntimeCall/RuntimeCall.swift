@@ -116,39 +116,3 @@ public enum RuntimeCallCodingError: Error {
     case wrongParametersCount(params: [Value<Void>], expected: [(String, RuntimeTypeInfo)])
     case parameterNotFound(name: String, inParams: [String: Value<Void>])
 }
-
-public struct MetadataRuntimeApi {
-    public struct Metadata: StaticCodableRuntimeCall {
-        public typealias TReturn = Data
-        static public let method = "metadata"
-        static public var api: String { MetadataRuntimeApi.name }
-        
-        public func encodeParams(in encoder: ScaleCodec.ScaleEncoder) throws {}
-    }
-    
-    public struct MetadataAtVersion: StaticCodableRuntimeCall {
-        public typealias TReturn = Optional<Data>
-        let version: UInt32
-        
-        public init(version: UInt32) {
-            self.version = version
-        }
-        
-        public func encodeParams(in encoder: ScaleCodec.ScaleEncoder) throws {
-            try encoder.encode(version)
-        }
-        
-        static public let method = "metadata_at_version"
-        static public var api: String { MetadataRuntimeApi.name }
-    }
-    
-    public struct MetadataVersions: StaticCodableRuntimeCall {
-        public typealias TReturn = [UInt32]
-        static public let method = "metadata_versions"
-        static public var api: String { MetadataRuntimeApi.name }
-        
-        public func encodeParams(in encoder: ScaleCodec.ScaleEncoder) throws {}
-    }
-    
-    public static let name = "Metadata"
-}

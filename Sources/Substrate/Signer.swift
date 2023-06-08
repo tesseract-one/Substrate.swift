@@ -9,7 +9,7 @@ import Foundation
 
 public protocol Signer {
     func account(type: KeyTypeId, algos: [CryptoTypeId]) async throws -> any PublicKey
-    func sign<RC: RuntimeConfig, C: Call>(
+    func sign<RC: Config, C: Call>(
         payload: SigningPayload<C, RC.TExtrinsicManager>,
         with account: any PublicKey,
         runtime: ExtendedRuntime<RC>

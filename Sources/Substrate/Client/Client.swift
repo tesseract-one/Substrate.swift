@@ -7,8 +7,8 @@
 
 import Foundation
 
-public protocol SystemApiClient<C>: RuntimeHolder {
-    associatedtype C: RuntimeConfig
+public protocol Client<C>: RuntimeHolder {
+    associatedtype C: Config
     
     var hasDryRun: Bool { get async throws }
     
@@ -38,7 +38,7 @@ public protocol SystemApiClient<C>: RuntimeHolder {
     ) async throws -> C.THasher.THash
 }
 
-public protocol SubscribableSystemApiClient<C>: SystemApiClient {
+public protocol SubscribableClient<C>: Client {
     func submitAndWatch<CL: Call>(
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         manager: C.TExtrinsicManager

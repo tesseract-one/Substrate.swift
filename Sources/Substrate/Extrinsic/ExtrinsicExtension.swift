@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol SignedExtensionsProvider<RT> {
-    associatedtype RT: System
+    associatedtype RT: Config
     associatedtype TExtra
     associatedtype TAdditionalSigned
     associatedtype TSigningParams
@@ -136,7 +136,7 @@ public extension PaymentSigningParameter {
     }
 }
 
-public struct AnySigningParams<RT: System> {
+public struct AnySigningParams<RT: Config> {
     private var params: [String: Any]
     
     public init() {
@@ -250,7 +250,7 @@ public protocol DynamicExtrinsicExtension {
     ) async throws -> Value<RuntimeTypeId>
 }
 
-public class DynamicSignedExtensionsProvider<RT: System>: SignedExtensionsProvider {
+public class DynamicSignedExtensionsProvider<RT: Config>: SignedExtensionsProvider {
     public typealias RT = RT
     public typealias TExtra = Value<RuntimeTypeId>
     public typealias TAdditionalSigned = [Value<RuntimeTypeId>]
@@ -310,7 +310,7 @@ public class DynamicSignedExtensionsProvider<RT: System>: SignedExtensionsProvid
 }
 
 private protocol _SomeSubstrateWrapper<RT> {
-    associatedtype RT: System
+    associatedtype RT: Config
     
     var extraType: RuntimeTypeId { get }
     var additionalSignedTypes: [RuntimeTypeId] { get }

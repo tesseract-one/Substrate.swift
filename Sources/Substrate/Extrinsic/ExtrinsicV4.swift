@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public class ExtrinsicV4Manager<RC: RuntimeConfig, SE: SignedExtensionsProvider<RC>>: ExtrinsicManager {
+public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: ExtrinsicManager {
     public typealias RT = RC
     public typealias TUnsignedParams = Void
     public typealias TSigningParams = SE.TSigningParams

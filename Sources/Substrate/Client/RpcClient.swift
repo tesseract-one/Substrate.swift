@@ -1,5 +1,5 @@
 //
-//  RpcSystemApiClient.swift
+//  RpcClient.swift
 //  
 //
 //  Created by Yehor Popovych on 08/06/2023.
@@ -9,15 +9,14 @@ import Foundation
 import ScaleCodec
 import JsonRPC
 
-
-public class RpcSystemApiClient<RC: RuntimeConfig, CL: CallableClient & RuntimeHolder> {
+public struct RpcClient<RC: Config, CL: RpcCallableClient & RuntimeHolder> {
     public let client: CL
-    public private(set) var rpcMethods: LazyAsyncProperty<Set<String>>!
+    public let rpcMethods: LazyAsyncProperty<Set<String>>
     
     public init(client: CL) {
         self.client = client
-        self.rpcMethods = LazyAsyncProperty { [unowned self] in
-            try await self._rpcMethods()
+        self.rpcMethods = LazyAsyncProperty {
+            try await Self._rpcMethods(client: client)
         }
     }
     
@@ -25,13 +24,13 @@ public class RpcSystemApiClient<RC: RuntimeConfig, CL: CallableClient & RuntimeH
         public let methods: Set<String>
     }
     
-    private func _rpcMethods() async throws -> Set<String> {
-        let m: RpcMethods = try await call(method: "rpc_methods", params: Params())
+    private static func _rpcMethods(client: CL) async throws -> Set<String> {
+        let m: RpcMethods = try await client.call(method: "rpc_methods", params: Params())
         return m.methods
     }
 }
 
-extension RpcSystemApiClient: CallableClient {
+extension RpcClient: RpcCallableClient {
     @inlinable
     public func call<Params: Encodable, Res: Decodable>(
         method: String, params: Params
@@ -40,7 +39,7 @@ extension RpcSystemApiClient: CallableClient {
     }
 }
 
-extension RpcSystemApiClient: RuntimeHolder {
+extension RpcClient: RuntimeHolder {
     @inlinable
     public var runtime: Runtime { client.runtime }
     
@@ -50,7 +49,7 @@ extension RpcSystemApiClient: RuntimeHolder {
     }
 }
 
-extension RpcSystemApiClient: SystemApiClient {
+extension RpcClient: Client {
     public typealias C = RC
     
     @inlinable
@@ -186,7 +185,7 @@ extension RpcSystemApiClient: SystemApiClient {
     }
 }
 
-extension RpcSystemApiClient: SubscribableClient where CL: SubscribableClient {
+extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
     @inlinable
     public func subscribe<Params: Encodable, Event: Decodable>(
         method: String, params: Params, unsubsribe umethod: String
@@ -195,7 +194,7 @@ extension RpcSystemApiClient: SubscribableClient where CL: SubscribableClient {
     }
 }
 
-extension RpcSystemApiClient: SubscribableSystemApiClient where CL: SubscribableClient {
+extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
     public func submitAndWatch<CL: Call>(
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         manager: C.TExtrinsicManager

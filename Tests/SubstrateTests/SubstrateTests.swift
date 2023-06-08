@@ -12,10 +12,10 @@ import JsonRPC
 
 final class SubstrateTests: XCTestCase {
     func testInitializationParsing() {
-        let client = RpcClient(.http(url: URL(string: "https://westend-rpc.polkadot.io")!), queue: .global())
+        let client = JsonRpcClient(.http(url: URL(string: "https://westend-rpc.polkadot.io")!))
         
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Substrate<_, _>(client: client, config: DynamicRuntimeConfig())
+            let substrate = try await Substrate(rpc: client, config: DynamicRuntime())
             let events = try await substrate.client.events(at: nil, runtime: substrate.runtime)
             print("Events:", events as Any)
         }

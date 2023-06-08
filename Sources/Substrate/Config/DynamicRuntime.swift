@@ -1,37 +1,36 @@
 //
-//  RuntimeConfig.swift
+//  DynamicRuntime.swift
 //  
 //
-//  Created by Yehor Popovych on 29.12.2022.
+//  Created by Yehor Popovych on 08/06/2023.
 //
 
 import Foundation
 import ScaleCodec
 import Serializable
 
-public protocol RuntimeConfig: System {
-    associatedtype TRuntimeVersion: RuntimeVersion
+public struct DynamicRuntime: Config {
+    public typealias THasher = AnyFixedHasher
+    public typealias TIndex = UInt256
+    public typealias TSystemProperties = AnySystemProperties
+    public typealias TAccountId = AccountId32
+    public typealias TAddress = MultiAddress<TAccountId, TIndex>
+    public typealias TSignature = MultiSignature
+    public typealias TBlock = Block<AnyBlockHeader<THasher>, BlockExtrinsic<TExtrinsicManager>>
+    public typealias TSignedBlock = ChainBlock<TBlock, SerializableValue>
     
-    func extrinsicManager() throws -> TExtrinsicManager
-    func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo
-    func extrinsicTypes(
-        metadata: Metadata
-    ) throws -> (addr: RuntimeTypeInfo, signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
-    func hasher(metadata: Metadata) throws -> THasher
-}
-
-public extension RuntimeConfig where THasher: StaticHasher {
-    func hasher(metadata: Metadata) throws -> THasher { THasher.instance }
-}
-
-public extension RuntimeConfig where TBlock.THeader: StaticBlockHeader {
-    func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo {
-        fatalError("Should not be called for StaticBlockHeader!")
-    }
-}
-
-public struct DynamicRuntimeConfig: RuntimeConfig {
+    public typealias TExtrinsicManager = ExtrinsicV4Manager<Self, DynamicSignedExtensionsProvider<Self>>
+    public typealias TTransactionStatus = TransactionStatus<THasher.THash, THasher.THash>
+    
+    public typealias TExtrinsicEra = ExtrinsicEra
+    public typealias TExtrinsicPayment = UInt256
+    public typealias TFeeDetails = Value<RuntimeTypeId>
+    public typealias TDispatchInfo = Value<RuntimeTypeId>
+    public typealias TDispatchError = AnyDispatchError
+    public typealias TExtrinsicFailureEvent = ExtrinsicFailureEvent<TDispatchError>
+    public typealias TBlockEvents = BlockEvents<EventRecord<THasher.THash>>
     public typealias TRuntimeVersion = AnyRuntimeVersion
+    public typealias TTransactionValidityError = SerializableValue
     
     public enum Error: Swift.Error {
         case headerTypeNotFound(String)
@@ -47,6 +46,10 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
                 headerName: String = "Header") {
         self.extrinsicExtensions = extrinsicExtensions
         self.headerName = headerName
+    }
+    
+    public func eventsStorageKey(metadata: Metadata) throws -> any StorageKey<TBlockEvents> {
+        SystemEventsStorageKey<TBlockEvents>()
     }
     
     public func extrinsicManager() throws -> TExtrinsicManager {
@@ -112,40 +115,4 @@ public struct DynamicRuntimeConfig: RuntimeConfig {
         DynamicChargeTransactionPaymentExtension(),
         DynamicPrevalidateAttestsExtension()
     ]
-}
-
-extension DynamicRuntimeConfig: System {
-    public typealias THasher = AnyFixedHasher
-    public typealias TIndex = UInt256
-    public typealias TSystemProperties = AnySystemProperties
-    public typealias TAccountId = AccountId32
-    public typealias TAddress = MultiAddress<TAccountId, TIndex>
-    public typealias TSignature = MultiSignature
-    public typealias TBlock = Block<AnyBlockHeader<THasher>, BlockExtrinsic<TExtrinsicManager>>
-    public typealias TSignedBlock = ChainBlock<TBlock, SerializableValue>
-    
-    public typealias TExtrinsicManager = ExtrinsicV4Manager<Self, DynamicSignedExtensionsProvider<Self>>
-    public typealias TTransactionStatus = TransactionStatus<THasher.THash, THasher.THash>
-    
-    public typealias TExtrinsicEra = ExtrinsicEra
-    public typealias TExtrinsicPayment = UInt256
-    public typealias TFeeDetails = Value<RuntimeTypeId>
-    public typealias TDispatchInfo = Value<RuntimeTypeId>
-    public typealias TDispatchError = AnyDispatchError
-    public typealias TExtrinsicFailureEvent = ExtrinsicFailureEvent<TDispatchError>
-    public typealias TBlockEvents = BlockEvents<EventRecord<THasher.THash>>
-    
-    // RPC Types
-    public typealias TChainType = SerializableValue
-    public typealias THealth = [String: SerializableValue]
-    public typealias TNetworkState = [String: SerializableValue]
-    public typealias TNodeRole = SerializableValue
-    public typealias TNetworkPeerInfo = [String: SerializableValue]
-    public typealias TSyncState = [String: SerializableValue]
-    
-    public typealias TTransactionValidityError = SerializableValue
-    
-    public func eventsStorageKey(metadata: Metadata) throws -> any StorageKey<TBlockEvents> {
-        SystemEventsStorageKey<TBlockEvents>()
-    }
 }
