@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct VersionedMetadata: ScaleDecodable {
+public struct VersionedMetadata: ScaleDecodable, ScaleRuntimeDecodable {
     public let magicNumber: UInt32
     public let metadata: Metadata
     

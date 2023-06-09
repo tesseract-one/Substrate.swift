@@ -42,7 +42,7 @@ public protocol StaticCodableRuntimeCall: StaticRuntimeCall where TReturn: Scale
 }
 
 public extension StaticCodableRuntimeCall {
-    func encodeParams(in encoder: ScaleCodec.ScaleEncoder, runtime: Runtime) throws {
+    func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws {
         try encodeParams(in: encoder)
     }
     

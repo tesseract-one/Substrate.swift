@@ -27,10 +27,13 @@ public struct DynamicRuntime: Config {
     public typealias TFeeDetails = Value<RuntimeTypeId>
     public typealias TDispatchInfo = Value<RuntimeTypeId>
     public typealias TDispatchError = AnyDispatchError
-    public typealias TExtrinsicFailureEvent = ExtrinsicFailureEvent<TDispatchError>
+    public typealias TExtrinsicFailureEvent = System.Events.ExtrinsicFailure<TDispatchError>
     public typealias TBlockEvents = BlockEvents<EventRecord<THasher.THash>>
     public typealias TRuntimeVersion = AnyRuntimeVersion
     public typealias TTransactionValidityError = SerializableValue
+    
+    public typealias TMetadataAtVersionRuntimeCall = Api.Metadata.MetadataAtVersion
+    public typealias TMetadataVersionsRuntimeCall = Api.Metadata.MetadataVersions
     
     public enum Error: Swift.Error {
         case headerTypeNotFound(String)
@@ -49,7 +52,7 @@ public struct DynamicRuntime: Config {
     }
     
     public func eventsStorageKey(metadata: Metadata) throws -> any StorageKey<TBlockEvents> {
-        SystemEventsStorageKey<TBlockEvents>()
+        System.Storage.Events<TBlockEvents>()
     }
     
     public func extrinsicManager() throws -> TExtrinsicManager {
@@ -115,4 +118,89 @@ public struct DynamicRuntime: Config {
         DynamicChargeTransactionPaymentExtension(),
         DynamicPrevalidateAttestsExtension()
     ]
+}
+
+
+// Helper structs
+public extension DynamicRuntime {
+    struct Api {
+        public struct Metadata {
+            public struct Metadata: StaticCodableRuntimeCall {
+                public typealias TReturn = VersionedMetadata
+                static public let method = "metadata"
+                static public var api: String { Api.Metadata.name }
+                
+                public init(_ params: Void) throws {}
+                
+                public func encodeParams(in encoder: ScaleCodec.ScaleEncoder) throws {}
+            }
+            
+            public struct MetadataAtVersion: SomeMetadataAtVersionRuntimeCall {
+                public typealias TReturn = Optional<VersionedMetadata>
+                let version: UInt32
+                
+                public init(version: UInt32) {
+                    self.version = version
+                }
+                
+                public func encodeParams(in encoder: ScaleCodec.ScaleEncoder) throws {
+                    try encoder.encode(version)
+                }
+                
+                static public let method = "metadata_at_version"
+                static public var api: String { Api.Metadata.name }
+            }
+            
+            public struct MetadataVersions: SomeMetadataVersionsRuntimeCall {
+                public typealias TReturn = [UInt32]
+                static public let method = "metadata_versions"
+                static public var api: String { Api.Metadata.name }
+                
+                public init() {}
+                
+                public func encodeParams(in encoder: ScaleCodec.ScaleEncoder) throws {}
+            }
+            
+            public static let name = "Metadata"
+        }
+    }
+    
+    struct System {
+        public struct Events {
+            public struct ExtrinsicFailure<Err: SomeDispatchError>: SomeExtrinsicFailureEvent {
+                public typealias Err = Err
+                public static var pallet: String { System.name }
+                public static var name: String { "ExtrinsicFailure" }
+                
+                public let error: Value<RuntimeTypeId>
+                
+                public init(params: [Value<RuntimeTypeId>]) throws {
+                    guard params.count == 1, let err = params.first else {
+                        throw ValueInitializableError<RuntimeTypeId>.wrongValuesCount(in: .sequence(params),
+                                                                                      expected: 1,
+                                                                                      for: Self.name)
+                    }
+                    self.error = err
+                }
+                
+                public func asError() throws -> Err {
+                    try Err(value: error)
+                }
+            }
+        }
+        public struct Storage {
+            public struct Events<BE: SomeBlockEvents>: StaticStorageKey {
+                public typealias TValue = BE
+                
+                public static var name: String { "Events" }
+                public static var pallet: String { System.name }
+                
+                public init() {}
+                
+                public init(decodingPath decoder: ScaleDecoder, runtime: Runtime) throws {}
+                public func encodePath(in encoder: ScaleEncoder, runtime: Runtime) throws {}
+            }
+        }
+        public static let name = "System"
+    }
 }

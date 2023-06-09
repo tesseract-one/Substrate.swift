@@ -29,6 +29,9 @@ public protocol Config {
     associatedtype TRuntimeVersion: RuntimeVersion
     associatedtype TTransactionValidityError: Decodable
    
+    associatedtype TMetadataAtVersionRuntimeCall: SomeMetadataAtVersionRuntimeCall
+    associatedtype TMetadataVersionsRuntimeCall: SomeMetadataVersionsRuntimeCall
+    
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
     
     func eventsStorageKey(metadata: Metadata) throws -> any StorageKey<TBlockEvents>
