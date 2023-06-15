@@ -116,3 +116,15 @@ public enum RuntimeCallCodingError: Error {
     case wrongParametersCount(params: [Value<Void>], expected: [(String, RuntimeTypeInfo)])
     case parameterNotFound(name: String, inParams: [String: Value<Void>])
 }
+
+public protocol SomeMetadataVersionsRuntimeCall: StaticCodableRuntimeCall
+    where TReturn == [UInt32]
+{
+    init()
+}
+
+public protocol SomeMetadataAtVersionRuntimeCall: StaticCodableRuntimeCall
+    where TReturn == Optional<VersionedMetadata>
+{
+    init(version: UInt32)
+}
