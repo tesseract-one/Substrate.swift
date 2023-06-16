@@ -9,7 +9,7 @@ import Foundation
 #if os(Linux) || os(Windows)
 import Glibc
 
-public class Synced<Value> {
+public class Synced<T> {
     private var _value: T
     private var _mutex: pthread_mutex_t
     
