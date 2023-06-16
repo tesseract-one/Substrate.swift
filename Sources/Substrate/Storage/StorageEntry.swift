@@ -158,19 +158,24 @@ public struct StorageEntryIterator<S: SomeSubstrate, Iter: StorageKeyIterator> {
                 atHash = try await substrate.client.block(hash: nil, runtime: substrate.runtime)!
             }
             if buffer.count > 0 { return buffer.removeFirst() }
-            let new = try await substrate.client.storage(keys: iterator,
-                                                         count: page,
-                                                         startKey: lastKey,
-                                                         at: atHash,
-                                                         runtime: substrate.runtime)
-            lastKey = new.last
-            guard new.count > 0 else { return nil }
-            let changes = try await substrate.client.storage(changes: new,
+            var finished: Bool = false
+            repeat {
+                let new = try await substrate.client.storage(keys: iterator,
+                                                             count: page,
+                                                             startKey: lastKey,
                                                              at: atHash,
                                                              runtime: substrate.runtime)
-            let filtered = changes.compactMap { $0.1 != nil ? ($0.0, $0.1!) : nil }
-            guard filtered.count > 0 else { return nil }
-            buffer.append(contentsOf: filtered)
+                lastKey = new.last
+                guard new.count > 0 else { return nil }
+                let changes = try await substrate.client.storage(changes: new,
+                                                                 at: atHash,
+                                                                 runtime: substrate.runtime)
+                let filtered = changes.compactMap { $0.1 != nil ? ($0.0, $0.1!) : nil }
+                if filtered.count > 0 {
+                    buffer.append(contentsOf: filtered)
+                    finished = true
+                }
+            } while (!finished)
             return buffer.removeFirst()
         }
     }
