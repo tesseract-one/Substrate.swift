@@ -31,12 +31,12 @@ public enum StorageHasher: CaseIterable, ScaleCodable, CustomStringConvertible {
     
     public var description: String {
         switch self {
-        case .blake2b128: return "Blake2b128"
-        case .blake2b256: return "Blake2b256"
-        case .blake2b128concat: return "Blake2b128.Concat"
-        case .xx128: return "TwoX128"
-        case .xx256: return "TwoX256"
-        case .xx64concat: return "TwoX64.Concat"
+        case .blake2b128: return "Blake2_128"
+        case .blake2b256: return "Blake2_256"
+        case .blake2b128concat: return "Blake2_128Concat"
+        case .xx128: return "Twox128"
+        case .xx256: return "Twox256"
+        case .xx64concat: return "Twox64Concat"
         case .identity: return "Identity"
         }
     }

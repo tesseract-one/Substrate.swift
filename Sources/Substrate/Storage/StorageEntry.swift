@@ -24,6 +24,20 @@ public struct StorageEntry<S: SomeSubstrate, Key: StorageKey> {
         try Key(base: self.params, params: params, runtime: substrate.runtime)
     }
     
+    public func size(
+        key: Key,
+        at hash: S.RC.TBlock.THeader.THasher.THash? = nil
+    ) async throws -> UInt64 {
+        try await substrate.client.storage(size: key, at: hash, runtime: substrate.runtime)
+    }
+    
+    public func size(
+        _ params: Key.TParams,
+        at hash: S.RC.TBlock.THeader.THasher.THash? = nil
+    ) async throws -> UInt64 {
+        try await size(key: key(params), at: hash)
+    }
+    
     public func value(
         key: Key,
         at hash: S.RC.TBlock.THeader.THasher.THash? = nil
@@ -60,6 +74,10 @@ public struct StorageEntry<S: SomeSubstrate, Key: StorageKey> {
     }
 }
 
+public extension StorageEntry {
+    
+}
+
 public extension StorageEntry where Key: IterableStorageKey {
     var iterator: Key.TIterator { Key.TIterator(base: params) }
     
@@ -86,6 +104,10 @@ public extension StorageEntry where Key: IterableStorageKey, Key.TIterator: Iter
 }
 
 public extension StorageEntry where Key == AnyStorageKey {
+    func size(at hash: S.RC.TBlock.THeader.THasher.THash? = nil) async throws -> UInt64 {
+        try await size(key: Key(name: params.name, pallet: params.pallet, path: []), at: hash)
+    }
+    
     func value(at hash: S.RC.TBlock.THeader.THasher.THash? = nil) async throws -> Key.TValue? {
         try await value(key: Key(name: params.name, pallet: params.pallet, path: []), at: hash)
     }
@@ -104,6 +126,10 @@ public extension StorageEntry where Key == AnyStorageKey {
 }
 
 public extension StorageEntry where Key.TParams == Void {
+    func size(at hash: S.RC.TBlock.THeader.THasher.THash? = nil) async throws -> UInt64 {
+        try await size(key: Key(base: params, params: (), runtime: substrate.runtime), at: hash)
+    }
+    
     func value(at hash: S.RC.TBlock.THeader.THasher.THash? = nil) async throws -> Key.TValue? {
         try await value(key: Key(base: params, params: (), runtime: substrate.runtime), at: hash)
     }

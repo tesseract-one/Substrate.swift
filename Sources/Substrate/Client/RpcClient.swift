@@ -202,6 +202,14 @@ extension RpcClient: Client {
         }
     }
     
+    public func storage<K: StorageKey>(size key: K,
+                                       at hash: C.THasher.THash?,
+                                       runtime: ExtendedRuntime<C>) async throws -> UInt64 {
+        let size: HexOrNumber<UInt64>? = try await call(method: "state_getStorageSize",
+                                                        params: Params(key.hash, hash))
+        return size?.value ?? 0
+    }
+    
     public func metadataFromRuntimeApi(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
         let versions = try await execute(call: C.TMetadataVersionsRuntimeCall(),
                                          at: hash, config: config)

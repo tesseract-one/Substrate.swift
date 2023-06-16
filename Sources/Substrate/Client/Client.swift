@@ -53,6 +53,10 @@ public protocol Client<C>: RuntimeHolder {
     func storage<K: StorageKey>(changes keys: [K],
                                 at hash: C.THasher.THash?,
                                 runtime: ExtendedRuntime<C>) async throws -> [(K, K.TValue?)]
+    
+    func storage<K: StorageKey>(size key: K,
+                                at hash: C.THasher.THash?,
+                                runtime: ExtendedRuntime<C>) async throws -> UInt64
 }
 
 public protocol SubscribableClient<C>: Client {
