@@ -44,12 +44,12 @@ public struct DynamicRuntime: Config {
     }
     
     public let extrinsicExtensions: [DynamicExtrinsicExtension]
-    public let headerName: String
+    public let headerTypeName: String
     
     public init(extrinsicExtensions: [DynamicExtrinsicExtension] = Self.allExtensions,
-                headerName: String = "Header") {
+                headerTypeName: String = "sp_runtime.generic.header.Header") {
         self.extrinsicExtensions = extrinsicExtensions
-        self.headerName = headerName
+        self.headerTypeName = headerTypeName
     }
     
     public func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
@@ -75,8 +75,9 @@ public struct DynamicRuntime: Config {
     }
     
     public func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo {
-        guard let type = metadata.resolve(type: headerName) else {
-            throw Error.headerTypeNotFound(headerName)
+        let path = headerTypeName.split(separator: ".").map { String($0) }
+        guard let type = metadata.resolve(type: path) else {
+            throw Error.headerTypeNotFound(headerTypeName)
         }
         return type
     }

@@ -161,9 +161,9 @@ public struct AnyFixedHasher: FixedHasher {
         
         public init?(name: String) {
             switch name.lowercased() {
-            case "blake2b128": self = .blake2b128
-            case "blake2b256": self = .blake2b256
-            case "blake2b512": self = .blake2b512
+            case "blake2b128", "blaketwo128": self = .blake2b128
+            case "blake2b256", "blaketwo256": self = .blake2b256
+            case "blake2b512", "blaketwo512": self = .blake2b512
             case "xx128", "twox128": self = .xx128
             case "xx256", "twox256": self = .xx256
             default: return nil

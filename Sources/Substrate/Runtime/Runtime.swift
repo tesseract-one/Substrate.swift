@@ -23,7 +23,6 @@ public protocol Runtime: AnyObject {
     func decoder(with data: Data) -> any ScaleDecoder
     
     func resolve(type id: RuntimeTypeId) -> RuntimeType?
-    func resolve(type named: String) -> RuntimeTypeInfo?
     func resolve(type path: [String]) -> RuntimeTypeInfo?
     func resolve(palletName index: UInt8) -> String?
     func resolve(palletIndex name: String) -> UInt8?
@@ -66,11 +65,6 @@ public extension Runtime {
     @inlinable
     func resolve(type id: RuntimeTypeId) -> RuntimeType? {
         metadata.resolve(type: id)
-    }
-    
-    @inlinable
-    func resolve(type named: String) -> RuntimeTypeInfo? {
-        metadata.resolve(type: named)
     }
     
     @inlinable

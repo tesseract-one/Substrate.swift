@@ -9,7 +9,7 @@ import Foundation
 
 public protocol RuntimeMetadata {
     var version: UInt8 { get }
-    func asMetadata() -> Metadata
+    func asMetadata() throws -> Metadata
     
     static var versions: Set<UInt32> { get }
 }
@@ -22,7 +22,6 @@ public protocol Metadata {
     
     func resolve(type id: RuntimeTypeId) -> RuntimeType?
     func resolve(type path: [String]) -> RuntimeTypeInfo?
-    func resolve(type name: String) -> RuntimeTypeInfo?
     func resolve(pallet index: UInt8) -> PalletMetadata?
     func resolve(pallet name: String) -> PalletMetadata?
     func resolve(api name: String) -> RuntimeApiMetadata?
@@ -77,4 +76,9 @@ public protocol RuntimeApiMetadata {
     var methods: [String] { get }
     
     func resolve(method name: String) -> (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)?
+}
+
+public enum MetadataError: Error {
+    case storageBadHashersCount(expected: Int, got: Int, name: String, pallet: String)
+    case storageNonCompositeKey(name: String, pallet: String, type: RuntimeTypeInfo)
 }

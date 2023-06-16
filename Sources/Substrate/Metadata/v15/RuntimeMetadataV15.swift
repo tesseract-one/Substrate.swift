@@ -22,8 +22,8 @@ public class RuntimeMetadataV15: RuntimeMetadataV14 {
         try encoder.encode(apis)
     }
     
-    public override func asMetadata() -> Metadata {
-        MetadataV15(runtime: self)
+    public override func asMetadata() throws -> Metadata {
+        try MetadataV15(runtime: self)
     }
     
     public override class var versions: Set<UInt32> { [15, UInt32.max] }

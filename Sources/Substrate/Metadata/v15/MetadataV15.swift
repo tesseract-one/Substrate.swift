@@ -12,8 +12,8 @@ public class MetadataV15: MetadataV14 {
     public private(set) var apisByName: [String: RuntimeApiMetadataV15]!
     public override var apis: [String] { Array(apisByName.keys) }
     
-    public init(runtime: RuntimeMetadataV15) {
-        super.init(runtime: runtime)
+    public init(runtime: RuntimeMetadataV15) throws {
+        try super.init(runtime: runtime)
         self.apisByName = Dictionary(
             uniqueKeysWithValues: runtime.apis.map {
                 ($0.name, RuntimeApiMetadataV15(runtime: $0, types: types))
