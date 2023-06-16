@@ -75,7 +75,73 @@ public struct StorageEntry<S: SomeSubstrate, Key: StorageKey> {
 }
 
 public extension StorageEntry {
-    
+    struct Iterator<Iter: StorageKeyIterator> where Iter.TKey == Key {
+        public let substrate: S
+        public let iterator: Iter
+        
+        public init(substrate: S, iterator: Iter) {
+            self.substrate = substrate
+            self.iterator = iterator
+        }
+        
+        public func keys(
+            page: Int = 20, at hash: S.RC.TBlock.THeader.THasher.THash? = nil
+        ) -> AsyncThrowingStream<Iter.TKey, Error> {
+            var buffer: [Iter.TKey] = []
+            buffer.reserveCapacity(page)
+            var lastKey: Iter.TKey? = nil
+            var atHash: S.RC.TBlock.THeader.THasher.THash? = hash
+            return AsyncThrowingStream<Iter.TKey, Error> {
+                if atHash == nil {
+                    atHash = try await substrate.client.block(hash: nil, runtime: substrate.runtime)!
+                }
+                if buffer.count > 0 { return buffer.removeFirst() }
+                let new = try await substrate.client.storage(keys: iterator,
+                                                             count: page,
+                                                             startKey: lastKey,
+                                                             at: atHash,
+                                                             runtime: substrate.runtime)
+                lastKey = new.last
+                guard new.count > 0 else { return nil }
+                buffer.append(contentsOf: new)
+                return buffer.removeFirst()
+            }
+        }
+        
+        public func entries(
+            page: Int = 20, at hash: S.RC.TBlock.THeader.THasher.THash? = nil
+        ) -> AsyncThrowingStream<(Iter.TKey, Iter.TKey.TValue), Error> {
+            var buffer: [(Iter.TKey, Iter.TKey.TValue)] = []
+            buffer.reserveCapacity(page)
+            var lastKey: Iter.TKey? = nil
+            var atHash: S.RC.TBlock.THeader.THasher.THash? = hash
+            return AsyncThrowingStream<(Iter.TKey, Iter.TKey.TValue), Error> {
+                if atHash == nil {
+                    atHash = try await substrate.client.block(hash: nil, runtime: substrate.runtime)!
+                }
+                if buffer.count > 0 { return buffer.removeFirst() }
+                var finished: Bool = false
+                repeat {
+                    let new = try await substrate.client.storage(keys: iterator,
+                                                                 count: page,
+                                                                 startKey: lastKey,
+                                                                 at: atHash,
+                                                                 runtime: substrate.runtime)
+                    lastKey = new.last
+                    guard new.count > 0 else { return nil }
+                    let changes = try await substrate.client.storage(changes: new,
+                                                                     at: atHash,
+                                                                     runtime: substrate.runtime)
+                    let filtered = changes.compactMap { $0.1 != nil ? ($0.0, $0.1!) : nil }
+                    if filtered.count > 0 {
+                        buffer.append(contentsOf: filtered)
+                        finished = true
+                    }
+                } while (!finished)
+                return buffer.removeFirst()
+            }
+        }
+    }
 }
 
 public extension StorageEntry where Key: IterableStorageKey {
@@ -84,22 +150,22 @@ public extension StorageEntry where Key: IterableStorageKey {
     func entries(
         page: Int = 20, at hash: S.RC.TBlock.THeader.THasher.THash? = nil
     ) -> AsyncThrowingStream<(Key, Key.TValue), Error> {
-        StorageEntryIterator(substrate: substrate, iterator: iterator).entries(page: page, at: hash)
+        Iterator(substrate: substrate, iterator: iterator).entries(page: page, at: hash)
     }
     
     func keys(
         page: Int = 20, at hash: S.RC.TBlock.THeader.THasher.THash? = nil
     ) -> AsyncThrowingStream<Key, Error> {
-        StorageEntryIterator(substrate: substrate, iterator: iterator).keys(page: page, at: hash)
+        Iterator(substrate: substrate, iterator: iterator).keys(page: page, at: hash)
     }
 }
 
 public extension StorageEntry where Key: IterableStorageKey, Key.TIterator: IterableStorageKeyIterator {
     func filter(
         _ param: Key.TIterator.TIterator.TParam
-    ) throws -> StorageEntryIterator<S, Key.TIterator.TIterator> {
-        try StorageEntryIterator(substrate: substrate,
-                                 iterator: iterator.next(param: param, runtime: substrate.runtime))
+    ) throws -> Iterator<Key.TIterator.TIterator> {
+        try Iterator(substrate: substrate,
+                     iterator: iterator.next(param: param, runtime: substrate.runtime))
     }
 }
 
@@ -116,12 +182,12 @@ public extension StorageEntry where Key == AnyStorageKey {
         try await valueOrDefault(key: Key(name: params.name, pallet: params.pallet, path: []), at: hash)
     }
     
-    func filter(params: [Key.Iterator.TParam]) throws -> StorageEntryIterator<S, Key.Iterator> {
-        try StorageEntryIterator(substrate: substrate,
-                                 iterator: Key.Iterator(name: self.params.name,
-                                                        pallet: self.params.pallet,
-                                                        params: params,
-                                                        runtime: substrate.runtime))
+    func filter(params: [Key.Iterator.TParam]) throws -> Iterator<Key.Iterator> {
+        try Iterator(substrate: substrate,
+                     iterator: Key.Iterator(name: self.params.name,
+                                            pallet: self.params.pallet,
+                                            params: params,
+                                            runtime: substrate.runtime))
     }
 }
 
@@ -139,80 +205,12 @@ public extension StorageEntry where Key.TParams == Void {
     }
 }
 
-public struct StorageEntryIterator<S: SomeSubstrate, Iter: StorageKeyIterator> {
-    public let substrate: S
-    public let iterator: Iter
-    
-    public init(substrate: S, iterator: Iter) {
-        self.substrate = substrate
-        self.iterator = iterator
-    }
-    
-    public func keys(
-        page: Int = 20, at hash: S.RC.TBlock.THeader.THasher.THash? = nil
-    ) -> AsyncThrowingStream<Iter.TKey, Error> {
-        var buffer: [Iter.TKey] = []
-        buffer.reserveCapacity(page)
-        var lastKey: Iter.TKey? = nil
-        var atHash: S.RC.TBlock.THeader.THasher.THash? = hash
-        return AsyncThrowingStream<Iter.TKey, Error> {
-            if atHash == nil {
-                atHash = try await substrate.client.block(hash: nil, runtime: substrate.runtime)!
-            }
-            if buffer.count > 0 { return buffer.removeFirst() }
-            let new = try await substrate.client.storage(keys: iterator,
-                                                         count: page,
-                                                         startKey: lastKey,
-                                                         at: atHash,
-                                                         runtime: substrate.runtime)
-            lastKey = new.last
-            guard new.count > 0 else { return nil }
-            buffer.append(contentsOf: new)
-            return buffer.removeFirst()
-        }
-    }
-    
-    public func entries(
-        page: Int = 20, at hash: S.RC.TBlock.THeader.THasher.THash? = nil
-    ) -> AsyncThrowingStream<(Iter.TKey, Iter.TKey.TValue), Error> {
-        var buffer: [(Iter.TKey, Iter.TKey.TValue)] = []
-        buffer.reserveCapacity(page)
-        var lastKey: Iter.TKey? = nil
-        var atHash: S.RC.TBlock.THeader.THasher.THash? = hash
-        return AsyncThrowingStream<(Iter.TKey, Iter.TKey.TValue), Error> {
-            if atHash == nil {
-                atHash = try await substrate.client.block(hash: nil, runtime: substrate.runtime)!
-            }
-            if buffer.count > 0 { return buffer.removeFirst() }
-            var finished: Bool = false
-            repeat {
-                let new = try await substrate.client.storage(keys: iterator,
-                                                             count: page,
-                                                             startKey: lastKey,
-                                                             at: atHash,
-                                                             runtime: substrate.runtime)
-                lastKey = new.last
-                guard new.count > 0 else { return nil }
-                let changes = try await substrate.client.storage(changes: new,
-                                                                 at: atHash,
-                                                                 runtime: substrate.runtime)
-                let filtered = changes.compactMap { $0.1 != nil ? ($0.0, $0.1!) : nil }
-                if filtered.count > 0 {
-                    buffer.append(contentsOf: filtered)
-                    finished = true
-                }
-            } while (!finished)
-            return buffer.removeFirst()
-        }
-    }
-}
-
-public extension StorageEntryIterator where Iter: IterableStorageKeyIterator {
+public extension StorageEntry.Iterator where Iter: IterableStorageKeyIterator {
     func filter(
         _ param: Iter.TIterator.TParam
-    ) throws -> StorageEntryIterator<S, Iter.TIterator> {
-        try StorageEntryIterator<_, _>(substrate: substrate,
-                                       iterator: iterator.next(param: param,
-                                                               runtime: substrate.runtime))
+    ) throws -> StorageEntry.Iterator<Iter.TIterator> {
+        try StorageEntry.Iterator<_>(substrate: substrate,
+                                     iterator: iterator.next(param: param,
+                                                             runtime: substrate.runtime))
     }
 }
