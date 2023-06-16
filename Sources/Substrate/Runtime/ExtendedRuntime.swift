@@ -26,7 +26,11 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     @inlinable
     public var hasher: any Hasher { typedHasher }
     
-    public let eventsStorageKey: any StorageKey<RC.TBlockEvents>
+    @inlinable
+    public var eventsStorageKey: any StorageKey<RC.TBlockEvents> {
+        get throws { try config.eventsStorageKey(runtime: self) }
+    }
+    
     public let typedHasher: RC.THasher
     
     @inlinable
@@ -59,7 +63,6 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         self.extrinsicManager = try config.extrinsicManager()
         self._blockHeaderType = LazyProperty { try config.blockHeaderType(metadata: metadata) }
         self._extrinsicTypes = LazyProperty { try config.extrinsicTypes(metadata: metadata) }
-        self.eventsStorageKey = try config.eventsStorageKey(metadata: metadata)
     }
     
     open func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws {

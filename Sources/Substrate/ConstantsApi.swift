@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ScaleCodec
 
 public protocol ConstantsApi<S> {
     associatedtype S: SomeSubstrate
@@ -61,5 +62,28 @@ public extension ConstantsApiRegistry {
     @inlinable
     func get<V: ScaleRuntimeDynamicDecodable>(_ type: V.Type, name: String, pallet: String) throws -> V {
         try get(name: name, pallet: pallet)
+    }
+    
+    func get<C: StaticConstant>(_ type: C.Type) throws -> C.TValue {
+        guard let ct = substrate.runtime.resolve(constant: type.name, pallet: type.pallet) else {
+            throw ConstantsApiError.constantNotFound(name: type.name, pallet: type.pallet)
+        }
+        return try type.decode(valueFrom: substrate.runtime.decoder(with: ct.value),
+                               runtime: substrate.runtime)
+    }
+}
+
+public protocol StaticConstant {
+    associatedtype TValue
+    
+    static var name: String { get }
+    static var pallet: String { get }
+    
+    static func decode(valueFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TValue
+}
+
+public extension StaticConstant where TValue: ScaleRuntimeDecodable {
+    static func decode(valueFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TValue {
+        try TValue(from: decoder, runtime: runtime)
     }
 }

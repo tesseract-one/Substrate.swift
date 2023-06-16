@@ -13,19 +13,19 @@ import Serializable
 import JsonRPCSerializable
 #endif
 
-public protocol SrotageApi<S> {
+public protocol StorageApi<S> {
     associatedtype S: SomeSubstrate
     var substrate: S! { get }
     init(substrate: S)
     static var id: String { get }
 }
 
-extension SrotageApi {
+extension StorageApi {
     public static var id: String { String(describing: self) }
 }
 
 public class StorageApiRegistry<S: SomeSubstrate> {
-    private let _apis: Synced<[String: any SrotageApi]>
+    private let _apis: Synced<[String: any StorageApi]>
 
     public weak var substrate: S!
     
@@ -38,7 +38,7 @@ public class StorageApiRegistry<S: SomeSubstrate> {
         self.substrate = substrate
     }
     
-    public func getApi<A>(_ t: A.Type) -> A where A: SrotageApi, A.S == S {
+    public func getApi<A>(_ t: A.Type) -> A where A: StorageApi, A.S == S {
         _apis.sync { apis in
             if let api = apis[A.id] as? A {
                 return api
@@ -47,5 +47,13 @@ public class StorageApiRegistry<S: SomeSubstrate> {
             apis[A.id] = api
             return api
         }
+    }
+    
+    public func entry(name: String, pallet: String) throws -> StorageEntry<S, AnyStorageKey> {
+        try StorageEntry(substrate: substrate, params: (name, pallet))
+    }
+    
+    public func entry<Key: StaticStorageKey>(_ type: Key.Type) throws -> StorageEntry<S, Key> {
+        try StorageEntry(substrate: substrate, params: ())
     }
 }

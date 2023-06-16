@@ -28,13 +28,14 @@ public protocol Config {
     associatedtype TSystemProperties: SystemProperties
     associatedtype TRuntimeVersion: RuntimeVersion
     associatedtype TTransactionValidityError: Decodable
+    associatedtype TStorageChangeSet: SomeStorageChangeSet
    
     associatedtype TMetadataAtVersionRuntimeCall: SomeMetadataAtVersionRuntimeCall
     associatedtype TMetadataVersionsRuntimeCall: SomeMetadataVersionsRuntimeCall
     
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
     
-    func eventsStorageKey(metadata: Metadata) throws -> any StorageKey<TBlockEvents>
+    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
     func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo
     func extrinsicTypes(
         metadata: Metadata

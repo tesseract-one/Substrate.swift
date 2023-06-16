@@ -31,6 +31,7 @@ public struct DynamicRuntime: Config {
     public typealias TBlockEvents = BlockEvents<EventRecord<THasher.THash>>
     public typealias TRuntimeVersion = AnyRuntimeVersion
     public typealias TTransactionValidityError = SerializableValue
+    public typealias TStorageChangeSet = StorageChangeSet<THasher.THash>
     
     public typealias TMetadataAtVersionRuntimeCall = Api.Metadata.MetadataAtVersion
     public typealias TMetadataVersionsRuntimeCall = Api.Metadata.MetadataVersions
@@ -51,8 +52,8 @@ public struct DynamicRuntime: Config {
         self.headerName = headerName
     }
     
-    public func eventsStorageKey(metadata: Metadata) throws -> any StorageKey<TBlockEvents> {
-        System.Storage.Events<TBlockEvents>()
+    public func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
+        try System.Storage.Events<TBlockEvents>((), runtime: runtime)
     }
     
     public func extrinsicManager() throws -> TExtrinsicManager {
@@ -190,15 +191,15 @@ public extension DynamicRuntime {
         }
         public struct Storage {
             public struct Events<BE: SomeBlockEvents>: StaticStorageKey {
+                public typealias TParams = Void
                 public typealias TValue = BE
                 
                 public static var name: String { "Events" }
                 public static var pallet: String { System.name }
                 
-                public init() {}
-                
-                public init(decodingPath decoder: ScaleDecoder, runtime: Runtime) throws {}
-                public func encodePath(in encoder: ScaleEncoder, runtime: Runtime) throws {}
+                public init(_ params: TParams, runtime: any Runtime) throws {}
+                public init(decodingPath decoder: ScaleDecoder, runtime: any Runtime) throws {}
+                public var pathHash: Data { Data() }
             }
         }
         public static let name = "System"

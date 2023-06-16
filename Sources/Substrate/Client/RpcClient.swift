@@ -108,12 +108,12 @@ extension RpcClient: Client {
         at hash: C.THasher.THash?,
         runtime: ExtendedRuntime<C>
     ) async throws -> C.TBlockEvents? {
-        let keyHash = try runtime.eventsStorageKey.hash(runtime: runtime)
-        let data: Data? = try await call(method: "state_getStorage", params: Params(keyHash, hash))
+        let key = try runtime.eventsStorageKey
+        let data: Data? = try await call(method: "state_getStorage", params: Params(key.hash, hash))
         guard let data = data, data.count > 0 else {
             return nil
         }
-        return try runtime.eventsStorageKey.decode(valueFrom: runtime.decoder(with: data), runtime: runtime)
+        return try key.decode(valueFrom: runtime.decoder(with: data), runtime: runtime)
     }
     
     public func dryRun<CL: Call>(
@@ -164,6 +164,42 @@ extension RpcClient: Client {
         let encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
         return try await call(method: "author_submitExtrinsic", params: Params(encoder.output))
+    }
+    
+    public func storage<K: StorageKey>(value key: K,
+                                       at hash: C.THasher.THash?,
+                                       runtime: ExtendedRuntime<C>) async throws -> K.TValue? {
+        let data: Data? = try await call(method: "state_getStorage", params: Params(key.hash, hash))
+        return try data.map { data in
+            try key.decode(valueFrom: runtime.decoder(with: data), runtime: runtime)
+        }
+    }
+    
+    public func storage<I: StorageKeyIterator>(keys iter: I,
+                                               count: Int,
+                                               startKey: I.TKey?,
+                                               at hash: C.THasher.THash?,
+                                               runtime: ExtendedRuntime<C>) async throws -> [I.TKey] {
+        let keys: [Data] = try await call(method: "state_getKeysPaged",
+                                          params: Params(iter.hash, count, startKey?.hash, hash))
+        return try keys.map { key in
+            try iter.decode(keyFrom: runtime.decoder(with: key), runtime: runtime)
+        }
+    }
+    
+    public func storage<K: StorageKey>(changes keys: [K],
+                                       at hash: C.THasher.THash?,
+                                       runtime: ExtendedRuntime<C>) async throws -> [(K, K.TValue?)] {
+        let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
+        let changes: C.TStorageChangeSet = try await call(method: "state_queryStorageAt",
+                                                          params: Params(Array(keys.keys), hash))
+        
+        return try changes.changes.map { (khash, val) in
+            let key = keys[khash]!
+            return try (key, val.map { val in
+                try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
+            })
+        }
     }
     
     public func metadataFromRuntimeApi(at hash: C.THasher.THash?, config: C) async throws -> Metadata {

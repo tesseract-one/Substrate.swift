@@ -39,6 +39,20 @@ public protocol Client<C>: RuntimeHolder {
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         runtime: ExtendedRuntime<C>
     ) async throws -> C.THasher.THash
+    
+    func storage<K: StorageKey>(value key: K,
+                                at hash: C.THasher.THash?,
+                                runtime: ExtendedRuntime<C>) async throws -> K.TValue?
+    
+    func storage<I: StorageKeyIterator>(keys iter: I,
+                                        count: Int,
+                                        startKey: I.TKey?,
+                                        at hash: C.THasher.THash?,
+                                        runtime: ExtendedRuntime<C>) async throws -> [I.TKey]
+    
+    func storage<K: StorageKey>(changes keys: [K],
+                                at hash: C.THasher.THash?,
+                                runtime: ExtendedRuntime<C>) async throws -> [(K, K.TValue?)]
 }
 
 public protocol SubscribableClient<C>: Client {

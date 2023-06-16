@@ -51,7 +51,7 @@ public protocol Runtime: AnyObject {
     // Storage
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(StorageHasher, RuntimeTypeId)], value: RuntimeTypeId)?
+    ) -> (keys: [(StorageHasher, RuntimeTypeId)], value: RuntimeTypeId, `default`: Data)?
 }
 
 public protocol RuntimeAware {
@@ -154,10 +154,10 @@ public extension Runtime {
     @inlinable
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(StorageHasher, RuntimeTypeId)], value: RuntimeTypeId)? {
+    ) -> (keys: [(StorageHasher, RuntimeTypeId)], value: RuntimeTypeId, `default`: Data)? {
         metadata.resolve(pallet: pallet)?.storage(name: name).flatMap {
             let (keys, value) = $0.types
-            return (keys.map { ($0.0, $0.1.id) }, value.id)
+            return (keys.map { ($0.0, $0.1.id) }, value.id, $0.defaultValue)
         }
     }
 }
