@@ -10,14 +10,14 @@ Pod::Spec.new do |s|
   s.source           = { :git => 'https://github.com/tesseract-one/Substrate.swift.git', :tag => s.version.to_s }
 
   test_platforms = {
-    :ios => '10.0',
-    :osx => '10.12',
-    :tvos => '10.0'
+    :ios => '13.0',
+    :osx => '10.15',
+    :tvos => '13.0'
   }
 
   s.platforms = test_platforms.merge({ :watchos => '6.0' })
   
-  s.swift_versions = ['5', '5.1', '5.2', '5.3']
+  s.swift_version = '5.7'
   
   s.module_name = 'Substrate'
   
@@ -25,10 +25,10 @@ Pod::Spec.new do |s|
     ss.source_files = 'Sources/Keychain/**/*.swift'
 
     ss.dependency 'Substrate/Substrate'
-    ss.dependency 'UncommonCrypto', '~> 0.1'
-    ss.dependency 'Bip39.swift', '~> 0.1'
-    ss.dependency 'Sr25519', '~> 0.1'
-    ss.dependency 'CSecp256k1', '~> 0.1'
+    ss.dependency 'UncommonCrypto', '~> 0.1.0'
+    ss.dependency 'Bip39.swift', '~> 0.1.0'
+    ss.dependency 'Sr25519', '~> 0.1.0'
+    ss.dependency 'CSecp256k1', '~> 0.1.0'
     
     ss.test_spec 'KeychainTests' do |test_spec|
       test_spec.platforms = test_platforms
@@ -38,49 +38,16 @@ Pod::Spec.new do |s|
   
   s.subspec 'Substrate' do |ss|
     ss.source_files = 'Sources/Substrate/**/*.swift'
-
-    ss.dependency 'Substrate/Primitives'
-    ss.dependency 'Substrate/RPC'
+    
+    ss.dependency 'Blake2', '~> 0.1.0'
+    ss.dependency 'ScaleCodec', '~> 0.2.0'
+    ss.dependency 'xxHash-Swift', '~> 1.1.0'
+    ss.dependency 'JsonRPC.swift/Serializable', '~> 0.2.0'
+    ss.dependency 'Serializable.swift', '~> 0.2.0'
     
     ss.test_spec 'SubstrateTests' do |test_spec|
       test_spec.platforms = test_platforms
       test_spec.source_files = 'Tests/SubstrateTests/**/*.swift'
-    end
-  end
-
-  s.subspec 'Polkadot' do |ss|
-    ss.source_files = 'Sources/Polkadot/**/*.swift'
-
-    ss.dependency 'Substrate/Substrate'
-    
-    ss.test_spec 'PolkadotTests' do |test_spec|
-      test_spec.platforms = test_platforms
-      test_spec.source_files = 'Tests/PolkadotTests/**/*.swift'
-    end
-  end
-
-  s.subspec 'Primitives' do |ss|
-    ss.source_files = 'Sources/Primitives/**/*.swift'
-
-    ss.dependency 'Blake2', '~> 0.1'
-    ss.dependency 'ScaleCodec', '~> 0.2'
-    ss.dependency 'xxHash-Swift', '~> 1.1'
-    
-    ss.test_spec 'PrimitivesTests' do |test_spec|
-      test_spec.platforms = test_platforms
-      test_spec.source_files = 'Tests/PrimitivesTests/**/*.swift'
-    end
-  end
-  
-  s.subspec 'RPC' do |ss|
-    ss.source_files = 'Sources/RPC/**/*.swift'
-
-    ss.dependency 'TesseractWebSocket', '~> 0.2.0'
-    
-    ss.test_spec 'RPCTests' do |test_spec|
-      test_spec.platforms = test_platforms
-      test_spec.dependency 'Serializable.swift', '~> 0.2'
-      test_spec.source_files = 'Tests/RPCTests/**/*.swift'
     end
   end
 
