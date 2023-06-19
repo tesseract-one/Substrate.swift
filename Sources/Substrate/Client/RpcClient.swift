@@ -252,7 +252,7 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
     public func submitAndWatch<CL: Call>(
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         runtime: ExtendedRuntime<C>
-    ) async throws -> AsyncThrowingStream<C.TTransactionStatus, Swift.Error> {
+    ) async throws -> AsyncThrowingStream<C.TTransactionStatus, Error> {
         let encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
         return try await subscribe(method: "author_submitAndWatchExtrinsic",
@@ -270,25 +270,14 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
             params: Array(keys.keys),
             unsubsribe: "state_unsubscribeStorage"
         )
-        let mapped = changes.flatMap { changes in
-            var iterator = changes.changes.makeIterator()
-            return AsyncThrowingStream<(K, K.TValue?), Error>(unfolding: {
-                guard let (khash, val) = iterator.next() else {
-                    return nil
-                }
+        return changes.flatMap { changes in
+            try changes.changes.map { (khash, val) in
                 let key = keys[khash]!
                 let value = try val.map { val in
                     try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
                 }
                 return (key, value)
-            })
-        }
-        var iterator: AsyncFlatMapSequence<
-            AsyncThrowingStream<RC.TStorageChangeSet, Error>,
-            AsyncThrowingStream<(K, K.TValue?), Error>>.AsyncIterator? = nil
-        return AsyncThrowingStream(unfolding: {
-            if iterator == nil { iterator = mapped.makeAsyncIterator() }
-            return try await iterator?.next()
-        })
+            }.stream
+        }.throwingStream
     }
 }
