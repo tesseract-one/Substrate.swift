@@ -214,3 +214,19 @@ public extension StorageEntry.Iterator where Iter: IterableStorageKeyIterator {
                                                              runtime: substrate.runtime))
     }
 }
+
+public extension StorageEntry where S.CL: SubscribableClient {
+    func watch(keys: [Key]) async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {
+        try await substrate.client.subscribe(storage: keys, runtime: substrate.runtime)
+    }
+    
+    func watch(_ params: Key.TParams) async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {
+        try await watch(keys: [key(params)])
+    }
+}
+
+public extension StorageEntry where S.CL: SubscribableClient, Key.TParams == Void {
+    func watch() async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {
+        try await watch(keys: [key(())])
+    }
+}

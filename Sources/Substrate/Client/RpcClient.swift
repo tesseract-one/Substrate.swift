@@ -259,4 +259,36 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
                                    params: Params(encoder.output),
                                    unsubsribe: "author_unwatchExtrinsic")
     }
+    
+    public func subscribe<K: StorageKey>(
+        storage keys: [K],
+        runtime: ExtendedRuntime<C>
+    ) async throws -> AsyncThrowingStream<(K, K.TValue?), Error> {
+        let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
+        let changes: AsyncThrowingStream<C.TStorageChangeSet, Error> = try await subscribe(
+            method: "state_subscribeStorage",
+            params: Array(keys.keys),
+            unsubsribe: "state_unsubscribeStorage"
+        )
+        let mapped = changes.flatMap { changes in
+            var iterator = changes.changes.makeIterator()
+            return AsyncThrowingStream<(K, K.TValue?), Error>(unfolding: {
+                guard let (khash, val) = iterator.next() else {
+                    return nil
+                }
+                let key = keys[khash]!
+                let value = try val.map { val in
+                    try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
+                }
+                return (key, value)
+            })
+        }
+        var iterator: AsyncFlatMapSequence<
+            AsyncThrowingStream<RC.TStorageChangeSet, Error>,
+            AsyncThrowingStream<(K, K.TValue?), Error>>.AsyncIterator? = nil
+        return AsyncThrowingStream(unfolding: {
+            if iterator == nil { iterator = mapped.makeAsyncIterator() }
+            return try await iterator?.next()
+        })
+    }
 }

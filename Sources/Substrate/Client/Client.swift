@@ -64,6 +64,11 @@ public protocol SubscribableClient<C>: Client {
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         runtime: ExtendedRuntime<C>
     ) async throws -> AsyncThrowingStream<C.TTransactionStatus, Error>
+    
+    func subscribe<K: StorageKey>(
+        storage keys: [K],
+        runtime: ExtendedRuntime<C>
+    ) async throws -> AsyncThrowingStream<(K, K.TValue?), Error>
 }
 
 public extension Client {
