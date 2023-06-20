@@ -34,6 +34,7 @@ public class StorageApiRegistry<S: SomeSubstrate> {
         self._apis = Synced(value: [:])
     }
     
+    @inlinable
     public func setSubstrate(substrate: S) {
         self.substrate = substrate
     }
@@ -49,11 +50,33 @@ public class StorageApiRegistry<S: SomeSubstrate> {
         }
     }
     
+    @inlinable
     public func entry(name: String, pallet: String) throws -> StorageEntry<S, AnyStorageKey> {
         try StorageEntry(substrate: substrate, params: (name, pallet))
     }
     
+    @inlinable
+    public func entry<Key: StaticStorageKey>() throws -> StorageEntry<S, Key> {
+        try entry(Key.self)
+    }
+    
+    @inlinable
     public func entry<Key: StaticStorageKey>(_ type: Key.Type) throws -> StorageEntry<S, Key> {
         try StorageEntry(substrate: substrate, params: ())
+    }
+    
+    @inlinable
+    public func changes(
+        keys: [any StorageKey],
+        at hash: S.RC.THasher.THash? = nil
+    ) async throws -> [(any StorageKey, Any?)]{
+        try await substrate.client.storage(anychanges: keys, at: hash, runtime: substrate.runtime)
+    }
+}
+
+public extension StorageApiRegistry where S.CL: SubscribableClient {
+    @inlinable
+    func watch(keys: [any StorageKey]) async throws -> AsyncThrowingStream<(any StorageKey, Any?), Error> {
+        try await substrate.client.subscribe(anystorage: keys, runtime: substrate.runtime)
     }
 }

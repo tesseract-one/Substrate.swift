@@ -191,10 +191,7 @@ extension RpcClient: Client {
                                        at hash: C.THasher.THash?,
                                        runtime: ExtendedRuntime<C>) async throws -> [(K, K.TValue?)] {
         let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
-        let changes: C.TStorageChangeSet = try await call(method: "state_queryStorageAt",
-                                                          params: Params(Array(keys.keys), hash))
-        
-        return try changes.changes.map { (khash, val) in
+        return try await storage(changes: Array(keys.keys), hash: hash).changes.map { (khash, val) in
             let key = keys[khash]!
             return try (key, val.map { val in
                 try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
@@ -208,6 +205,18 @@ extension RpcClient: Client {
         let size: HexOrNumber<UInt64>? = try await call(method: "state_getStorageSize",
                                                         params: Params(key.hash, hash))
         return size?.value ?? 0
+    }
+    
+    public func storage(anychanges keys: [any StorageKey],
+                        at hash: C.THasher.THash?,
+                        runtime: ExtendedRuntime<C>) async throws -> [(any StorageKey, Any?)] {
+        let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
+        return try await storage(changes: Array(keys.keys), hash: hash).changes.map { (khash, val) in
+            let key = keys[khash]!
+            return try (key, val.map { val in
+                try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
+            })
+        }
     }
     
     public func metadataFromRuntimeApi(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
@@ -237,6 +246,11 @@ extension RpcClient: Client {
         let versioned = try config.decoder(data: data).decode(VersionedMetadata.self)
         return versioned.metadata
     }
+    
+    private func storage(changes keys: [Data],
+                         hash: C.THasher.THash?) async throws -> C.TStorageChangeSet {
+        try await call(method: "state_queryStorageAt", params: Params(keys, hash))
+    }
 }
 
 extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
@@ -265,12 +279,7 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
         runtime: ExtendedRuntime<C>
     ) async throws -> AsyncThrowingStream<(K, K.TValue?), Error> {
         let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
-        let changes: AsyncThrowingStream<C.TStorageChangeSet, Error> = try await subscribe(
-            method: "state_subscribeStorage",
-            params: Array(keys.keys),
-            unsubsribe: "state_unsubscribeStorage"
-        )
-        return changes.flatMap { changes in
+        return try await subscribe(storage: Array(keys.keys), runtime: runtime).flatMap { changes in
             try changes.changes.map { (khash, val) in
                 let key = keys[khash]!
                 let value = try val.map { val in
@@ -279,5 +288,32 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
                 return (key, value)
             }.stream
         }.throwingStream
+    }
+    
+    public func subscribe(
+        anystorage keys: [any StorageKey],
+        runtime: ExtendedRuntime<C>
+    ) async throws -> AsyncThrowingStream<(any StorageKey, Any?), Error> {
+        let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
+        return try await subscribe(storage: Array(keys.keys), runtime: runtime).flatMap { changes in
+            try changes.changes.map { (khash, val) in
+                let key = keys[khash]!
+                let value = try val.map { val in
+                    try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
+                }
+                return (key, value)
+            }.stream
+        }.throwingStream
+    }
+    
+    private func subscribe(
+        storage keys: [Data],
+        runtime: ExtendedRuntime<C>
+    ) async throws -> AsyncThrowingStream<C.TStorageChangeSet, Error> {
+        try await subscribe(
+           method: "state_subscribeStorage",
+           params: keys,
+           unsubsribe: "state_unsubscribeStorage"
+       )
     }
 }

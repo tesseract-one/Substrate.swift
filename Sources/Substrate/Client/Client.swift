@@ -57,6 +57,10 @@ public protocol Client<C>: RuntimeHolder {
     func storage<K: StorageKey>(size key: K,
                                 at hash: C.THasher.THash?,
                                 runtime: ExtendedRuntime<C>) async throws -> UInt64
+    
+    func storage(anychanges keys: [any StorageKey],
+                 at hash: C.THasher.THash?,
+                 runtime: ExtendedRuntime<C>) async throws -> [(any StorageKey, Any?)]
 }
 
 public protocol SubscribableClient<C>: Client {
@@ -69,6 +73,11 @@ public protocol SubscribableClient<C>: Client {
         storage keys: [K],
         runtime: ExtendedRuntime<C>
     ) async throws -> AsyncThrowingStream<(K, K.TValue?), Error>
+    
+    func subscribe(
+        anystorage keys: [any StorageKey],
+        runtime: ExtendedRuntime<C>
+    ) async throws -> AsyncThrowingStream<(any StorageKey, Any?), Error>
 }
 
 public extension Client {

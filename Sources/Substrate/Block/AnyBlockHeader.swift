@@ -31,9 +31,6 @@ public struct AnyBlockHeader<THasher: FixedHasher>: SomeBlockHeader {
         self._runtime = decoder.runtime
         var container = ValueDecodingContainer(decoder)
         let type = try _runtime.blockHeaderType
-//        guard let type = _runtime.blockHeaderType else {
-//            throw try container.newError("Block header type is nil")
-//        }
         self.type = type
         let value = try Value<RuntimeTypeId>(from: &container, as: type.id, runtime: _runtime)
         guard let map = value.map else {
