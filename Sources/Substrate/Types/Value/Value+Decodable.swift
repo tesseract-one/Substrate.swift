@@ -50,7 +50,6 @@ extension Value where C == RuntimeTypeId {
 
 public enum ValueDecodingContainer {
     case decoder(Decoder)
-    case single(SingleValueDecodingContainer)
     case unkeyed(UnkeyedDecodingContainer)
     case keyed(AnyCodableCodingKey, KeyedDecodingContainer<AnyCodableCodingKey>)
     
@@ -60,37 +59,34 @@ public enum ValueDecodingContainer {
     
     mutating func decode<T: Decodable>(_ type: T.Type) throws -> T {
         switch self {
-        case .decoder(let decoder):
-            self = try .single(decoder.singleValueContainer())
-            return try self.decode(type)
-        case .single(let container): return try container.decode(type)
+        case .decoder(let decoder): return try decoder.singleValueContainer().decode(type)
         case .keyed(let key, let container): return try container.decode(type, forKey: key)
-        case .unkeyed(var container): return try container.decode(type)
+        case .unkeyed(var container):
+            let val = try container.decode(type)
+            self = .unkeyed(container)
+            return val
         }
     }
     
     mutating func decodeNil() throws -> Bool {
         switch self {
-        case .decoder(let decoder):
-            self = try .single(decoder.singleValueContainer())
-            return try self.decodeNil()
-        case .single(let container): return container.decodeNil()
+        case .decoder(let decoder): return try decoder.singleValueContainer().decodeNil()
         case .keyed(let key, let container): return try container.decodeNil(forKey: key)
-        case .unkeyed(var container): return try container.decodeNil()
+        case .unkeyed(var container):
+            let val = try container.decodeNil()
+            self = .unkeyed(container)
+            return val
         }
     }
     
     mutating func nestedUnkeyedContainer() throws -> Self {
         switch self {
-        case .decoder(let decoder):
-            let container = try decoder.unkeyedContainer()
-            self = .unkeyed(container)
-            return self
-        case .single(let container):
-            throw DecodingError.dataCorruptedError(in: container,
-                                                   debugDescription: "SingleValueContainer asked for nested")
-        case .unkeyed(var container): return try .unkeyed(container.nestedUnkeyedContainer())
+        case .decoder(let decoder): return try .unkeyed(decoder.unkeyedContainer())
         case .keyed(let key, let container): return try .unkeyed(container.nestedUnkeyedContainer(forKey: key))
+        case .unkeyed(var container):
+            let nested = try container.nestedUnkeyedContainer()
+            self = .unkeyed(container)
+            return .unkeyed(nested)
         }
     }
     
@@ -98,16 +94,13 @@ public enum ValueDecodingContainer {
         let emptyKey = AnyCodableCodingKey(0)
         switch self {
         case .decoder(let decoder):
-            let container = try decoder.container(keyedBy: AnyCodableCodingKey.self)
-            self = .keyed(emptyKey, container)
-            return self
-        case .single(let container):
-            throw DecodingError.dataCorruptedError(in: container,
-                                                   debugDescription: "SingleValueContainer asked for nested")
-        case .unkeyed(var container):
-            return try .keyed(emptyKey, container.nestedContainer(keyedBy: AnyCodableCodingKey.self))
+            return try .keyed(emptyKey, decoder.container(keyedBy: AnyCodableCodingKey.self))
         case .keyed(let key, let container):
             return try .keyed(emptyKey, container.nestedContainer(keyedBy: AnyCodableCodingKey.self, forKey: key))
+        case .unkeyed(var container):
+            let nested = try container.nestedContainer(keyedBy: AnyCodableCodingKey.self)
+            self = .unkeyed(container)
+            return .keyed(emptyKey, nested)
         }
     }
     
@@ -146,8 +139,6 @@ public enum ValueDecodingContainer {
         case .decoder(let decoder):
             let container = try decoder.singleValueContainer()
             return DecodingError.dataCorruptedError(in: container, debugDescription: description)
-        case .single(let container):
-            return DecodingError.dataCorruptedError(in: container, debugDescription: description)
         case .unkeyed(let container):
             return DecodingError.dataCorruptedError(in: container, debugDescription: description)
         case .keyed(let key, let container):
@@ -173,7 +164,7 @@ private extension Value where C == RuntimeTypeId {
             var value = try from.nestedKeyedContainer()
             var map: [String: Value<C>] = Dictionary(minimumCapacity: fields.count)
             for field in fields {
-                try value.next(key: field.name!)
+                try value.next(key: field.name!.camelCased(with: "_"))
                 map[field.name!] = try Value(from: &value, as: field.type, runtime: runtime)
             }
             return Value(value: .map(map), context: type)
@@ -253,7 +244,7 @@ private extension Value where C == RuntimeTypeId {
                 guard let found = try variants.first(where: { try container.contains(key: $0.name) }) else {
                     throw try container.newError("variant not found")
                 }
-                try container.next(key: found.name)
+                try container.next(key: found.name.camelCased(with: "_"))
                 variant = found
             }
             let value = try Self._decodeComposite(from: &container, type: type,
