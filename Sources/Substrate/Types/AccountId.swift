@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol AccountId: ScaleRuntimeCodable, Codable {
+public protocol AccountId: ScaleRuntimeCodable, Codable, ValueRepresentable {
     init(from string: String, runtime: any Runtime) throws
     init(pub: any PublicKey, runtime: any Runtime) throws
     init(raw: Data, runtime: any Runtime) throws
@@ -102,4 +102,8 @@ public struct AccountId32: StaticAccountId, Hashable, Equatable {
     }
     
     public static let byteCount: Int = 32
+}
+
+extension AccountId32: ValueRepresentable {
+    public func asValue() throws -> Value<Void> { .bytes(raw) }
 }

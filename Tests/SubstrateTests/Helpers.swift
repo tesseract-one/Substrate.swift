@@ -6,6 +6,9 @@
 //
 
 import XCTest
+#if !COCOAPODS
+import SubstrateKeychain
+#endif
 
 extension XCTestCase {
     func runAsyncTest(
@@ -25,10 +28,8 @@ extension XCTestCase {
             } catch {
                 errorHandler(error)
             }
-
             expectation.fulfill()
         }
-
         waitForExpectations(timeout: timeout)
 
         if let error = thrownError {
@@ -37,6 +38,30 @@ extension XCTestCase {
                 file: file,
                 line: line
             )
+        }
+    }
+}
+
+
+struct Environment {
+    private let mnemonic: String
+    
+    init() {
+        self.mnemonic = ProcessInfo.processInfo.environment["TEST_MNEMONIC"]!
+    }
+    
+    lazy var kpAlice: Sr25519KeyPair = try! Sr25519KeyPair(parsing: mnemonic + "//Alice")
+    lazy var kpBob: Sr25519KeyPair = try! Sr25519KeyPair(parsing: mnemonic + "//Bob")
+    lazy var kbJohn: Sr25519KeyPair = try! Sr25519KeyPair(parsing: mnemonic + "//John")
+    lazy var kbJane: Sr25519KeyPair = try! Sr25519KeyPair(parsing: mnemonic + "//Jane")
+    
+    public var keyPairs: [Sr25519KeyPair] { mutating get { [kpAlice, kpBob, kbJohn, kbJane] } }
+    
+    public mutating func randomKeyPair(exclude kp: Sr25519KeyPair? = nil) -> Sr25519KeyPair {
+        if let excl = kp {
+            return keyPairs.filter { $0 != excl }.randomElement()!
+        } else {
+            return keyPairs.randomElement()!
         }
     }
 }

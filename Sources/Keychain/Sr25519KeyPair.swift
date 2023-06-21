@@ -12,7 +12,7 @@ import Bip39
 import Substrate
 #endif
 
-public struct Sr25519KeyPair {
+public struct Sr25519KeyPair: Equatable, Hashable {
     private let _keyPair: Sr25519.Sr25519KeyPair
     private let _pubKey: STSr25519PublicKey
     

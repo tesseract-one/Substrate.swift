@@ -32,6 +32,19 @@ public struct EcdsaKeyPair {
     fileprivate static let _context = Secp256k1Context()
 }
 
+extension EcdsaKeyPair: Equatable {
+    public static func == (lhs: EcdsaKeyPair, rhs: EcdsaKeyPair) -> Bool {
+        rhs._private == lhs._private && rhs._pubKey == lhs._pubKey
+    }
+}
+
+extension EcdsaKeyPair: Hashable {
+    public func hash(into hasher: inout Swift.Hasher) {
+        hasher.combine(_private)
+        hasher.combine(_pubKey)
+    }
+}
+
 extension EcdsaKeyPair: KeyPair {
     public var algorithm: CryptoTypeId { .ecdsa }
     public var pubKey: any PublicKey { _pubKey }

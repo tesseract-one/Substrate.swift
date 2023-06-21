@@ -56,11 +56,6 @@ public class StorageApiRegistry<S: SomeSubstrate> {
     }
     
     @inlinable
-    public func entry<Key: StaticStorageKey>() throws -> StorageEntry<S, Key> {
-        try entry(Key.self)
-    }
-    
-    @inlinable
     public func entry<Key: StaticStorageKey>(_ type: Key.Type) throws -> StorageEntry<S, Key> {
         try StorageEntry(substrate: substrate, params: ())
     }

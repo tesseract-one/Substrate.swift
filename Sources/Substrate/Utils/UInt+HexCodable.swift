@@ -8,8 +8,6 @@
 import Foundation
 import ScaleCodec
 
-private let maxJsonSafeInteger: UInt64 = 2^53 - 1
-
 public struct TrimmedHex: Codable {
     public struct InitError: Error {
         public let desc: String
@@ -124,10 +122,15 @@ extension HexOrNumber: Decodable where T: Decodable & DataInitalizable {
 extension HexOrNumber: Encodable where T: Encodable & DataSerializable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
-        if UInt64(clamping: value) > maxJsonSafeInteger {
+        if UInt64(clamping: value) > JSONEncoder.maxSafeInteger {
             try container.encode(UIntHex(value))
         } else {
             try container.encode(value)
         }
     }
+}
+
+public extension JSONEncoder {
+    @inlinable
+    static var maxSafeInteger: UInt64 { 2^53 - 1 }
 }

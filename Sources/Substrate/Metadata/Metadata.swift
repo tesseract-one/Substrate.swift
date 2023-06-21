@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ScaleCodec
 
 public protocol RuntimeMetadata {
     var version: UInt8 { get }
@@ -81,4 +82,16 @@ public protocol RuntimeApiMetadata {
 public enum MetadataError: Error {
     case storageBadHashersCount(expected: Int, got: Int, name: String, pallet: String)
     case storageNonCompositeKey(name: String, pallet: String, type: RuntimeTypeInfo)
+}
+
+public struct OpaqueMetadata: ScaleDecodable, ScaleRuntimeDecodable {
+    public let raw: Data
+    
+    public init(from decoder: ScaleCodec.ScaleDecoder) throws {
+        self.raw = try decoder.decode()
+    }
+    
+    public func metadata<C: Config>(config: C) throws -> any Metadata {
+        try config.decoder(data: raw).decode(VersionedMetadata.self).metadata
+    }
 }

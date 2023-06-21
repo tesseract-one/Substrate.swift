@@ -62,4 +62,33 @@ public extension ExtrinsicApiRegistry {
         try await signer().account(type: .account,
                                    algos: S.RC.TSignature.algorithms(runtime: substrate.runtime))
     }
+    
+    func new<C: Call>(
+        call: C,
+        params: S.RC.TExtrinsicManager.TUnsignedParams
+    ) async throws -> Submittable<S, C, S.RC.TExtrinsicManager.TUnsignedExtra> {
+        try await Submittable(substrate: substrate, call: call, params: params)
+    }
+    
+    func submit<C: Call>(
+        _ extrinsic: SignedExtrinsic<C, S.RC.TExtrinsicManager>
+    ) async throws -> S.RC.THasher.THash {
+        try await substrate.client.submit(extrinsic: extrinsic, runtime: substrate.runtime)
+    }
+}
+
+public extension ExtrinsicApiRegistry where S.RC.TExtrinsicManager.TUnsignedParams == Void {
+    func new<C: Call>(
+        _ call: C
+    ) async throws -> Submittable<S, C, S.RC.TExtrinsicManager.TUnsignedExtra> {
+        try await Submittable(substrate: substrate, call: call, params: ())
+    }
+}
+
+public extension ExtrinsicApiRegistry where S.CL: SubscribableClient {
+    func submitAndWatch<C: Call>(
+        _ extrinsic: SignedExtrinsic<C, S.RC.TExtrinsicManager>
+    ) async throws -> AsyncThrowingStream<S.RC.TTransactionStatus, Error> {
+        try await substrate.client.submitAndWatch(extrinsic: extrinsic, runtime: substrate.runtime)
+    }
 }

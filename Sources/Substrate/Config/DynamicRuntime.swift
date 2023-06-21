@@ -138,7 +138,7 @@ public extension DynamicRuntime {
             }
             
             public struct MetadataAtVersion: SomeMetadataAtVersionRuntimeCall {
-                public typealias TReturn = Optional<VersionedMetadata>
+                public typealias TReturn = Optional<OpaqueMetadata>
                 let version: UInt32
                 
                 public init(version: UInt32) {

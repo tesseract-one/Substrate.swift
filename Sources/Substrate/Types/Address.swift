@@ -10,13 +10,18 @@ import Foundation
 import Foundation
 import ScaleCodec
 
-public protocol Address: ScaleRuntimeCodable, ScaleRuntimeDynamicDecodable, ScaleRuntimeDynamicEncodable {
+public protocol Address: ScaleRuntimeCodable,
+                         ScaleRuntimeDynamicDecodable,
+                         ScaleRuntimeDynamicEncodable,
+                         ValueRepresentable
+{
     associatedtype TAccountId: AccountId
     
     init(accountId: TAccountId, runtime: any Runtime) throws
 }
 
-public enum MultiAddress<Id: AccountId & Hashable, Index: CompactCodable & Hashable>: Equatable, Hashable {
+public enum MultiAddress<Id: AccountId & Hashable,
+                         Index: CompactCodable & Hashable & ValueRepresentable>: Equatable, Hashable {
     case id(Id)
     case index(Index)
     case raw(Data)
@@ -36,6 +41,18 @@ public enum MultiAddress<Id: AccountId & Hashable, Index: CompactCodable & Hasha
 
     public init(index: Index) {
         self = .index(index)
+    }
+}
+
+extension MultiAddress: ValueRepresentable {
+    public func asValue() throws -> Value<Void> {
+        switch self {
+        case .id(let id): return try .variant(name: "Id", values: [id.asValue()])
+        case .index(let index): return try .variant(name: "Index", values: [index.asValue()])
+        case .address20(let data): return .variant(name: "Address20", values: [.bytes(data)])
+        case .raw(let data): return .variant(name: "Raw", values: [.bytes(data)])
+        case .address32(let data): return .variant(name: "Address32", values: [.bytes(data)])
+        }
     }
 }
 

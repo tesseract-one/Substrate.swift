@@ -23,3 +23,25 @@ public protocol KeyPair {
     
     static var seedLength: Int { get }
 }
+
+public extension KeyPair {
+    @inlinable
+    func account<A: AccountId>(runtime: any Runtime) throws -> A {
+        try pubKey.account(runtime: runtime)
+    }
+    
+    @inlinable
+    func address<A: Address>(runtime: any Runtime) throws -> A {
+        try pubKey.address(runtime: runtime)
+    }
+    
+    @inlinable
+    func account<S: SomeSubstrate>(in substrate: S) throws -> S.RC.TAccountId {
+        try pubKey.account(in: substrate)
+    }
+    
+    @inlinable
+    func address<S: SomeSubstrate>(in substrate: S) throws -> S.RC.TAddress {
+        try pubKey.address(in: substrate)
+    }
+}

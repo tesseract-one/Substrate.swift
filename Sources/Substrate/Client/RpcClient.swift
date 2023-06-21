@@ -74,6 +74,7 @@ extension RpcClient: Client {
         do {
             return try await metadataFromRuntimeApi(at: hash, config: config)
         } catch {
+            print("Error: \(error)")
            return try await metadataFromRpc(at: hash, config: config)
         }
     }
@@ -222,6 +223,7 @@ extension RpcClient: Client {
     public func metadataFromRuntimeApi(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
         let versions = try await execute(call: C.TMetadataVersionsRuntimeCall(),
                                          at: hash, config: config)
+        print("Metadata versions: \(versions)")
         let supported = VersionedMetadata.supportedVersions.intersection(versions)
         guard let max = supported.max() else {
             throw SDecodingError.dataCorrupted(
@@ -238,7 +240,7 @@ extension RpcClient: Client {
                     path: [],
                     description: "Null metadata"))
         }
-        return metadata.metadata
+        return try metadata.metadata(config: config)
     }
     
     public func metadataFromRpc(at hash: C.THasher.THash?, config: C) async throws -> Metadata {

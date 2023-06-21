@@ -15,6 +15,11 @@ import JsonRPCSerializable
 public class JsonRpcCallableClient: RpcCallableClient, RuntimeHolder {
     public private (set) var client: JsonRPC.Client & ContentCodersProvider
     
+    public var debug: Bool {
+        get { client.debug }
+        set { client.debug = newValue }
+    }
+    
     public init(client: JsonRPC.Client & ContentCodersProvider) {
         self.client = client
         if let connectable = self.client as? Connectable {
@@ -54,10 +59,10 @@ public extension JsonRpcClientDelegate {
     func rpcClientSubscriptionError(client: JsonRpcSubscribableClient, error: JsonRpcSubscribableClient.Error) {}
 }
 
-public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDelegate, ErrorDelegate, ConnectableDelegate {
+public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDelegate, ErrorDelegate, ConnectableDelegate, RpcSubscribableClient {
     public enum Error: Swift.Error {
         case codec(CodecError)
-        case request(RequestError<[CallParam], SerializableValue>)
+        case request(RequestError<[AnyEncodable], SerializableValue>)
         case unknown(subscription: String)
         case unsubscribeFailed
         case disconnected
@@ -72,7 +77,7 @@ public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDeleg
             switch error {
             case let err as Self: return err
             case let err as ServiceError: return .from(service: err)
-            case let err as RequestError<[CallParam], SerializableValue>: return .request(err)
+            case let err as RequestError<[AnyEncodable], SerializableValue>: return .request(err)
             case let err as CodecError: return .codec(err)
             default: fatalError("Unknown type of error: \(error)")
             }

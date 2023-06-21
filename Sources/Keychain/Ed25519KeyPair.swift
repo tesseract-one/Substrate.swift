@@ -25,7 +25,7 @@ private typealias EDPublicKey = Ed25519.Ed25519PublicKey
 #endif
 
 
-public struct Ed25519KeyPair {
+public struct Ed25519KeyPair: Equatable, Hashable {
     private let _keyPair: EDKeyPair
     private let _pubKey: STEd25519PublicKey
     

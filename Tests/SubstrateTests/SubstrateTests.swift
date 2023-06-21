@@ -11,40 +11,56 @@ import JsonRPC
 @testable import Substrate
 
 final class SubstrateTests: XCTestCase {
-    func testInitializationParsing() {
-        let client = JsonRpcClient(.http(url: URL(string: "https://westend-rpc.polkadot.io")!))
-        
+    let client = {
+        let cl = JsonRpcClient(.ws(url: URL(string: "wss://westend-rpc.polkadot.io")!))
+        cl.debug = true
+        return cl
+    }()
+    var env = Environment()
+    
+    func testInitialization() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Substrate(rpc: client, config: DynamicRuntime())
-            let events = try await substrate.client.events(at: nil, runtime: substrate.runtime)
-            print("Events:", events as Any)
+            let _ = try await Substrate(rpc: self.client, config: DynamicRuntime())
         }
     }
     
-//    func testStorageCall() {
-//        let disconnected = expectation(description: "Disconnected")
-//        let key = SystemAccountStorageKey<PolkadotRuntime>(accountId: .default())
-//        let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
-//
-//        Substrate<DefaultNodeRuntime, HttpRpcClient>.create(client: client, runtime: PolkadotRuntime()) { result in
-//            switch result {
-//            case .failure(let err):
-//                XCTFail("\(err)")
-//                disconnected.fulfill()
-//            case .success(let substrate):
-//                let hash = try! key.iterator(registry: substrate.registry)
-//                print(hash.hex)
-//                disconnected.fulfill()
-//            }
-//        }
-//
-//        wait(for: [disconnected], timeout: 30.0)
-//    }
+    func testStorageValueCall() {
+        runAsyncTest(withTimeout: 30) {
+            let substrate = try await Substrate(rpc: self.client, config: DynamicRuntime())
+            let entry = try substrate.query.entry(name: "Events", pallet: "System")
+            let value = try await entry.value()
+            XCTAssertNotNil(value)
+        }
+    }
     
-//    func testSubstrateCreation() {
-//        let client = HttpRpcClient(url: URL(string: "https://rpc.polkadot.io")!)
-//
-//        Substrate.create(client: client, runtime: , <#T##cb: (Result<Substrate<Runtime, RpcClient>, Error>) -> Void##(Result<Substrate<Runtime, RpcClient>, Error>) -> Void#>)
+    func testBlock() {
+        runAsyncTest(withTimeout: 30) {
+            let substrate = try await Substrate(rpc: self.client, config: DynamicRuntime())
+            let block = try await substrate.client.block(config: substrate.runtime.config)
+            XCTAssertNotNil(block)
+            print("Block: \(block!)")
+        }
+    }
+    
+//    func testTransferTx() {
+//        runAsyncTest(withTimeout: 300) {
+//            let from = self.env.kpAlice //self.env.randomKeyPair()
+//            let toKp = self.env.randomKeyPair(exclude: from)
+//            let substrate = try await Substrate(rpc: self.client, config: DynamicRuntime())
+//            let to = try toKp.address(in: substrate)
+//            let call = try AnyCall(name: "transfer_allow_death",
+//                                   pallet: "Balances",
+//                                   params: .map([
+//                                        ("dest", to.asValue()),
+//                                        ("value", .u256(15483812856))
+//                                   ])
+//            )
+//            let tx = try await substrate.tx.new(call)
+//            let events = try await tx.signSendAndWatch(signer: from)
+//                .waitForFinalized()
+//                .success()
+//            print("Events: \(events)")
+//        }
 //    }
 }
 

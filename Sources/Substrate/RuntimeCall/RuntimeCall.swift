@@ -124,7 +124,7 @@ public protocol SomeMetadataVersionsRuntimeCall: StaticCodableRuntimeCall
 }
 
 public protocol SomeMetadataAtVersionRuntimeCall: StaticCodableRuntimeCall
-    where TReturn == Optional<VersionedMetadata>
+    where TReturn == Optional<OpaqueMetadata>
 {
     init(version: UInt32)
 }
