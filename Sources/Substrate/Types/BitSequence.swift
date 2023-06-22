@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public struct BitSequence: RandomAccessCollection, RangeReplaceableCollection,
-                           MutableCollection, Hashable, Equatable
+                           MutableCollection, Hashable, Equatable, CustomStringConvertible
 {
     private var storage: [Bool]
     
@@ -41,6 +41,10 @@ public struct BitSequence: RandomAccessCollection, RangeReplaceableCollection,
     
     public mutating func reserveCapacity(_ n: Int) {
         storage.reserveCapacity(n)
+    }
+    
+    public var description: String {
+        storage.description
     }
 }
 

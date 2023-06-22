@@ -107,3 +107,7 @@ public struct AccountId32: StaticAccountId, Hashable, Equatable {
 extension AccountId32: ValueRepresentable {
     public func asValue() throws -> Value<Void> { .bytes(raw) }
 }
+
+extension AccountId32: CustomStringConvertible {
+    public var description: String { string }
+}

@@ -82,39 +82,8 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
     }
     
     public func decode<C: Call & ScaleRuntimeDecodable>(
-        unsigned decoder: ScaleDecoder
-    ) throws -> Extrinsic<C, TUnsignedExtra> {
-        let ext = try self.decode(decoder: decoder, call: C.self)
-        guard !ext.isSigned else {
-            throw ExtrinsicCodingError.badExtraType(
-                expected: String(describing: TUnsignedExtra.self),
-                got: String(describing: TSignedExtra.self)
-            )
-        }
-        return Extrinsic(call: ext.call, extra: (), signed: false)
-    }
-    
-    public func decode<C: Call & ScaleRuntimeDecodable>(
-        signed decoder: ScaleDecoder
-    ) throws -> Extrinsic<C, TSignedExtra> {
-        let ext = try self.decode(decoder: decoder, call: C.self)
-        guard ext.isSigned else {
-            throw ExtrinsicCodingError.badExtraType(
-                expected: String(describing: TSignedExtra.self),
-                got: String(describing: TUnsignedExtra.self)
-            )
-        }
-        return Extrinsic(call: ext.call, extra: ext.extra!, signed: true)
-
-    }
-    
-    private func decode<C: Call & ScaleRuntimeDecodable>(
-        decoder: ScaleDecoder,
-        call: C.Type
-    ) throws -> Extrinsic<
-        C,
-        (address: RC.TAddress, signature: RC.TSignature, extra: SE.TExtra)?>
-    {
+        from decoder: ScaleDecoder
+    ) throws -> Extrinsic<C, AnyExtrinsicExtra<TSignedExtra, TUnsignedExtra>> {
         let decoder = try runtime.decoder(with: decoder.decode(Data.self))
         var version = try decoder.decode(UInt8.self)
         let isSigned = version & 0b1000_0000 > 0
@@ -128,10 +97,10 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
             let signature = try RC.TSignature(from: decoder, runtime: runtime)
             let extra = try extensions.extra(from: decoder)
             return Extrinsic(call: try C(from: decoder, runtime: runtime),
-                             extra: (address, signature, extra), signed: true)
+                             extra: .signed((address, signature, extra)), signed: true)
         } else {
             return Extrinsic(call: try C(from: decoder, runtime: runtime),
-                             extra: nil, signed: false)
+                             extra: .unsigned(()), signed: false)
         }
     }
     

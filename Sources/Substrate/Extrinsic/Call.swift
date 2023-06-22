@@ -89,6 +89,12 @@ public struct AnyCall<C>: Call {
     }
 }
 
+extension AnyCall: CustomStringConvertible {
+    public var description: String {
+        "\(pallet).\(name)(\(params))"
+    }
+}
+
 extension AnyCall: ScaleRuntimeDecodable where C == RuntimeTypeId {
     public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
         let palletIdx = try decoder.decode(UInt8.self)

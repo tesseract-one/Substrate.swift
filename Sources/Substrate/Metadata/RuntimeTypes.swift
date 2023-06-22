@@ -8,7 +8,10 @@
 import Foundation
 import ScaleCodec
 
-public struct RuntimeTypeId: ScaleCodable, Hashable, Equatable, ExpressibleByIntegerLiteral, RawRepresentable {
+public struct RuntimeTypeId: ScaleCodable, Hashable, Equatable,
+                             ExpressibleByIntegerLiteral, RawRepresentable,
+                             CustomStringConvertible
+{
     public typealias IntegerLiteralType = UInt32
     public typealias RawValue = UInt32
     
@@ -35,15 +38,23 @@ public struct RuntimeTypeId: ScaleCodable, Hashable, Equatable, ExpressibleByInt
     public func encode(in encoder: ScaleCodec.ScaleEncoder) throws {
         try encoder.encode(id, .compact)
     }
+    
+    public var description: String {
+        "#\(id)"
+    }
 }
 
-public struct RuntimeTypeInfo {
+public struct RuntimeTypeInfo: CustomStringConvertible {
     public let id: RuntimeTypeId
     public let type: RuntimeType
 
     public init(id: RuntimeTypeId, type: RuntimeType) {
         self.id = id
         self.type = type
+    }
+    
+    public var description: String {
+        "\(type)\(id)"
     }
 }
 
@@ -58,7 +69,7 @@ extension RuntimeTypeInfo: ScaleCodable {
     }
 }
 
-public struct RuntimeType {
+public struct RuntimeType: CustomStringConvertible {
     public let path: [String]
     public let parameters: [RuntimeTypeParameter]
     public let definition: RuntimeTypeDefinition
@@ -74,6 +85,11 @@ public struct RuntimeType {
         self.parameters = parameters
         self.definition = definition
         self.docs = docs
+    }
+    
+    public var description: String {
+        let params = parameters.isEmpty ? "" : "<\(parameters.map{$0.description}.joined(separator: ", "))>"
+        return "\(pathBasedName ?? "_")\(params){\(definition)}"
     }
 }
 
@@ -97,13 +113,17 @@ extension RuntimeType: ScaleCodable {
     }
 }
 
-public struct RuntimeTypeParameter {
+public struct RuntimeTypeParameter: CustomStringConvertible {
     public let name: String
     public let type: RuntimeTypeId?
 
     public init(name: String, type: RuntimeTypeId?) {
         self.name = name
         self.type = type
+    }
+    
+    public var description: String {
+        "\(name)[\(type.map{$0.description} ?? "-")]"
     }
 }
 

@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import JsonRPC
 
-public struct Extrinsic<C: Call, Extra> {
+public struct Extrinsic<C: Call, Extra>: CustomStringConvertible {
     public let call: C
     public let extra: Extra
     public let isSigned: Bool
@@ -20,9 +20,13 @@ public struct Extrinsic<C: Call, Extra> {
         self.extra = extra
         self.isSigned = signed
     }
+    
+    public var description: String {
+        "\(isSigned ? "SignedExtrinsic" : "UnsignedExtrinsic")(call: \(call), extra: \(extra))"
+    }
 }
 
-public struct ExtrinsicSignPayload<C: Call, Extra> {
+public struct ExtrinsicSignPayload<C: Call, Extra>: CustomStringConvertible {
     public let call: C
     public let extra: Extra
     
@@ -31,20 +35,45 @@ public struct ExtrinsicSignPayload<C: Call, Extra> {
         self.call = call
         self.extra = extra
     }
+    
+    public var description: String {
+        "ExtrinsicPayload(call: \(call), extra: \(extra))"
+    }
 }
+
+public enum AnyExtrinsicExtra<Signed, Unsigned>: CustomStringConvertible {
+    case unsigned(Unsigned)
+    case signed(Signed)
+    
+    var signed: Signed? {
+        switch self {
+        case .signed(let extra): return extra
+        default: return nil
+        }
+    }
+    
+    public var description: String {
+        switch self {
+        case .signed(let extra): return "\(extra)"
+        case .unsigned(let extra): return "\(extra)"
+        }
+    }
+}
+
+public typealias AnyExtrinsic<C: Call, M: ExtrinsicManager> =
+    Extrinsic<C, AnyExtrinsicExtra<M.TSignedExtra, M.TUnsignedExtra>>
 
 public protocol OpaqueExtrinsic<TManager>: Decodable {
     associatedtype TManager: ExtrinsicManager
     
     func hash() -> TManager.RT.THasher.THash
     
-    func decode<C: Call & ScaleRuntimeDecodable>() throws -> Extrinsic<C, TManager.TSignedExtra>
+    func decode<C: Call & ScaleRuntimeDecodable>() throws -> AnyExtrinsic<C, TManager>
     
     static var version: UInt8 { get }
 }
 
 public enum ExtrinsicCodingError: Error {
-    case badExtraType(expected: String, got: String)
     case badExtrinsicVersion(supported: UInt8, got: UInt8)
     case badExtrasCount(expected: Int, got: Int)
     case parameterNotFound(extension: ExtrinsicExtensionId, parameter: String)
@@ -69,9 +98,6 @@ public protocol ExtrinsicManager<RT> {
     
     func unsigned<C: Call>(call: C, params: TUnsignedParams) async throws -> Extrinsic<C, TUnsignedExtra>
     func encode<C: Call>(unsigned extrinsic: Extrinsic<C, TUnsignedExtra>, in encoder: ScaleEncoder) throws
-    func decode<C: Call & ScaleRuntimeDecodable>(
-        unsigned decoder: ScaleDecoder
-    ) throws -> Extrinsic<C, TUnsignedExtra>
     
     func params<C: Call>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
@@ -91,7 +117,8 @@ public protocol ExtrinsicManager<RT> {
                          address: RT.TAddress,
                          signature: RT.TSignature) throws -> Extrinsic<C, TSignedExtra>
     func encode<C: Call>(signed extrinsic: Extrinsic<C, TSignedExtra>, in encoder: ScaleEncoder) throws
-    func decode<C: Call & ScaleRuntimeDecodable>(signed decoder: ScaleDecoder) throws -> Extrinsic<C, TSignedExtra>
+    
+    func decode<C: Call & ScaleRuntimeDecodable>(from decoder: ScaleDecoder) throws -> AnyExtrinsic<C, Self>
     
     mutating func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws
     
@@ -110,7 +137,7 @@ public extension ExtrinsicManager {
             throw ExtrinsicCodingError.unsupportedSubstrate(reason: "Different manager in runtime")
         }
         return manager
-    }
+    }    
 }
 
 public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where TManager.RT: Config {
@@ -129,8 +156,8 @@ public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where 
         try! TManager.RT.THasher.THash(runtime.hasher.hash(data: data))
     }
     
-    public func decode<C: Call & ScaleRuntimeDecodable>() throws -> Extrinsic<C, TManager.TSignedExtra> {
-        try TManager.get(from: runtime).decode(signed: runtime.decoder(with: data))
+    public func decode<C: Call & ScaleRuntimeDecodable>() throws -> AnyExtrinsic<C, TManager> {
+        try TManager.get(from: runtime).decode(from: runtime.decoder(with: data))
     }
     
     public static var version: UInt8 { TManager.version }

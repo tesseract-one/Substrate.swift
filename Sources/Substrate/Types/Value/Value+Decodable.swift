@@ -16,6 +16,7 @@ extension Value: RuntimeDynamicDecodable where C == RuntimeTypeId {
     
     
 }
+
 extension Value where C == RuntimeTypeId {
     public init(from container: inout ValueDecodingContainer,
                 `as` type: RuntimeTypeId,

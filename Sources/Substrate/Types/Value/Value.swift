@@ -335,3 +335,47 @@ extension Value.Variant: Equatable where C: Equatable {}
 extension Value: Hashable where C: Hashable {}
 extension Value.Def: Hashable where C: Hashable {}
 extension Value.Variant: Hashable where C: Hashable {}
+
+extension Value: CustomStringConvertible {
+    public var description: String {
+        C.self == Void.self ? value.description : "\(value)\(context)"
+    }
+}
+
+extension Value.Def: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .map(let fields):
+            return "{\(fields.map{"\($0.key): \($0.value)"}.joined(separator: ", "))}"
+        case .sequence(let values):
+            return values.count == 0 ? "nil" : values.description
+        case .bitSequence(let bs): return bs.description
+        case .primitive(let prim): return prim.description
+        case .variant(let v): return v.description
+        }
+    }
+}
+
+extension Value.Variant: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .sequence(name: let name, values: let vals):
+            return "\(name)\(vals)"
+        case .map(name: let name, fields: let fields):
+            return "\(name){\(fields.map{"\($0.key): \($0.value)"}.joined(separator: ", "))}"
+        }
+    }
+}
+
+extension Value.Primitive: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .bool(let b): return b.description
+        case .bytes(let data): return data.hex()
+        case .char(let char): return String(char)
+        case .string(let str): return str
+        case .i256(let int): return String(int)
+        case .u256(let uint): return String(uint)
+        }
+    }
+}

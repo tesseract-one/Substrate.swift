@@ -87,3 +87,15 @@ extension MultiAddress: ScaleRuntimeCodable {
         }
     }
 }
+
+extension MultiAddress: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .id(let acc): return "\(acc)"
+        case .index(let index): return "\(index)"
+        case .raw(let raw): return raw.hex()
+        case .address20(let raw): return raw.hex()
+        case .address32(let raw): return raw.hex()
+        }
+    }
+}

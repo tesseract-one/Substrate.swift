@@ -32,7 +32,7 @@ public extension CryptoTypeId {
     }
 }
 
-public struct EcdsaSignature: ScaleFixedData, Signature, Hashable, Equatable {
+public struct EcdsaSignature: ScaleFixedData, Signature, Hashable, Equatable, CustomStringConvertible {
     public let signature: Data
     
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
@@ -62,7 +62,7 @@ public struct EcdsaSignature: ScaleFixedData, Signature, Hashable, Equatable {
     public static let fixedBytesCount: Int = CryptoTypeId.ecdsa.signatureBytesCount
 }
 
-public struct Ed25519Signature: ScaleFixedData, Signature, Hashable, Equatable {
+public struct Ed25519Signature: ScaleFixedData, Signature, Hashable, Equatable, CustomStringConvertible {
     public let signature: Data
     
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
@@ -92,7 +92,7 @@ public struct Ed25519Signature: ScaleFixedData, Signature, Hashable, Equatable {
     public static let fixedBytesCount: Int = CryptoTypeId.ed25519.signatureBytesCount
 }
 
-public struct Sr25519Signature: ScaleFixedData, Signature, Hashable, Equatable {
+public struct Sr25519Signature: ScaleFixedData, Signature, Hashable, Equatable, CustomStringConvertible {
     public let signature: Data
     
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
@@ -122,7 +122,7 @@ public struct Sr25519Signature: ScaleFixedData, Signature, Hashable, Equatable {
     public static let fixedBytesCount: Int = CryptoTypeId.sr25519.signatureBytesCount
 }
 
-public enum MultiSignature: Hashable, Equatable {
+public enum MultiSignature: Hashable, Equatable, CustomStringConvertible {
     case ed25519(Ed25519Signature)
     case sr25519(Sr25519Signature)
     case ecdsa(EcdsaSignature)
@@ -180,3 +180,9 @@ extension MultiSignature: ScaleCodable {
 }
 
 extension MultiSignature: ScaleRuntimeCodable {}
+
+public extension Signature {
+    var description: String {
+        "\(algorithm)(\(raw.hex()))"
+    }
+}
