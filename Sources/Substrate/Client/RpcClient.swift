@@ -11,11 +11,11 @@ import JsonRPC
 
 public struct RpcClient<RC: Config, CL: RpcCallableClient & RuntimeHolder> {
     public let client: CL
-    public let rpcMethods: LazyAsyncProperty<Set<String>>
+    public let rpcMethods: LazyAsyncThrowingProperty<Set<String>>
     
     public init(client: CL) {
         self.client = client
-        self.rpcMethods = LazyAsyncProperty {
+        self.rpcMethods = LazyAsyncThrowingProperty {
             try await Self._rpcMethods(client: client)
         }
     }

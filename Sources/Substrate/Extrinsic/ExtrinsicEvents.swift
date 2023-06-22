@@ -8,8 +8,8 @@
 import Foundation
 
 public protocol SomeExtrinsicFailureEvent<Err>: StaticEvent {
-    associatedtype Err: SomeDispatchError
-    func asError() throws -> Err
+    associatedtype Err: ApiError
+    var error: Err { get }
 }
 
 public struct ExtrinsicEvents<H: Hash, BE: SomeBlockEvents, Failure: SomeExtrinsicFailureEvent> {
@@ -48,12 +48,11 @@ public struct ExtrinsicEvents<H: Hash, BE: SomeBlockEvents, Failure: SomeExtrins
     
     public func success() throws -> Self {
         if let error = try first(event: Failure.self) {
-            throw try error.asError()
+            throw error.error
         }
         return self
     }
 }
-
 
 public extension ExtrinsicEvents {
     func has(event: String, pallet: String) -> Bool {

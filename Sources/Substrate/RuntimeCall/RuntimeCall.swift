@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol RuntimeCall {
+public protocol RuntimeCall<TReturn> {
     associatedtype TReturn
     
     var api: String { get }
@@ -22,7 +22,7 @@ public extension RuntimeCall {
     var fullName: String { "\(api)_\(method)" }
 }
 
-public protocol StaticRuntimeCall: RuntimeCall where TReturn: ScaleRuntimeDecodable {
+public protocol StaticRuntimeCall: RuntimeCall {
     static var api: String { get }
     static var method: String { get }
 }
@@ -30,7 +30,9 @@ public protocol StaticRuntimeCall: RuntimeCall where TReturn: ScaleRuntimeDecoda
 public extension StaticRuntimeCall {
     var api: String { Self.api }
     var method: String { Self.method }
-    
+}
+
+public extension StaticRuntimeCall where TReturn: ScaleRuntimeDecodable {
     func decode(returnFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TReturn {
         try TReturn(from: decoder, runtime: runtime)
     }
@@ -127,4 +129,16 @@ public protocol SomeMetadataAtVersionRuntimeCall: StaticCodableRuntimeCall
     where TReturn == Optional<OpaqueMetadata>
 {
     init(version: UInt32)
+}
+
+public protocol SomeTransactionPaymentQueryInfoRuntimeCall<TReturn>: StaticRuntimeCall
+    where TReturn: ScaleRuntimeDynamicDecodable
+{
+    init(extrinsic: Data)
+}
+
+public protocol SomeTransactionPaymentFeeDetailsRuntimeCall<TReturn>: StaticRuntimeCall
+    where TReturn: ScaleRuntimeDynamicDecodable
+{    
+    init(extrinsic: Data)
 }

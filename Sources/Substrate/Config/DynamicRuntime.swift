@@ -27,29 +27,44 @@ public struct DynamicRuntime: Config {
     public typealias TFeeDetails = Value<RuntimeTypeId>
     public typealias TDispatchInfo = Value<RuntimeTypeId>
     public typealias TDispatchError = AnyDispatchError
+    public typealias TTransactionValidityError = AnyTransactionValidityError
     public typealias TExtrinsicFailureEvent = System.Events.ExtrinsicFailure<TDispatchError>
     public typealias TBlockEvents = BlockEvents<EventRecord<THasher.THash>>
     public typealias TRuntimeVersion = AnyRuntimeVersion
-    public typealias TTransactionValidityError = SerializableValue
     public typealias TStorageChangeSet = StorageChangeSet<THasher.THash>
     
     public typealias TMetadataAtVersionRuntimeCall = Api.Metadata.MetadataAtVersion
     public typealias TMetadataVersionsRuntimeCall = Api.Metadata.MetadataVersions
+    public typealias TTransactionPaymentQueryInfoRuntimeCall = Api.TransactionPayment.QueryInfo<TDispatchInfo>
+    public typealias TTransactionPaymentFeeDetailsRuntimeCall = Api.TransactionPayment.QueryFeeDetails<TFeeDetails>
     
     public enum Error: Swift.Error {
-        case headerTypeNotFound(String)
+        case typeNotFound(name: String, selector: Set<String>)
         case hashTypeNotFound(header: RuntimeTypeInfo)
         case extrinsicInfoNotFound
         case unknownHashName(String)
     }
     
     public let extrinsicExtensions: [DynamicExtrinsicExtension]
-    public let headerTypeName: String
+    public let headerSelector: Set<String>
+    public let dispatchInfoSelector: Set<String>
+    public let dispatchErrorSelector: Set<String>
+    public let transactionValidityErrorSelector: Set<String>
+    public let feeDetailsSelector: Set<String>
     
     public init(extrinsicExtensions: [DynamicExtrinsicExtension] = Self.allExtensions,
-                headerTypeName: String = "sp_runtime.generic.header.Header") {
+                headerSelector: [String] = ["Header"],
+                dispatchInfoSelector: [String] = ["DispatchInfo"],
+                dispatchErrorSelector: [String] = ["DispatchError"],
+                transactionValidityErrorSelector: [String] = ["TransactionValidityError"],
+                feeDetailsSelector: [String] = ["FeeDetails"])
+    {
         self.extrinsicExtensions = extrinsicExtensions
-        self.headerTypeName = headerTypeName
+        self.headerSelector = Set(headerSelector)
+        self.dispatchInfoSelector = Set(dispatchInfoSelector)
+        self.dispatchErrorSelector = Set(dispatchErrorSelector)
+        self.transactionValidityErrorSelector = Set(transactionValidityErrorSelector)
+        self.feeDetailsSelector = Set(feeDetailsSelector)
     }
     
     public func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
@@ -75,9 +90,8 @@ public struct DynamicRuntime: Config {
     }
     
     public func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo {
-        let path = headerTypeName.split(separator: ".").map { String($0) }
-        guard let type = metadata.resolve(type: path) else {
-            throw Error.headerTypeNotFound(headerTypeName)
+        guard let type = metadata.search(type: {headerSelector.isSubset(of: $0)}) else {
+            throw Error.typeNotFound(name: "header", selector: headerSelector)
         }
         return type
     }
@@ -109,6 +123,34 @@ public struct DynamicRuntime: Config {
                 extra: RuntimeTypeInfo(id: extraTypeId, type: extraType))
     }
     
+    public func dispatchInfoType(metadata: any Metadata) throws -> RuntimeTypeInfo {
+        guard let type = metadata.search(type: {dispatchInfoSelector.isSubset(of: $0)}) else {
+            throw Error.typeNotFound(name: "dispatchInfo", selector: dispatchInfoSelector)
+        }
+        return type
+    }
+    
+    public func dispatchErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo {
+        guard let type = metadata.search(type: {dispatchErrorSelector.isSubset(of: $0)}) else {
+            throw Error.typeNotFound(name: "dispatchError", selector: dispatchErrorSelector)
+        }
+        return type
+    }
+    
+    public func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo {
+        guard let type = metadata.search(type: {transactionValidityErrorSelector.isSubset(of: $0)}) else {
+            throw Error.typeNotFound(name: "transactionValidityError", selector: transactionValidityErrorSelector)
+        }
+        return type
+    }
+    
+    public func feeDetailsType(metadata: any Metadata) throws -> RuntimeTypeInfo {
+        guard let type = metadata.search(type: {feeDetailsSelector.isSubset(of: $0)}) else {
+            throw Error.typeNotFound(name: "feeDetails", selector: feeDetailsSelector)
+        }
+        return type
+    }
+    
     public static let allExtensions: [DynamicExtrinsicExtension] = [
         DynamicCheckSpecVersionExtension(),
         DynamicCheckTxVersionExtension(),
@@ -134,7 +176,7 @@ public extension DynamicRuntime {
                 
                 public init(_ params: Void) throws {}
                 
-                public func encodeParams(in encoder: ScaleCodec.ScaleEncoder) throws {}
+                public func encodeParams(in encoder: ScaleEncoder) throws {}
             }
             
             public struct MetadataAtVersion: SomeMetadataAtVersionRuntimeCall {
@@ -165,28 +207,71 @@ public extension DynamicRuntime {
             
             public static let name = "Metadata"
         }
+        
+        public struct TransactionPayment {
+            public struct QueryInfo<DI: ScaleRuntimeDynamicDecodable>: SomeTransactionPaymentQueryInfoRuntimeCall {
+                public typealias TReturn = DI
+                
+                public let extrinsic: Data
+                
+                public init(extrinsic: Data) {
+                    self.extrinsic = extrinsic
+                }
+                
+                public func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws {
+                    try encoder.encode(extrinsic).encode(UInt32(extrinsic.count))
+                }
+                
+                public func decode(returnFrom decoder: ScaleCodec.ScaleDecoder, runtime: Runtime) throws -> DI {
+                    try TReturn(from: decoder, runtime: runtime) { runtime in
+                        try runtime.types.dispatchInfo.id
+                    }
+                }
+                
+                public static var method: String { "query_info" }
+                public static var api: String { TransactionPayment.name }
+            }
+            
+            public struct QueryFeeDetails<FD: ScaleRuntimeDynamicDecodable>:
+                    SomeTransactionPaymentFeeDetailsRuntimeCall
+            {
+                public typealias TReturn = FD
+                
+                public let extrinsic: Data
+                
+                public init(extrinsic: Data) {
+                    self.extrinsic = extrinsic
+                }
+                
+                public func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws {
+                    try encoder.encode(extrinsic).encode(UInt32(extrinsic.count))
+                }
+                
+                public func decode(returnFrom decoder: ScaleCodec.ScaleDecoder, runtime: Runtime) throws -> FD {
+                    try TReturn(from: decoder, runtime: runtime) { runtime in
+                        try runtime.types.feeDetails.id
+                    }
+                }
+                
+                public static var method: String { "query_fee_details" }
+                public static var api: String { TransactionPayment.name }
+            }
+            
+            public static let name = "TransactionPaymentApi"
+        }
     }
     
     struct System {
         public struct Events {
-            public struct ExtrinsicFailure<Err: SomeDispatchError>: SomeExtrinsicFailureEvent {
+            public struct ExtrinsicFailure<Err: ApiError>: SomeExtrinsicFailureEvent {
                 public typealias Err = Err
                 public static var pallet: String { System.name }
                 public static var name: String { "ExtrinsicFailure" }
                 
-                public let error: Value<RuntimeTypeId>
+                public let error: Err
                 
-                public init(params: [Value<RuntimeTypeId>]) throws {
-                    guard params.count == 1, let err = params.first else {
-                        throw ValueInitializableError<RuntimeTypeId>.wrongValuesCount(in: .sequence(params),
-                                                                                      expected: 1,
-                                                                                      for: Self.name)
-                    }
-                    self.error = err
-                }
-                
-                public func asError() throws -> Err {
-                    try Err(value: error)
+                public init(paramsFrom decoder: ScaleDecoder, runtime: Runtime) throws {
+                    self.error = try Err(from: decoder, runtime: runtime)
                 }
             }
         }
@@ -206,6 +291,3 @@ public extension DynamicRuntime {
         public static let name = "System"
     }
 }
-
-// Should be removed
-extension SerializableValue: Error {}

@@ -17,7 +17,6 @@ public protocol StaticEvent: Event {
     static var pallet: String { get }
     static var name: String { get }
     
-    init(params: [Value<RuntimeTypeId>]) throws
     init(paramsFrom decoder: ScaleDecoder, runtime: Runtime) throws
 }
 
@@ -37,56 +36,6 @@ public extension StaticEvent {
         }
         try self.init(paramsFrom: decoder, runtime: runtime)
     }
-    
-    init(paramsFrom decoder: ScaleDecoder, runtime: Runtime) throws {
-        guard let type = runtime.resolve(eventType: Self.pallet) else {
-            throw EventDecodingError.noEventsInPallet(pallet: Self.pallet)
-        }
-        let value = try Value(from: decoder, as: type.id, runtime: runtime)
-        switch (value.value, type.type.definition) {
-        case (.variant(let valvar), .variant(variants: let variants)):
-            guard Self.name == valvar.name else {
-                throw EventDecodingError.foundWrongEvent(found: (name: valvar.name, pallet: Self.pallet),
-                                                         expected: (name: Self.name, pallet: Self.pallet))
-            }
-            try self.init(params: value, info: variants.first { $0.name == Self.name }!)
-        default: throw EventDecodingError.decodedNonVariantValue(value, type.id)
-        }
-    }
-    
-    init(params: Value<RuntimeTypeId>, info: RuntimeTypeVariantItem) throws {
-        switch params.value {
-        case .sequence(let fields):
-            try self.init(params: fields)
-        case .variant(.sequence(name: let name, values: let fields)):
-            guard Self.name == name else {
-                throw EventDecodingError.foundWrongEvent(found: (name: name, pallet: Self.pallet),
-                                                         expected: (name: Self.name, pallet: Self.pallet))
-            }
-            try self.init(params: fields)
-        case .map(let fields):
-            let ordered = try info.fields.map {
-                guard let field = fields[$0.name!] else {
-                    throw EventDecodingError.fieldNotFound(name: $0.name!)
-                }
-                return field
-            }
-            try self.init(params: ordered)
-        case .variant(.map(name: let name, fields: let fields)):
-            guard Self.name == name else {
-                throw EventDecodingError.foundWrongEvent(found: (name: name, pallet: Self.pallet),
-                                                         expected: (name: Self.name, pallet: Self.pallet))
-            }
-            let ordered = try info.fields.map {
-                guard let field = fields[$0.name!] else {
-                    throw EventDecodingError.fieldNotFound(name: $0.name!)
-                }
-                return field
-            }
-            try self.init(params: ordered)
-        default: throw EventDecodingError.decodedNonVariantValue(params, params.context)
-        }
-    }
 }
 
 public struct AnyEvent: Event, CustomStringConvertible {
@@ -95,12 +44,16 @@ public struct AnyEvent: Event, CustomStringConvertible {
     
     public let params: Value<RuntimeTypeId>
     public let info: RuntimeTypeVariantItem
+    public let runtime: any Runtime
     
-    public init(name: String, pallet: String, params: Value<RuntimeTypeId>, info: RuntimeTypeVariantItem) {
+    public init(name: String, pallet: String, params: Value<RuntimeTypeId>,
+                info: RuntimeTypeVariantItem, runtime: any Runtime)
+    {
         self.pallet = pallet
         self.name = name
         self.params = params
         self.info = info
+        self.runtime = runtime
     }
     
     public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
@@ -120,12 +73,14 @@ public struct AnyEvent: Event, CustomStringConvertible {
             self.init(name: name,
                       pallet: pallet,
                       params: Value(value: .sequence(values), context: value.context),
-                      info: variants.first { $0.name == name }!)
+                      info: variants.first { $0.name == name }!,
+                      runtime: runtime)
         case .variant(.map(name: let name, fields: let fields)):
             self.init(name: name,
                       pallet: pallet,
                       params: Value(value: .map(fields), context: value.context),
-                      info: variants.first { $0.name == name }!)
+                      info: variants.first { $0.name == name }!,
+                      runtime: runtime)
         default: throw EventDecodingError.decodedNonVariantValue(value, type.id)
         }
     }
@@ -135,7 +90,20 @@ public struct AnyEvent: Event, CustomStringConvertible {
             throw EventDecodingError.foundWrongEvent(found: (E.name, E.pallet),
                                                      expected: (name, pallet))
         }
-        return try E(params: params, info: info)
+        let pIndex = runtime.resolve(palletIndex: pallet)!
+        let encoder = runtime.encoder()
+        let value: Value<RuntimeTypeId>
+        try encoder.encode(pIndex)
+        switch params.value {
+        case .map(let fields):
+            value = .variant(name: name, fields: fields, params.context)
+        case .sequence(let vals):
+            value = .variant(name: name, values: vals, params.context)
+        default:
+            value = params
+        }
+        try value.encode(in: encoder, runtime: runtime)
+        return try E(from: runtime.decoder(with: encoder.output), runtime: runtime)
     }
     
     public var description: String {

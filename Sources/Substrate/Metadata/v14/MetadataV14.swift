@@ -42,6 +42,16 @@ public class MetadataV14: Metadata {
     }
     
     @inlinable
+    public func search(type cb: @escaping ([String]) -> Bool) -> RuntimeTypeInfo? {
+        for type in typesByPath.values {
+            if cb(type.type.path) {
+                return type
+            }
+        }
+        return nil
+    }
+    
+    @inlinable
     public func resolve(pallet index: UInt8) -> PalletMetadata? { palletsByIndex[index] }
     
     @inlinable

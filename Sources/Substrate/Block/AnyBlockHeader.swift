@@ -30,7 +30,7 @@ public struct AnyBlockHeader<THasher: FixedHasher>: SomeBlockHeader {
     public init(from decoder: Decoder) throws {
         self._runtime = decoder.runtime
         var container = ValueDecodingContainer(decoder)
-        let type = try _runtime.blockHeaderType
+        let type = try _runtime.types.blockHeader
         self.type = type
         let value = try Value<RuntimeTypeId>(from: &container, as: type.id, runtime: _runtime)
         guard let map = value.map else {

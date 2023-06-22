@@ -13,11 +13,7 @@ public protocol Runtime: AnyObject {
     var metadata: any Metadata { get }
     var hasher: any Hasher { get }
     
-    // configurations
-    var blockHeaderType: RuntimeTypeInfo { get throws }
-    var addressType: RuntimeTypeInfo { get throws }
-    var signatureType: RuntimeTypeInfo { get throws }
-    var extrinsicExtraType: RuntimeTypeInfo { get throws }
+    var types: RuntimeTypes { get }
     
     func encoder() -> any ScaleEncoder
     func decoder(with data: Data) -> any ScaleDecoder
@@ -59,6 +55,17 @@ public protocol RuntimeAware {
 
 public protocol RuntimeHolder: RuntimeAware {
     func setRuntime(runtime: any Runtime) throws
+}
+
+public protocol RuntimeTypes {
+    var blockHeader: RuntimeTypeInfo { get throws }
+    var address: RuntimeTypeInfo { get throws }
+    var signature: RuntimeTypeInfo { get throws }
+    var extrinsicExtra: RuntimeTypeInfo { get throws }
+    var dispatchInfo: RuntimeTypeInfo { get throws }
+    var dispatchError: RuntimeTypeInfo { get throws }
+    var feeDetails: RuntimeTypeInfo { get throws }
+    var transactionValidityError: RuntimeTypeInfo { get throws }
 }
 
 public extension Runtime {

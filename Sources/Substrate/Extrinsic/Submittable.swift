@@ -178,36 +178,24 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
     public func paymentInfo(
         at block: S.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> S.RC.TDispatchInfo {
-        guard substrate.runtime.resolve(runtimeCall: "query_info",
-                                        api: "TransactionPaymentApi") != nil else {
+        guard substrate.call.has(call: S.RC.TTransactionPaymentQueryInfoRuntimeCall.self) else {
             throw SubmittableError.queryInfoIsNotSupported
         }
         let encoder = substrate.runtime.encoder()
         try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
-        let call = AnyRuntimeCall<S.RC.TDispatchInfo>(api: "TransactionPaymentApi",
-                                                      method: "query_info",
-                                                      params: .sequence(
-                                                        [.bytes(encoder.output),
-                                                         .u256(UInt256(encoder.output.count))]
-                                                      ))
+        let call = S.RC.TTransactionPaymentQueryInfoRuntimeCall(extrinsic: encoder.output)
         return try await substrate.client.execute(call: call, at: block, runtime: substrate.runtime)
     }
     
     public func feeDetails(
         at block: S.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> S.RC.TFeeDetails {
-        guard substrate.runtime.resolve(runtimeCall: "query_fee_details",
-                                        api: "TransactionPaymentApi") != nil else {
+        guard substrate.call.has(call: S.RC.TTransactionPaymentFeeDetailsRuntimeCall.self) else {
             throw SubmittableError.queryFeeDetailsIsNotSupported
         }
         let encoder = substrate.runtime.encoder()
         try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
-        let call = AnyRuntimeCall<S.RC.TFeeDetails>(api: "TransactionPaymentApi",
-                                                    method: "query_fee_details",
-                                                    params: .sequence(
-                                                        [.bytes(encoder.output),
-                                                        .u256(UInt256(encoder.output.count))]
-                                                    ))
+        let call = S.RC.TTransactionPaymentFeeDetailsRuntimeCall(extrinsic: encoder.output)
         return try await substrate.client.execute(call: call, at: block, runtime: substrate.runtime)
     }
     

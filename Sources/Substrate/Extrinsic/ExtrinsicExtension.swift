@@ -337,7 +337,7 @@ private struct _SubstrateWrapper<ST: SomeSubstrate>: _SomeSubstrateWrapper {
                 supported: version,
                 got: substrate.runtime.metadata.extrinsic.version)
         }
-        self.extraType = try substrate.runtime.extrinsicExtraType.id
+        self.extraType = try substrate.runtime.types.extrinsicExtra.id
         self.extensions = try substrate.runtime.metadata.extrinsic.extensions.map { info in
             guard let ext = extensions[info.identifier] else {
                 throw  ExtrinsicCodingError.unknownExtension(identifier: info.identifier)

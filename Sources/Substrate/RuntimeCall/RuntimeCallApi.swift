@@ -51,6 +51,14 @@ public class RuntimeCallApiRegistry<S: SomeSubstrate> {
 }
 
 public extension RuntimeCallApiRegistry {
+    func has(method: String, api: String) -> Bool {
+        substrate.runtime.resolve(runtimeCall: method, api: api) != nil
+    }
+    
+    func has<C: StaticRuntimeCall>(call type: C.Type) -> Bool {
+        has(method: C.method, api: C.api)
+    }
+    
     func execute<C: RuntimeCall>(call: C,
                                  at hash: S.RC.THasher.THash? = nil) async throws -> C.TReturn {
         try await substrate.client.execute(call: call, at: hash, runtime: substrate.runtime)

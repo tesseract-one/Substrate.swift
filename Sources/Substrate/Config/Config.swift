@@ -21,26 +21,33 @@ public protocol Config {
     associatedtype TExtrinsicPayment: ValueRepresentable & Default
     associatedtype TBlockEvents: SomeBlockEvents
     associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent<TDispatchError>
-    associatedtype TDispatchError: SomeDispatchError
+    associatedtype TDispatchError: ApiError
+    associatedtype TTransactionValidityError: ApiError
     associatedtype TDispatchInfo: ScaleRuntimeDynamicDecodable
     associatedtype TFeeDetails: ScaleRuntimeDynamicDecodable
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
     associatedtype TSystemProperties: SystemProperties
     associatedtype TRuntimeVersion: RuntimeVersion
-    associatedtype TTransactionValidityError: Decodable & Error
+   
     associatedtype TStorageChangeSet: SomeStorageChangeSet
    
+    associatedtype TTransactionPaymentQueryInfoRuntimeCall: SomeTransactionPaymentQueryInfoRuntimeCall<TDispatchInfo>
+    associatedtype TTransactionPaymentFeeDetailsRuntimeCall: SomeTransactionPaymentFeeDetailsRuntimeCall<TFeeDetails>
     associatedtype TMetadataAtVersionRuntimeCall: SomeMetadataAtVersionRuntimeCall
     associatedtype TMetadataVersionsRuntimeCall: SomeMetadataVersionsRuntimeCall
     
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
     
     func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
-    func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo
+    func blockHeaderType(metadata: any Metadata) throws -> RuntimeTypeInfo
     func extrinsicTypes(
         metadata: Metadata
     ) throws -> (addr: RuntimeTypeInfo, signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
-    func hasher(metadata: Metadata) throws -> THasher
+    func dispatchInfoType(metadata: any Metadata) throws -> RuntimeTypeInfo
+    func feeDetailsType(metadata: any Metadata) throws -> RuntimeTypeInfo
+    func dispatchErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo
+    func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo
+    func hasher(metadata: any Metadata) throws -> THasher
     func extrinsicManager() throws -> TExtrinsicManager
     func encoder() -> ScaleEncoder
     func decoder(data: Data) -> ScaleDecoder
