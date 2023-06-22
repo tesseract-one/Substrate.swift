@@ -28,7 +28,7 @@ public protocol Client<C>: RuntimeHolder {
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         at hash: C.TBlock.THeader.THasher.THash?,
         runtime: ExtendedRuntime<C>
-    ) async throws -> RpcResult<RpcResult<(), C.TDispatchError>, C.TTransactionValidityError>
+    ) async throws -> Result<Void, Either<C.TDispatchError, C.TTransactionValidityError>>
     func execute<CL: StaticCodableRuntimeCall>(call: CL,
                                                at hash: C.THasher.THash?,
                                                config: C) async throws -> CL.TReturn

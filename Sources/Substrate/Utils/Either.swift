@@ -49,3 +49,4 @@ public enum Either<Left, Right>: CustomStringConvertible {
 
 extension Either: Equatable where Left: Equatable, Right: Equatable {}
 extension Either: Hashable where Left: Hashable, Right: Hashable {}
+extension Either: Error where Left: Error, Right: Error {}

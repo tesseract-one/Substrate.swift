@@ -121,19 +121,19 @@ extension RpcClient: Client {
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         at hash: C.TBlock.THeader.THasher.THash?,
         runtime: ExtendedRuntime<C>
-    ) async throws -> RpcResult<RpcResult<(), C.TDispatchError>, C.TTransactionValidityError> {
+    ) async throws -> Result<Void, Either<C.TDispatchError, C.TTransactionValidityError>> {
         let encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
         let result: RpcResult<RpcResult<Nothing, C.TDispatchError>, C.TTransactionValidityError> =
             try await call(method: "system_dryRun", params: Params(encoder.output, hash))
         if let value = result.value {
             if value.isOk {
-                return .ok(.ok(()))
+                return .success(())
             } else {
-                return .ok(.err(value.error!))
+                return .failure(.left(value.error!))
             }
         }
-        return .err(result.error!)
+        return .failure(.right(result.error!))
     }
     
     public func execute<CL: StaticCodableRuntimeCall>(call: CL,

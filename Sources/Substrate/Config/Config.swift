@@ -27,7 +27,7 @@ public protocol Config {
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
     associatedtype TSystemProperties: SystemProperties
     associatedtype TRuntimeVersion: RuntimeVersion
-    associatedtype TTransactionValidityError: Decodable
+    associatedtype TTransactionValidityError: Decodable & Error
     associatedtype TStorageChangeSet: SomeStorageChangeSet
    
     associatedtype TMetadataAtVersionRuntimeCall: SomeMetadataAtVersionRuntimeCall

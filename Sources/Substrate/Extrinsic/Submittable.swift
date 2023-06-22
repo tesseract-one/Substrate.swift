@@ -35,7 +35,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     public func dryRun(account: any PublicKey,
                        at block: S.RC.TBlock.THeader.THasher.THash? = nil,
                        overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
-    ) async throws -> RpcResult<RpcResult<(), S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
+    ) async throws -> Result<Void, Either<S.RC.TDispatchError, S.RC.TTransactionValidityError>> {
         let signed = try await fakeSign(account: account, overrides: overrides)
         return try await signed.dryRun(at: block)
     }
@@ -167,7 +167,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra, S.CL: Su
 extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
     public func dryRun(
         at block: S.RC.TBlock.THeader.THasher.THash? = nil
-    ) async throws -> RpcResult<RpcResult<(), S.RC.TDispatchError>, S.RC.TTransactionValidityError> {
+    ) async throws -> Result<Void, Either<S.RC.TDispatchError, S.RC.TTransactionValidityError>> {
         guard try await substrate.client.hasDryRun else {
             throw SubmittableError.dryRunIsNotSupported
         }

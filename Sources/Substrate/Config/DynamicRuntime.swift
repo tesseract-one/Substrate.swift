@@ -206,3 +206,6 @@ public extension DynamicRuntime {
         public static let name = "System"
     }
 }
+
+// Should be removed
+extension SerializableValue: Error {}
