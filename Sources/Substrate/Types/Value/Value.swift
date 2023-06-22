@@ -348,7 +348,7 @@ extension Value.Def: CustomStringConvertible {
         case .map(let fields):
             return "{\(fields.map{"\($0.key): \($0.value)"}.joined(separator: ", "))}"
         case .sequence(let values):
-            return values.count == 0 ? "nil" : values.description
+            return values.count == 0 ? "()" : values.description
         case .bitSequence(let bs): return bs.description
         case .primitive(let prim): return prim.description
         case .variant(let v): return v.description
@@ -360,7 +360,7 @@ extension Value.Variant: CustomStringConvertible {
     public var description: String {
         switch self {
         case .sequence(name: let name, values: let vals):
-            return "\(name)\(vals)"
+            return "\(name)\(vals.count == 0 ? "" : vals.description)"
         case .map(name: let name, fields: let fields):
             return "\(name){\(fields.map{"\($0.key): \($0.value)"}.joined(separator: ", "))}"
         }

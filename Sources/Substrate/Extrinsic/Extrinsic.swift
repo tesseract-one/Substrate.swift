@@ -9,21 +9,26 @@ import Foundation
 import ScaleCodec
 import JsonRPC
 
-public struct Extrinsic<C: Call, Extra>: CustomStringConvertible {
+public struct Extrinsic<C: Call, Extra: ExtrinsicExtra>: CustomStringConvertible {
     public let call: C
     public let extra: Extra
-    public let isSigned: Bool
     
     @inlinable
-    public init(call: C, extra: Extra, signed: Bool) {
+    public var isSigned: Bool { extra.isSigned }
+    
+    @inlinable
+    public init(call: C, extra: Extra) {
         self.call = call
         self.extra = extra
-        self.isSigned = signed
     }
     
     public var description: String {
         "\(isSigned ? "SignedExtrinsic" : "UnsignedExtrinsic")(call: \(call), extra: \(extra))"
     }
+}
+
+public protocol ExtrinsicExtra {
+    var isSigned: Bool { get }
 }
 
 public struct ExtrinsicSignPayload<C: Call, Extra>: CustomStringConvertible {
@@ -41,27 +46,20 @@ public struct ExtrinsicSignPayload<C: Call, Extra>: CustomStringConvertible {
     }
 }
 
-public enum AnyExtrinsicExtra<Signed, Unsigned>: CustomStringConvertible {
-    case unsigned(Unsigned)
-    case signed(Signed)
-    
-    var signed: Signed? {
+extension Nothing: ExtrinsicExtra {
+    public var isSigned: Bool { false }
+}
+
+extension Either: ExtrinsicExtra where Left: ExtrinsicExtra, Right: ExtrinsicExtra {
+    public var isSigned: Bool {
         switch self {
-        case .signed(let extra): return extra
-        default: return nil
-        }
-    }
-    
-    public var description: String {
-        switch self {
-        case .signed(let extra): return "\(extra)"
-        case .unsigned(let extra): return "\(extra)"
+        case .left(let l): return l.isSigned
+        case .right(let r): return r.isSigned
         }
     }
 }
 
-public typealias AnyExtrinsic<C: Call, M: ExtrinsicManager> =
-    Extrinsic<C, AnyExtrinsicExtra<M.TSignedExtra, M.TUnsignedExtra>>
+public typealias AnyExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, Either<M.TUnsignedExtra, M.TSignedExtra>>
 
 public protocol OpaqueExtrinsic<TManager>: Decodable {
     associatedtype TManager: ExtrinsicManager
@@ -90,9 +88,9 @@ public protocol ExtrinsicManager<RT> {
     associatedtype RT: Config
     associatedtype TUnsignedParams
     associatedtype TSigningParams
-    associatedtype TUnsignedExtra
+    associatedtype TUnsignedExtra: ExtrinsicExtra
     associatedtype TSigningExtra
-    associatedtype TSignedExtra
+    associatedtype TSignedExtra: ExtrinsicExtra
     
     var version: UInt8 { get }
     

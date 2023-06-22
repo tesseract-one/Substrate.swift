@@ -38,7 +38,7 @@ final class SubstrateTests: XCTestCase {
             let substrate = try await Substrate(rpc: self.client, config: DynamicRuntime())
             let block = try await substrate.client.block(config: substrate.runtime.config)
             XCTAssertNotNil(block)
-            print("Block: \(block!)")
+            let _ = try block!.block.parseExtrinsics()
         }
     }
     

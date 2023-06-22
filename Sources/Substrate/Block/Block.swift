@@ -21,7 +21,7 @@ public protocol SomeBlock: Decodable {
 public extension SomeBlock {
     var hash: THeader.THasher.THash { header.hash }
     
-    func anyExtrinsics() throws -> [AnyExtrinsic<AnyCall<RuntimeTypeId>, TExtrinsic.TManager>] {
+    func parseExtrinsics() throws -> [AnyExtrinsic<AnyCall<RuntimeTypeId>, TExtrinsic.TManager>] {
         try extrinsics.map { try $0.decode() }
     }
 }

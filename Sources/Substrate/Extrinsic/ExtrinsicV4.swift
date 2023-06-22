@@ -8,13 +8,31 @@
 import Foundation
 import ScaleCodec
 
+public struct ExtrinsicV4Extra<Addr, Sig, Extra>: ExtrinsicExtra, CustomStringConvertible {
+    public var isSigned: Bool { true }
+    
+    public let address: Addr
+    public let signature: Sig
+    public let extra: Extra
+    
+    public init(address: Addr, signature: Sig, extra: Extra) {
+        self.address = address
+        self.signature = signature
+        self.extra = extra
+    }
+    
+    public var description: String {
+        "{\"address\": \(address), \"signature\": \(signature), \"extra\": \(extra)}"
+    }
+}
+
 public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: ExtrinsicManager {
     public typealias RT = RC
     public typealias TUnsignedParams = Void
     public typealias TSigningParams = SE.TSigningParams
-    public typealias TUnsignedExtra = Void
+    public typealias TUnsignedExtra = Nothing
     public typealias TSigningExtra = (extra: SE.TExtra, additional: SE.TAdditionalSigned)
-    public typealias TSignedExtra = (address: RT.TAddress, signature: RT.TSignature, extra: SE.TExtra)
+    public typealias TSignedExtra = ExtrinsicV4Extra<RC.TAddress, RC.TSignature, SE.TExtra>
     
     private var extensions: SE
     private var runtime: (any Runtime)!
@@ -24,7 +42,7 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
     }
     
     public func unsigned<C: Call>(call: C, params: TUnsignedParams) async throws -> Extrinsic<C, TUnsignedExtra> {
-        Extrinsic(call: call, extra: (), signed: false)
+        Extrinsic(call: call, extra: nil)
     }
     
     public func encode<C: Call>(unsigned extrinsic: Extrinsic<C, TUnsignedExtra>, in encoder: ScaleEncoder) throws {
@@ -68,7 +86,8 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
     public func signed<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
                                 address: RT.TAddress,
                                 signature: RT.TSignature) throws -> Extrinsic<C, TSignedExtra> {
-        Extrinsic(call: payload.call, extra: (address, signature, payload.extra.extra), signed: true)
+        Extrinsic(call: payload.call,
+                  extra: ExtrinsicV4Extra(address: address, signature: signature, extra: payload.extra.extra))
     }
     
     public func encode<C: Call>(signed extrinsic: Extrinsic<C, TSignedExtra>, in encoder: ScaleEncoder) throws {
@@ -83,7 +102,7 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
     
     public func decode<C: Call & ScaleRuntimeDecodable>(
         from decoder: ScaleDecoder
-    ) throws -> Extrinsic<C, AnyExtrinsicExtra<TSignedExtra, TUnsignedExtra>> {
+    ) throws -> Extrinsic<C, Either<TUnsignedExtra, TSignedExtra>> {
         let decoder = try runtime.decoder(with: decoder.decode(Data.self))
         var version = try decoder.decode(UInt8.self)
         let isSigned = version & 0b1000_0000 > 0
@@ -97,10 +116,10 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
             let signature = try RC.TSignature(from: decoder, runtime: runtime)
             let extra = try extensions.extra(from: decoder)
             return Extrinsic(call: try C(from: decoder, runtime: runtime),
-                             extra: .signed((address, signature, extra)), signed: true)
+                             extra: .right(ExtrinsicV4Extra(address: address, signature: signature, extra: extra)))
         } else {
             return Extrinsic(call: try C(from: decoder, runtime: runtime),
-                             extra: .unsigned(()), signed: false)
+                             extra: .left(nil))
         }
     }
     

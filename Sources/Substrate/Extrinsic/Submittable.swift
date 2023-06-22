@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct Submittable<S: SomeSubstrate, C: Call, E> {
+public struct Submittable<S: SomeSubstrate, C: Call, E: ExtrinsicExtra> {
     public let extrinsic: Extrinsic<C, E>
     public let substrate: S
     

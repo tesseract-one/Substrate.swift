@@ -124,7 +124,7 @@ extension RpcClient: Client {
     ) async throws -> RpcResult<RpcResult<(), C.TDispatchError>, C.TTransactionValidityError> {
         let encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
-        let result: RpcResult<RpcResult<Nil, C.TDispatchError>, C.TTransactionValidityError> =
+        let result: RpcResult<RpcResult<Nothing, C.TDispatchError>, C.TTransactionValidityError> =
             try await call(method: "system_dryRun", params: Params(encoder.output, hash))
         if let value = result.value {
             if value.isOk {
