@@ -10,7 +10,6 @@ import ScaleCodec
 
 public protocol RuntimeMetadata {
     var version: UInt8 { get }
-    var types: [RuntimeTypeInfo] { get }
     
     func asMetadata() throws -> Metadata
     
@@ -18,7 +17,6 @@ public protocol RuntimeMetadata {
 }
 
 public protocol Metadata {
-    var runtime: RuntimeMetadata { get }
     var extrinsic: ExtrinsicMetadata { get }
     var pallets: [String] { get }
     var apis: [String] { get }

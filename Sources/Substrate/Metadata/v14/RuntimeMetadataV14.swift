@@ -151,14 +151,14 @@ public struct RuntimeExtrinsicSignedExtensionV14: ScaleCodable {
     }
 }
 
-public class RuntimeMetadataV14: ScaleCodable, RuntimeMetadata {
+public struct RuntimeMetadataV14: ScaleCodable, RuntimeMetadata {
     public var version: UInt8 { 14 }
     public let types: [RuntimeTypeInfo]
     public let pallets: [RuntimePalletMetadataV14]
     public let extrinsic: RuntimeExtrinsicMetadataV14
     public let runtimeType: RuntimeTypeId
     
-    required public init(from decoder: ScaleDecoder) throws {
+    public init(from decoder: ScaleDecoder) throws {
         types = try decoder.decode()
         pallets = try decoder.decode()
         extrinsic = try decoder.decode()
@@ -174,5 +174,5 @@ public class RuntimeMetadataV14: ScaleCodable, RuntimeMetadata {
         try MetadataV14(runtime: self)
     }
     
-    public class var versions: Set<UInt32> { [14] }
+    public static var versions: Set<UInt32> { [14] }
 }

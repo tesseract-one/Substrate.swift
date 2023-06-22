@@ -9,7 +9,6 @@ import Foundation
 
 
 public class MetadataV14: Metadata {
-    public let runtime: RuntimeMetadata
     public let extrinsic: ExtrinsicMetadata
     public var pallets: [String] { Array(palletsByName.keys) }
     public var apis: [String] { [] }
@@ -23,7 +22,6 @@ public class MetadataV14: Metadata {
         let types = Dictionary<RuntimeTypeId, RuntimeType>(
             uniqueKeysWithValues: runtime.types.map { ($0.id, $0.type) }
         )
-        self.runtime = runtime
         self.types = types
         let byPathPairs = runtime.types.compactMap {
             $0.type.path.count > 0 ? ($0.type.path.joined(separator: "."), $0) : nil
@@ -31,8 +29,8 @@ public class MetadataV14: Metadata {
         self.typesByPath = Dictionary(byPathPairs) { (l, r) in l }
         self.extrinsic = ExtrinsicMetadataV14(runtime: runtime.extrinsic, types: types)
         let pallets = try runtime.pallets.map { try PalletMetadataV14(runtime: $0, types: types) }
-        self.palletsByName = Dictionary(uniqueKeysWithValues: pallets.map { ($0.runtime.name, $0) })
-        self.palletsByIndex = Dictionary(uniqueKeysWithValues: pallets.map { ($0.runtime.index, $0) })
+        self.palletsByName = Dictionary(uniqueKeysWithValues: pallets.map { ($0.name, $0) })
+        self.palletsByIndex = Dictionary(uniqueKeysWithValues: pallets.map { ($0.index, $0) })
     }
     
     @inlinable
@@ -54,10 +52,8 @@ public class MetadataV14: Metadata {
 }
 
 public class PalletMetadataV14: PalletMetadata {
-    public let runtime: RuntimePalletMetadataV14
-    
-    @inlinable public var name: String { runtime.name }
-    @inlinable public var index: UInt8 { runtime.index }
+    public let name: String
+    public let index: UInt8
     public let call: RuntimeTypeInfo?
     public let event: RuntimeTypeInfo?
     
@@ -78,7 +74,8 @@ public class PalletMetadataV14: PalletMetadata {
     }
     
     public init(runtime: RuntimePalletMetadataV14, types: [RuntimeTypeId: RuntimeType]) throws {
-        self.runtime = runtime
+        self.name = runtime.name
+        self.index = runtime.index
         self.call = runtime.call.map { RuntimeTypeInfo(id: $0, type: types[$0]!) }
         self.event = runtime.event.map { RuntimeTypeInfo(id: $0, type: types[$0]!) }
         let calls = self.call.flatMap { Self.variants(for: $0.type.definition) }
