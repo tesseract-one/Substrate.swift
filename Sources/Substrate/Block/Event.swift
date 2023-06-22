@@ -89,7 +89,7 @@ public extension StaticEvent {
     }
 }
 
-public struct AnyEvent: Event {
+public struct AnyEvent: Event, CustomStringConvertible {
     public let pallet: String
     public let name: String
     
@@ -136,6 +136,10 @@ public struct AnyEvent: Event {
                                                      expected: (name, pallet))
         }
         return try E(params: params, info: info)
+    }
+    
+    public var description: String {
+        "\(pallet).\(name)(\(params))"
     }
 }
 

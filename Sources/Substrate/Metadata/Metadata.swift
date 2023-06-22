@@ -10,6 +10,8 @@ import ScaleCodec
 
 public protocol RuntimeMetadata {
     var version: UInt8 { get }
+    var types: [RuntimeTypeInfo] { get }
+    
     func asMetadata() throws -> Metadata
     
     static var versions: Set<UInt32> { get }

@@ -337,9 +337,7 @@ extension Value.Def: Hashable where C: Hashable {}
 extension Value.Variant: Hashable where C: Hashable {}
 
 extension Value: CustomStringConvertible {
-    public var description: String {
-        C.self == Void.self ? value.description : "\(value)\(context)"
-    }
+    public var description: String { value.description }
 }
 
 extension Value.Def: CustomStringConvertible {

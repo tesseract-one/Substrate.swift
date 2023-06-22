@@ -39,9 +39,7 @@ public struct RuntimeTypeId: ScaleCodable, Hashable, Equatable,
         try encoder.encode(id, .compact)
     }
     
-    public var description: String {
-        "#\(id)"
-    }
+    public var description: String { String(id) }
 }
 
 public struct RuntimeTypeInfo: CustomStringConvertible {
@@ -54,7 +52,7 @@ public struct RuntimeTypeInfo: CustomStringConvertible {
     }
     
     public var description: String {
-        "\(type)\(id)"
+        "{id: \(id), type: \(type)}"
     }
 }
 
@@ -88,8 +86,14 @@ public struct RuntimeType: CustomStringConvertible {
     }
     
     public var description: String {
-        let params = parameters.isEmpty ? "" : "<\(parameters.map{$0.description}.joined(separator: ", "))>"
-        return "\(pathBasedName ?? "_")\(params){\(definition)}"
+        if let name = pathBasedName {
+            if parameters.isEmpty {
+                return "\(name)(\(definition))"
+            }
+            let params = parameters.map{$0.description}.joined(separator: ", ")
+            return "\(name)<\(params)>(\(definition))"
+        }
+        return definition.description
     }
 }
 
@@ -123,7 +127,7 @@ public struct RuntimeTypeParameter: CustomStringConvertible {
     }
     
     public var description: String {
-        "\(name)[\(type.map{$0.description} ?? "-")]"
+        type == nil ? name : "\(name)#\(type!)"
     }
 }
 
@@ -147,6 +151,22 @@ public enum RuntimeTypeDefinition {
     case primitive(is: RuntimeTypePrimitive)
     case compact(of: RuntimeTypeId)
     case bitsequence(store: RuntimeTypeId, order: RuntimeTypeId)
+}
+
+extension RuntimeTypeDefinition: CustomStringConvertible {
+    public var description: String {
+        switch self {
+        case .composite(fields: let fields): return fields.description
+        case .variant(variants: let vars): return vars.description
+        case .sequence(of: let id): return "Array<#\(id)>"
+        case .array(count: let cnt, of: let id): return "Array<#\(id)>[\(cnt)]"
+        case .tuple(components: let fields):
+            return "(\(fields.map{"#\($0)"}.joined(separator: ", ")))"
+        case .primitive(is: let pr): return pr.description
+        case .compact(of: let id): return "Compact<#\(id)>"
+        case .bitsequence(store: let sid, order: let ord): return "BitSeq<#\(sid),#\(ord)>"
+        }
+    }
 }
 
 extension RuntimeTypeDefinition: ScaleCodable {
@@ -181,7 +201,7 @@ extension RuntimeTypeDefinition: ScaleCodable {
     }
 }
 
-public struct RuntimeTypeField {
+public struct RuntimeTypeField: CustomStringConvertible {
     public let name: String?
     public let type: RuntimeTypeId
     public let typeName: String?
@@ -192,6 +212,14 @@ public struct RuntimeTypeField {
         self.type = type
         self.typeName = typeName
         self.docs = docs
+    }
+    
+    public var description: String {
+        let typ = typeName == nil ? "#\(type)" : "(\(typeName!)#\(type))"
+        if let name = name {
+            return "\(name): \(typ)"
+        }
+        return typ
     }
 }
 
@@ -209,7 +237,7 @@ extension RuntimeTypeField: ScaleCodable {
     }
 }
 
-public struct RuntimeTypeVariantItem {
+public struct RuntimeTypeVariantItem: CustomStringConvertible {
     public let name: String
     public let fields: [RuntimeTypeField]
     public let index: UInt8
@@ -225,6 +253,13 @@ public struct RuntimeTypeVariantItem {
         self.fields = fields
         self.index = index
         self.docs = docs
+    }
+    
+    public var description: String {
+        if fields.count == 0 {
+            return "\(name)[\(index)]"
+        }
+        return "\(name)[\(index)](\(fields))"
     }
 }
 
@@ -242,7 +277,7 @@ extension RuntimeTypeVariantItem: ScaleCodable {
     }
 }
 
-public enum RuntimeTypePrimitive: String, CaseIterable, ScaleCodable {
+public enum RuntimeTypePrimitive: String, CaseIterable, ScaleCodable, CustomStringConvertible {
     case bool
     case char
     case str
@@ -260,4 +295,5 @@ public enum RuntimeTypePrimitive: String, CaseIterable, ScaleCodable {
     case i256
     
     public var name: String { rawValue }
+    public var description: String { name }
 }

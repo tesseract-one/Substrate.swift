@@ -22,7 +22,7 @@ public struct ExtrinsicV4Extra<Addr, Sig, Extra>: ExtrinsicExtra, CustomStringCo
     }
     
     public var description: String {
-        "{\"address\": \(address), \"signature\": \(signature), \"extra\": \(extra)}"
+        "{address: \(address), signature: \(signature), extra: \(extra)}"
     }
 }
 

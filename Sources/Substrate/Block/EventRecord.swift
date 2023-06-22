@@ -8,13 +8,21 @@
 import Foundation
 import ScaleCodec
 
-public enum EventPhase: Equatable, Hashable {
+public enum EventPhase: Equatable, Hashable, CustomStringConvertible {
     // Applying an extrinsic.
     case applyExtrinsic(UInt32)
     // Finalizing the block.
     case finalization
     // Initializing the block.
     case initialization
+    
+    public var description: String {
+        switch self {
+        case .applyExtrinsic(let index): return "apply #\(index)"
+        case .finalization: return "finalization"
+        case .initialization: return "initialization"
+        }
+    }
 }
 
 public protocol SomeEventRecord: ScaleRuntimeDecodable {
@@ -24,7 +32,7 @@ public protocol SomeEventRecord: ScaleRuntimeDecodable {
     func typed<E: StaticEvent>(_ type: E.Type) throws -> E
 }
 
-public struct EventRecord<H: Hash>: SomeEventRecord {
+public struct EventRecord<H: Hash>: SomeEventRecord, CustomStringConvertible {
     public let phase: EventPhase
     public let event: AnyEvent
     public let topics: [H]
@@ -44,6 +52,10 @@ public struct EventRecord<H: Hash>: SomeEventRecord {
     
     public func typed<E: StaticEvent>(_ type: E.Type) throws -> E {
         try event.typed(type)
+    }
+    
+    public var description: String {
+        "{phase: \(phase), event: \(event), topics: \(topics)}"
     }
 }
 

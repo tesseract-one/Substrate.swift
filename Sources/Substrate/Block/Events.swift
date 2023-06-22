@@ -152,7 +152,7 @@ public extension SomeBlockEvents {
     }
 }
 
-public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents {
+public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringConvertible {
     public typealias ER = ER
     
     public let events: [ER]
@@ -168,6 +168,10 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents {
     
     public func events(extrinsic index: UInt32) -> [ER] {
         events.filter { $0.extrinsicIndex.map{$0 == index} ?? false }
+    }
+    
+    public var description: String {
+        events.description
     }
     
     public static var `default`: BlockEvents<ER> { Self(events: []) }
