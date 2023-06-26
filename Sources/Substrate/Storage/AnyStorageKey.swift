@@ -47,14 +47,14 @@ public struct AnyStorageKey: IterableStorageKey {
         var components = Array<Component>()
         components.reserveCapacity(params.count)
         for (key, val) in zip(keys, params) {
-            let encoder = runtime.encoder()
-            try val.encode(in: encoder, as: key.1, runtime: runtime)
+            var encoder = runtime.encoder()
+            try val.encode(in: &encoder, as: key.1, runtime: runtime)
             components.append(.full(val, key.0.hasher.hash(data: encoder.output)))
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
     }
     
-    public init(from decoder: ScaleDecoder, base: (name: String, pallet: String), runtime: any Runtime) throws {
+    public init<D: Decoder>(from decoder: inout D, base: (name: String, pallet: String), runtime: any Runtime) throws {
         guard let (keys, _, _) = runtime.resolve(storage: base.name, pallet: base.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
@@ -66,17 +66,17 @@ public struct AnyStorageKey: IterableStorageKey {
         let components: [Component] = try keys.map { (hash, tId) in
             let raw: Data = try decoder.decode(.fixed(UInt(hash.hasher.hashPartByteLength)))
             return hash.hasher.isConcat
-                ? try .full(runtime.decode(from: decoder, type: tId).removingContext(), raw)
+                ? try .full(runtime.decode(from: &decoder, type: tId).removingContext(), raw)
                 : .hash(raw)
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
     }
     
-    public func decode(valueFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TValue {
+    public func decode<D: Decoder>(valueFrom decoder: inout D, runtime: Runtime) throws -> TValue {
         guard let (_, value, _) = runtime.resolve(storage: self.name, pallet: self.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
         }
-        return try TValue(from: decoder, as: value, runtime: runtime)
+        return try TValue(from: &decoder, as: value, runtime: runtime)
     }
     
     public static func defaultValue(
@@ -86,7 +86,8 @@ public struct AnyStorageKey: IterableStorageKey {
         guard let (_, vType, data) = runtime.resolve(storage: base.name, pallet: base.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
-        return try TValue(from: runtime.decoder(with: data), as: vType, runtime: runtime)
+        var decoder = runtime.decoder(with: data)
+        return try TValue(from: &decoder, as: vType, runtime: runtime)
     }
     
     public static func validate(base: (name: String, pallet: String), runtime: Runtime) throws {
@@ -139,8 +140,8 @@ public extension AnyStorageKey {
             try TIterator(name: name, pallet: pallet, path: []).next(param: param, runtime: runtime)
         }
         
-        public func decode(keyFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TKey {
-            try TKey(from: decoder, base: (name, pallet), runtime: runtime)
+        public func decode<D: Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey {
+            try TKey(from: &decoder, base: (name, pallet), runtime: runtime)
         }
     }
 }
@@ -176,8 +177,8 @@ public extension AnyStorageKey {
             var components = Array<Component>()
             components.reserveCapacity(params.count)
             for (key, val) in zip(keys, params) {
-                let encoder = runtime.encoder()
-                try val.encode(in: encoder, as: key.1, runtime: runtime)
+                var encoder = runtime.encoder()
+                try val.encode(in: &encoder, as: key.1, runtime: runtime)
                 components.append(.full(val, key.0.hasher.hash(data: encoder.output)))
             }
             self.init(name: name, pallet: pallet, path: components)
@@ -192,14 +193,14 @@ public extension AnyStorageKey {
                                                                      expected: keys.count - 1)
             }
             let key = keys[path.count]
-            let encoder = runtime.encoder()
-            try param.encode(in: encoder, as: key.1, runtime: runtime)
+            var encoder = runtime.encoder()
+            try param.encode(in: &encoder, as: key.1, runtime: runtime)
             let newPath = path + [.full(param, key.0.hasher.hash(data: encoder.output))]
             return Self(name: name, pallet: pallet, path: newPath)
         }
         
-        public func decode(keyFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TKey {
-            try TKey(from: decoder, base: (name, pallet), runtime: runtime)
+        public func decode<D: Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey {
+            try TKey(from: &decoder, base: (name, pallet), runtime: runtime)
         }
     }
 }

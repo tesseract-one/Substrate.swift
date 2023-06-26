@@ -25,17 +25,20 @@ public enum EventPhase: Equatable, Hashable, CustomStringConvertible {
     }
 }
 
-public protocol SomeEventRecord: ScaleRuntimeDecodable {
+public protocol SomeEventRecord: RuntimeDecodable {
     var extrinsicIndex: UInt32? { get }
-    func header() -> (name: String, pallet: String)
-    func any() throws -> AnyEvent
+    var header: (name: String, pallet: String) { get }
+    var any: AnyEvent { get throws }
     func typed<E: StaticEvent>(_ type: E.Type) throws -> E
 }
 
 public struct EventRecord<H: Hash>: SomeEventRecord, CustomStringConvertible {
     public let phase: EventPhase
-    public let event: AnyEvent
+    public let header: (name: String, pallet: String)
+    public let data: Data
     public let topics: [H]
+    
+    private let _runtime: any Runtime
     
     public var extrinsicIndex: UInt32? {
         switch phase {
@@ -44,23 +47,23 @@ public struct EventRecord<H: Hash>: SomeEventRecord, CustomStringConvertible {
         }
     }
     
-    public func header() -> (name: String, pallet: String) {
-        (event.name, event.pallet)
-    }
-    
-    public func any() throws -> AnyEvent { event }
+    public var any: AnyEvent { get throws {
+        var decoder = _runtime.decoder(with: data)
+        return try AnyEvent(from: &decoder, runtime: _runtime)
+    } }
     
     public func typed<E: StaticEvent>(_ type: E.Type) throws -> E {
-        try event.typed(type)
+        var decoder = _runtime.decoder(with: data)
+        return try E(from: &decoder, runtime: _runtime)
     }
     
     public var description: String {
-        "{phase: \(phase), event: \(event), topics: \(topics)}"
+        "{phase: \(phase), event: \(header.pallet).\(header.name), topics: \(topics)}"
     }
 }
 
-extension EventPhase: ScaleDecodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension EventPhase: ScaleCodec.Decodable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         let opt = try decoder.decode(.enumCaseId)
         switch opt {
         case 0: self = try .applyExtrinsic(decoder.decode())
@@ -71,11 +74,14 @@ extension EventPhase: ScaleDecodable {
     }
 }
 
-extension EventRecord: ScaleRuntimeDecodable {
-    public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
+extension EventRecord: RuntimeDecodable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
+        self._runtime = runtime
         self.phase = try decoder.decode()
-        self.event = try AnyEvent(from: decoder, runtime: runtime)
-        self.topics = try Array(from: decoder) { decoder in
+        let info = try AnyEvent.fetchEventData(from: &decoder, runtime: runtime)
+        self.header = (name: info.name, pallet: info.pallet)
+        self.data = info.data
+        self.topics = try Array(from: &decoder) { decoder in
             try H(decoder.decode(.fixed(UInt(runtime.hasher.hashPartByteLength))))
         }
     }

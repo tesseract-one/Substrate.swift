@@ -10,7 +10,7 @@ import ScaleCodec
 
 public protocol Config {
     associatedtype THasher: FixedHasher
-    associatedtype TIndex: UnsignedInteger & DataConvertible & CompactCodable & Codable & ScaleRuntimeCodable
+    associatedtype TIndex: UnsignedInteger & DataConvertible & CompactCodable & Swift.Codable & RuntimeCodable
     associatedtype TAccountId: AccountId
     associatedtype TAddress: Address where TAddress.TAccountId == TAccountId
     associatedtype TSignature: Signature
@@ -23,8 +23,8 @@ public protocol Config {
     associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent<TDispatchError>
     associatedtype TDispatchError: ApiError
     associatedtype TTransactionValidityError: ApiError
-    associatedtype TDispatchInfo: ScaleRuntimeDynamicDecodable
-    associatedtype TFeeDetails: ScaleRuntimeDynamicDecodable
+    associatedtype TDispatchInfo: RuntimeDynamicDecodable
+    associatedtype TFeeDetails: RuntimeDynamicDecodable
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
     associatedtype TSystemProperties: SystemProperties
     associatedtype TRuntimeVersion: RuntimeVersion
@@ -39,25 +39,28 @@ public protocol Config {
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
     
     func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
+    func hasher(metadata: any Metadata) throws -> THasher
+    func extrinsicManager() throws -> TExtrinsicManager
+    func encoder() -> ScaleCodec.Encoder
+    func decoder(data: Data) -> ScaleCodec.Decoder
+    
     func blockHeaderType(metadata: any Metadata) throws -> RuntimeTypeInfo
-    func extrinsicTypes(
-        metadata: Metadata
-    ) throws -> (addr: RuntimeTypeInfo, signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
     func dispatchInfoType(metadata: any Metadata) throws -> RuntimeTypeInfo
     func feeDetailsType(metadata: any Metadata) throws -> RuntimeTypeInfo
     func dispatchErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo
     func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo
-    func hasher(metadata: any Metadata) throws -> THasher
-    func extrinsicManager() throws -> TExtrinsicManager
-    func encoder() -> ScaleEncoder
-    func decoder(data: Data) -> ScaleDecoder
+    
+    // Can be safely removed after removing metadata v14 (v15 has them)
+    func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeTypeInfo, addr: RuntimeTypeInfo,
+                                                           signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
+    func eventType(metadata: any Metadata) throws -> RuntimeTypeInfo
 }
 
 public extension Config {
     @inlinable
-    func encoder() -> ScaleEncoder { SCALE.default.encoder() }
+    func encoder() -> ScaleCodec.Encoder { ScaleCodec.encoder() }
     @inlinable
-    func decoder(data: Data) -> ScaleDecoder { SCALE.default.decoder(data: data) }
+    func decoder(data: Data) -> ScaleCodec.Decoder { ScaleCodec.decoder(from: data) }
 }
 
 public extension Config where THasher: StaticHasher {

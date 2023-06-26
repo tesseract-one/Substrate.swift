@@ -50,17 +50,18 @@ public class ConstantsApiRegistry<S: SomeSubstrate> {
 }
 
 public extension ConstantsApiRegistry {
-    func get<V: ScaleRuntimeDynamicDecodable>(name: String, pallet: String) throws -> V {
+    func get<V: RuntimeDynamicDecodable>(name: String, pallet: String) throws -> V {
         guard let ct = substrate.runtime.resolve(constant: name, pallet: pallet) else {
             throw ConstantsApiError.constantNotFound(name: name, pallet: pallet)
         }
-        return try V(from: substrate.runtime.decoder(with: ct.value),
+        var decoder = substrate.runtime.decoder(with: ct.value)
+        return try V(from: &decoder,
                      as: ct.type.id,
                      runtime: substrate.runtime)
     }
     
     @inlinable
-    func get<V: ScaleRuntimeDynamicDecodable>(_ type: V.Type, name: String, pallet: String) throws -> V {
+    func get<V: RuntimeDynamicDecodable>(_ type: V.Type, name: String, pallet: String) throws -> V {
         try get(name: name, pallet: pallet)
     }
     
@@ -68,8 +69,8 @@ public extension ConstantsApiRegistry {
         guard let ct = substrate.runtime.resolve(constant: type.name, pallet: type.pallet) else {
             throw ConstantsApiError.constantNotFound(name: type.name, pallet: type.pallet)
         }
-        return try type.decode(valueFrom: substrate.runtime.decoder(with: ct.value),
-                               runtime: substrate.runtime)
+        var decoder = substrate.runtime.decoder(with: ct.value)
+        return try type.decode(valueFrom: &decoder, runtime: substrate.runtime)
     }
 }
 
@@ -79,11 +80,11 @@ public protocol StaticConstant {
     static var name: String { get }
     static var pallet: String { get }
     
-    static func decode(valueFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TValue
+    static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: any Runtime) throws -> TValue
 }
 
-public extension StaticConstant where TValue: ScaleRuntimeDecodable {
-    static func decode(valueFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TValue {
-        try TValue(from: decoder, runtime: runtime)
+public extension StaticConstant where TValue: RuntimeDecodable {
+    static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: any Runtime) throws -> TValue {
+        try TValue(from: &decoder, runtime: runtime)
     }
 }

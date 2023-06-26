@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol PublicKey: ScaleRuntimeCodable, Hashable, Equatable {
+public protocol PublicKey: RuntimeCodable, Hashable, Equatable {
     var raw: Data { get }
     var algorithm: CryptoTypeId { get }
     
@@ -52,7 +52,7 @@ public extension PublicKey {
     }
 }
 
-public struct Ed25519PublicKey: PublicKey, ScaleFixedData, Default {
+public struct Ed25519PublicKey: PublicKey, FixedDataCodable, Default {
     public let raw: Data
     
     public init(_ raw: Data) throws {
@@ -73,7 +73,7 @@ public struct Ed25519PublicKey: PublicKey, ScaleFixedData, Default {
     public static var `default`: Self = try! Self(Data(repeating: 0, count: Self.fixedBytesCount))
 }
 
-public struct Sr25519PublicKey: PublicKey, ScaleFixedData, Default {
+public struct Sr25519PublicKey: PublicKey, FixedDataCodable, Default {
     public let raw: Data
     
     public init(_ raw: Data) throws {
@@ -94,7 +94,7 @@ public struct Sr25519PublicKey: PublicKey, ScaleFixedData, Default {
     public static var `default`: Self = try! Self(Data(repeating: 0, count: Self.fixedBytesCount))
 }
 
-public struct EcdsaPublicKey: PublicKey, ScaleFixedData, Default {
+public struct EcdsaPublicKey: PublicKey, FixedDataCodable, Default {
     public let raw: Data
     
     public init(_ raw: Data) throws {

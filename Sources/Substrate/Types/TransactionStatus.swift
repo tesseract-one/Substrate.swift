@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeTransactionStatus<BlockHash>: Decodable {
+public protocol SomeTransactionStatus<BlockHash>: Swift.Decodable {
     associatedtype BlockHash: Hash
     
     var isFinalized: Bool { get }
@@ -62,8 +62,8 @@ extension TransactionStatus: SomeTransactionStatus {
     }
 }
 
-extension TransactionStatus: Codable {
-    public init(from decoder: Decoder) throws {
+extension TransactionStatus: Swift.Codable {
+    public init(from decoder: Swift.Decoder) throws {
         let container1 = try decoder.singleValueContainer()
         if let simple = try? container1.decode(String.self) {
             switch simple {
@@ -72,13 +72,15 @@ extension TransactionStatus: Codable {
             case "dropped": self = .dropped
             case "invalid": self = .invalid
             default:
-                throw DecodingError.dataCorruptedError(in: container1, debugDescription: "Unknown case \(simple)")
+                throw Swift.DecodingError.dataCorruptedError(in: container1,
+                                                             debugDescription: "Unknown case \(simple)")
             }
             return
         } else {
             let container2 = try decoder.container(keyedBy: CodableComplexKey<CKeyMarker>.self)
             guard let key = container2.allKeys.first else {
-                throw DecodingError.dataCorruptedError(in: container1, debugDescription: "Empty case object")
+                throw Swift.DecodingError.dataCorruptedError(in: container1,
+                                                             debugDescription: "Empty case object")
             }
             switch key {
             case .broadcast:
@@ -94,12 +96,13 @@ extension TransactionStatus: Codable {
             case .usurped:
                 self = try .usurped(container2.decode(H.self, forKey: key))
             default:
-                throw DecodingError.dataCorruptedError(forKey: key, in: container2, debugDescription: "Unknow enum case")
+                throw Swift.DecodingError.dataCorruptedError(forKey: key, in: container2,
+                                                             debugDescription: "Unknow enum case")
             }
         }
     }
     
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Swift.Encoder) throws {
         switch self {
         case .future:
             var container = encoder.singleValueContainer()
@@ -136,7 +139,7 @@ extension TransactionStatus: Codable {
 }
 
 //extension TransactionStatus: ScaleRuntimeCodable {
-//    public init(from decoder: ScaleDecoder, runtime: any Runtime) throws {
+//    public init(from decoder: ScaleCodec.Decoder, runtime: any Runtime) throws {
 //        let id = try decoder.decode(.enumCaseId)
 //        switch id {
 //        case 0: self = .future
@@ -154,7 +157,7 @@ extension TransactionStatus: Codable {
 //        }
 //    }
 //
-//    public func encode(in encoder: ScaleEncoder) throws {
+//    public func encode(in encoder: ScaleCodec.Encoder) throws {
 //        switch self {
 //        case .future: try encoder.encode(0, .enumCaseId)
 //        case .ready: try encoder.encode(1, .enumCaseId)

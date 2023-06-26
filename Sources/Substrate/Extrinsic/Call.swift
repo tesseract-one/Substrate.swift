@@ -8,24 +8,24 @@
 import Foundation
 import ScaleCodec
 
-public protocol Call: ScaleRuntimeEncodable {
+public protocol Call: RuntimeEncodable {
     var pallet: String { get }
     var name: String { get }
 }
 
-public protocol StaticCall: Call, ScaleRuntimeDecodable {
+public protocol StaticCall: Call, RuntimeDecodable {
     static var pallet: String { get }
     static var name: String { get }
     
-    init(decodingParams decoder: ScaleDecoder, runtime: Runtime) throws
-    func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws
+    init<D: ScaleCodec.Decoder>(decodingParams decoder: inout D, runtime: Runtime) throws
+    func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws
 }
 
 public extension StaticCall {
     var pallet: String { Self.pallet }
     var name: String { Self.name }
     
-    init(from decoder: ScaleDecoder, runtime: Runtime) throws {
+    init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         let modIndex = try decoder.decode(UInt8.self)
         let callIndex = try decoder.decode(UInt8.self)
         guard let info = runtime.resolve(callName: callIndex, pallet: modIndex) else {
@@ -35,15 +35,16 @@ public extension StaticCall {
             throw CallCodingError.foundWrongCall(found: (name: info.name, pallet: info.pallet),
                                                  expected: (name: Self.name, pallet: Self.pallet))
         }
-        try self.init(decodingParams: decoder, runtime: runtime)
+        try self.init(decodingParams: &decoder, runtime: runtime)
     }
     
-    func encode(in encoder: ScaleEncoder, runtime: Runtime) throws {
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
         guard let info = runtime.resolve(callIndex: name, pallet: pallet) else {
             throw CallCodingError.callNotFound(name: name, pallet: pallet)
         }
-        try encodeParams(in: encoder.encode(info.pallet).encode(info.index),
-                         runtime: runtime)
+        try encoder.encode(info.pallet)
+        try encoder.encode(info.index)
+        try encodeParams(in: &encoder, runtime: runtime)
     }
 }
 
@@ -59,15 +60,8 @@ public struct AnyCall<C>: Call {
         self.params = params
     }
     
-    public func encode(in encoder: ScaleEncoder, runtime: Runtime) throws {
-        guard let palletIdx = runtime.resolve(palletIndex: pallet) else {
-            throw CallCodingError.palletNotFound(name: pallet)
-        }
-        guard let type = runtime.resolve(callType: palletIdx) else {
-            throw CallCodingError.noCallsInPallet(pallet: pallet)
-        }
-        try encoder.encode(palletIdx)
-        let variant: Value<C>
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
+        var variant: Value<C>
         switch params.value {
         case .variant(let val):
             guard val.name == self.name else {
@@ -85,7 +79,9 @@ public struct AnyCall<C>: Call {
             variant = Value(value: .variant(.sequence(name: name, values: [params])),
                             context: params.context)
         }
-        try variant.encode(in: encoder, as: type.id, runtime: runtime)
+        try Value(value: .variant(.sequence(name: pallet, values: [variant])),
+                  context: params.context)
+            .encode(in: &encoder, as: runtime.types.call.id, runtime: runtime)
     }
 }
 
@@ -95,16 +91,25 @@ extension AnyCall: CustomStringConvertible {
     }
 }
 
-extension AnyCall: ScaleRuntimeDecodable where C == RuntimeTypeId {
-    public init(from decoder: ScaleDecoder, runtime: Runtime) throws {
-        let palletIdx = try decoder.decode(UInt8.self)
-        guard let pallet = runtime.resolve(palletName: palletIdx) else {
-            throw CallCodingError.palletNotFound(index: palletIdx)
+extension AnyCall: RuntimeDecodable where C == RuntimeTypeId {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
+        var value = try Value(from: &decoder, as: runtime.types.call.id, runtime: runtime)
+        let pallet: String
+        switch value.value {
+        case .variant(.sequence(name: let name, values: let values)):
+            guard values.count == 1 else {
+                throw CallCodingError.tooManyFieldsInVariant(variant: value, expected: 1)
+            }
+            pallet = name
+            value = values.first!
+        case .variant(.map(name: let name, fields: let fields)):
+            guard fields.count == 1 else {
+                throw CallCodingError.tooManyFieldsInVariant(variant: value, expected: 1)
+            }
+            pallet = name
+            value = fields.values.first!
+        default: throw CallCodingError.decodedNonVariantValue(value)
         }
-        guard let type = runtime.resolve(callType: pallet) else {
-            throw CallCodingError.noCallsInPallet(pallet: pallet)
-        }
-        let value = try Value(from: decoder, as: type.id, runtime: runtime)
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
             self.init(name: name,
@@ -114,7 +119,7 @@ extension AnyCall: ScaleRuntimeDecodable where C == RuntimeTypeId {
             self.init(name: name,
                       pallet: pallet,
                       params: Value(value: .map(fields), context: value.context))
-        default: throw CallCodingError.decodedNonVariantValue(value, type.id)
+        default: throw CallCodingError.decodedNonVariantValue(value)
         }
     }
 }
@@ -123,8 +128,6 @@ public enum CallCodingError: Error {
     case callNotFound(index: UInt8, pallet: UInt8)
     case callNotFound(name: String, pallet: String)
     case foundWrongCall(found: (name: String, pallet: String), expected: (name: String, pallet: String))
-    case palletNotFound(name: String)
-    case palletNotFound(index: UInt8)
-    case noCallsInPallet(pallet: String)
-    case decodedNonVariantValue(Value<RuntimeTypeId>, RuntimeTypeId)
+    case tooManyFieldsInVariant(variant: Value<RuntimeTypeId>, expected: Int)
+    case decodedNonVariantValue(Value<RuntimeTypeId>)
 }

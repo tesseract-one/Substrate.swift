@@ -1,5 +1,5 @@
 //
-//  Value+ScaleEncodable.swift
+//  Value+Encodable.swift
 //  
 //
 //  Created by Yehor Popovych on 10.01.2023.
@@ -55,43 +55,41 @@ extension Value {
     }
 }
 
-extension Value: ScaleRuntimeDynamicEncodable {
-    public func encode(in encoder: ScaleEncoder, as type: RuntimeTypeId, runtime: Runtime) throws {
+extension Value: RuntimeDynamicEncodable {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, as type: RuntimeTypeId, runtime: Runtime) throws {
         guard let typeInfo = runtime.resolve(type: type) else {
             throw EncodingError.typeNotFound(type)
         }
         switch typeInfo.definition {
         case .composite(fields: let fields):
-            try _encodeComposite(id: type, fields: fields, runtime: runtime, in: encoder)
+            try _encodeComposite(id: type, fields: fields, runtime: runtime, in: &encoder)
         case .sequence(of: let seqTypeId):
-            try _encodeSequence(id: type, valueType: seqTypeId, runtime: runtime, in: encoder)
+            try _encodeSequence(id: type, valueType: seqTypeId, runtime: runtime, in: &encoder)
         case .array(count: let count, of: let arrTypeId):
-            try _encodeArray(id: type, valueType: arrTypeId, count: count, runtime: runtime, in: encoder)
+            try _encodeArray(id: type, valueType: arrTypeId, count: count, runtime: runtime, in: &encoder)
         case .tuple(components: let fields):
-            try _encodeTuple(id: type, fields: fields, runtime: runtime, in: encoder)
+            try _encodeTuple(id: type, fields: fields, runtime: runtime, in: &encoder)
         case .variant(variants: let variants):
-            try _encodeVariant(id: type, variants: variants, runtime: runtime, in: encoder)
+            try _encodeVariant(id: type, variants: variants, runtime: runtime, in: &encoder)
         case .primitive(is: let primitive):
-            try _encodePrimitive(id: type, type: primitive, runtime: runtime, in: encoder)
+            try _encodePrimitive(id: type, type: primitive, in: &encoder)
         case .compact(of: let type):
-            try _encodeCompact(id: type, type: type, runtime: runtime, in: encoder)
+            try _encodeCompact(id: type, type: type, runtime: runtime, in: &encoder)
         case .bitsequence(store: let store, order: let order):
-            try _encodeBitSequence(id: type, store: store, order: order, runtime: runtime, in: encoder)
+            try _encodeBitSequence(id: type, store: store, order: order, runtime: runtime, in: &encoder)
         }
     }
 }
 
 extension Runtime {
-    @discardableResult
-    public func encode<C>(value: Value<C>, `as` type: RuntimeTypeId, in encoder: ScaleEncoder) throws -> ScaleEncoder {
-        try value.encode(in: encoder, as: type, runtime: self)
-        return encoder
+    public func encode<C, E: ScaleCodec.Encoder>(value: Value<C>, `as` type: RuntimeTypeId, in encoder: inout E) throws {
+        try value.encode(in: &encoder, as: type, runtime: self)
     }
 }
 
 private extension Value {
-    func _encodeComposite(
-        id: RuntimeTypeId, fields: [RuntimeTypeField], runtime: Runtime, in encoder: ScaleEncoder
+    func _encodeComposite<E: ScaleCodec.Encoder>(
+        id: RuntimeTypeId, fields: [RuntimeTypeField], runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
         case .map(let mFields):
@@ -100,9 +98,9 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                try encode(in: encoder, as: fields[0].type, runtime: runtime)
+                try encode(in: &encoder, as: fields[0].type, runtime: runtime)
             } else {
-                try _encodeCompositeFields(id: id, fields: fields, runtime: runtime, in: encoder)
+                try _encodeCompositeFields(id: id, fields: fields, runtime: runtime, in: &encoder)
             }
         case .sequence(let values):
             if fields.count == 1 && values.count != 1 {
@@ -110,9 +108,9 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                try encode(in: encoder, as: fields[0].type, runtime: runtime)
+                try encode(in: &encoder, as: fields[0].type, runtime: runtime)
             } else {
-                try _encodeCompositeFields(id: id, fields: fields, runtime: runtime, in: encoder)
+                try _encodeCompositeFields(id: id, fields: fields, runtime: runtime, in: &encoder)
             }
         default:
             if fields.count == 1 {
@@ -120,20 +118,20 @@ private extension Value {
                 // aiming for has exactly 1 field. Perhaps it's a wrapper type, so let's
                 // aim to encode to the contents of it instead (1 field composites are
                 // transparent anyway in SCALE terms).
-                try encode(in: encoder, as: fields[0].type, runtime: runtime)
+                try encode(in: &encoder, as: fields[0].type, runtime: runtime)
             } else {
                 throw EncodingError.wrongShape(actual: self, expected: id)
             }
         }
     }
     
-    func _encodeSequence(
-        id: RuntimeTypeId, valueType: RuntimeTypeId, runtime: Runtime, in encoder: ScaleEncoder
+    func _encodeSequence<E: ScaleCodec.Encoder>(
+        id: RuntimeTypeId, valueType: RuntimeTypeId, runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
         case .sequence(let values):
-            try values.encode(in: encoder) { value, encoder in
-                try value.encode(in: encoder, as: valueType, runtime: runtime)
+            try values.encode(in: &encoder) { value, encoder in
+                try value.encode(in: &encoder, as: valueType, runtime: runtime)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -153,9 +151,9 @@ private extension Value {
         }
     }
     
-    func _encodeArray(
+    func _encodeArray<E: ScaleCodec.Encoder>(
         id: RuntimeTypeId, valueType: RuntimeTypeId, count: UInt32,
-        runtime: Runtime, in encoder: ScaleEncoder
+        runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
         case .sequence(let values):
@@ -165,7 +163,7 @@ private extension Value {
                 )
             }
             for value in values {
-                try value.encode(in: encoder, as: valueType, runtime: runtime)
+                try value.encode(in: &encoder, as: valueType, runtime: runtime)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -188,8 +186,8 @@ private extension Value {
         }
     }
     
-    func _encodeTuple(
-        id: RuntimeTypeId, fields: [RuntimeTypeId], runtime: Runtime, in encoder: ScaleEncoder
+    func _encodeTuple<E: ScaleCodec.Encoder>(
+        id: RuntimeTypeId, fields: [RuntimeTypeId], runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
         case .sequence(let values):
@@ -200,20 +198,20 @@ private extension Value {
             }
             guard values.count > 0 else { return }
             for (field, value) in zip(fields, values) {
-                try value.encode(in: encoder, as: field, runtime: runtime)
+                try value.encode(in: &encoder, as: field, runtime: runtime)
             }
         default:
             if fields.count == 1 {
                 // A 1-field tuple? try encoding inner content then.
-                try encode(in: encoder, as: fields[0], runtime: runtime)
+                try encode(in: &encoder, as: fields[0], runtime: runtime)
             } else {
                 throw EncodingError.wrongShape(actual: self, expected: id)
             }
         }
     }
     
-    func _encodeVariant(
-        id: RuntimeTypeId, variants: [RuntimeTypeVariantItem], runtime: Runtime, in encoder: ScaleEncoder
+    func _encodeVariant<E: ScaleCodec.Encoder>(
+        id: RuntimeTypeId, variants: [RuntimeTypeVariantItem], runtime: Runtime, in encoder: inout E
     ) throws {
         guard case .variant(let variant) = value else {
             throw EncodingError.wrongShape(actual: self, expected: id)
@@ -221,21 +219,21 @@ private extension Value {
         guard let varType = variants.first(where: { $0.name == variant.name }) else {
             throw EncodingError.variantNotFound(actual: variant, expected: id)
         }
-        let encoder = try encoder.encode(varType.index, .enumCaseId)
+        try encoder.encode(varType.index, .enumCaseId)
         switch variant {
         case .map(name: _, fields: let map):
             try Value(value: .map(map), context: context)._encodeCompositeFields(
-                id: id, fields: varType.fields, runtime: runtime, in: encoder
+                id: id, fields: varType.fields, runtime: runtime, in: &encoder
             )
         case .sequence(name: _, values: let seq):
             try Value(value: .sequence(seq), context: context)._encodeCompositeFields(
-                id: id, fields: varType.fields, runtime: runtime, in: encoder
+                id: id, fields: varType.fields, runtime: runtime, in: &encoder
             )
         }
     }
     
-    func _encodeCompositeFields(
-        id: RuntimeTypeId, fields: [RuntimeTypeField], runtime: Runtime, in encoder: ScaleEncoder
+    func _encodeCompositeFields<E: ScaleCodec.Encoder>(
+        id: RuntimeTypeId, fields: [RuntimeTypeField], runtime: Runtime, in encoder: inout E
     ) throws {
         if let map = self.map {
             guard map.count == fields.count else {
@@ -252,7 +250,7 @@ private extension Value {
                 guard let value = map[name] else {
                     throw EncodingError.mapFieldIsMissing(missingFieldName: name, expected: field.type)
                 }
-                try value.encode(in: encoder, as: field.type, runtime: runtime)
+                try value.encode(in: &encoder, as: field.type, runtime: runtime)
             }
         } else {
             let values = self.sequence!
@@ -263,13 +261,13 @@ private extension Value {
             }
             guard values.count > 0 else { return }
             for (field, value) in zip(fields, values) {
-                try value.encode(in: encoder, as: field.type, runtime: runtime)
+                try value.encode(in: &encoder, as: field.type, runtime: runtime)
             }
         }
     }
     
-    func _encodePrimitive(
-        id: RuntimeTypeId, type: RuntimeTypePrimitive, runtime: Runtime, in encoder: ScaleEncoder
+    func _encodePrimitive<E: ScaleCodec.Encoder>(
+        id: RuntimeTypeId, type: RuntimeTypePrimitive, in encoder: inout E
     ) throws {
         guard case .primitive(let primitive) = value else {
             throw EncodingError.wrongShape(actual: self, expected: id)
@@ -326,8 +324,8 @@ private extension Value {
         }
     }
     
-    func _encodeCompact(
-        id: RuntimeTypeId, type: RuntimeTypeId, runtime: Runtime, in encoder: ScaleEncoder
+    func _encodeCompact<E: ScaleCodec.Encoder>(
+        id: RuntimeTypeId, type: RuntimeTypeId, runtime: Runtime, in encoder: inout E
     ) throws {
         // Resolve to a primitive type inside the compact encoded type (or fail if
         // we hit some type we wouldn't know how to work with).
@@ -419,9 +417,9 @@ private extension Value {
         }
     }
     
-    func _encodeBitSequence(
+    func _encodeBitSequence<E: ScaleCodec.Encoder>(
         id: RuntimeTypeId, store: RuntimeTypeId, order: RuntimeTypeId,
-        runtime: Runtime, in encoder: ScaleEncoder
+        runtime: Runtime, in encoder: inout E
     ) throws {
         let format = try BitSequence.Format(store: store, order: order, runtime: runtime)
         switch value {
@@ -440,9 +438,9 @@ private extension Value {
     }
 }
 
-extension Value: ScaleRuntimeEncodable where C == RuntimeTypeId {
-    public func encode(in encoder: ScaleEncoder, runtime: Runtime) throws {
-        try self.encode(in: encoder, as: context, runtime: runtime)
+extension Value: RuntimeEncodable where C == RuntimeTypeId {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
+        try self.encode(in: &encoder, as: context, runtime: runtime)
     }
 }
 

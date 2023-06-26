@@ -14,8 +14,8 @@ public protocol RuntimeCall<TReturn> {
     var api: String { get }
     var method: String { get }
     
-    func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws
-    func decode(returnFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TReturn
+    func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws
+    func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> TReturn
 }
 
 public extension RuntimeCall {
@@ -32,32 +32,32 @@ public extension StaticRuntimeCall {
     var method: String { Self.method }
 }
 
-public extension StaticRuntimeCall where TReturn: ScaleRuntimeDecodable {
-    func decode(returnFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TReturn {
-        try TReturn(from: decoder, runtime: runtime)
+public extension StaticRuntimeCall where TReturn: RuntimeDecodable {
+    func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> TReturn {
+        try TReturn(from: &decoder, runtime: runtime)
     }
 }
 
-public protocol StaticCodableRuntimeCall: StaticRuntimeCall where TReturn: ScaleDecodable {
-    func encodeParams(in encoder: ScaleEncoder) throws
-    func decode(returnFrom decoder: ScaleDecoder) throws -> TReturn
+public protocol StaticCodableRuntimeCall: StaticRuntimeCall where TReturn: ScaleCodec.Decodable {
+    func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws
+    func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D) throws -> TReturn
 }
 
 public extension StaticCodableRuntimeCall {
-    func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws {
-        try encodeParams(in: encoder)
+    func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
+        try encodeParams(in: &encoder)
     }
     
-    func decode(returnFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TReturn {
-        try decode(returnFrom: decoder)
+    func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> TReturn {
+        try decode(returnFrom: &decoder)
     }
     
-    func decode(returnFrom decoder: ScaleDecoder) throws -> TReturn {
-        try TReturn(from: decoder)
+    func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D) throws -> TReturn {
+        try TReturn(from: &decoder)
     }
 }
 
-public struct AnyRuntimeCall<Return: ScaleRuntimeDynamicDecodable>: RuntimeCall {
+public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
     public typealias TReturn = Return
     
     public let api: String
@@ -71,13 +71,13 @@ public struct AnyRuntimeCall<Return: ScaleRuntimeDynamicDecodable>: RuntimeCall 
         self.params = params
     }
     
-    public func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws {
+    public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
         guard let call = runtime.resolve(runtimeCall: method, api: api) else {
             throw RuntimeCallCodingError.callNotFound(method: method, api: api)
         }
         guard call.params.count > 0 else { return }
         if call.params.count == 1 {
-            try params.encode(in: encoder, as: call.params.first!.1.id, runtime: runtime)
+            try params.encode(in: &encoder, as: call.params.first!.1.id, runtime: runtime)
         }
         switch params.value {
         case .sequence(let seq):
@@ -85,7 +85,7 @@ public struct AnyRuntimeCall<Return: ScaleRuntimeDynamicDecodable>: RuntimeCall 
                 throw RuntimeCallCodingError.wrongParametersCount(params: seq, expected: call.params)
             }
             for (param, info) in zip(seq, call.params) {
-                try param.encode(in: encoder, as: info.1.id, runtime: runtime)
+                try param.encode(in: &encoder, as: info.1.id, runtime: runtime)
             }
         case .map(let fields):
             for info in call.params {
@@ -93,15 +93,15 @@ public struct AnyRuntimeCall<Return: ScaleRuntimeDynamicDecodable>: RuntimeCall 
                     throw RuntimeCallCodingError.parameterNotFound(name: info.0,
                                                                    inParams: fields)
                 }
-                try param.encode(in: encoder, as: info.1.id, runtime: runtime)
+                try param.encode(in: &encoder, as: info.1.id, runtime: runtime)
             }
         default:
             throw RuntimeCallCodingError.expectedMapOrSequence(got: params)
         }
     }
     
-    public func decode(returnFrom decoder: ScaleDecoder, runtime: Runtime) throws -> Return {
-        return try Return(from: decoder, runtime: runtime) { runtime in
+    public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> Return {
+        return try Return(from: &decoder, runtime: runtime) { runtime in
             guard let call = runtime.resolve(runtimeCall: method, api: api) else {
                 throw RuntimeCallCodingError.callNotFound(method: method, api: api)
             }
@@ -132,13 +132,13 @@ public protocol SomeMetadataAtVersionRuntimeCall: StaticCodableRuntimeCall
 }
 
 public protocol SomeTransactionPaymentQueryInfoRuntimeCall<TReturn>: StaticRuntimeCall
-    where TReturn: ScaleRuntimeDynamicDecodable
+    where TReturn: RuntimeDynamicDecodable
 {
     init(extrinsic: Data)
 }
 
 public protocol SomeTransactionPaymentFeeDetailsRuntimeCall<TReturn>: StaticRuntimeCall
-    where TReturn: ScaleRuntimeDynamicDecodable
+    where TReturn: RuntimeDynamicDecodable
 {    
     init(extrinsic: Data)
 }

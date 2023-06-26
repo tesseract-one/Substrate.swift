@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public enum StorageHasher: CaseIterable, ScaleCodable, CustomStringConvertible {
+public enum StorageHasher: CaseIterable, ScaleCodec.Codable, CustomStringConvertible {
     case blake2b128
     case blake2b256
     case blake2b128concat
@@ -42,7 +42,7 @@ public enum StorageHasher: CaseIterable, ScaleCodable, CustomStringConvertible {
     }
 }
 
-public enum StorageEntryModifier: CaseIterable, ScaleCodable, CustomStringConvertible {
+public enum StorageEntryModifier: CaseIterable, ScaleCodec.Codable, CustomStringConvertible {
     case optional
     case `default`
     

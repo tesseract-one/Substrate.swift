@@ -64,7 +64,7 @@ extension Int32: ValueConvertible {}
 extension Int64: ValueConvertible {}
 
 extension Value: ValueInitializable where C == Void {
-    public init<C>(value: Value<C>) throws {
+    public init<C2>(value: Value<C2>) throws {
         self = value.mapContext(with: { _ in })
     }
 }

@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct RuntimePalletMetadataV15: ScaleCodable {
+public struct RuntimePalletMetadataV15: ScaleCodec.Codable {
     public let name: String
     public let storage: Optional<RuntimePalletStorageMedatadaV14>
     public let call: Optional<RuntimeTypeId>
@@ -18,7 +18,7 @@ public struct RuntimePalletMetadataV15: ScaleCodable {
     public let index: UInt8
     public let docs: [String]
     
-    public init(from decoder: ScaleDecoder) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         name = try decoder.decode()
         storage = try decoder.decode()
         call = try decoder.decode()
@@ -29,20 +29,20 @@ public struct RuntimePalletMetadataV15: ScaleCodable {
         docs = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
         try encoder.encode(name)
-            .encode(storage)
-            .encode(call)
-            .encode(event)
-            .encode(constants)
-            .encode(error)
-            .encode(index)
-            .encode(docs)
+        try encoder.encode(storage)
+        try encoder.encode(call)
+        try encoder.encode(event)
+        try encoder.encode(constants)
+        try encoder.encode(error)
+        try encoder.encode(index)
+        try encoder.encode(docs)
     }
 }
 
-public struct RuntimeMetadataV15: ScaleCodable, RuntimeMetadata {
-    public var version: UInt8 { 14 }
+public struct RuntimeMetadataV15: ScaleCodec.Codable, RuntimeMetadata {
+    public var version: UInt8 { 15 }
     public let types: [RuntimeTypeInfo]
     public let pallets: [RuntimePalletMetadataV15]
     public let extrinsic: RuntimeExtrinsicMetadataV14
@@ -51,7 +51,7 @@ public struct RuntimeMetadataV15: ScaleCodable, RuntimeMetadata {
 //    public let outerEnums: RuntimeMetadataOuterEnumsV15
 //    public let custom: Dictionary<String, (RuntimeTypeId, Data)>
     
-    public init(from decoder: ScaleDecoder) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         types = try decoder.decode()
         pallets = try decoder.decode()
         extrinsic = try decoder.decode()
@@ -62,12 +62,16 @@ public struct RuntimeMetadataV15: ScaleCodable, RuntimeMetadata {
         //custom = try Dictionary(from: decoder, lreader: { try $0.decode() }) { try ($0.decode(), $0.decode()) }
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(types).encode(pallets)
-            .encode(extrinsic).encode(runtimeType).encode(apis)
-            //.encode(outerEnums)
-//        try custom.encode(in: encoder, lwriter: { try $1.encode($0) }) { tuple, encoder in
-//            try encoder.encode(tuple.0).encode(tuple.1)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(types)
+        try encoder.encode(pallets)
+        try encoder.encode(extrinsic)
+        try encoder.encode(runtimeType)
+        try encoder.encode(apis)
+//        try encoder.encode(outerEnums)
+//        try custom.encode(in: &encoder, lwriter: { try $1.encode(&$0) }) { tuple, encoder in
+//            try encoder.encode(tuple.0)
+//            try encoder.encode(tuple.1)
 //        }
     }
     
@@ -78,56 +82,61 @@ public struct RuntimeMetadataV15: ScaleCodable, RuntimeMetadata {
     public static var versions: Set<UInt32> { [15, UInt32.max] }
 }
 
-public struct RuntimeRuntimeApiMetadataV15: ScaleCodable {
+public struct RuntimeRuntimeApiMetadataV15: ScaleCodec.Codable {
     public let name: String
     public let methods: [RuntimeRuntimeApiMethodMetadataV15]
     public let docs: [String]
     
-    public init(from decoder: ScaleDecoder) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         name = try decoder.decode()
         methods = try decoder.decode()
         docs = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(name).encode(methods).encode(docs)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(name)
+        try encoder.encode(methods)
+        try encoder.encode(docs)
     }
 }
 
-public struct RuntimeRuntimeApiMethodMetadataV15: ScaleCodable {
+public struct RuntimeRuntimeApiMethodMetadataV15: ScaleCodec.Codable {
     public let name: String
     public let inputs: [RuntimeRuntimeApiMethodParamMetadataV15]
     public let output: RuntimeTypeId
     public let docs: [String]
     
-    public init(from decoder: ScaleDecoder) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         name = try decoder.decode()
         inputs = try decoder.decode()
         output = try decoder.decode()
         docs = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(name).encode(inputs)
-                .encode(output).encode(docs)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(name)
+        try encoder.encode(inputs)
+        try encoder.encode(output)
+        try encoder.encode(docs)
     }
 }
 
-public struct RuntimeRuntimeApiMethodParamMetadataV15: ScaleCodable {
+public struct RuntimeRuntimeApiMethodParamMetadataV15: ScaleCodec.Codable {
     public let name: String
     public let type: RuntimeTypeId
     
-    public init(from decoder: ScaleDecoder) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         name = try decoder.decode()
         type = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(name).encode(type)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(name)
+        try encoder.encode(type)
     }
 }
 
-public struct RuntimeMetadataOuterEnumsV15: ScaleCodable {
+public struct RuntimeMetadataOuterEnumsV15: ScaleCodec.Codable {
     /// The type of the outer `RuntimeCall` enum.
     public let callEnumType: RuntimeTypeId
     /// The type of the outer `RuntimeEvent` enum.
@@ -149,13 +158,15 @@ public struct RuntimeMetadataOuterEnumsV15: ScaleCodable {
     ///   many error types do not require all of the bytes to represent them fully.
     public let moduleErrorEnumType: RuntimeTypeId
     
-    public init(from decoder: ScaleCodec.ScaleDecoder) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         callEnumType = try decoder.decode()
         eventEnumType = try decoder.decode()
         moduleErrorEnumType = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleCodec.ScaleEncoder) throws {
-        try encoder.encode(callEnumType).encode(eventEnumType).encode(moduleErrorEnumType)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(callEnumType)
+        try encoder.encode(eventEnumType)
+        try encoder.encode(moduleErrorEnumType)
     }
 }

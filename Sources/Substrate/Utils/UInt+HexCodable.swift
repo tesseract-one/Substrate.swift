@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct TrimmedHex: Codable {
+public struct TrimmedHex: Swift.Codable {
     public struct InitError: Error {
         public let desc: String
     }
@@ -35,17 +35,18 @@ public struct TrimmedHex: Codable {
         self.init(data: data)
     }
     
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         do {
             try self.init(string: string)
         } catch let e as InitError {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: e.desc)
+            throw Swift.DecodingError.dataCorruptedError(in: container,
+                                                         debugDescription: e.desc)
         }
     }
     
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
         guard !data.isEmpty else {
             try container.encode("0x0")
@@ -68,7 +69,7 @@ public struct UIntHex<T: UnsignedInteger> {
     }
 }
 
-extension UIntHex: Decodable where T: DataInitalizable {
+extension UIntHex: Swift.Decodable where T: DataInitalizable {
     public init(string: String) throws {
         let hex = try TrimmedHex(string: string)
         guard !hex.data.isEmpty else {
@@ -81,19 +82,20 @@ extension UIntHex: Decodable where T: DataInitalizable {
         self.init(val)
     }
     
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
         do {
             try self.init(string: string)
         } catch let e as TrimmedHex.InitError {
-            throw DecodingError.dataCorruptedError(in: container, debugDescription: e.desc)
+            throw Swift.DecodingError.dataCorruptedError(in: container,
+                                                         debugDescription: e.desc)
         }
     }
 }
 
-extension UIntHex: Encodable where T: DataSerializable {
-    public func encode(to encoder: Encoder) throws {
+extension UIntHex: Swift.Encodable where T: DataSerializable {
+    public func encode(to encoder: Swift.Encoder) throws {
         let data = value == 0
             ? Data() : value.data(littleEndian: false, trimmed: true)
         try TrimmedHex(data: data).encode(to: encoder)
@@ -108,8 +110,8 @@ public struct HexOrNumber<T: UnsignedInteger> {
     }
 }
 
-extension HexOrNumber: Decodable where T: Decodable & DataInitalizable {
-    public init(from decoder: Decoder) throws {
+extension HexOrNumber: Swift.Decodable where T: Swift.Decodable & DataInitalizable {
+    public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let value = try? container.decode(T.self) {
             self.init(value)
@@ -119,8 +121,8 @@ extension HexOrNumber: Decodable where T: Decodable & DataInitalizable {
     }
 }
 
-extension HexOrNumber: Encodable where T: Encodable & DataSerializable {
-    public func encode(to encoder: Encoder) throws {
+extension HexOrNumber: Swift.Encodable where T: Swift.Encodable & DataSerializable {
+    public func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
         if UInt64(clamping: value) > JSONEncoder.maxSafeInteger {
             try container.encode(UIntHex(value))
@@ -135,21 +137,21 @@ public extension JSONEncoder {
     static var maxSafeInteger: UInt64 { 2^53 - 1 }
 }
 
-extension Compact: Decodable where T.UI: DataInitalizable & Decodable {
-    public init(from decoder: Decoder) throws {
+extension Compact: Swift.Decodable where T.UI: DataInitalizable & Swift.Decodable {
+    public init(from decoder: Swift.Decoder) throws {
         let uint = try HexOrNumber<T.UI>(from: decoder)
         self.init(T(uint: uint.value))
     }
 }
 
-extension Compact: Encodable where T.UI: DataSerializable & Encodable {
-    public func encode(to encoder: Encoder) throws {
+extension Compact: Swift.Encodable where T.UI: DataSerializable & Swift.Encodable {
+    public func encode(to encoder: Swift.Encoder) throws {
         try HexOrNumber(value.uint).encode(to: encoder)
     }
 }
 
-extension DoubleWidth: Codable where Base: UnsignedInteger {
-    public init(from decoder: Decoder) throws {
+extension DoubleWidth: Swift.Codable where Base: UnsignedInteger {
+    public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let value = try? container.decode(UInt64.self) {
             self.init(value)
@@ -158,7 +160,7 @@ extension DoubleWidth: Codable where Base: UnsignedInteger {
         }
     }
     
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
         if UInt64(clamping: self) > JSONEncoder.maxSafeInteger {
             try container.encode(UIntHex(self))

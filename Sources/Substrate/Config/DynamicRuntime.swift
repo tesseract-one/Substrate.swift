@@ -41,6 +41,7 @@ public struct DynamicRuntime: Config {
     public enum Error: Swift.Error {
         case typeNotFound(name: String, selector: Set<String>)
         case hashTypeNotFound(header: RuntimeTypeInfo)
+        case eventTypeNotFound(record: RuntimeTypeInfo)
         case extrinsicInfoNotFound
         case unknownHashName(String)
     }
@@ -51,13 +52,15 @@ public struct DynamicRuntime: Config {
     public let dispatchErrorSelector: Set<String>
     public let transactionValidityErrorSelector: Set<String>
     public let feeDetailsSelector: Set<String>
+    public let eventRecordSelector: Set<String>
     
     public init(extrinsicExtensions: [DynamicExtrinsicExtension] = Self.allExtensions,
                 headerSelector: [String] = ["Header"],
                 dispatchInfoSelector: [String] = ["DispatchInfo"],
                 dispatchErrorSelector: [String] = ["DispatchError"],
                 transactionValidityErrorSelector: [String] = ["TransactionValidityError"],
-                feeDetailsSelector: [String] = ["FeeDetails"])
+                feeDetailsSelector: [String] = ["FeeDetails"],
+                eventRecordSelector: [String] = ["EventRecord"])
     {
         self.extrinsicExtensions = extrinsicExtensions
         self.headerSelector = Set(headerSelector)
@@ -65,6 +68,7 @@ public struct DynamicRuntime: Config {
         self.dispatchErrorSelector = Set(dispatchErrorSelector)
         self.transactionValidityErrorSelector = Set(transactionValidityErrorSelector)
         self.feeDetailsSelector = Set(feeDetailsSelector)
+        self.eventRecordSelector = Set(eventRecordSelector)
     }
     
     public func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
@@ -98,27 +102,34 @@ public struct DynamicRuntime: Config {
     
     public func extrinsicTypes(
         metadata: Metadata
-    ) throws -> (addr: RuntimeTypeInfo, signature: RuntimeTypeInfo, extra: RuntimeTypeInfo) {
+    ) throws -> (call: RuntimeTypeInfo, addr: RuntimeTypeInfo,
+                 signature: RuntimeTypeInfo, extra: RuntimeTypeInfo) {
         var addressTypeId: RuntimeTypeId? = nil
         var sigTypeId: RuntimeTypeId? = nil
         var extraTypeId: RuntimeTypeId? = nil
+        var callTypeId: RuntimeTypeId? = nil
         for param in metadata.extrinsic.type.type.parameters {
             switch param.name.lowercased() {
             case "address": addressTypeId = param.type
             case "signature": sigTypeId = param.type
             case "extra": extraTypeId = param.type
+            case "call": callTypeId = param.type
             default: continue
             }
         }
         guard let addressTypeId = addressTypeId,
               let sigTypeId = sigTypeId,
               let extraTypeId = extraTypeId,
+              let callTypeId = callTypeId,
               let addressType = metadata.resolve(type: addressTypeId),
               let sigType = metadata.resolve(type: sigTypeId),
-              let extraType = metadata.resolve(type: extraTypeId) else {
+              let extraType = metadata.resolve(type: extraTypeId),
+              let callType = metadata.resolve(type: callTypeId) else
+        {
             throw Error.extrinsicInfoNotFound
         }
-        return (addr: RuntimeTypeInfo(id: addressTypeId, type: addressType),
+        return (call: RuntimeTypeInfo(id: callTypeId, type: callType),
+                addr: RuntimeTypeInfo(id: addressTypeId, type: addressType),
                 signature: RuntimeTypeInfo(id: sigTypeId, type: sigType),
                 extra: RuntimeTypeInfo(id: extraTypeId, type: extraType))
     }
@@ -151,6 +162,19 @@ public struct DynamicRuntime: Config {
         return type
     }
     
+    public func eventType(metadata: Metadata) throws -> RuntimeTypeInfo {
+        guard let record = metadata.search(type: {eventRecordSelector.isSubset(of: $0)}) else {
+            throw Error.typeNotFound(name: "eventRecord", selector: eventRecordSelector)
+        }
+        let eventNames = ["e", "ev", "event"]
+        guard let field = record.type.parameters.first(where: {
+            eventNames.contains($0.name.lowercased())
+        })?.type else {
+            throw Error.eventTypeNotFound(record: record)
+        }
+        return RuntimeTypeInfo(id: field, type: metadata.resolve(type: field)!)
+    }
+    
     public static let allExtensions: [DynamicExtrinsicExtension] = [
         DynamicCheckSpecVersionExtension(),
         DynamicCheckTxVersionExtension(),
@@ -176,7 +200,7 @@ public extension DynamicRuntime {
                 
                 public init(_ params: Void) throws {}
                 
-                public func encodeParams(in encoder: ScaleEncoder) throws {}
+                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws {}
             }
             
             public struct MetadataAtVersion: SomeMetadataAtVersionRuntimeCall {
@@ -187,7 +211,7 @@ public extension DynamicRuntime {
                     self.version = version
                 }
                 
-                public func encodeParams(in encoder: ScaleCodec.ScaleEncoder) throws {
+                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
                     try encoder.encode(version)
                 }
                 
@@ -202,14 +226,14 @@ public extension DynamicRuntime {
                 
                 public init() {}
                 
-                public func encodeParams(in encoder: ScaleCodec.ScaleEncoder) throws {}
+                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws {}
             }
             
             public static let name = "Metadata"
         }
         
         public struct TransactionPayment {
-            public struct QueryInfo<DI: ScaleRuntimeDynamicDecodable>: SomeTransactionPaymentQueryInfoRuntimeCall {
+            public struct QueryInfo<DI: RuntimeDynamicDecodable>: SomeTransactionPaymentQueryInfoRuntimeCall {
                 public typealias TReturn = DI
                 
                 public let extrinsic: Data
@@ -218,12 +242,13 @@ public extension DynamicRuntime {
                     self.extrinsic = extrinsic
                 }
                 
-                public func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws {
-                    try encoder.encode(extrinsic).encode(UInt32(extrinsic.count))
+                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
+                    try encoder.encode(extrinsic)
+                    try encoder.encode(UInt32(extrinsic.count))
                 }
                 
-                public func decode(returnFrom decoder: ScaleCodec.ScaleDecoder, runtime: Runtime) throws -> DI {
-                    try TReturn(from: decoder, runtime: runtime) { runtime in
+                public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> DI {
+                    try TReturn(from: &decoder, runtime: runtime) { runtime in
                         try runtime.types.dispatchInfo.id
                     }
                 }
@@ -232,7 +257,7 @@ public extension DynamicRuntime {
                 public static var api: String { TransactionPayment.name }
             }
             
-            public struct QueryFeeDetails<FD: ScaleRuntimeDynamicDecodable>:
+            public struct QueryFeeDetails<FD: RuntimeDynamicDecodable>:
                     SomeTransactionPaymentFeeDetailsRuntimeCall
             {
                 public typealias TReturn = FD
@@ -243,12 +268,13 @@ public extension DynamicRuntime {
                     self.extrinsic = extrinsic
                 }
                 
-                public func encodeParams(in encoder: ScaleEncoder, runtime: Runtime) throws {
-                    try encoder.encode(extrinsic).encode(UInt32(extrinsic.count))
+                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
+                    try encoder.encode(extrinsic)
+                    try encoder.encode(UInt32(extrinsic.count))
                 }
                 
-                public func decode(returnFrom decoder: ScaleCodec.ScaleDecoder, runtime: Runtime) throws -> FD {
-                    try TReturn(from: decoder, runtime: runtime) { runtime in
+                public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> FD {
+                    try TReturn(from: &decoder, runtime: runtime) { runtime in
                         try runtime.types.feeDetails.id
                     }
                 }
@@ -264,14 +290,15 @@ public extension DynamicRuntime {
     struct System {
         public struct Events {
             public struct ExtrinsicFailure<Err: ApiError>: SomeExtrinsicFailureEvent {
+   
                 public typealias Err = Err
                 public static var pallet: String { System.name }
                 public static var name: String { "ExtrinsicFailure" }
                 
                 public let error: Err
                 
-                public init(paramsFrom decoder: ScaleDecoder, runtime: Runtime) throws {
-                    self.error = try Err(from: decoder, runtime: runtime)
+                public init<D: ScaleCodec.Decoder>(paramsFrom decoder: inout D, runtime: Runtime) throws {
+                    self.error = try Err(from: &decoder, runtime: runtime)
                 }
             }
         }
@@ -284,7 +311,7 @@ public extension DynamicRuntime {
                 public static var pallet: String { System.name }
                 
                 public init(_ params: TParams, runtime: any Runtime) throws {}
-                public init(decodingPath decoder: ScaleDecoder, runtime: any Runtime) throws {}
+                public init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws {}
                 public var pathHash: Data { Data() }
             }
         }

@@ -20,7 +20,7 @@ public protocol StorageKey<TValue> {
     
     init(base: TBaseParams, params: TParams, runtime: any Runtime) throws
     
-    func decode(valueFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TValue
+    func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: any Runtime) throws -> TValue
     
     static func defaultValue(base: TBaseParams, runtime: any Runtime) throws -> TValue
     static func validate(base: TBaseParams, runtime: any Runtime) throws
@@ -41,7 +41,7 @@ public protocol StorageKeyIterator<TKey> {
     
     var hash: Data { get }
     
-    func decode(keyFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TKey
+    func decode<D: ScaleCodec.Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey
 }
 
 public protocol StorageKeyRootIterator<TKey>: StorageKeyIterator where TParam == TKey.TBaseParams {
@@ -58,28 +58,28 @@ public protocol IterableStorageKey: StorageKey {
     associatedtype TIterator: StorageKeyRootIterator<Self>
 }
 
-public protocol StaticStorageKey<TValue>: StorageKey, ScaleRuntimeDecodable where TBaseParams == Void {
+public protocol StaticStorageKey<TValue>: StorageKey, RuntimeDecodable where TBaseParams == Void {
     static var pallet: String { get }
     static var name: String { get }
     
     init(_ params: TParams, runtime: any Runtime) throws
-    init(decodingPath decoder: ScaleDecoder, runtime: any Runtime) throws
+    init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws
     var pathHash: Data { get }
     
-    static func decode(valueFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TValue
+    static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: any Runtime) throws -> TValue
 }
 
 public extension StaticStorageKey {
     var pallet: String { Self.pallet }
     var name: String { Self.name }
 
-    init(from decoder: ScaleDecoder, runtime: Runtime) throws {
+    init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         let prefix = Self.prefix
         let decodedPrefix = try decoder.decode(.fixed(UInt(prefix.count)))
         guard decodedPrefix == prefix else {
             throw StorageKeyCodingError.badPrefix(has: decodedPrefix, expected: prefix)
         }
-        try self.init(decodingPath: decoder, runtime: runtime)
+        try self.init(decodingPath: &decoder, runtime: runtime)
     }
     
     var hash: Data { self.prefix + self.pathHash }
@@ -88,8 +88,8 @@ public extension StaticStorageKey {
         try self.init(params, runtime: runtime)
     }
     
-    func decode(valueFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TValue {
-        try Self.decode(valueFrom: decoder, runtime: runtime)
+    func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: Runtime) throws -> TValue {
+        try Self.decode(valueFrom: &decoder, runtime: runtime)
     }
     
     static func validate(base: TBaseParams, runtime: any Runtime) throws {
@@ -102,15 +102,16 @@ public extension StaticStorageKey {
         guard let (_, _, data) = runtime.resolve(storage: Self.name, pallet: Self.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: Self.name, pallet: Self.pallet)
         }
-        return try decode(valueFrom: runtime.decoder(with: data), runtime: runtime)
+        var decoder = runtime.decoder(with: data)
+        return try decode(valueFrom: &decoder, runtime: runtime)
     }
     
     static var prefix: Data { prefix(name: name, pallet: pallet) }
 }
 
-public extension StaticStorageKey where TValue: ScaleRuntimeDecodable {
-    static func decode(valueFrom decoder: ScaleDecoder, runtime: Runtime) throws -> TValue {
-        try TValue(from: decoder, runtime: runtime)
+public extension StaticStorageKey where TValue: RuntimeDecodable {
+    static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: Runtime) throws -> TValue {
+        try TValue(from: &decoder, runtime: runtime)
     }
 }
 
@@ -119,8 +120,8 @@ public extension StorageKeyRootIterator where TKey: StaticStorageKey {
 }
 
 public extension StorageKeyIterator where TKey: StaticStorageKey {
-    func decode(keyFrom decoder: ScaleDecoder, runtime: any Runtime) throws -> TKey {
-        try TKey(from: decoder, runtime: runtime)
+    func decode<D: ScaleCodec.Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey {
+        try TKey(from: &decoder, runtime: runtime)
     }
 }
 

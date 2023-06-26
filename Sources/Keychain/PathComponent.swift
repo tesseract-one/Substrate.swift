@@ -32,12 +32,12 @@ extension PathComponent {
     /// Create a new soft (vanilla) PathComponent from a given, encodable, value.
     ///
     /// If you need a hard component, use `init(hard: )`.
-    public init<T: ScaleEncodable>(soft index: T) throws {
+    public init<T: ScaleCodec.Encodable>(soft index: T) throws {
         var result: Data
         switch index {
         case let arr as [UInt8]: result = Data(arr)
         case let data as Data: result = data
-        default: result = try SCALE.default.encode(index)
+        default: result = try ScaleCodec.encode(index)
         }
         if result.count > Self.size {
             result = Self.hasher.hash(data: result)
@@ -50,7 +50,7 @@ extension PathComponent {
     /// Create a new hard (hardened) PathComponent from a given, encodable, value.
     ///
     /// If you need a hard component, use `init(soft: )`.
-    public init<T: ScaleEncodable>(hard index: T) throws {
+    public init<T: ScaleCodec.Encodable>(hard index: T) throws {
         self = try Self(soft: index).harden
     }
     

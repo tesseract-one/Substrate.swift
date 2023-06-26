@@ -9,6 +9,7 @@ import Foundation
 
 public class MetadataV15: Metadata {
     public let extrinsic: ExtrinsicMetadata
+    public var enums: OuterEnumsMetadata? { nil }
     public var pallets: [String] { Array(palletsByName.keys) }
     public var apis: [String] { Array(apisByName.keys) }
     

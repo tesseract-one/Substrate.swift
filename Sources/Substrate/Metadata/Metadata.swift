@@ -18,6 +18,8 @@ public protocol RuntimeMetadata {
 
 public protocol Metadata {
     var extrinsic: ExtrinsicMetadata { get }
+    // Swith to non optional after v14 drop
+    var enums: OuterEnumsMetadata? { get }
     var pallets: [String] { get }
     var apis: [String] { get }
     
@@ -59,6 +61,11 @@ public protocol ExtrinsicMetadata {
     var version: UInt8 { get }
     var type: RuntimeTypeInfo { get }
     var extensions: [ExtrinsicExtensionMetadata] { get }
+    // Make non optional after v14 metadata drop
+    var addressType: RuntimeTypeInfo? { get }
+    var callType: RuntimeTypeInfo? { get }
+    var signatureType: RuntimeTypeInfo? { get }
+    var extraType: RuntimeTypeInfo? { get }
 }
 
 public protocol ConstantMetadata {
@@ -81,19 +88,26 @@ public protocol RuntimeApiMetadata {
     func resolve(method name: String) -> (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)?
 }
 
+public protocol OuterEnumsMetadata {
+    var callType: RuntimeTypeInfo { get }
+    var eventType: RuntimeTypeInfo { get }
+    var moduleErrorType: RuntimeTypeInfo { get }
+}
+
 public enum MetadataError: Error {
     case storageBadHashersCount(expected: Int, got: Int, name: String, pallet: String)
     case storageNonCompositeKey(name: String, pallet: String, type: RuntimeTypeInfo)
 }
 
-public struct OpaqueMetadata: ScaleDecodable, ScaleRuntimeDecodable {
+public struct OpaqueMetadata: ScaleCodec.Decodable, RuntimeDecodable {
     public let raw: Data
     
-    public init(from decoder: ScaleCodec.ScaleDecoder) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         self.raw = try decoder.decode()
     }
     
     public func metadata<C: Config>(config: C) throws -> any Metadata {
-        try config.decoder(data: raw).decode(VersionedMetadata.self).metadata
+        var decoder = config.decoder(data: raw)
+        return try decoder.decode(VersionedMetadata.self).metadata
     }
 }

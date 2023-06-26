@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct RuntimeTypeId: ScaleCodable, Hashable, Equatable,
+public struct RuntimeTypeId: ScaleCodec.Codable, Hashable, Equatable,
                              ExpressibleByIntegerLiteral, RawRepresentable,
                              CustomStringConvertible
 {
@@ -31,11 +31,11 @@ public struct RuntimeTypeId: ScaleCodable, Hashable, Equatable,
         self.id = rawValue
     }
     
-    public init(from decoder: ScaleCodec.ScaleDecoder) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         id = try decoder.decode(.compact)
     }
     
-    public func encode(in encoder: ScaleCodec.ScaleEncoder) throws {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
         try encoder.encode(id, .compact)
     }
     
@@ -56,14 +56,15 @@ public struct RuntimeTypeInfo: CustomStringConvertible {
     }
 }
 
-extension RuntimeTypeInfo: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension RuntimeTypeInfo: ScaleCodec.Codable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         id = try decoder.decode()
         type = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(id).encode(type)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(id)
+        try encoder.encode(type)
     }
 }
 
@@ -103,17 +104,19 @@ extension RuntimeType {
     }
 }
 
-extension RuntimeType: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension RuntimeType: ScaleCodec.Codable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         path = try decoder.decode()
         parameters = try decoder.decode()
         definition = try decoder.decode()
         docs = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(path).encode(parameters)
-            .encode(definition).encode(docs)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(path)
+        try encoder.encode(parameters)
+        try encoder.encode(definition)
+        try encoder.encode(docs)
     }
 }
 
@@ -131,14 +134,15 @@ public struct RuntimeTypeParameter: CustomStringConvertible {
     }
 }
 
-extension RuntimeTypeParameter: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension RuntimeTypeParameter: ScaleCodec.Codable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         name = try decoder.decode()
         type = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(name).encode(type)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(name)
+        try encoder.encode(type)
     }
 }
 
@@ -169,8 +173,8 @@ extension RuntimeTypeDefinition: CustomStringConvertible {
     }
 }
 
-extension RuntimeTypeDefinition: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension RuntimeTypeDefinition: ScaleCodec.Codable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         let caseId = try decoder.decode(.enumCaseId)
         switch caseId {
         case 0: self = try .composite(fields: decoder.decode())
@@ -185,18 +189,34 @@ extension RuntimeTypeDefinition: ScaleCodable {
         }
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
         switch self {
-        case .composite(fields: let fields): try encoder.encode(0, .enumCaseId).encode(fields)
-        case .variant(variants: let vars): try encoder.encode(1, .enumCaseId).encode(vars)
-        case .sequence(of: let ty): try encoder.encode(2, .enumCaseId).encode(ty)
+        case .composite(fields: let fields):
+            try encoder.encode(0, .enumCaseId)
+            try encoder.encode(fields)
+        case .variant(variants: let vars):
+            try encoder.encode(1, .enumCaseId)
+            try encoder.encode(vars)
+        case .sequence(of: let ty):
+            try encoder.encode(2, .enumCaseId)
+            try encoder.encode(ty)
         case .array(count: let count, of: let ty):
-            try encoder.encode(3, .enumCaseId).encode(count).encode(ty)
-        case .tuple(components: let cmp): try encoder.encode(4, .enumCaseId).encode(cmp)
-        case .primitive(is: let prm): try encoder.encode(5, .enumCaseId).encode(prm)
-        case .compact(of: let ty): try encoder.encode(6, .enumCaseId).encode(ty)
+            try encoder.encode(3, .enumCaseId)
+            try encoder.encode(count)
+            try encoder.encode(ty)
+        case .tuple(components: let cmp):
+            try encoder.encode(4, .enumCaseId)
+            try encoder.encode(cmp)
+        case .primitive(is: let prm):
+            try encoder.encode(5, .enumCaseId)
+            try encoder.encode(prm)
+        case .compact(of: let ty):
+            try encoder.encode(6, .enumCaseId)
+            try encoder.encode(ty)
         case .bitsequence(store: let sty, order: let oty):
-            try encoder.encode(7, .enumCaseId).encode(sty).encode(oty)
+            try encoder.encode(7, .enumCaseId)
+            try encoder.encode(sty)
+            try encoder.encode(oty)
         }
     }
 }
@@ -223,17 +243,19 @@ public struct RuntimeTypeField: CustomStringConvertible {
     }
 }
 
-extension RuntimeTypeField: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension RuntimeTypeField: ScaleCodec.Codable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         name = try decoder.decode()
         type = try decoder.decode()
         typeName = try decoder.decode()
         docs = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(name).encode(type)
-            .encode(typeName).encode(docs)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(name)
+        try encoder.encode(type)
+        try encoder.encode(typeName)
+        try encoder.encode(docs)
     }
 }
 
@@ -263,21 +285,23 @@ public struct RuntimeTypeVariantItem: CustomStringConvertible {
     }
 }
 
-extension RuntimeTypeVariantItem: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension RuntimeTypeVariantItem: ScaleCodec.Codable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         name = try decoder.decode()
         fields = try decoder.decode()
         index = try decoder.decode()
         docs = try decoder.decode()
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
-        try encoder.encode(name).encode(fields)
-            .encode(index).encode(docs)
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(name)
+        try encoder.encode(fields)
+        try encoder.encode(index)
+        try encoder.encode(docs)
     }
 }
 
-public enum RuntimeTypePrimitive: String, CaseIterable, ScaleCodable, CustomStringConvertible {
+public enum RuntimeTypePrimitive: String, CaseIterable, ScaleCodec.Codable, CustomStringConvertible {
     case bool
     case char
     case str

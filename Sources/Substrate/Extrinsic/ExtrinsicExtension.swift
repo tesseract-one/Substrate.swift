@@ -18,10 +18,10 @@ public protocol SignedExtensionsProvider<RT> {
     func extra(params: TSigningParams) async throws -> TExtra
     func additionalSigned(params: TSigningParams) async throws -> TAdditionalSigned
     
-    func encode(extra: TExtra, in encoder: ScaleEncoder) throws
-    func encode(additionalSigned: TAdditionalSigned, in encoder: ScaleEncoder) throws
-    func extra(from decoder: ScaleDecoder) throws -> TExtra
-    func additionalSigned(from decoder: ScaleDecoder) throws -> TAdditionalSigned
+    func encode<E: ScaleCodec.Encoder>(extra: TExtra, in encoder: inout E) throws
+    func encode<E: ScaleCodec.Encoder>(additionalSigned: TAdditionalSigned, in encoder: inout E) throws
+    func extra<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TExtra
+    func additionalSigned<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TAdditionalSigned
     
     mutating func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws
 }
@@ -280,27 +280,27 @@ public class DynamicSignedExtensionsProvider<RT: Config>: SignedExtensionsProvid
         try await _substrate.additionalSigned(params: params)
     }
     
-    public func encode(extra: TExtra, in encoder: ScaleEncoder) throws {
-        try extra.encode(in: encoder, runtime: _substrate.runtime)
+    public func encode<E: ScaleCodec.Encoder>(extra: TExtra, in encoder: inout E) throws {
+        try extra.encode(in: &encoder, runtime: _substrate.runtime)
     }
     
-    public func encode(additionalSigned: TAdditionalSigned, in encoder: ScaleEncoder) throws {
+    public func encode<E: ScaleCodec.Encoder>(additionalSigned: TAdditionalSigned, in encoder: inout E) throws {
         guard additionalSigned.count == _substrate.additionalSignedTypes.count else {
             throw ExtrinsicCodingError.badExtrasCount(expected: _substrate.additionalSignedTypes.count,
                                                       got: additionalSigned.count)
         }
         for ext in additionalSigned {
-            try ext.encode(in: encoder, runtime: _substrate.runtime)
+            try ext.encode(in: &encoder, runtime: _substrate.runtime)
         }
     }
     
-    public func extra(from decoder: ScaleDecoder) throws -> TExtra {
-        try TExtra(from: decoder, as: _substrate.extraType, runtime: _substrate.runtime)
+    public func extra<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TExtra {
+        try TExtra(from: &decoder, as: _substrate.extraType, runtime: _substrate.runtime)
     }
     
-    public func additionalSigned(from decoder: ScaleDecoder) throws -> TAdditionalSigned {
+    public func additionalSigned<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TAdditionalSigned {
         try _substrate.additionalSignedTypes.map { tId in
-            try Value(from: decoder, as: tId, runtime: _substrate.runtime)
+            try Value(from: &decoder, as: tId, runtime: _substrate.runtime)
         }
     }
     

@@ -20,14 +20,14 @@ public struct AnyBlockHeader<THasher: FixedHasher>: SomeBlockHeader {
     
     public var hash: THasher.THash {
         let value = Value<RuntimeTypeId>(value: .map(fields), context: type.id)
-        let encoder = _runtime.encoder()
-        try! value.encode(in: encoder,
+        var encoder = _runtime.encoder()
+        try! value.encode(in: &encoder,
                           as: type.id,
                           runtime: _runtime)
         return try! THasher.THash(_runtime.hasher.hash(data: encoder.output))
     }
     
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         self._runtime = decoder.runtime
         var container = ValueDecodingContainer(decoder)
         let type = try _runtime.types.blockHeader

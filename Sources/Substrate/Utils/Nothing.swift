@@ -15,26 +15,26 @@ public struct Nothing: Hashable, Equatable, CustomStringConvertible, Expressible
     public static let nothing = Nothing()
 }
 
-extension Nothing: Encodable {
-    public func encode(to encoder: Encoder) throws {
+extension Nothing: Swift.Encodable {
+    public func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encodeNil()
     }
 }
 
-extension Nothing: Decodable {
-    public init(from decoder: Decoder) throws {
+extension Nothing: Swift.Decodable {
+    public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         guard container.decodeNil() else {
-            throw DecodingError.dataCorruptedError(in: container,
-                                                   debugDescription: "Must be null. Found some value")
+            throw Swift.DecodingError.dataCorruptedError(in: container,
+                                                         debugDescription: "Must be null. Found some value")
         }
     }
 }
 
-extension Nothing: ScaleCodable, ScaleRuntimeDecodable {
-    public init(from decoder: ScaleCodec.ScaleDecoder) throws {}
-    public func encode(in encoder: ScaleCodec.ScaleEncoder) throws {}
+extension Nothing: ScaleCodec.Codable, RuntimeDecodable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {}
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {}
 }
 
 extension Nothing: ValueConvertible {

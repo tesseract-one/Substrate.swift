@@ -103,15 +103,15 @@ public enum ExtrinsicEra: SomeExtrinsicEra, Default {
     }
 }
 
-extension ExtrinsicEra: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension ExtrinsicEra: ScaleCodec.Codable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         let first: UInt8 = try decoder.decode()
         let val = first == 0
             ? Self(b1: first, b2: nil)
             : try Self(b1: first, b2: decoder.decode(UInt8.self))
         guard let val = val else {
-            throw SDecodingError.dataCorrupted(
-                SDecodingError.Context(
+            throw ScaleCodec.DecodingError.dataCorrupted(
+                ScaleCodec.DecodingError.Context(
                     path: decoder.path,
                     description: "Invalid period and phase"
                 )
@@ -120,7 +120,7 @@ extension ExtrinsicEra: ScaleCodable {
         self = val
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
         let data = serialize()
         try encoder.encode(data.0)
         if let second = data.1 {
@@ -129,7 +129,7 @@ extension ExtrinsicEra: ScaleCodable {
     }
 }
 
-extension ExtrinsicEra: ScaleRuntimeCodable, ScaleRuntimeDynamicDecodable, ScaleRuntimeDynamicEncodable {}
+extension ExtrinsicEra: RuntimeCodable, RuntimeDynamicDecodable, RuntimeDynamicEncodable {}
 
 extension ExtrinsicEra: ValueConvertible {
     public init<C>(value: Value<C>) throws {

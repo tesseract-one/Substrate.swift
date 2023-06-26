@@ -10,6 +10,7 @@ import Foundation
 
 public class MetadataV14: Metadata {
     public let extrinsic: ExtrinsicMetadata
+    public var enums: OuterEnumsMetadata? { nil }
     public var pallets: [String] { Array(palletsByName.keys) }
     public var apis: [String] { [] }
     
@@ -224,6 +225,11 @@ public class ExtrinsicMetadataV14: ExtrinsicMetadata {
     public let version: UInt8
     public let type: RuntimeTypeInfo
     public let extensions: [ExtrinsicExtensionMetadata]
+    
+    public var addressType: RuntimeTypeInfo? { nil }
+    public var callType: RuntimeTypeInfo? { nil }
+    public var signatureType: RuntimeTypeInfo? { nil }
+    public var extraType: RuntimeTypeInfo? { nil }
     
     public init(runtime: RuntimeExtrinsicMetadataV14, types: [RuntimeTypeId: RuntimeType]) {
         self.version = runtime.version

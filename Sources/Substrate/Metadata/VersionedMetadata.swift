@@ -8,15 +8,15 @@
 import Foundation
 import ScaleCodec
 
-public struct VersionedMetadata: ScaleDecodable, ScaleRuntimeDecodable {
+public struct VersionedMetadata: ScaleCodec.Decodable, RuntimeDecodable {
     public let magicNumber: UInt32
     public let metadata: Metadata
     
-    public init(from decoder: ScaleDecoder) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         magicNumber = try decoder.decode()
         guard magicNumber == Self.magickNumber else {
-            throw SDecodingError.dataCorrupted(
-                SDecodingError.Context(
+            throw ScaleCodec.DecodingError.dataCorrupted(
+                ScaleCodec.DecodingError.Context(
                     path: decoder.path,
                     description: "Wrong magick number: \(magicNumber)")
             )
@@ -27,8 +27,8 @@ public struct VersionedMetadata: ScaleDecodable, ScaleRuntimeDecodable {
             self.metadata = try decoder.decode(RuntimeMetadataV14.self).asMetadata()
         case 15:
             self.metadata = try decoder.decode(RuntimeMetadataV15.self).asMetadata()
-        default: throw SDecodingError.dataCorrupted(
-            SDecodingError.Context(
+        default: throw ScaleCodec.DecodingError.dataCorrupted(
+            ScaleCodec.DecodingError.Context(
                 path: decoder.path,
                 description: "Unsupported metadata version \(version)"))
         }

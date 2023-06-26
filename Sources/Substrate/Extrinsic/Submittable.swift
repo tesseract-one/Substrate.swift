@@ -181,8 +181,8 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
         guard substrate.call.has(call: S.RC.TTransactionPaymentQueryInfoRuntimeCall.self) else {
             throw SubmittableError.queryInfoIsNotSupported
         }
-        let encoder = substrate.runtime.encoder()
-        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        var encoder = substrate.runtime.encoder()
+        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
         let call = S.RC.TTransactionPaymentQueryInfoRuntimeCall(extrinsic: encoder.output)
         return try await substrate.client.execute(call: call, at: block, runtime: substrate.runtime)
     }
@@ -193,8 +193,8 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
         guard substrate.call.has(call: S.RC.TTransactionPaymentFeeDetailsRuntimeCall.self) else {
             throw SubmittableError.queryFeeDetailsIsNotSupported
         }
-        let encoder = substrate.runtime.encoder()
-        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        var encoder = substrate.runtime.encoder()
+        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
         let call = S.RC.TTransactionPaymentFeeDetailsRuntimeCall(extrinsic: encoder.output)
         return try await substrate.client.execute(call: call, at: block, runtime: substrate.runtime)
     }
@@ -207,8 +207,8 @@ extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra {
 
 extension Submittable where E == S.RC.TExtrinsicManager.TSignedExtra, S.CL: SubscribableClient {
     public func sendAndWatch() async throws -> ExtrinsicProgress<S> {
-        let encoder = substrate.runtime.encoder()
-        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        var encoder = substrate.runtime.encoder()
+        try substrate.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
         let hash = substrate.runtime.typedHasher.hash(data: encoder.output)
         let stream = try await substrate.client.submitAndWatch(extrinsic: extrinsic,
                                                                runtime: substrate.runtime)

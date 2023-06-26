@@ -20,7 +20,7 @@ public struct RpcClient<RC: Config, CL: RpcCallableClient & RuntimeHolder> {
         }
     }
     
-    private struct RpcMethods: Codable {
+    private struct RpcMethods: Swift.Codable {
         public let methods: Set<String>
     }
     
@@ -32,7 +32,7 @@ public struct RpcClient<RC: Config, CL: RpcCallableClient & RuntimeHolder> {
 
 extension RpcClient: RpcCallableClient {
     @inlinable
-    public func call<Params: Encodable, Res: Decodable>(
+    public func call<Params: Swift.Encodable, Res: Swift.Decodable>(
         method: String, params: Params
     ) async throws -> Res {
         try await client.call(method: method, params: params)
@@ -114,7 +114,8 @@ extension RpcClient: Client {
         guard let data = data, data.count > 0 else {
             return nil
         }
-        return try key.decode(valueFrom: runtime.decoder(with: data), runtime: runtime)
+        var decoder = runtime.decoder(with: data)
+        return try key.decode(valueFrom: &decoder, runtime: runtime)
     }
     
     public func dryRun<CL: Call>(
@@ -122,8 +123,8 @@ extension RpcClient: Client {
         at hash: C.TBlock.THeader.THasher.THash?,
         runtime: ExtendedRuntime<C>
     ) async throws -> Result<Void, Either<C.TDispatchError, C.TTransactionValidityError>> {
-        let encoder = runtime.encoder()
-        try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        var encoder = runtime.encoder()
+        try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
         let result: RpcResult<RpcResult<Nothing, C.TDispatchError>, C.TTransactionValidityError> =
             try await call(method: "system_dryRun", params: Params(encoder.output, hash))
         if let value = result.value {
@@ -140,30 +141,31 @@ extension RpcClient: Client {
                                                       at hash: C.THasher.THash?,
                                                       config: C) async throws -> CL.TReturn
     {
-        let encoder = config.encoder()
-        try call.encodeParams(in: encoder)
+        var encoder = config.encoder()
+        try call.encodeParams(in: &encoder)
         let data: Data = try await self.call(method: "state_call",
                                              params: Params(call.fullName, encoder.output, hash))
-        return try call.decode(returnFrom: config.decoder(data: data))
+        var decoder = config.decoder(data: data)
+        return try call.decode(returnFrom: &decoder)
     }
     
     public func execute<CL: RuntimeCall>(call: CL,
                                          at hash: C.THasher.THash?,
                                          runtime: ExtendedRuntime<C>) async throws -> CL.TReturn {
-        let encoder = runtime.encoder()
-        try call.encodeParams(in: encoder, runtime: runtime)
+        var encoder = runtime.encoder()
+        try call.encodeParams(in: &encoder, runtime: runtime)
         let data: Data = try await self.call(method: "state_call",
                                              params: Params(call.fullName, encoder.output, hash))
-        return try call.decode(returnFrom: runtime.decoder(with: data),
-                               runtime: runtime)
+        var decoder = runtime.decoder(with: data)
+        return try call.decode(returnFrom: &decoder, runtime: runtime)
     }
     
     public func submit<CL: Call>(
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         runtime: ExtendedRuntime<C>
     ) async throws -> C.THasher.THash {
-        let encoder = runtime.encoder()
-        try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        var encoder = runtime.encoder()
+        try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
         return try await call(method: "author_submitExtrinsic", params: Params(encoder.output))
     }
     
@@ -172,7 +174,8 @@ extension RpcClient: Client {
                                        runtime: ExtendedRuntime<C>) async throws -> K.TValue? {
         let data: Data? = try await call(method: "state_getStorage", params: Params(key.hash, hash))
         return try data.map { data in
-            try key.decode(valueFrom: runtime.decoder(with: data), runtime: runtime)
+            var decoder = runtime.decoder(with: data)
+            return try key.decode(valueFrom: &decoder, runtime: runtime)
         }
     }
     
@@ -184,7 +187,8 @@ extension RpcClient: Client {
         let keys: [Data] = try await call(method: "state_getKeysPaged",
                                           params: Params(iter.hash, count, startKey?.hash, hash))
         return try keys.map { key in
-            try iter.decode(keyFrom: runtime.decoder(with: key), runtime: runtime)
+            var decoder = runtime.decoder(with: key)
+            return try iter.decode(keyFrom: &decoder, runtime: runtime)
         }
     }
     
@@ -195,7 +199,8 @@ extension RpcClient: Client {
         return try await storage(changes: Array(keys.keys), hash: hash).changes.map { (khash, val) in
             let key = keys[khash]!
             return try (key, val.map { val in
-                try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
+                var decoder = runtime.decoder(with: val)
+                return try key.decode(valueFrom: &decoder, runtime: runtime)
             })
         }
     }
@@ -215,7 +220,8 @@ extension RpcClient: Client {
         return try await storage(changes: Array(keys.keys), hash: hash).changes.map { (khash, val) in
             let key = keys[khash]!
             return try (key, val.map { val in
-                try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
+                var decoder = runtime.decoder(with: val)
+                return try key.decode(valueFrom: &decoder, runtime: runtime)
             })
         }
     }
@@ -225,8 +231,8 @@ extension RpcClient: Client {
                                          at: hash, config: config)
         let supported = VersionedMetadata.supportedVersions.intersection(versions)
         guard let max = supported.max() else {
-            throw SDecodingError.dataCorrupted(
-                SDecodingError.Context(
+            throw ScaleCodec.DecodingError.dataCorrupted(
+                ScaleCodec.DecodingError.Context(
                     path: [],
                     description: "Unsupported metadata versions \(versions)"))
         }
@@ -234,8 +240,8 @@ extension RpcClient: Client {
                                          at: hash,
                                          config: config)
         guard let metadata = metadata else {
-            throw SDecodingError.dataCorrupted(
-                SDecodingError.Context(
+            throw ScaleCodec.DecodingError.dataCorrupted(
+                ScaleCodec.DecodingError.Context(
                     path: [],
                     description: "Null metadata"))
         }
@@ -244,7 +250,8 @@ extension RpcClient: Client {
     
     public func metadataFromRpc(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
         let data: Data = try await call(method: "state_getMetadata", params: Params(hash))
-        let versioned = try config.decoder(data: data).decode(VersionedMetadata.self)
+        var decoder = config.decoder(data: data)
+        let versioned = try decoder.decode(VersionedMetadata.self)
         return versioned.metadata
     }
     
@@ -256,7 +263,7 @@ extension RpcClient: Client {
 
 extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
     @inlinable
-    public func subscribe<Params: Encodable, Event: Decodable>(
+    public func subscribe<Params: Swift.Encodable, Event: Swift.Decodable>(
         method: String, params: Params, unsubsribe umethod: String
     ) async throws -> AsyncThrowingStream<Event, Error> {
         try await client.subscribe(method: method, params: params, unsubsribe: umethod)
@@ -268,8 +275,8 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
         extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
         runtime: ExtendedRuntime<C>
     ) async throws -> AsyncThrowingStream<C.TTransactionStatus, Error> {
-        let encoder = runtime.encoder()
-        try runtime.extrinsicManager.encode(signed: extrinsic, in: encoder)
+        var encoder = runtime.encoder()
+        try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
         return try await subscribe(method: "author_submitAndWatchExtrinsic",
                                    params: Params(encoder.output),
                                    unsubsribe: "author_unwatchExtrinsic")
@@ -284,7 +291,8 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
             try changes.changes.map { (khash, val) in
                 let key = keys[khash]!
                 let value = try val.map { val in
-                    try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
+                    var decoder = runtime.decoder(with: val)
+                    return try key.decode(valueFrom: &decoder, runtime: runtime)
                 }
                 return (key, value)
             }.stream
@@ -300,7 +308,8 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
             try changes.changes.map { (khash, val) in
                 let key = keys[khash]!
                 let value = try val.map { val in
-                    try key.decode(valueFrom: runtime.decoder(with: val), runtime: runtime)
+                    var decoder = runtime.decoder(with: val)
+                    return try key.decode(valueFrom: &decoder, runtime: runtime)
                 }
                 return (key, value)
             }.stream

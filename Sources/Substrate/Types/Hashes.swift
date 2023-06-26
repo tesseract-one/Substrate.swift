@@ -8,21 +8,21 @@
 import Foundation
 import ScaleCodec
 
-public protocol Hash: Codable, ValueConvertible, Equatable {
+public protocol Hash: Swift.Codable, ValueConvertible, Equatable {
     var data: Data { get }
     init(_ data: Data) throws
 }
 
-public protocol StaticHash: Hash, ScaleFixedData {}
+public protocol StaticHash: Hash, FixedDataCodable {}
 
 extension Hash {
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         let data = try container.decode(Data.self)
         try self.init(data)
     }
     
-    public func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(data)
     }

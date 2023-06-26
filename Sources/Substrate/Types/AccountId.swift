@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol AccountId: ScaleRuntimeCodable, Codable, ValueRepresentable {
+public protocol AccountId: RuntimeCodable, Swift.Codable, ValueRepresentable {
     init(from string: String, runtime: any Runtime) throws
     init(pub: any PublicKey, runtime: any Runtime) throws
     init(raw: Data, runtime: any Runtime) throws
@@ -27,7 +27,7 @@ public extension AccountId {
         try self.init(raw: raw, runtime: runtime)
     }
     
-    init(from decoder: Decoder) throws {
+    init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let u8arr = try? container.decode([UInt8].self) {
             try self.init(raw: Data(u8arr), runtime: decoder.runtime)
@@ -43,7 +43,7 @@ public extension AccountId {
         SS58.encode(data: raw, format: runtime.addressFormat)
     }
     
-    func encode(to encoder: Encoder) throws {
+    func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.string)
     }
@@ -63,12 +63,12 @@ public extension StaticAccountId {
         try self.init(checked: raw, runtime: runtime)
     }
     
-    init(from decoder: ScaleDecoder, runtime: any Runtime) throws {
+    init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws {
         let raw = try decoder.decode(.fixed(UInt(Self.byteCount)))
         try self.init(checked: raw, runtime: runtime)
     }
     
-    func encode(in encoder: ScaleEncoder, runtime: any Runtime) throws {
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: any Runtime) throws {
         try encoder.encode(raw, .fixed(UInt(Self.byteCount)))
     }
 }

@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol ApiError: Error, ScaleRuntimeDecodable, Decodable {}
+public protocol ApiError: Error, RuntimeDecodable, Swift.Decodable {}
 
 public protocol DynamicApiError: ApiError {
     init(value: Value<RuntimeTypeId>) throws
@@ -17,13 +17,13 @@ public protocol DynamicApiError: ApiError {
 }
 
 public extension DynamicApiError {
-    init(from decoder: ScaleDecoder, runtime: any Runtime) throws {
+    init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws {
         let type = try Self.errorType(runtime: runtime)
-        let value = try Value(from: decoder, as: type.id, runtime: runtime)
+        let value = try Value(from: &decoder, as: type.id, runtime: runtime)
         try self.init(value: value)
     }
     
-    init(from decoder: Decoder) throws {
+    init(from decoder: Swift.Decoder) throws {
         let type = try Self.errorType(runtime: decoder.runtime)
         let value = try Value(from: decoder, as: type.id)
         try self.init(value: value)

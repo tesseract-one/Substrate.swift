@@ -7,9 +7,9 @@
 
 import Foundation
 import ScaleCodec
-import Serializable
 
-public protocol SomeBlock: Decodable {
+
+public protocol SomeBlock: Swift.Decodable {
     associatedtype THeader: SomeBlockHeader
     associatedtype TExtrinsic: OpaqueExtrinsic
     
@@ -26,7 +26,7 @@ public extension SomeBlock {
     }
 }
 
-public protocol SomeBlockHeader: Decodable {
+public protocol SomeBlockHeader: Swift.Decodable {
     associatedtype TNumber: UnsignedInteger & DataConvertible
     associatedtype THasher: FixedHasher
     
@@ -37,7 +37,7 @@ public protocol SomeBlockHeader: Decodable {
 // Simple marker for static implementations
 public protocol StaticBlockHeader: SomeBlockHeader {}
 
-public protocol SomeChainBlock<TBlock>: Decodable {
+public protocol SomeChainBlock<TBlock>: Swift.Decodable {
     associatedtype TBlock: SomeBlock
     
     var block: TBlock { get }
@@ -48,7 +48,7 @@ public struct Block<H: SomeBlockHeader, E: OpaqueExtrinsic>: SomeBlock {
     public let extrinsics: [E]
 }
 
-public struct ChainBlock<B: SomeBlock, J: Decodable>: SomeChainBlock {
+public struct ChainBlock<B: SomeBlock, J: Swift.Decodable>: SomeChainBlock {
     public let block: B
     public let justifications: J
 }

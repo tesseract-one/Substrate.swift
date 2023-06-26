@@ -15,8 +15,8 @@ public protocol Runtime: AnyObject {
     
     var types: RuntimeTypes { get }
     
-    func encoder() -> any ScaleEncoder
-    func decoder(with data: Data) -> any ScaleDecoder
+    func encoder() -> any ScaleCodec.Encoder
+    func decoder(with data: Data) -> any ScaleCodec.Decoder
     
     func resolve(type id: RuntimeTypeId) -> RuntimeType?
     func resolve(type path: [String]) -> RuntimeTypeInfo?
@@ -61,6 +61,8 @@ public protocol RuntimeTypes {
     var blockHeader: RuntimeTypeInfo { get throws }
     var address: RuntimeTypeInfo { get throws }
     var signature: RuntimeTypeInfo { get throws }
+    var call: RuntimeTypeInfo { get throws }
+    var event: RuntimeTypeInfo { get throws }
     var extrinsicExtra: RuntimeTypeInfo { get throws }
     var dispatchInfo: RuntimeTypeInfo { get throws }
     var dispatchError: RuntimeTypeInfo { get throws }

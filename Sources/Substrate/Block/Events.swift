@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeBlockEvents: ScaleRuntimeDecodable, Default {
+public protocol SomeBlockEvents: RuntimeDecodable, Default {
     associatedtype ER: SomeEventRecord
     var events: [ER] { get }
     func events(extrinsic index: UInt32) -> [ER]
@@ -17,15 +17,13 @@ public protocol SomeBlockEvents: ScaleRuntimeDecodable, Default {
 public extension SomeBlockEvents {
     func has(event: String, pallet: String) -> Bool {
         events.first {
-            let header = $0.header()
-            return header.name == event && header.pallet == pallet
+            $0.header.name == event && $0.header.pallet == pallet
         } != nil
     }
     
     func has(event: String, pallet: String, extrinsic index: UInt32) -> Bool {
         events(extrinsic: index).first {
-            let header = $0.header()
-            return header.name == event && header.pallet == pallet
+            $0.header.name == event && $0.header.pallet == pallet
         } != nil
     }
     
@@ -39,15 +37,13 @@ public extension SomeBlockEvents {
     
     func all(records event: String, pallet: String) -> [ER] {
         events.filter{
-            let header = $0.header()
-            return header.name == event && header.pallet == pallet
+            $0.header.name == event && $0.header.pallet == pallet
         }
     }
     
     func all(records event: String, pallet: String, extrinsic index: UInt32) -> [ER] {
         events(extrinsic: index).filter{
-            let header = $0.header()
-            return header.name == event && header.pallet == pallet
+            $0.header.name == event && $0.header.pallet == pallet
         }
     }
     
@@ -60,11 +56,11 @@ public extension SomeBlockEvents {
     }
     
     func all(events event: String, pallet: String) throws -> [AnyEvent] {
-        try all(records: event, pallet: pallet).map { try $0.any() }
+        try all(records: event, pallet: pallet).map { try $0.any }
     }
     
     func all(events event: String, pallet: String, extrinsic index: UInt32) throws -> [AnyEvent] {
-        try all(records: event, pallet: pallet, extrinsic: index).map { try $0.any() }
+        try all(records: event, pallet: pallet, extrinsic: index).map { try $0.any }
     }
     
     func all<E: StaticEvent>(events type: E.Type) throws -> [E] {
@@ -77,15 +73,13 @@ public extension SomeBlockEvents {
     
     func first(record event: String, pallet: String) -> ER? {
         events.first {
-            let header = $0.header()
-            return header.name == event && header.pallet == pallet
+            $0.header.name == event && $0.header.pallet == pallet
         }
     }
     
     func first(record event: String, pallet: String, extrinsic index: UInt32) -> ER? {
         events(extrinsic: index).first {
-            let header = $0.header()
-            return header.name == event && header.pallet == pallet
+            $0.header.name == event && $0.header.pallet == pallet
         }
     }
     
@@ -98,11 +92,11 @@ public extension SomeBlockEvents {
     }
     
     func first(event name: String, pallet: String) throws -> AnyEvent? {
-        try first(record: name, pallet: pallet).map{try $0.any()}
+        try first(record: name, pallet: pallet).map{try $0.any}
     }
     
     func first(event name: String, pallet: String, extrinsic index: UInt32) throws -> AnyEvent? {
-        try first(record: name, pallet: pallet, extrinsic: index).map{try $0.any()}
+        try first(record: name, pallet: pallet, extrinsic: index).map{try $0.any}
     }
     
     func first<E: StaticEvent>(event type: E.Type) throws -> E? {
@@ -115,15 +109,13 @@ public extension SomeBlockEvents {
     
     func last(record event: String, pallet: String) -> ER? {
         events.last {
-            let header = $0.header()
-            return header.name == event && header.pallet == pallet
+            $0.header.name == event && $0.header.pallet == pallet
         }
     }
     
     func last(record event: String, pallet: String, extrinsic index: UInt32) -> ER? {
         events(extrinsic: index).last {
-            let header = $0.header()
-            return header.name == event && header.pallet == pallet
+            $0.header.name == event && $0.header.pallet == pallet
         }
     }
     
@@ -136,11 +128,11 @@ public extension SomeBlockEvents {
     }
     
     func last(event name: String, pallet: String) throws -> AnyEvent? {
-        try last(record: name, pallet: pallet).map{try $0.any()}
+        try last(record: name, pallet: pallet).map{try $0.any}
     }
     
     func last(event name: String, pallet: String, extrinsic index: UInt32) throws -> AnyEvent? {
-        try last(record: name, pallet: pallet, extrinsic: index).map{try $0.any()}
+        try last(record: name, pallet: pallet, extrinsic: index).map{try $0.any}
     }
     
     func last<E: StaticEvent>(event type: E.Type) throws -> E? {
@@ -161,8 +153,8 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringCon
         self.events = events
     }
     
-    public init(from decoder: ScaleDecoder, runtime: any Runtime) throws {
-        let events = try Array<ER>(from: decoder, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws {
+        let events = try Array<ER>(from: &decoder, runtime: runtime)
         self.init(events: events)
     }
     

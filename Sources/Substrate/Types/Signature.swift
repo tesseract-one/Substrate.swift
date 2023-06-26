@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Signature: ScaleRuntimeCodable {
+public protocol Signature: RuntimeCodable {
     var raw: Data { get }
     var algorithm: CryptoTypeId { get }
     
@@ -32,7 +32,7 @@ public extension CryptoTypeId {
     }
 }
 
-public struct EcdsaSignature: ScaleFixedData, Signature, Hashable, Equatable, CustomStringConvertible {
+public struct EcdsaSignature: FixedDataCodable, Signature, Hashable, Equatable, CustomStringConvertible {
     public let signature: Data
     
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
@@ -62,7 +62,7 @@ public struct EcdsaSignature: ScaleFixedData, Signature, Hashable, Equatable, Cu
     public static let fixedBytesCount: Int = CryptoTypeId.ecdsa.signatureBytesCount
 }
 
-public struct Ed25519Signature: ScaleFixedData, Signature, Hashable, Equatable, CustomStringConvertible {
+public struct Ed25519Signature: FixedDataCodable, Signature, Hashable, Equatable, CustomStringConvertible {
     public let signature: Data
     
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
@@ -92,7 +92,7 @@ public struct Ed25519Signature: ScaleFixedData, Signature, Hashable, Equatable, 
     public static let fixedBytesCount: Int = CryptoTypeId.ed25519.signatureBytesCount
 }
 
-public struct Sr25519Signature: ScaleFixedData, Signature, Hashable, Equatable, CustomStringConvertible {
+public struct Sr25519Signature: FixedDataCodable, Signature, Hashable, Equatable, CustomStringConvertible {
     public let signature: Data
     
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
@@ -159,8 +159,8 @@ extension MultiSignature: Signature {
     public static let supportedCryptoTypes: [CryptoTypeId] = [.sr25519, .ecdsa, .ed25519]
 }
 
-extension MultiSignature: ScaleCodable {
-    public init(from decoder: ScaleDecoder) throws {
+extension MultiSignature: ScaleCodec.Codable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         let opt = try decoder.decode(.enumCaseId)
         switch opt {
         case 0: self = try .ed25519(decoder.decode())
@@ -170,16 +170,22 @@ extension MultiSignature: ScaleCodable {
         }
     }
     
-    public func encode(in encoder: ScaleEncoder) throws {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
         switch self {
-        case .ed25519(let s): try encoder.encode(0, .enumCaseId).encode(s)
-        case .sr25519(let s): try encoder.encode(1, .enumCaseId).encode(s)
-        case .ecdsa(let s): try encoder.encode(2, .enumCaseId).encode(s)
+        case .ed25519(let s):
+            try encoder.encode(0, .enumCaseId)
+            try encoder.encode(s)
+        case .sr25519(let s):
+            try encoder.encode(1, .enumCaseId)
+            try encoder.encode(s)
+        case .ecdsa(let s):
+            try encoder.encode(2, .enumCaseId)
+            try encoder.encode(s)
         }
     }
 }
 
-extension MultiSignature: ScaleRuntimeCodable {}
+extension MultiSignature: RuntimeCodable {}
 
 public extension Signature {
     var description: String {

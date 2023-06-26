@@ -10,9 +10,9 @@ import Foundation
 import Foundation
 import ScaleCodec
 
-public protocol Address: ScaleRuntimeCodable,
-                         ScaleRuntimeDynamicDecodable,
-                         ScaleRuntimeDynamicEncodable,
+public protocol Address: RuntimeCodable,
+                         RuntimeDynamicDecodable,
+                         RuntimeDynamicEncodable,
                          ValueRepresentable
 {
     associatedtype TAccountId: AccountId
@@ -64,11 +64,11 @@ extension MultiAddress: Address {
     }
 }
 
-extension MultiAddress: ScaleRuntimeCodable {
-    public init(from decoder: ScaleDecoder, runtime: any Runtime) throws {
+extension MultiAddress: RuntimeCodable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws {
         let type = try decoder.decode(.enumCaseId)
         switch type {
-        case 0: self = try .id(Id(from: decoder, runtime: runtime))
+        case 0: self = try .id(Id(from: &decoder, runtime: runtime))
         case 1: self = try .index(decoder.decode(.compact))
         case 2: self = try .raw(decoder.decode())
         case 3: self = try .address32(decoder.decode(.fixed(32)))
@@ -77,13 +77,23 @@ extension MultiAddress: ScaleRuntimeCodable {
         }
     }
 
-    public func encode(in encoder: ScaleEncoder, runtime: any Runtime) throws {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: any Runtime) throws {
         switch self {
-        case .id(let id): try id.encode(in: encoder.encode(0, .enumCaseId), runtime: runtime)
-        case .index(let index): try encoder.encode(1, .enumCaseId).encode(index, .compact)
-        case .raw(let data): try encoder.encode(2, .enumCaseId).encode(data)
-        case .address32(let data): try encoder.encode(3, .enumCaseId).encode(data, .fixed(32))
-        case .address20(let data): try encoder.encode(4, .enumCaseId).encode(data, .fixed(20))
+        case .id(let id):
+            try encoder.encode(0, .enumCaseId)
+            try id.encode(in: &encoder, runtime: runtime)
+        case .index(let index):
+            try encoder.encode(1, .enumCaseId)
+            try encoder.encode(index, .compact)
+        case .raw(let data):
+            try encoder.encode(2, .enumCaseId)
+            try encoder.encode(data)
+        case .address32(let data):
+            try encoder.encode(3, .enumCaseId)
+            try encoder.encode(data, .fixed(32))
+        case .address20(let data):
+            try encoder.encode(4, .enumCaseId)
+            try encoder.encode(data, .fixed(20))
         }
     }
 }

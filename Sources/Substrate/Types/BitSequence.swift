@@ -169,7 +169,7 @@ extension BitSequence {
 }
 
 extension BitSequence {
-    public init(from decoder: ScaleDecoder, format: Format) throws {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, format: Format) throws {
         let bitCount = try decoder.decode(UInt32.self, .compact)
         let count = bitCount.isMultiple(of: format.store.bits)
             ? bitCount / format.store.bits
@@ -194,7 +194,7 @@ extension BitSequence {
         }
     }
     
-    public func encode(in encoder: ScaleEncoder, format: Format) throws {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, format: Format) throws {
         try encoder.encode(UInt32(count), .compact)
         switch format.store {
         case .u8:
@@ -260,19 +260,18 @@ extension BitSequence.Format.Order {
     }
 }
 
-extension ScaleCustomEncoderFactory where T == BitSequence {
-    public static func format(_ format: BitSequence.Format) -> ScaleCustomEncoderFactory {
-        ScaleCustomEncoderFactory { encoder, val in
-            try val.encode(in: encoder, format: format)
-            return encoder
+extension CustomEncoderFactory where T == BitSequence {
+    public static func format(_ format: BitSequence.Format) -> CustomEncoderFactory {
+        CustomEncoderFactory { encoder, val in
+            try val.encode(in: &encoder, format: format)
         }
     }
 }
 
-extension ScaleCustomDecoderFactory where T == BitSequence {
-    public static func format(_ format: BitSequence.Format) -> ScaleCustomDecoderFactory {
-        ScaleCustomDecoderFactory { decoder in
-            try BitSequence(from: decoder, format: format)
+extension CustomDecoderFactory where T == BitSequence {
+    public static func format(_ format: BitSequence.Format) -> CustomDecoderFactory {
+        CustomDecoderFactory { decoder in
+            try BitSequence(from: &decoder, format: format)
         }
     }
 }

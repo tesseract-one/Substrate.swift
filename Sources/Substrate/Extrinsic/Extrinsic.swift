@@ -7,7 +7,6 @@
 
 import Foundation
 import ScaleCodec
-import JsonRPC
 
 public struct Extrinsic<C: Call, Extra: ExtrinsicExtra>: CustomStringConvertible {
     public let call: C
@@ -61,12 +60,12 @@ extension Either: ExtrinsicExtra where Left: ExtrinsicExtra, Right: ExtrinsicExt
 
 public typealias AnyExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, Either<M.TUnsignedExtra, M.TSignedExtra>>
 
-public protocol OpaqueExtrinsic<TManager>: Decodable {
+public protocol OpaqueExtrinsic<TManager>: Swift.Decodable {
     associatedtype TManager: ExtrinsicManager
     
     func hash() -> TManager.RT.THasher.THash
     
-    func decode<C: Call & ScaleRuntimeDecodable>() throws -> AnyExtrinsic<C, TManager>
+    func decode<C: Call & RuntimeDecodable>() throws -> AnyExtrinsic<C, TManager>
     
     static var version: UInt8 { get }
 }
@@ -95,7 +94,8 @@ public protocol ExtrinsicManager<RT> {
     var version: UInt8 { get }
     
     func unsigned<C: Call>(call: C, params: TUnsignedParams) async throws -> Extrinsic<C, TUnsignedExtra>
-    func encode<C: Call>(unsigned extrinsic: Extrinsic<C, TUnsignedExtra>, in encoder: ScaleEncoder) throws
+    func encode<C: Call, E: ScaleCodec.Encoder>(unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
+                                                in encoder: inout E) throws
     
     func params<C: Call>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
@@ -106,17 +106,20 @@ public protocol ExtrinsicManager<RT> {
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
         params: TSigningParams
     ) async throws -> ExtrinsicSignPayload<C, TSigningExtra>
-    func encode<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>, in encoder: ScaleEncoder) throws
-    func decode<C: Call & ScaleRuntimeDecodable>(
-        payload decoder: ScaleDecoder
+    func encode<C: Call, E: ScaleCodec.Encoder>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
+                                                in encoder: inout E) throws
+    func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
+        payload decoder: inout D
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra>
     
     func signed<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
                          address: RT.TAddress,
                          signature: RT.TSignature) throws -> Extrinsic<C, TSignedExtra>
-    func encode<C: Call>(signed extrinsic: Extrinsic<C, TSignedExtra>, in encoder: ScaleEncoder) throws
-    
-    func decode<C: Call & ScaleRuntimeDecodable>(from decoder: ScaleDecoder) throws -> AnyExtrinsic<C, Self>
+    func encode<C: Call, E: ScaleCodec.Encoder>(signed extrinsic: Extrinsic<C, TSignedExtra>,
+                                                in encoder: inout E) throws
+    func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
+        from decoder: inout D
+    ) throws -> AnyExtrinsic<C, Self>
     
     mutating func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws
     
@@ -144,7 +147,7 @@ public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where 
     public let data: Data
     public let runtime: any Runtime
     
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: Swift.Decoder) throws {
         self.runtime = decoder.runtime
         let container = try decoder.singleValueContainer()
         self.data = try container.decode(Data.self)
@@ -154,8 +157,9 @@ public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where 
         try! TManager.RT.THasher.THash(runtime.hasher.hash(data: data))
     }
     
-    public func decode<C: Call & ScaleRuntimeDecodable>() throws -> AnyExtrinsic<C, TManager> {
-        try TManager.get(from: runtime).decode(from: runtime.decoder(with: data))
+    public func decode<C: Call & RuntimeDecodable>() throws -> AnyExtrinsic<C, TManager> {
+        var decoder = runtime.decoder(with: data)
+        return try TManager.get(from: runtime).decode(from: &decoder)
     }
     
     public static var version: UInt8 { TManager.version }

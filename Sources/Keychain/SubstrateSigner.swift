@@ -50,9 +50,9 @@ public extension KeyPair {
         guard self.pubKey.raw == account.raw else {
             throw SignerError.accountNotFound(account)
         }
-        let encoder = runtime.encoder()
+        var encoder = runtime.encoder()
         do {
-            try runtime.extrinsicManager.encode(payload: payload, in: encoder)
+            try runtime.extrinsicManager.encode(payload: payload, in: &encoder)
         } catch {
             throw SignerError.badPayload(error: error.localizedDescription)
         }

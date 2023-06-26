@@ -13,13 +13,13 @@ import JsonRPC
 final class SubstrateTests: XCTestCase {
     let client = {
         let cl = JsonRpcClient(.ws(url: URL(string: "wss://westend-rpc.polkadot.io")!))
-        cl.debug = true
+        cl.debug = false
         return cl
     }()
     var env = Environment()
     
     func testInitialization() {
-        runAsyncTest(withTimeout: 30) {
+        runAsyncTest(withTimeout: 3000) {
             let _ = try await Substrate(rpc: self.client, config: DynamicRuntime())
         }
     }
@@ -42,25 +42,25 @@ final class SubstrateTests: XCTestCase {
         }
     }
     
-//    func testTransferTx() {
-//        runAsyncTest(withTimeout: 300) {
-//            let from = self.env.kpAlice //self.env.randomKeyPair()
-//            let toKp = self.env.randomKeyPair(exclude: from)
-//            let substrate = try await Substrate(rpc: self.client, config: DynamicRuntime())
-//            let to = try toKp.address(in: substrate)
-//            let call = try AnyCall(name: "transfer_allow_death",
-//                                   pallet: "Balances",
-//                                   params: .map([
-//                                        ("dest", to.asValue()),
-//                                        ("value", .u256(15483812856))
-//                                   ])
-//            )
-//            let tx = try await substrate.tx.new(call)
-//            let events = try await tx.signSendAndWatch(signer: from)
-//                .waitForFinalized()
-//                .success()
-//            print("Events: \(events)")
-//        }
-//    }
+    func testTransferTx() {
+        runAsyncTest(withTimeout: 300) {
+            let from = self.env.kpAlice //self.env.randomKeyPair()
+            let toKp = self.env.randomKeyPair(exclude: from)
+            let substrate = try await Substrate(rpc: self.client, config: DynamicRuntime())
+            let to = try toKp.address(in: substrate)
+            let call = try AnyCall(name: "transfer_allow_death",
+                                   pallet: "Balances",
+                                   params: .map([
+                                        ("dest", to.asValue()),
+                                        ("value", .u256(15483812856))
+                                   ])
+            )
+            let tx = try await substrate.tx.new(call)
+            let events = try await tx.signSendAndWatch(signer: from)
+                .waitForFinalized()
+                .success()
+            XCTAssert(events.events.count > 0)
+            print("Events: \(events.events)")
+        }
+    }
 }
-
