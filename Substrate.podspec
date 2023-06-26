@@ -40,7 +40,7 @@ Pod::Spec.new do |s|
     ss.source_files = 'Sources/Substrate/**/*.swift'
     
     ss.dependency 'Blake2', '~> 0.1.0'
-    ss.dependency 'ScaleCodec', '~> 0.2.0'
+    ss.dependency 'ScaleCodec', '~> 0.3.0'
     ss.dependency 'xxHash-Swift', '~> 1.1.0'
     ss.dependency 'JsonRPC.swift/Serializable', '~> 0.2.0'
     ss.dependency 'Serializable.swift', '~> 0.2.0'
