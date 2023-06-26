@@ -84,8 +84,7 @@ public struct AnyEvent: Event, CustomStringConvertible {
     public static func fetchEventData<D: ScaleCodec.Decoder>(
         from decoder: inout D, runtime: any Runtime
     ) throws -> (name: String, pallet: String, data: Data) {
-        var skippable = decoder.skippable()
-        let size = try Value<Void>.calculateSize(in: &skippable, for: runtime.types.event.id, runtime: runtime)
+        let size = try Value<Void>.calculateSize(in: decoder, for: runtime.types.event.id, runtime: runtime)
         let hBytes = try decoder.peek(count: 2)
         guard let header = runtime.resolve(eventName: hBytes[1], pallet: hBytes[0]) else {
             throw EventDecodingError.eventNotFound(index: hBytes[1], pallet: hBytes[0])

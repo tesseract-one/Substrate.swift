@@ -60,7 +60,7 @@ final class SubstrateTests: XCTestCase {
                 .waitForFinalized()
                 .success()
             XCTAssert(events.events.count > 0)
-            print("Events: \(events.events)")
+            print("Events: \(try events.allAnyParsed())")
         }
     }
 }

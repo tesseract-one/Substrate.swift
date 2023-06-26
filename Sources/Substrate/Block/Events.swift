@@ -142,6 +142,14 @@ public extension SomeBlockEvents {
     func last<E: StaticEvent>(event type: E.Type, extrinsic index: UInt32) throws -> E? {
         try last(record: type, extrinsic: index).map{try $0.typed(type)}
     }
+    
+    func allAnyParsed() throws -> [AnyEvent] {
+        try events.map { try $0.any }
+    }
+    
+    func allAnyParsed(extrinsic index: UInt32) throws -> [AnyEvent] {
+        try events(extrinsic: index).map { try $0.any }
+    }
 }
 
 public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringConvertible {
