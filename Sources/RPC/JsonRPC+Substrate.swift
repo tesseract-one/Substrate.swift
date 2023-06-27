@@ -8,6 +8,9 @@
 import Foundation
 import JsonRPC
 @_exported import func JsonRPC.Params
+#if !COCOAPODS
+import Substrate
+#endif
 
 extension JSONEncoder {
     public static var substrate: JSONEncoder = {
@@ -27,18 +30,6 @@ extension JSONDecoder {
         decoder.nonConformingFloatDecodingStrategy = .throw
         return decoder
     }()
-}
-
-extension CodingUserInfoKey {
-    public static let substrateRuntime = CodingUserInfoKey(rawValue: "SubstrateRuntimeKey")!
-}
-
-extension Encoder {
-    public var runtime: any Runtime { userInfo[.substrateRuntime]! as! any Runtime }
-}
-
-extension Decoder {
-    public var runtime: any Runtime { userInfo[.substrateRuntime]! as! any Runtime }
 }
 
 extension ContentEncoder {

@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import Substrate
 #if !COCOAPODS
 import SubstrateKeychain
 #endif

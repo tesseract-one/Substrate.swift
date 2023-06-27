@@ -7,7 +7,9 @@
 
 import Foundation
 import ScaleCodec
-import JsonRPC
+#if !COCOAPODS
+import Substrate
+#endif
 
 public struct RpcClient<RC: Config, CL: RpcCallableClient & RuntimeHolder> {
     public let client: CL

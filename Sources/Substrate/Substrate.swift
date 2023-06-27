@@ -79,11 +79,4 @@ public final class Substrate<RC: Config, CL: Client>: SomeSubstrate where CL.C =
                                           properties: properties)
         try self.init(client: client, runtime: runtime, signer: signer)
     }
-    
-    public convenience init<RPC>(
-        rpc client: RPC, config: RC, signer: Signer? = nil, at hash: RC.THasher.THash? = nil
-    ) async throws where RPC: RpcCallableClient & RuntimeHolder, CL == RpcClient<RC, RPC> {
-        let systemClient = RpcClient<RC, RPC>(client: client)
-        try await self.init(client: systemClient, config: config, signer: signer, at: hash)
-    }
 }

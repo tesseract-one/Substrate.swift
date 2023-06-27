@@ -8,24 +8,35 @@
 import XCTest
 import ScaleCodec
 @testable import Substrate
+#if !COCOAPODS
+@testable import SubstrateRPC
+#endif
 
 final class SubstrateTests: XCTestCase {
-    let client = {
+    let debug = false
+    lazy var env = Environment()
+    
+    lazy var wsClient = {
         let cl = JsonRpcClient(.ws(url: URL(string: "wss://westend-rpc.polkadot.io")!))
-        cl.debug = false
+        cl.debug = self.debug
         return cl
     }()
-    var env = Environment()
+    
+    lazy var httpClient = {
+        let cl = JsonRpcClient(.http(url: URL(string: "https://westend-rpc.polkadot.io")!))
+        cl.debug = self.debug
+        return cl
+    }()
     
     func testInitialization() {
         runAsyncTest(withTimeout: 3000) {
-            let _ = try await Substrate(rpc: self.client, config: DynamicRuntime())
+            let _ = try await Substrate(rpc: self.httpClient, config: DynamicRuntime())
         }
     }
     
     func testStorageValueCall() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Substrate(rpc: self.client, config: DynamicRuntime())
+            let substrate = try await Substrate(rpc: self.httpClient, config: DynamicRuntime())
             let entry = try substrate.query.entry(name: "Events", pallet: "System")
             let value = try await entry.value()
             XCTAssertNotNil(value)
@@ -34,7 +45,7 @@ final class SubstrateTests: XCTestCase {
     
     func testBlock() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Substrate(rpc: self.client, config: DynamicRuntime())
+            let substrate = try await Substrate(rpc: self.httpClient, config: DynamicRuntime())
             let block = try await substrate.client.block(config: substrate.runtime.config)
             XCTAssertNotNil(block)
             let _ = try block!.block.parseExtrinsics()
@@ -42,16 +53,35 @@ final class SubstrateTests: XCTestCase {
     }
     
     func testTransferTx() {
-        runAsyncTest(withTimeout: 300) {
+        runAsyncTest(withTimeout: 20) {
             let from = self.env.kpAlice //self.env.randomKeyPair()
             let toKp = self.env.randomKeyPair(exclude: from)
-            let substrate = try await Substrate(rpc: self.client, config: DynamicRuntime())
+            let substrate = try await Substrate(rpc: self.httpClient, config: DynamicRuntime())
             let to = try toKp.address(in: substrate)
             let call = try AnyCall(name: "transfer_allow_death",
                                    pallet: "Balances",
                                    params: .map([
                                         ("dest", to.asValue()),
                                         ("value", .u256(15483812856))
+                                   ])
+            )
+            let tx = try await substrate.tx.new(call)
+            let _ = try await tx.signAndSend(signer: from)
+        }
+    }
+    
+    #if !os(Linux) && !os(Windows)
+    func testTransferAndWatchTx() {
+        runAsyncTest(withTimeout: 300) {
+            let from = self.env.kpAlice //self.env.randomKeyPair()
+            let toKp = self.env.randomKeyPair(exclude: from)
+            let substrate = try await Substrate(rpc: self.wsClient, config: DynamicRuntime())
+            let to = try toKp.address(in: substrate)
+            let call = try AnyCall(name: "transfer_allow_death",
+                                   pallet: "Balances",
+                                   params: .map([
+                                        ("dest", to.asValue()),
+                                        ("value", .u256(15483812850))
                                    ])
             )
             let tx = try await substrate.tx.new(call)
@@ -62,4 +92,5 @@ final class SubstrateTests: XCTestCase {
             print("Events: \(try events.allAnyParsed())")
         }
     }
+    #endif
 }

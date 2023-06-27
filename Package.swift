@@ -13,6 +13,9 @@ var package = Package(
         .library(
             name: "SubstrateKeychain",
             targets: ["SubstrateKeychain"]),
+        .library(
+            name: "SubstrateRPC",
+            targets: ["SubstrateRPC"]),
     ],
     dependencies: [
         .package(url: "https://github.com/tesseract-one/swift-scale-codec.git", .upToNextMinor(from: "0.3.0")),
@@ -23,14 +26,13 @@ var package = Package(
         .package(url: "https://github.com/tesseract-one/Bip39.swift.git", .upToNextMinor(from: "0.1.1")),
         .package(url: "https://github.com/daisuke-t-jp/xxHash-Swift.git", .upToNextMinor(from: "1.1.1")),
         .package(url: "https://github.com/tesseract-one/Serializable.swift.git", .upToNextMinor(from: "0.2.3")),
-        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", branch: "main"),
+        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", .upToNextMinor(from: "0.2.0")),
     ],
     targets: [
         .target(
             name: "Substrate",
             dependencies: [
                 .product(name: "Serializable", package: "Serializable.swift"),
-                .product(name: "JsonRPC", package: "JsonRPC.swift"),
                 .product(name: "ScaleCodec", package: "swift-scale-codec"),
                 .product(name: "Blake2", package: "Blake2.swift"),
                 "xxHash-Swift"
@@ -46,11 +48,19 @@ var package = Package(
                 "Substrate"
             ],
             path: "Sources/Keychain"),
+        .target(
+            name: "SubstrateRPC",
+            dependencies: [
+                .product(name: "Serializable", package: "Serializable.swift"),
+                .product(name: "JsonRPC", package: "JsonRPC.swift"),
+                "Substrate"
+            ],
+            path: "Sources/RPC"),
         .testTarget(
             name: "KeychainTests",
             dependencies: ["SubstrateKeychain"]),
         .testTarget(
             name: "SubstrateTests",
-            dependencies: ["Substrate", "SubstrateKeychain"]),
+            dependencies: ["Substrate", "SubstrateKeychain", "SubstrateRPC"]),
     ]
 )
