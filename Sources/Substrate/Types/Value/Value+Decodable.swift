@@ -1,5 +1,5 @@
 //
-//  Registry+Decodable.swift
+//  Value+Decodable.swift
 //  
 //
 //  Created by Yehor Popovych on 10.01.2023.

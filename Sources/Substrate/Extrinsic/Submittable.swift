@@ -24,6 +24,7 @@ public enum SubmittableError: Swift.Error {
     case dryRunIsNotSupported
     case queryInfoIsNotSupported
     case queryFeeDetailsIsNotSupported
+    case batchIsNotSupported
 }
 
 extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {

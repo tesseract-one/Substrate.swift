@@ -104,7 +104,7 @@ extension EcdsaKeyPair: KeyDerivable {
     public func derive(path: [PathComponent]) throws -> EcdsaKeyPair {
         let priv = try path.reduce(_private) { (secret, cmp) in
             guard cmp.isHard else { throw KeyPairError.derive(error: .softDeriveIsNotSupported) }
-            var encoder = ScaleCodec.encoder()
+            var encoder = ScaleCodec.encoder(reservedCapacity: 80)
             try encoder.encode("Secp256k1HDKD")
             try encoder.encode(Data(secret), .fixed(UInt(Secp256k1Context.privKeySize)))
             try encoder.encode(cmp.bytes, .fixed(UInt(PathComponent.size)))

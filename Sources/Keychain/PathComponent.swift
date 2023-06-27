@@ -37,7 +37,7 @@ extension PathComponent {
         switch index {
         case let arr as [UInt8]: result = Data(arr)
         case let data as Data: result = data
-        default: result = try ScaleCodec.encode(index)
+        default: result = try ScaleCodec.encode(index, reservedCapacity: 256) // Should be enough for strings
         }
         if result.count > Self.size {
             result = Self.hasher.hash(data: result)

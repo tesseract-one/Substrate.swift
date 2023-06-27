@@ -16,6 +16,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     public let properties: RC.TSystemProperties
     public let metadataHash: RC.THasher.THash?
     public let types: any RuntimeTypes
+    public let isBatchSupported: Bool
     
     public private(set) var extrinsicManager: RC.TExtrinsicManager
     
@@ -53,6 +54,11 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         self.typedHasher = try config.hasher(metadata: metadata)
         self.extrinsicManager = try config.extrinsicManager()
         self.types = LazyRuntimeTypes(config: config, metadata: metadata)
+        if let bc = config as? any BatchSupportedConfig {
+            self.isBatchSupported = bc.isBatchSupported(metadata: metadata)
+        } else {
+            self.isBatchSupported = false
+        }
     }
     
     open func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws {

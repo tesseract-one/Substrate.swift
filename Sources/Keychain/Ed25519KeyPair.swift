@@ -108,7 +108,7 @@ extension Ed25519KeyPair: KeyDerivable {
     public func derive(path: [PathComponent]) throws -> Ed25519KeyPair {
         let kp = try path.reduce(_keyPair) { (pair, cmp) in
             guard cmp.isHard else { throw KeyPairError.derive(error: .softDeriveIsNotSupported) }
-            var encoder = ScaleCodec.encoder()
+            var encoder = ScaleCodec.encoder(reservedCapacity: 80)
             try encoder.encode("Ed25519HDKD")
             try encoder.encode(_keyPair.privateRaw, .fixed(UInt(EDKeyPair.secretSize)))
             try encoder.encode(cmp.bytes, .fixed(UInt(PathComponent.size)))

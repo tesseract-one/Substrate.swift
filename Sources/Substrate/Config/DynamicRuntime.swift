@@ -318,3 +318,36 @@ public extension DynamicRuntime {
         public static let name = "System"
     }
 }
+
+extension DynamicRuntime: BatchSupportedConfig {
+    public typealias TBatchCall = Utility.Calls.Batch
+    public typealias TBatchAllCall = Utility.Calls.BatchAll
+    
+    public struct Utility {
+        public struct Calls {
+            public struct Batch: SomeBatchCall {
+                public let calls: [Call]
+                public init(calls: [Call]) {
+                    self.calls = calls
+                }
+                public func add(_ call: Call) -> Self {
+                    Self(calls: calls + [call])
+                }
+                public static var name = "batch"
+                public static var pallet = Utility.name
+            }
+            public struct BatchAll: SomeBatchCall {
+                public let calls: [Call]
+                public init(calls: [Call]) {
+                    self.calls = calls
+                }
+                public func add(_ call: Call) -> Self {
+                    Self(calls: calls + [call])
+                }
+                public static var name = "batch_all"
+                public static var pallet = Utility.name
+            }
+        }
+        public static let name = "Utility"
+    }
+}

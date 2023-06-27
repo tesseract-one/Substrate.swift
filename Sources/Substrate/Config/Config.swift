@@ -72,3 +72,17 @@ public extension Config where TBlock.THeader: StaticBlockHeader {
         fatalError("Should not be called for StaticBlockHeader!")
     }
 }
+
+public protocol BatchSupportedConfig: Config {
+    associatedtype TBatchCall: SomeBatchCall
+    associatedtype TBatchAllCall: SomeBatchCall
+    
+    func isBatchSupported(metadata: any Metadata) -> Bool
+}
+
+public extension BatchSupportedConfig {
+    func isBatchSupported(metadata: Metadata) -> Bool {
+        metadata.resolve(pallet: TBatchCall.pallet)?.callIndex(name: TBatchCall.name) != nil &&
+        metadata.resolve(pallet: TBatchAllCall.pallet)?.callIndex(name: TBatchAllCall.name) != nil
+    }
+}

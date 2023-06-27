@@ -48,19 +48,19 @@ public class ExtrinsicApiRegistry<S: SomeSubstrate> {
             return api
         }
     }
-    
-    public func signer() throws -> any Signer {
+}
+
+public extension ExtrinsicApiRegistry {
+    var signer: any Signer { get throws {
         guard let signer = substrate.signer else {
             throw SubmittableError.signerIsNil
         }
         return signer
-    }
-}
-
-public extension ExtrinsicApiRegistry {
+    }}
+    
     func account() async throws -> any PublicKey {
-        try await signer().account(type: .account,
-                                   algos: S.RC.TSignature.algorithms(runtime: substrate.runtime))
+        try await signer.account(type: .account,
+                                 algos: S.RC.TSignature.algorithms(runtime: substrate.runtime))
     }
     
     func new<C: Call>(
@@ -90,5 +90,47 @@ public extension ExtrinsicApiRegistry where S.CL: SubscribableClient {
         _ extrinsic: SignedExtrinsic<C, S.RC.TExtrinsicManager>
     ) async throws -> AsyncThrowingStream<S.RC.TTransactionStatus, Error> {
         try await substrate.client.submitAndWatch(extrinsic: extrinsic, runtime: substrate.runtime)
+    }
+}
+
+public extension ExtrinsicApiRegistry where S.RC: BatchSupportedConfig {
+    func batch(
+        calls: [Call], params: S.RC.TExtrinsicManager.TUnsignedParams
+    ) async throws -> Submittable<S, S.RC.TBatchCall, S.RC.TExtrinsicManager.TUnsignedExtra> {
+        guard substrate.runtime.isBatchSupported else {
+            throw SubmittableError.batchIsNotSupported
+        }
+        return try await Submittable(substrate: substrate,
+                                     call: S.RC.TBatchCall(calls: calls),
+                                     params: params)
+    }
+    
+    func batchAll(
+        calls: [Call], params: S.RC.TExtrinsicManager.TUnsignedParams
+    ) async throws -> Submittable<S, S.RC.TBatchAllCall, S.RC.TExtrinsicManager.TUnsignedExtra> {
+        guard substrate.runtime.isBatchSupported else {
+            throw SubmittableError.batchIsNotSupported
+        }
+        return try await Submittable(substrate: substrate,
+                                     call: S.RC.TBatchAllCall(calls: calls),
+                                     params: params)
+    }
+}
+
+public extension ExtrinsicApiRegistry
+    where S.RC: BatchSupportedConfig, S.RC.TExtrinsicManager.TUnsignedParams == Void
+{
+    @inlinable
+    func batch(
+        _ calls: [Call]
+    ) async throws -> Submittable<S, S.RC.TBatchCall, S.RC.TExtrinsicManager.TUnsignedExtra> {
+        try await batch(calls: calls, params: ())
+    }
+    
+    @inlinable
+    func batchAll(
+        _ calls: [Call]
+    ) async throws -> Submittable<S, S.RC.TBatchAllCall, S.RC.TExtrinsicManager.TUnsignedExtra> {
+        try await batchAll(calls: calls, params: ())
     }
 }
