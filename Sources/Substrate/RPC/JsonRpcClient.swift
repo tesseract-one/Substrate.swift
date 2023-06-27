@@ -8,9 +8,6 @@
 import Foundation
 import JsonRPC
 import Serializable
-#if !COCOAPODS
-import JsonRPCSerializable
-#endif
 
 public class JsonRpcCallableClient: RpcCallableClient, RuntimeHolder {
     public private (set) var client: JsonRPC.Client & ContentCodersProvider
@@ -30,7 +27,7 @@ public class JsonRpcCallableClient: RpcCallableClient, RuntimeHolder {
     public func call<Params: Encodable, Res: Decodable>(
         method: String, params: Params
     ) async throws -> Res {
-        try await client.call(method: method, params: params)
+        try await client.call(method: method, params: params, SerializableValue.self)
     }
     
     public var runtime: any Runtime {
@@ -132,7 +129,7 @@ public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDeleg
     public func subscribe<P, E>(
         method: String, params: P, unsubsribe umethod: String
     ) async throws -> AsyncThrowingStream<E, Swift.Error> where P : Encodable, E : Decodable {
-        let subscriptionId: String = try await client.call(method: method, params: params)
+        let subscriptionId: String = try await client.call(method: method, params: params, SerializableValue.self)
         return AsyncThrowingStream { continuation in
             let unsubscribe = { [weak self] in
                 guard let this = self else { return }
@@ -208,7 +205,7 @@ public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDeleg
     
     private func unsubscribe(id: String, method: String) async throws {
         try await self.subscriptions.remove(id: id)
-        let result: Bool = try await self.client.call(method: method, params: Params(id))
+        let result: Bool = try await self.client.call(method: method, params: Params(id), SerializableValue.self)
         if !result { throw Error.unsubscribeFailed }
     }
     

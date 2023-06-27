@@ -6,12 +6,6 @@
 //
 
 import Foundation
-import ScaleCodec
-import JsonRPC
-import Serializable
-#if !COCOAPODS
-import JsonRPCSerializable
-#endif
 
 public protocol RpcApi<S> {
     associatedtype S: SomeSubstrate

@@ -7,7 +7,6 @@
 
 import XCTest
 import ScaleCodec
-import JsonRPC
 @testable import Substrate
 
 final class SubstrateTests: XCTestCase {

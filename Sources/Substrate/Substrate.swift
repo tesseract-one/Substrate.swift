@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import JsonRPC
 
 public protocol SomeSubstrate<RC>: AnyObject {
     associatedtype RC: Config

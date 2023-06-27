@@ -7,6 +7,7 @@
 
 import Foundation
 import JsonRPC
+@_exported import func JsonRPC.Params
 
 extension JSONEncoder {
     public static var substrate: JSONEncoder = {

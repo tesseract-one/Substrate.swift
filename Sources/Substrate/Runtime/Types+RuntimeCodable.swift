@@ -7,7 +7,6 @@
 
 import Foundation
 import ScaleCodec
-import Serializable
 
 extension Bool: RuntimeCodable {}
 extension Data: RuntimeCodable {}

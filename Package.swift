@@ -31,7 +31,6 @@ var package = Package(
             dependencies: [
                 .product(name: "Serializable", package: "Serializable.swift"),
                 .product(name: "JsonRPC", package: "JsonRPC.swift"),
-                .product(name: "JsonRPCSerializable", package: "JsonRPC.swift"),
                 .product(name: "ScaleCodec", package: "swift-scale-codec"),
                 .product(name: "Blake2", package: "Blake2.swift"),
                 "xxHash-Swift"

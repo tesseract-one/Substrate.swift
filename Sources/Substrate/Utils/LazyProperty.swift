@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import JsonRPC
 
 public struct LazyProperty<Value> {
     private let _value: Synced<Either<() -> Value, Value>>
