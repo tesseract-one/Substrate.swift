@@ -10,10 +10,14 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode_14.0.app
       - name: Build and Test SPM
         run: swift test
+        env:
+          TEST_MNEMONIC: ${{ secrets.TEST_MNEMONIC }}
       - name: Update Cocoa Pods repo
         run: pod repo update
       - name: Build and Test CocoaPods
         run: pod lib lint --allow-warnings --fail-fast
+        env:
+          TEST_MNEMONIC: ${{ secrets.TEST_MNEMONIC }}
   linux:
     runs-on: ubuntu-latest
     container:
@@ -24,3 +28,5 @@ jobs:
         uses: actions/checkout@v3
       - name: Build and Test
         run: swift test
+        env:
+          TEST_MNEMONIC: ${{ secrets.TEST_MNEMONIC }}
