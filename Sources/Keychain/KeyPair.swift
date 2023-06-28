@@ -6,7 +6,9 @@
 //
 
 import Foundation
+#if !COCOAPODS
 import Substrate
+#endif
 
 public protocol KeyPair {
     var algorithm: CryptoTypeId { get }

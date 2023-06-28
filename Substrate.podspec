@@ -15,7 +15,7 @@ Pod::Spec.new do |s|
     :tvos => '13.0'
   }
 
-  s.platforms = test_platforms.merge({ :watchos => '6.0' })
+  s.platforms = test_platforms # test_platforms.merge({ :watchos => '6.0' }) # xxHash doesn't support watchOS
   
   s.swift_version = '5.7'
   
@@ -27,7 +27,8 @@ Pod::Spec.new do |s|
     ss.dependency 'Substrate/Substrate'
     ss.dependency 'UncommonCrypto', '~> 0.1.0'
     ss.dependency 'Bip39.swift', '~> 0.1.0'
-    ss.dependency 'Sr25519', '~> 0.1.0'
+    ss.dependency 'Sr25519/Sr25519', '~> 0.1.0'
+    ss.dependency 'Sr25519/Ed25519', '~> 0.1.0'
     ss.dependency 'CSecp256k1', '~> 0.1.0'
     
     ss.test_spec 'KeychainTests' do |test_spec|
