@@ -30,13 +30,13 @@ final class SubstrateTests: XCTestCase {
     
     func testInitialization() {
         runAsyncTest(withTimeout: 3000) {
-            let _ = try await Substrate(rpc: self.httpClient, config: DynamicRuntime())
+            let _ = try await Substrate(rpc: self.httpClient, config: DynamicConfig())
         }
     }
     
     func testStorageValueCall() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Substrate(rpc: self.httpClient, config: DynamicRuntime())
+            let substrate = try await Substrate(rpc: self.httpClient, config: DynamicConfig())
             let entry = try substrate.query.entry(name: "Events", pallet: "System")
             let value = try await entry.value()
             XCTAssertNotNil(value)
@@ -45,7 +45,7 @@ final class SubstrateTests: XCTestCase {
     
     func testBlock() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Substrate(rpc: self.httpClient, config: DynamicRuntime())
+            let substrate = try await Substrate(rpc: self.httpClient, config: DynamicConfig())
             let block = try await substrate.client.block(config: substrate.runtime.config)
             XCTAssertNotNil(block)
             let _ = try block!.block.parseExtrinsics()
@@ -56,7 +56,7 @@ final class SubstrateTests: XCTestCase {
         runAsyncTest(withTimeout: 20) {
             let from = self.env.kpAlice //self.env.randomKeyPair()
             let toKp = self.env.randomKeyPair(exclude: from)
-            let substrate = try await Substrate(rpc: self.httpClient, config: DynamicRuntime())
+            let substrate = try await Substrate(rpc: self.httpClient, config: DynamicConfig())
             let to = try toKp.address(in: substrate)
             let call = try AnyCall(name: "transfer_allow_death",
                                    pallet: "Balances",
@@ -75,7 +75,7 @@ final class SubstrateTests: XCTestCase {
         runAsyncTest(withTimeout: 300) {
             let from = self.env.kpAlice //self.env.randomKeyPair()
             let toKp = self.env.randomKeyPair(exclude: from)
-            let substrate = try await Substrate(rpc: self.wsClient, config: DynamicRuntime())
+            let substrate = try await Substrate(rpc: self.wsClient, config: DynamicConfig())
             let to = try toKp.address(in: substrate)
             let call = try AnyCall(name: "transfer_allow_death",
                                    pallet: "Balances",

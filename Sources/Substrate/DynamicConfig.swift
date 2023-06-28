@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import Serializable
 
-public struct DynamicRuntime: Config {
+public struct DynamicConfig: Config {
     public typealias THasher = AnyFixedHasher
     public typealias TIndex = UInt256
     public typealias TSystemProperties = AnySystemProperties
@@ -190,7 +190,7 @@ public struct DynamicRuntime: Config {
 
 
 // Helper structs
-public extension DynamicRuntime {
+public extension DynamicConfig {
     struct Api {
         public struct Metadata {
             public struct Metadata: StaticCodableRuntimeCall {
@@ -319,7 +319,7 @@ public extension DynamicRuntime {
     }
 }
 
-extension DynamicRuntime: BatchSupportedConfig {
+extension DynamicConfig: BatchSupportedConfig {
     public typealias TBatchCall = Utility.Calls.Batch
     public typealias TBatchAllCall = Utility.Calls.BatchAll
     
