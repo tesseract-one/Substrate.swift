@@ -12,7 +12,12 @@ class Resources {
     private var meta15: Data? = nil
     
     func fileUrl(name: String) -> URL {
-        Bundle.module.resourceURL!
+        #if Xcode
+        let resUrl = Bundle.module.resourceURL!
+        #else
+        let resUrl = Bundle.module.bundleURL
+        #endif
+        return resUrl
             .appendingPathComponent("Resources")
             .appendingPathComponent(name)
     }
@@ -35,7 +40,7 @@ class Resources {
     static let inst = Resources()
 }
 
-#if COCOAPODS
+#if !SWIFT_PACKAGE
 extension Foundation.Bundle {
     static var module = Bundle(for: Resources.self)
 }
