@@ -61,6 +61,9 @@ var package = Package(
             dependencies: ["SubstrateKeychain"]),
         .testTarget(
             name: "SubstrateTests",
-            dependencies: ["Substrate", "SubstrateKeychain", "SubstrateRPC"]),
+            dependencies: ["Substrate"]),
+        .testTarget(
+            name: "IntegrationTests",
+            dependencies: ["Substrate", "SubstrateKeychain", "SubstrateRPC"])
     ]
 )

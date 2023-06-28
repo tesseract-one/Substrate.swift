@@ -9,7 +9,6 @@ import XCTest
 import Substrate
 import ScaleCodec
 
-
 final class BitSequenceTests: XCTestCase {
     func testUInt8() {
         let tests: [(BitSequence, [UInt8], [UInt8])] = [

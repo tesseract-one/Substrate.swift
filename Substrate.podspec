@@ -54,8 +54,6 @@ Pod::Spec.new do |s|
     ss.dependency 'Serializable.swift', '~> 0.2.0'
     
     ss.test_spec 'SubstrateTests' do |test_spec|
-      test_spec.dependency 'Substrate/Keychain'
-      test_spec.dependency 'Substrate/RPC'
       test_spec.platforms = test_platforms
       test_spec.source_files = 'Tests/SubstrateTests/**/*.swift'
     end
