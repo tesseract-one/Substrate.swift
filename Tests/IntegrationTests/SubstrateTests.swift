@@ -7,9 +7,9 @@
 
 import XCTest
 import ScaleCodec
-@testable import Substrate
+import Substrate
 #if !COCOAPODS
-@testable import SubstrateRPC
+import SubstrateRPC
 #endif
 
 final class SubstrateTests: XCTestCase {

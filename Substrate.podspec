@@ -56,6 +56,7 @@ Pod::Spec.new do |s|
     ss.test_spec 'SubstrateTests' do |test_spec|
       test_spec.platforms = test_platforms
       test_spec.source_files = 'Tests/SubstrateTests/**/*.swift'
+      test_spec.resource = 'Tests/SubstrateTests/Resources'
     end
   end
 

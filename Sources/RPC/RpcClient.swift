@@ -254,7 +254,7 @@ extension RpcClient: Client {
         let data: Data = try await call(method: "state_getMetadata", params: Params(hash))
         var decoder = config.decoder(data: data)
         let versioned = try decoder.decode(VersionedMetadata.self)
-        return versioned.metadata
+        return try versioned.metadata.asMetadata()
     }
     
     private func storage(changes keys: [Data],

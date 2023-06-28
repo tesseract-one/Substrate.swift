@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol RuntimeMetadata {
+public protocol RuntimeMetadata: ScaleCodec.Codable {
     var version: UInt8 { get }
     
     func asMetadata() throws -> Metadata
@@ -99,15 +99,19 @@ public enum MetadataError: Error {
     case storageNonCompositeKey(name: String, pallet: String, type: RuntimeTypeInfo)
 }
 
-public struct OpaqueMetadata: ScaleCodec.Decodable, RuntimeDecodable {
+public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable {
     public let raw: Data
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         self.raw = try decoder.decode()
     }
     
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(raw)
+    }
+    
     public func metadata<C: Config>(config: C) throws -> any Metadata {
         var decoder = config.decoder(data: raw)
-        return try decoder.decode(VersionedMetadata.self).metadata
+        return try decoder.decode(VersionedMetadata.self).metadata.asMetadata()
     }
 }

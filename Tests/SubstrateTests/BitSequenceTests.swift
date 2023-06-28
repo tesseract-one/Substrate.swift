@@ -6,8 +6,8 @@
 //
 
 import XCTest
-import Substrate
 import ScaleCodec
+@testable import Substrate
 
 final class BitSequenceTests: XCTestCase {
     func testUInt8() {
