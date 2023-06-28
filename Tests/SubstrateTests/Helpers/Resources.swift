@@ -12,14 +12,18 @@ class Resources {
     private var meta15: Data? = nil
     
     func fileUrl(name: String) -> URL {
-        #if Xcode
-        let resUrl = Bundle.module.resourceURL!
-        #else
-        let resUrl = Bundle.module.bundleURL
-        #endif
-        return resUrl
+        // Bundle.url(forResource:) should be used for both
+        // but it crashes on Linux (CoreFoundation memory management bug)
+        // so we have this workaround
+        #if os(Linux) || os(Windows)
+        return Bundle.module.bundleURL
             .appendingPathComponent("Resources")
             .appendingPathComponent(name)
+        #else
+        return Bundle.module.url(forResource: name,
+                                 withExtension: nil,
+                                 subdirectory: "Resources")!
+        #endif
     }
     func metadadav14() -> Data {
         guard let meta = meta14 else {
@@ -42,6 +46,7 @@ class Resources {
 
 #if !SWIFT_PACKAGE
 extension Foundation.Bundle {
+    // Load xctest bundle
     static var module = Bundle(for: Resources.self)
 }
 #endif
