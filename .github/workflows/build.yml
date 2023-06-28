@@ -15,7 +15,7 @@ jobs:
       - name: Update Cocoa Pods repo
         run: pod repo update
       - name: Build and Test CocoaPods
-        run: pod lib lint --allow-warnings --fail-fast
+        run: pod lib lint --allow-warnings --fail-fast --verbose
         env:
           TEST_MNEMONIC: ${{ secrets.TEST_MNEMONIC }}
   linux:
