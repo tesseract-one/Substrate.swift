@@ -11,9 +11,10 @@ class Resources {
     private var meta14: Data? = nil
     private var meta15: Data? = nil
     
-    func fileUrl(name: String, ext: String? = nil) -> URL {
-        let path = Bundle.module.path(forResource: name, ofType: ext, inDirectory: "Resources")!
-        return URL(fileURLWithPath: path)
+    func fileUrl(name: String) -> URL {
+        Bundle.module.resourceURL!
+            .appendingPathComponent("Resources")
+            .appendingPathComponent(name)
     }
     func metadadav14() -> Data {
         guard let meta = meta14 else {
