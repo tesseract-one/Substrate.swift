@@ -12,14 +12,12 @@ import Substrate
 
 extension Keychain: Signer {
     public func account(type: KeyTypeId, algos: [CryptoTypeId]) async throws -> any PublicKey {
-        let pubkeys = publicKeys.filter { algos.firstIndex(of: $0.algorithm) != nil }
-        guard pubkeys.count > 0 else {
-            throw SignerError.noAccounts(for: type, and: algos)
+        let result = await self.delegate.account(in: self, with: type, for: algos)
+        switch result {
+        case .noAccount: throw SignerError.noAccounts(for: type, and: algos)
+        case .cancelledByUser: throw SignerError.cancelledByUser
+        case .account(let pub): return pub
         }
-        guard let key = await self.delegate.account(type: type, keys: pubkeys) else {
-            throw SignerError.cancelledByUser
-        }
-        return key
     }
     
     public func sign<RC: Config, C: Call>(

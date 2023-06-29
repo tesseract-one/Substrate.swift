@@ -63,8 +63,8 @@ public extension ExtrinsicEvents {
         _events.has(type, extrinsic: index)
     }
     
-    func allAnyParsed() throws -> [AnyEvent] {
-        try _events.allAnyParsed(extrinsic: index)
+    func parsed() throws -> [AnyEvent] {
+        try _events.parsed(extrinsic: index)
     }
     
     func all(records event: String, pallet: String) -> [BE.ER] {

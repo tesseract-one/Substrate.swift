@@ -20,10 +20,6 @@ public protocol SomeBlock: Swift.Decodable {
 
 public extension SomeBlock {
     var hash: THeader.THasher.THash { header.hash }
-    
-    func parseExtrinsics() throws -> [AnyExtrinsic<AnyCall<RuntimeTypeId>, TExtrinsic.TManager>] {
-        try extrinsics.map { try $0.decode() }
-    }
 }
 
 public protocol SomeBlockHeader: Swift.Decodable {
@@ -51,4 +47,10 @@ public struct Block<H: SomeBlockHeader, E: OpaqueExtrinsic>: SomeBlock {
 public struct ChainBlock<B: SomeBlock, J: Swift.Decodable>: SomeChainBlock {
     public let block: B
     public let justifications: J
+}
+
+public extension Array where Element: OpaqueExtrinsic {
+    func parsed() throws -> [AnyExtrinsic<AnyCall<RuntimeTypeId>, Element.TManager>] {
+        try map { try $0.decode() }
+    }
 }

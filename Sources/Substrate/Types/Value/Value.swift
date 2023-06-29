@@ -156,22 +156,12 @@ public extension Value {
 }
 
 public extension Value {
-    static func map<CL: Collection>(_ seq: CL, _ context: C) -> Self where CL.Element == (String, Value<C>) {
-        Self(value: .map(Dictionary(uniqueKeysWithValues: seq)), context: context)
-    }
-    
     static func map(_ map: [String: Value<C>], _ context: C) -> Self {
         Self(value: .map(map), context: context)
     }
     
     static func sequence<CL: Collection>(_ seq: CL, _ context: C) -> Self where CL.Element == Value<C> {
         Self(value: .sequence(Array(seq)), context: context)
-    }
-    
-    static func variant<CL: Collection>(name: String, fields: CL, _ context: C) -> Self
-        where  CL.Element == (String, Value<C>)
-    {
-        .variant(name: name, fields: Dictionary(uniqueKeysWithValues: fields), context)
     }
     
     static func variant(name: String, fields: [String: Value<C>], _ context: C) -> Self {
@@ -221,26 +211,34 @@ public extension Value {
 }
 
 public extension Value where C == Void {
-    static func map<CL: Collection>(_ seq: CL) -> Self where CL.Element == (String, Value<C>) {
-        .map(seq, ())
+    static func map(_ map: [String: ValueRepresentable]) throws -> Self {
+        try .map(map.mapValues { try $0.asValue() }, ())
     }
     
     static func map(_ map: [String: Value<C>]) -> Self {
         .map(map, ())
     }
     
+    static func sequence<CL: Collection>(_ seq: CL) throws -> Self where CL.Element: ValueRepresentable {
+        try .sequence(seq.map { try $0.asValue() }, ())
+    }
+    
     static func sequence<CL: Collection>(_ seq: CL) -> Self where CL.Element == Value<C> {
         .sequence(seq, ())
     }
     
-    static func variant<CL: Collection>(name: String, fields: CL) -> Self
-        where  CL.Element == (String, Value<C>)
-    {
-        .variant(name: name, fields: Dictionary(uniqueKeysWithValues: fields), ())
+    static func variant(name: String, fields: [String: ValueRepresentable]) throws -> Self {
+        try .variant(name: name, fields: fields.mapValues { try $0.asValue() }, ())
     }
     
     static func variant(name: String, fields: [String: Value<C>]) -> Self {
         .variant(name: name, fields: fields, ())
+    }
+    
+    static func variant<CL: Collection>(name: String, values: CL) throws -> Self
+        where CL.Element: ValueRepresentable
+    {
+        try .variant(name: name, values: values.map { try $0.asValue() }, ())
     }
     
     static func variant<CL: Collection>(name: String, values: CL) -> Self

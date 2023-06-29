@@ -167,3 +167,13 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
 }
+
+public extension ExtendedRuntime {
+    func account(ss58: String) throws -> RC.TAccountId {
+        try RC.TAccountId(from: ss58, runtime: self)
+    }
+    
+    func address(ss58: String) throws -> RC.TAddress {
+        try account(ss58: ss58).address()
+    }
+}

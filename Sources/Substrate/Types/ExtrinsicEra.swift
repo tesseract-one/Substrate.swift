@@ -213,7 +213,7 @@ extension ExtrinsicEra: ValueConvertible {
     
     public func asValue() throws -> Value<Void> {
         switch self {
-        case .immortal: return .variant(name: "Immortal", fields: [])
+        case .immortal: return .variant(name: "Immortal", values: [])
         case .mortal(period: _, phase: _):
             let (first, second) = self.serialize()
             return .variant(name: "Mortal\(first)", values: [.u256(UInt256(second!))])

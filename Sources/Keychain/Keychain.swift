@@ -13,40 +13,82 @@ import Substrate
 
 public typealias SubstrateKeychainRandom = Sr25519SecureRandom
 
+public enum KeychainDelegateResponse {
+    case cancelledByUser
+    case noAccount
+    case account(any PublicKey)
+}
+
 public protocol KeychainDelegate: AnyObject {
-    func account(type: KeyTypeId, keys: [any PublicKey]) async -> (any PublicKey)?
+    func account(in keychain: Keychain,
+                 with type: KeyTypeId,
+                 for algos: [CryptoTypeId]) async -> KeychainDelegateResponse
 }
 
 public class KeychainDelegateFirstFound: KeychainDelegate {
     public init() {}
-    public func account(type: KeyTypeId, keys: [any PublicKey]) async -> (any PublicKey)? {
-        keys.first
+    public func account(in keychain: Keychain,
+                        with type: KeyTypeId,
+                        for algos: [CryptoTypeId]) async -> KeychainDelegateResponse
+    {
+        let typed = keychain.publicKeys(with: type).first { algos.contains($0.algorithm) }
+        if let t = typed {
+            return .account(t)
+        }
+        if let t = keychain.publicKeys().first(where: { algos.contains($0.algorithm) }) {
+            return .account(t)
+        }
+        return .noAccount
     }
 }
 
 public class Keychain {
-    public let keyPairs: Synced<Array<any KeyPair>>
+    public let keyPairs: Synced<Dictionary<KeyTypeId?, Array<any KeyPair>>>
     public weak var delegate: (any KeychainDelegate)!
     
-    public init(keyPairs: Array<any KeyPair> = [],
+    public init(keyPairs: Array<(KeyTypeId?, any KeyPair)> = [],
                 delegate: any KeychainDelegate = KeychainDelegateFirstFound()) {
-        self.keyPairs = Synced(value: keyPairs)
+        let kps = keyPairs.reduce(Dictionary<KeyTypeId?, Array<any KeyPair>>()) { dict, kp in
+            var dict = dict
+            var kps = dict[kp.0] ?? []
+            kps.append(kp.1)
+            dict[kp.0] = kps
+            return dict
+        }
+        self.keyPairs = Synced(value: kps)
         self.delegate = delegate
     }
     
-    public var publicKeys: Array<any PublicKey> {
-        keyPairs.sync { $0.map { $0.pubKey } }
+    public func keyPairs(with type: KeyTypeId? = nil,
+                         for algorithm: CryptoTypeId? = nil) -> [any KeyPair]
+    {
+        keyPairs.sync { kps in
+            let pairs = type != nil ? (kps[type] ?? []) : kps.values.flatMap { $0 }
+            return algorithm == nil ? pairs : pairs.filter { $0.algorithm == algorithm }
+        }
+    }
+    
+    public func publicKeys(with type: KeyTypeId? = nil,
+                           for algorithm: CryptoTypeId? = nil) -> [any PublicKey]
+    {
+        keyPairs(with: type, for: algorithm).map { $0.pubKey }
     }
     
     public func keyPair(for account: any PublicKey) -> (any KeyPair)? {
-        keyPairs.sync { $0.first { $0.algorithm == account.algorithm && $0.pubKey.raw == account.raw } }
+        keyPairs.sync {
+            $0.values.reduce(nil) { val, arr in
+                val != nil ? val : arr.first {
+                    $0.algorithm == account.algorithm && $0.pubKey.raw == account.raw
+                }
+            }
+        }
     }
     
-    public func keyPairs(for algorithm: CryptoTypeId) -> [any KeyPair] {
-        keyPairs.sync { $0.filter { $0.algorithm == algorithm } }
-    }
-    
-    public func add(_ pair: any KeyPair) {
-        keyPairs.sync { $0.append(pair) }
+    public func add(_ pair: any KeyPair, for type: KeyTypeId? = nil) {
+        keyPairs.sync {
+            var kps = $0[type] ?? []
+            kps.append(pair)
+            $0[type] = kps
+        }
     }
 }

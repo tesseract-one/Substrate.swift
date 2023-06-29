@@ -47,6 +47,10 @@ public extension AccountId {
         var container = encoder.singleValueContainer()
         try container.encode(self.string)
     }
+    
+    func address<A: Address>() throws -> A where A.TAccountId == Self {
+        try A(accountId: self, runtime: runtime)
+    }
 }
 
 public protocol StaticAccountId: AccountId {

@@ -143,11 +143,11 @@ public extension SomeBlockEvents {
         try last(record: type, extrinsic: index).map{try $0.typed(type)}
     }
     
-    func allAnyParsed() throws -> [AnyEvent] {
+    func parsed() throws -> [AnyEvent] {
         try events.map { try $0.any }
     }
     
-    func allAnyParsed(extrinsic index: UInt32) throws -> [AnyEvent] {
+    func parsed(extrinsic index: UInt32) throws -> [AnyEvent] {
         try events(extrinsic: index).map { try $0.any }
     }
 }

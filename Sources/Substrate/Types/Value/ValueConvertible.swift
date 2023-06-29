@@ -49,7 +49,7 @@ public extension FixedWidthInteger {
     }
     
     func asValue() throws -> Value<Void> {
-        Self.min >= 0 ? .u256(UInt256(self)) : .i256(Int256(self))
+        Self.isSigned ?  .i256(Int256(self)) : .u256(UInt256(self))
     }
 }
 
@@ -57,11 +57,13 @@ extension UInt8: ValueConvertible {}
 extension UInt16: ValueConvertible {}
 extension UInt32: ValueConvertible {}
 extension UInt64: ValueConvertible {}
+extension UInt: ValueConvertible {}
 extension DoubleWidth: ValueConvertible {}
 extension Int8: ValueConvertible {}
 extension Int16: ValueConvertible {}
 extension Int32: ValueConvertible {}
 extension Int64: ValueConvertible {}
+extension Int: ValueConvertible {}
 
 extension Value: ValueInitializable where C == Void {
     public init<C2>(value: Value<C2>) throws {
