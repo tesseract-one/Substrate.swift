@@ -43,12 +43,12 @@ public extension PublicKey {
     
     @inlinable
     func account<S: SomeSubstrate>(in substrate: S) throws -> S.RC.TAccountId {
-        try account(runtime: substrate.runtime)
+        try substrate.runtime.account(pub: self)
     }
     
     @inlinable
     func address<S: SomeSubstrate>(in substrate: S) throws -> S.RC.TAddress {
-        try address(runtime: substrate.runtime)
+        try substrate.runtime.address(pub: self)
     }
 }
 

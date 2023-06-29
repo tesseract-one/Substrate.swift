@@ -169,11 +169,23 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
 }
 
 public extension ExtendedRuntime {
+    @inlinable
     func account(ss58: String) throws -> RC.TAccountId {
         try RC.TAccountId(from: ss58, runtime: self)
     }
     
+    @inlinable
     func address(ss58: String) throws -> RC.TAddress {
         try account(ss58: ss58).address()
+    }
+    
+    @inlinable
+    func account(pub: any PublicKey) throws -> RC.TAccountId {
+        try pub.account(runtime: self)
+    }
+    
+    @inlinable
+    func address(pub: any PublicKey) throws -> RC.TAddress {
+        try pub.address(runtime: self)
     }
 }
