@@ -48,7 +48,7 @@ final class SubstrateTests: XCTestCase {
             let substrate = try await Substrate(rpc: self.httpClient, config: DynamicConfig())
             let block = try await substrate.client.block(config: substrate.runtime.config)
             XCTAssertNotNil(block)
-            let _ = try block!.block.parseExtrinsics()
+            let _ = try block!.block.extrinsics.parsed()
         }
     }
     
