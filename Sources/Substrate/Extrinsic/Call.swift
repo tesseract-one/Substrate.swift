@@ -85,6 +85,24 @@ public struct AnyCall<C>: Call {
     }
 }
 
+public extension AnyCall where C == Void {
+    init<V: ValueRepresentable>(name: String, pallet: String, param: V) throws {
+        try self.init(name: name, pallet: pallet, seq: [param])
+    }
+    
+    init(name: String, pallet: String, map: [String: ValueRepresentable]) throws {
+        try self.init(name: name, pallet: pallet, params: .map(map))
+    }
+    
+    init<M: ValueMapRepresentable>(name: String, pallet: String, map: M) throws {
+        try self.init(name: name, pallet: pallet, params: .map(map: map))
+    }
+    
+    init<S: ValueArrayRepresentable>(name: String, pallet: String, seq: S) throws {
+        try self.init(name: name, pallet: pallet, params: .sequence(array: seq))
+    }
+}
+
 extension AnyCall: CustomStringConvertible {
     public var description: String {
         "\(pallet).\(name)(\(params))"

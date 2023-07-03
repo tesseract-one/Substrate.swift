@@ -39,7 +39,7 @@ extension Hash {
          }
      }
      
-     public func asValue() throws -> Value<Void> {
+     public func asValue() throws -> AnyValue {
          .bytes(data)
      }
 }

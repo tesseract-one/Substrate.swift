@@ -63,12 +63,32 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
     public let api: String
     public let method: String
     
-    public let params: Value<Void>
+    public let params: AnyValue
     
-    public init(api: String, method: String, params: Value<Void>) {
+    public init(api: String, method: String, params: AnyValue) {
         self.api = api
         self.method = method
         self.params = params
+    }
+    
+    public init(api: String, method: String) {
+        self.init(api: api, method: method, params: .nil)
+    }
+    
+    public init<V: ValueRepresentable>(api: String, method: String, param: V) throws {
+        try self.init(api: api, method: method, seq: [param])
+    }
+    
+    public init(api: String, method: String, map: [String: ValueRepresentable]) throws {
+        try self.init(api: api, method: method, params: .map(map))
+    }
+    
+    public init<M: ValueMapRepresentable>(api: String, method: String, map: M) throws {
+        try self.init(api: api, method: method, params: .map(map: map))
+    }
+    
+    public init<S: ValueArrayRepresentable>(api: String, method: String, seq: S) throws {
+        try self.init(api: api, method: method, params: .sequence(array: seq))
     }
     
     public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
@@ -114,9 +134,9 @@ public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<RuntimeTypeId>>
 
 public enum RuntimeCallCodingError: Error {
     case callNotFound(method: String, api: String)
-    case expectedMapOrSequence(got: Value<Void>)
-    case wrongParametersCount(params: [Value<Void>], expected: [(String, RuntimeTypeInfo)])
-    case parameterNotFound(name: String, inParams: [String: Value<Void>])
+    case expectedMapOrSequence(got: AnyValue)
+    case wrongParametersCount(params: [AnyValue], expected: [(String, RuntimeTypeInfo)])
+    case parameterNotFound(name: String, inParams: [String: AnyValue])
 }
 
 public protocol SomeMetadataVersionsRuntimeCall: StaticCodableRuntimeCall

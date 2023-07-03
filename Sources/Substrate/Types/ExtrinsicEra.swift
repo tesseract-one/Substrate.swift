@@ -211,7 +211,7 @@ extension ExtrinsicEra: ValueConvertible {
         }
     }
     
-    public func asValue() throws -> Value<Void> {
+    public func asValue() throws -> AnyValue {
         switch self {
         case .immortal: return .variant(name: "Immortal", values: [])
         case .mortal(period: _, phase: _):

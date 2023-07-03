@@ -57,5 +57,5 @@ extension Nothing: ValueConvertible {
         }
     }
     
-    public func asValue() throws -> Value<Void> { .sequence([]) }
+    public func asValue() throws -> AnyValue { .sequence([], ()) }
 }

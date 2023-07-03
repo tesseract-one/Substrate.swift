@@ -219,8 +219,12 @@ public extension Value where C == Void {
         .map(map, ())
     }
     
-    static func sequence<CL: Collection>(_ seq: CL) throws -> Self where CL.Element: ValueRepresentable {
-        try .sequence(seq.map { try $0.asValue() }, ())
+    static func map<M: ValueMapRepresentable>(map: M) throws -> Self {
+        try .map(map.asValueMap(), ())
+    }
+
+    static func sequence<CL: ValueArrayRepresentable>(array: CL) throws -> Self {
+        try .sequence(array.asValueArray(), ())
     }
     
     static func sequence<CL: Collection>(_ seq: CL) -> Self where CL.Element == Value<C> {
@@ -235,10 +239,12 @@ public extension Value where C == Void {
         .variant(name: name, fields: fields, ())
     }
     
-    static func variant<CL: Collection>(name: String, values: CL) throws -> Self
-        where CL.Element: ValueRepresentable
-    {
-        try .variant(name: name, values: values.map { try $0.asValue() }, ())
+    static func variant<M: ValueMapRepresentable>(name: String, map: M) throws -> Self {
+        try .variant(name: name, fields: map.asValueMap(), ())
+    }
+    
+    static func variant<A: ValueArrayRepresentable>(name: String, array: A) throws -> Self {
+        try .variant(name: name, values: array.asValueArray(), ())
     }
     
     static func variant<CL: Collection>(name: String, values: CL) -> Self
@@ -375,3 +381,5 @@ extension Value.Primitive: CustomStringConvertible {
         }
     }
 }
+
+public typealias AnyValue = Value<Void>

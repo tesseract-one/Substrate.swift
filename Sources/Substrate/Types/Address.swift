@@ -45,7 +45,7 @@ public enum MultiAddress<Id: AccountId & Hashable,
 }
 
 extension MultiAddress: ValueRepresentable {
-    public func asValue() throws -> Value<Void> {
+    public func asValue() throws -> AnyValue {
         switch self {
         case .id(let id): return try .variant(name: "Id", values: [id.asValue()])
         case .index(let index): return try .variant(name: "Index", values: [index.asValue()])

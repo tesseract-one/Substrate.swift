@@ -60,7 +60,7 @@ final class SubstrateTests: XCTestCase {
             let to = try toKp.address(in: substrate)
             let call = try AnyCall(name: "transfer_allow_death",
                                    pallet: "Balances",
-                                   params: .map(["dest": to, "value": 15483812856]))
+                                   map: ["dest": to, "value": 15483812856])
             let tx = try await substrate.tx.new(call)
             let _ = try await tx.signAndSend(signer: from)
         }
@@ -75,7 +75,7 @@ final class SubstrateTests: XCTestCase {
             let to = try toKp.address(in: substrate)
             let call = try AnyCall(name: "transfer_allow_death",
                                    pallet: "Balances",
-                                   params: .map(["dest": to, "value": 15483812850]))
+                                   map: ["dest": to, "value": 15483812850])
             let tx = try await substrate.tx.new(call)
             let events = try await tx.signSendAndWatch(signer: from)
                 .waitForFinalized()

@@ -13,10 +13,26 @@ public protocol ValueInitializable {
 }
 
 public protocol ValueRepresentable {
-    func asValue() throws -> Value<Void>
+    func asValue() throws -> AnyValue
 }
 
 public typealias ValueConvertible = ValueInitializable & ValueRepresentable
+
+public protocol ValueArrayRepresentable {
+    func asValueArray() throws -> [AnyValue]
+}
+
+public protocol ValueMapRepresentable {
+    func asValueMap() throws -> [String: AnyValue]
+}
+
+public extension ValueArrayRepresentable {
+    func asValue() throws -> AnyValue { try .sequence(asValueArray()) }
+}
+
+public extension ValueMapRepresentable {
+    func asValue() throws -> AnyValue { try .map(asValueMap()) }
+}
 
 public enum ValueInitializableError<C>: Error {
     case wrongValueType(got: Value<C>.Def, for: String)
@@ -48,7 +64,7 @@ public extension FixedWidthInteger {
         }
     }
     
-    func asValue() throws -> Value<Void> {
+    func asValue() throws -> AnyValue {
         Self.isSigned ?  .i256(Int256(self)) : .u256(UInt256(self))
     }
 }
@@ -72,7 +88,42 @@ extension Value: ValueInitializable where C == Void {
 }
 
 extension Value: ValueRepresentable {
-    public func asValue() throws -> Value<Void> {
+    public func asValue() throws -> AnyValue {
         self.mapContext(with: { _ in })
+    }
+}
+
+extension Bool: ValueRepresentable {
+    public func asValue() throws -> AnyValue { .bool(self) }
+}
+
+extension String: ValueRepresentable {
+    public func asValue() throws -> AnyValue { .string(self) }
+}
+
+extension Data: ValueRepresentable {
+    public func asValue() throws -> AnyValue { .bytes(self) }
+}
+
+public extension Sequence where Element: ValueRepresentable {
+    func asValueArray() throws -> [AnyValue] {
+        try map { try $0.asValue() }
+    }
+}
+
+extension Array: ValueRepresentable where Element: ValueRepresentable {}
+extension Array: ValueArrayRepresentable where Element: ValueRepresentable {}
+
+extension KeyValuePairs: ValueRepresentable where Key: StringProtocol, Value: ValueRepresentable {}
+extension KeyValuePairs: ValueMapRepresentable where Key: StringProtocol, Value: ValueRepresentable {
+    public func asValueMap() throws -> [String: AnyValue] {
+        try Dictionary(uniqueKeysWithValues: map { try (String($0.key), $0.value.asValue()) })
+    }
+}
+
+extension Dictionary: ValueRepresentable where Key: StringProtocol, Value: ValueRepresentable {}
+extension Dictionary: ValueMapRepresentable where Key: StringProtocol, Value: ValueRepresentable {
+    public func asValueMap() throws -> [String: AnyValue] {
+        try Dictionary<_, _>(uniqueKeysWithValues: map { try (String($0.key), $0.value.asValue()) })
     }
 }

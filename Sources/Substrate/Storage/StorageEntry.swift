@@ -169,6 +169,35 @@ public extension StorageEntry where Key: IterableStorageKey, Key.TIterator: Iter
     }
 }
 
+// ValueArrayRepresentable helpers
+public extension StorageEntry where Key.TParams == Array<AnyValue> {
+    func value<A: ValueArrayRepresentable>(
+        path params: A,
+        at hash: S.RC.TBlock.THeader.THasher.THash? = nil
+    ) async throws -> Key.TValue? {
+        try await value(params.asValueArray(), at: hash)
+    }
+    
+    func valueOrDefault<A: ValueArrayRepresentable>(
+        path params: A,
+        at hash: S.RC.TBlock.THeader.THasher.THash? = nil
+    ) async throws -> Key.TValue {
+        try await valueOrDefault(params.asValueArray(), at: hash)
+    }
+}
+
+public extension StorageEntry where
+    Key: IterableStorageKey, Key.TIterator: IterableStorageKeyIterator,
+    Key.TIterator.TIterator.TParam == AnyValue
+{
+    func filter<V: ValueRepresentable>(
+        key param: V
+    ) throws -> Iterator<Key.TIterator.TIterator> {
+        try Iterator(substrate: substrate,
+                     iterator: iterator.next(param: param.asValue(), runtime: substrate.runtime))
+    }
+}
+
 public extension StorageEntry where Key: DynamicStorageKey {
     func size(at hash: S.RC.TBlock.THeader.THasher.THash? = nil) async throws -> UInt64 {
         try await size(
@@ -191,11 +220,11 @@ public extension StorageEntry where Key: DynamicStorageKey {
         )
     }
     
-    func filter(params: [Key.TIterator.TIterator.TParam]) throws -> Iterator<Key.TIterator.TIterator> {
+    func filter<A: ValueArrayRepresentable>(path params: A) throws -> Iterator<Key.TIterator.TIterator> {
         try Iterator(substrate: substrate,
                      iterator: Key.TIterator.TIterator(name: self.params.name,
                                                        pallet: self.params.pallet,
-                                                       params: params,
+                                                       params: params.asValueArray(),
                                                        runtime: substrate.runtime))
     }
 }
@@ -224,6 +253,18 @@ public extension StorageEntry.Iterator where Iter: IterableStorageKeyIterator {
     }
 }
 
+public extension StorageEntry.Iterator where
+    Iter: IterableStorageKeyIterator, Iter.TIterator.TParam == AnyValue
+{
+    func filter<V: ValueRepresentable>(
+        key param: V
+    ) throws -> StorageEntry.Iterator<Iter.TIterator> {
+        try StorageEntry.Iterator<_>(substrate: substrate,
+                                     iterator: iterator.next(param: param.asValue(),
+                                                             runtime: substrate.runtime))
+    }
+}
+
 public extension StorageEntry where S.CL: SubscribableClient {
     func watch(keys: [Key]) async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {
         try await substrate.client.subscribe(storage: keys, runtime: substrate.runtime)
@@ -231,6 +272,15 @@ public extension StorageEntry where S.CL: SubscribableClient {
     
     func watch(_ params: Key.TParams) async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {
         try await watch(keys: [key(params)])
+    }
+}
+
+// ValueArrayRepresentable helpers
+public extension StorageEntry where S.CL: SubscribableClient, Key.TParams == Array<AnyValue> {
+    func watch<A: ValueArrayRepresentable>(
+        path params: A
+    ) async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {
+        try await watch(params.asValueArray())
     }
 }
 

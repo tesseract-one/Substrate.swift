@@ -76,7 +76,7 @@ let to = try substrate.runtime.address(ss58: "account s58 address")
 
 let call = try AnyCall(name: "transfer",
                        pallet: "Balances",
-                       params: .map(["dest": to, "value": 15483812850]))
+                       map: ["dest": to, "value": 15483812850])
 let tx = try await substrate.tx.new(call)
 let events = try await tx.signSendAndWatch(signer: from)
         .waitForFinalized()
@@ -97,8 +97,7 @@ guard substrate.call.has(method: "versions", api: "Metadata") else {
 // Value<RuntimeTypeId> can be used for fully dynamic parsing
 // AnyValueRuntimeCall is a typealias for fully dynamic call
 let call = AnyRuntimeCall<[UInt32]>(api: "Metadata",
-                                    method: "versions",
-                                    params: .nil)
+                                    method: "versions")
 
 let versions = try await substrate.call.execute(call: call)
 
@@ -133,11 +132,11 @@ let accountId = try substrate.runtime.account(ss58: "EoukLS2Rzh6dZvMQSkqFy4zGvqe
 // We have to provide 2 keys to get value.
 
 // Optional value
-let optSlash = try await entry.value([.u256(652), accountId.asValue()])
+let optSlash = try await entry.value(path: Tuple(652, accountId))
 print("Value is: \(optSlash ?? 0)")
 
 // Default value used
-let slash = try await entry.valueOrDefault([.u256(652), accountId.asValue()])
+let slash = try await entry.valueOrDefault(path: Tuple(652, accountId))
 print("Value is: \(slash)")
 ```
 
@@ -156,7 +155,7 @@ for try await key in entry.keys() {
 
 // For maps where N > 1 we can filter iterator by first N-1 keys
 // This will set EraIndex value to 652
-let filtered = entry.filter(.u256(652))
+let filtered = entry.filter(key: 652)
 // And iterate over filtered Key/Value pairs.
 for try await (key, value) in filtered.entries() {
   print("Key: \(key), value: \(value)")
@@ -173,7 +172,7 @@ let ALICE = try substrate.runtime.account(ss58: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERH
 let entry = try storage.query.valueEntry(name: "Account", pallet: "System")
 
 // It's a Map parameter so we should pass key to watch
-for try await account in entry.watch([ALICE.asValue()]) {
+for try await account in entry.watch(path: [ALICE]) {
   print("Account updated: \(account)")
 }
 ```
