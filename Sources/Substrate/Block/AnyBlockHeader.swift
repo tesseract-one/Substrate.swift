@@ -20,18 +20,15 @@ public struct AnyBlockHeader<THasher: FixedHasher>: SomeBlockHeader {
     
     public var hash: THasher.THash {
         let value = Value<RuntimeTypeId>(value: .map(fields), context: type.id)
-        var encoder = _runtime.encoder()
-        try! value.encode(in: &encoder,
-                          as: type.id,
-                          runtime: _runtime)
-        return try! THasher.THash(_runtime.hasher.hash(data: encoder.output))
+        let data = try! _runtime.encode(value: value, as: type.id)
+        return try! THasher.THash(_runtime.hasher.hash(data: data))
     }
     
     public init(from decoder: Swift.Decoder) throws {
         self._runtime = decoder.runtime
-        var container = ValueDecodingContainer(decoder)
         let type = try _runtime.types.blockHeader
         self.type = type
+        var container = ValueDecodingContainer(decoder)
         let value = try Value<RuntimeTypeId>(from: &container, as: type.id, runtime: _runtime)
         guard let map = value.map else {
             throw try container.newError("Header is not a map: \(value)")

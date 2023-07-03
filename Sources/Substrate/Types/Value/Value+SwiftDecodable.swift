@@ -8,14 +8,12 @@
 import Foundation
 import ScaleCodec
 
-extension Value: SwiftRuntimeDynamicDecodable where C == RuntimeTypeId {
+extension Value where C == RuntimeTypeId {
     public init(from decoder: Swift.Decoder, `as` type: RuntimeTypeId) throws {
         var value = ValueDecodingContainer(decoder)
         try self.init(from: &value, as: type, runtime: decoder.runtime)
     }
-}
-
-extension Value where C == RuntimeTypeId {
+    
     public init(from container: inout ValueDecodingContainer,
                 `as` type: RuntimeTypeId,
                 runtime: Runtime) throws
@@ -158,8 +156,7 @@ private extension Value where C == RuntimeTypeId {
             return Value(value: .sequence([]), context: type)
         }
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            var decoder = runtime.decoder(with: data)
-            return try Value(from: &decoder, as: type, runtime: runtime)
+            return try runtime.decodeValue(from: data, id: type)
         } else if fields[0].name != nil { // Map
             var value = try from.nestedKeyedContainer()
             var map: [String: Value<C>] = Dictionary(minimumCapacity: fields.count)
@@ -193,8 +190,7 @@ private extension Value where C == RuntimeTypeId {
                 throw try from.newError("Expected hex or [u8] for data")
             }
         } else if let data = try? from.decode(Data.self) { // SCALE serialized
-            var decoder = runtime.decoder(with: data)
-            return try Value(from: &decoder, as: type, runtime: runtime)
+            return try runtime.decodeValue(from: data, id: type)
         } else { // array
             var value = try from.nestedUnkeyedContainer()
             var values = Array<Self>()
@@ -221,8 +217,7 @@ private extension Value where C == RuntimeTypeId {
             return Value(value: .variant(.sequence(name: "Some", values: [some])), context: type)
         }
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            var decoder = runtime.decoder(with: data)
-            return try Value(from: &decoder, as: type, runtime: runtime)
+            return try runtime.decodeValue(from: data, id: type)
         } else {
             var container = try from.nestedKeyedContainer()
             var variant: RuntimeTypeVariantItem
@@ -283,8 +278,7 @@ private extension Value where C == RuntimeTypeId {
                 throw try from.newError("Expected hex or [u8] for data")
             }
         } else if let data = try? from.decode(Data.self) { // SCALE serialized
-            var decoder = runtime.decoder(with: data)
-            return try Value(from: &decoder, as: type, runtime: runtime)
+            return try runtime.decodeValue(from: data, id: type)
         } else { // array
             var value = try from.nestedUnkeyedContainer()
             var values = Array<Self>()
@@ -304,8 +298,7 @@ private extension Value where C == RuntimeTypeId {
     ) throws -> Self {
         // Should we check 1 element tuples as value?
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            var decoder = runtime.decoder(with: data)
-            return try Value(from: &decoder, as: type, runtime: runtime)
+            return try runtime.decodeValue(from: data, id: type)
         } else {
             var container = try from.nestedUnkeyedContainer()
             let seq = try fields.map { try Value(from: &container, as: $0, runtime: runtime) }
@@ -379,8 +372,7 @@ private extension Value where C == RuntimeTypeId {
         store: RuntimeTypeId, order: RuntimeTypeId, runtime: Runtime
     ) throws -> Self {
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            var decoder = runtime.decoder(with: data)
-            return try Value(from: &decoder, as: type, runtime: runtime)
+            return try runtime.decodeValue(from: data, id: type)
         }
         let bools = try from.decode([Bool].self)
         return Value(value: .bitSequence(BitSequence(bits: bools, order: .lsb0)),

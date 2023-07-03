@@ -49,6 +49,10 @@ public extension RuntimeCallApiRegistry {
         substrate.runtime.resolve(runtimeCall: method, api: api) != nil
     }
     
+    func has<C: RuntimeCall>(call: C) -> Bool {
+        has(method: call.method, api: call.api)
+    }
+    
     func has<C: StaticRuntimeCall>(call type: C.Type) -> Bool {
         has(method: C.method, api: C.api)
     }

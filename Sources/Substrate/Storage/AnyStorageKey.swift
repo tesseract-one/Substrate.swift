@@ -47,9 +47,8 @@ public struct AnyStorageKey: IterableStorageKey {
         var components = Array<Component>()
         components.reserveCapacity(params.count)
         for (key, val) in zip(keys, params) {
-            var encoder = runtime.encoder()
-            try val.encode(in: &encoder, as: key.1, runtime: runtime)
-            components.append(.full(val, key.0.hasher.hash(data: encoder.output)))
+            let data = try runtime.encode(value: val, as: key.1)
+            components.append(.full(val, key.0.hasher.hash(data: data)))
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
     }
@@ -66,7 +65,7 @@ public struct AnyStorageKey: IterableStorageKey {
         let components: [Component] = try keys.map { (hash, tId) in
             let raw: Data = try decoder.decode(.fixed(UInt(hash.hasher.hashPartByteLength)))
             return hash.hasher.isConcat
-                ? try .full(runtime.decode(from: &decoder, type: tId).removingContext(), raw)
+                ? try .full(runtime.decodeValue(from: &decoder, id: tId).removingContext(), raw)
                 : .hash(raw)
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
@@ -76,7 +75,7 @@ public struct AnyStorageKey: IterableStorageKey {
         guard let (_, value, _) = runtime.resolve(storage: self.name, pallet: self.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
         }
-        return try TValue(from: &decoder, as: value, runtime: runtime)
+        return try runtime.decodeValue(from: &decoder, id: value)
     }
     
     public static func defaultValue(
@@ -86,8 +85,7 @@ public struct AnyStorageKey: IterableStorageKey {
         guard let (_, vType, data) = runtime.resolve(storage: base.name, pallet: base.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
-        var decoder = runtime.decoder(with: data)
-        return try TValue(from: &decoder, as: vType, runtime: runtime)
+        return try runtime.decodeValue(from: data, id: vType)
     }
     
     public static func validate(base: (name: String, pallet: String), runtime: Runtime) throws {
@@ -177,9 +175,8 @@ public extension AnyStorageKey {
             var components = Array<Component>()
             components.reserveCapacity(params.count)
             for (key, val) in zip(keys, params) {
-                var encoder = runtime.encoder()
-                try val.encode(in: &encoder, as: key.1, runtime: runtime)
-                components.append(.full(val, key.0.hasher.hash(data: encoder.output)))
+                let data = try runtime.encode(value: val, as: key.1)
+                components.append(.full(val, key.0.hasher.hash(data: data)))
             }
             self.init(name: name, pallet: pallet, path: components)
         }
@@ -193,9 +190,8 @@ public extension AnyStorageKey {
                                                                      expected: keys.count - 1)
             }
             let key = keys[path.count]
-            var encoder = runtime.encoder()
-            try param.encode(in: &encoder, as: key.1, runtime: runtime)
-            let newPath = path + [.full(param, key.0.hasher.hash(data: encoder.output))]
+            let data = try runtime.encode(value: param, as: key.1)
+            let newPath = path + [.full(param, key.0.hasher.hash(data: data))]
             return Self(name: name, pallet: pallet, path: newPath)
         }
         
