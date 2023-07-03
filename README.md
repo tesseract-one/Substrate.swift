@@ -118,23 +118,79 @@ Storage API works through `StorageEntry` helpers, which can be created for some 
 
 #### Create StorageEntry for key
 ```swift
+// Typed value
+let entry = try storage.query.entry(UInt128.self, name: "NominatorSlashInEra", pallet: "Stacking")
+
+// Dynamic value. Entry type is Value<RuntimeTypeId>
+let entry = storage.query.valueEntry(name: "NominatorSlashInEra", pallet: "Stacking")
 ```
 
 #### Fetch key value
+When we have entry we can fetch values.
 ```swift
+let accountId = try substrate.runtime.account(ss58: "EoukLS2Rzh6dZvMQSkqFy4zGvqeo14ron28Ue3yopVc8e3Q")
+// NominatorSlashInEra is Double Map (EraIndex, AccountId).
+// We have to provide 2 keys to get value.
+
+// Optional value
+let optSlash = try await entry.value([.u256(652), accountId.asValue()])
+print("Value is: \(optSlash ?? 0)")
+
+// Default value used
+let slash = try await entry.valueOrDefault([.u256(652), accountId.asValue()])
+print("Value is: \(slash)")
 ```
 
 #### Key Iterators
 Map keys support iteration. StorageEntry has set of helpers for this functionality. 
 ```swift
+// We can iterate over Key/Value pairs.
+for try await (key, value) in entry.entries() {
+  print("Key: \(key), value: \(value)")
+}
+
+// Or only keys
+for try await key in entry.keys() {
+  print("Key: \(key)")
+}
+
+// For maps where N > 1 we can filter iterator by first N-1 keys
+// This will set EraIndex value to 652
+let filtered = entry.filter(.u256(652))
+// And iterate over filtered Key/Value pairs.
+for try await (key, value) in filtered.entries() {
+  print("Key: \(key), value: \(value)")
+}
 ```
 
 #### Subscribe for changes
+If substrate network client support subscription we can subscribe for storage changes.
 ```swift
+// Some account we want to watch
+let ALICE = try substrate.runtime.account(ss58: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
+
+// Dynamic entry for System.Account storage key
+let entry = try storage.query.valueEntry(name: "Account", pallet: "System")
+
+// It's a Map parameter so we should pass key to watch
+for try await account in entry.watch([ALICE.asValue()]) {
+  print("Account updated: \(account)")
+}
 ```
 
 ### Custom RPC calls
+Current SDK wraps only basic system calls needed for its APIs. For more calls common call API can be used. 
 ```swift
+// Simple call
+let blockHash: Data = try await substrate.rpc.call(method: "chain_getBlockHash", params: Params(0))
+
+// Subscription
+let stream = try await substrate.rpc.subscribe(
+  method: "chain_subscribeNewHeads",
+  params: Params(),
+  unsubscribe: "chain_unsubscribeNewHeads",
+  DynamicConfig.TBlock.THeader.self
+)
 ```
 
 ### Key Chain API

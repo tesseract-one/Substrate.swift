@@ -130,7 +130,7 @@ public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDeleg
     }
     
     public func subscribe<P, E>(
-        method: String, params: P, unsubsribe umethod: String
+        method: String, params: P, unsubscribe umethod: String
     ) async throws -> AsyncThrowingStream<E, Swift.Error> where P : Encodable, E : Decodable {
         let subscriptionId: String = try await client.call(method: method, params: params, SerializableValue.self)
         return AsyncThrowingStream { continuation in

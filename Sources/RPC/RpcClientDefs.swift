@@ -15,7 +15,7 @@ public protocol RpcCallableClient {
 
 public protocol RpcSubscribableClient: RpcCallableClient {
     func subscribe<Params: Encodable, Event: Decodable>(
-        method: String, params: Params, unsubsribe umethod: String
+        method: String, params: Params, unsubscribe umethod: String
     ) async throws -> AsyncThrowingStream<Event, Error>
 }
 
@@ -29,8 +29,8 @@ public extension RpcCallableClient {
 
 public extension RpcSubscribableClient {
     func subscribe<Params: Encodable, Event: Decodable>(
-        method: String, params: Params, unsubsribe umethod: String, _ event: Event.Type
+        method: String, params: Params, unsubscribe umethod: String, _ event: Event.Type
     ) async throws -> AsyncThrowingStream<Event, Error> {
-        return try await subscribe(method: method, params: params, unsubsribe: umethod)
+        return try await subscribe(method: method, params: params, unsubscribe: umethod)
     }
 }

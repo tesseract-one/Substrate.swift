@@ -150,7 +150,7 @@ public struct SS58 {
     }
     
     public struct AddressCodec {
-        public func decode(string: String) throws -> (Data, AddressFormat) {
+        public static func decode(string: String) throws -> (Data, AddressFormat) {
             let data = try Base58.decode(string)
             guard data.count >= 2 else { throw Error.badLength }
             let prefixLen: Int, ident: UInt16
@@ -184,7 +184,7 @@ public struct SS58 {
             return (body.suffix(from: prefixLen), format)
         }
         
-        public func encode(data: Data, format: AddressFormat) -> String {
+        public static func encode(data: Data, format: AddressFormat) -> String {
             // We mask out the upper two bits of the ident - SS58 Prefix currently only supports 14-bits
             let ident = format.id & 0b00111111_11111111
             var result = Array<UInt8>()
@@ -206,11 +206,11 @@ public struct SS58 {
             return Base58.encode(result)
         }
         
-        public func hash(data: Data) -> Data {
+        public static func hash(data: Data) -> Data {
             HBlake2b512.instance.hash(data: Self.prefix + data)
         }
         
-        public func checksumLength(for dataLength: Int, prefix: Int) throws -> Int {
+        public static func checksumLength(for dataLength: Int, prefix: Int) throws -> Int {
             let bodyLength = dataLength - prefix
             if prefix == 1 {
                 switch bodyLength {
@@ -232,7 +232,6 @@ public struct SS58 {
         }
         
         public static let prefix = Data("SS58PRE".utf8)
-        public static let instance = AddressCodec()
         public static let defaultEncodeChecksumLength = 2
     }
     
@@ -245,11 +244,11 @@ public struct SS58 {
     
     @inlinable
     public static func decode(string: String) throws -> (Data, AddressFormat) {
-        try AddressCodec.instance.decode(string: string)
+        try AddressCodec.decode(string: string)
     }
     
     @inlinable
     public static func encode(data: Data, format: AddressFormat) -> String {
-        AddressCodec.instance.encode(data: data, format: format)
+        AddressCodec.encode(data: data, format: format)
     }
 }

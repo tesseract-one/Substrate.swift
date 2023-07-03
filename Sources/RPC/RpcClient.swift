@@ -266,9 +266,9 @@ extension RpcClient: Client {
 extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
     @inlinable
     public func subscribe<Params: Swift.Encodable, Event: Swift.Decodable>(
-        method: String, params: Params, unsubsribe umethod: String
+        method: String, params: Params, unsubscribe umethod: String
     ) async throws -> AsyncThrowingStream<Event, Error> {
-        try await client.subscribe(method: method, params: params, unsubsribe: umethod)
+        try await client.subscribe(method: method, params: params, unsubscribe: umethod)
     }
 }
 
@@ -281,7 +281,7 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
         return try await subscribe(method: "author_submitAndWatchExtrinsic",
                                    params: Params(encoder.output),
-                                   unsubsribe: "author_unwatchExtrinsic")
+                                   unsubscribe: "author_unwatchExtrinsic")
     }
     
     public func subscribe<K: StorageKey>(
@@ -325,7 +325,7 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
         try await subscribe(
            method: "state_subscribeStorage",
            params: keys,
-           unsubsribe: "state_unsubscribeStorage"
+           unsubscribe: "state_unsubscribeStorage"
        )
     }
 }

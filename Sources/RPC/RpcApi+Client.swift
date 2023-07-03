@@ -20,9 +20,15 @@ extension RpcApiRegistry: RpcCallableClient where S.CL: RpcCallableClient {
 
 extension RpcApiRegistry: RpcSubscribableClient where S.CL: RpcSubscribableClient {
     public func subscribe<P: Encodable, E: Decodable>(
-        method: String, params: P, unsubsribe umethod: String
+        method: String, params: P, unsubscribe umethod: String
     ) async throws -> AsyncThrowingStream<E, Error> {
-        try await substrate.client.subscribe(method: method, params: params, unsubsribe: umethod)
+        try await substrate.client.subscribe(method: method, params: params, unsubscribe: umethod)
+    }
+    
+    public func subscribe<P: Encodable, E: Decodable>(
+        method: String, params: P, unsubscribe umethod: String, _ event: E.Type
+    ) async throws -> AsyncThrowingStream<E, Error> {
+        try await substrate.client.subscribe(method: method, params: params, unsubscribe: umethod)
     }
 }
 
