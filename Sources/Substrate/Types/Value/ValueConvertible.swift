@@ -18,16 +18,46 @@ public protocol ValueRepresentable {
 
 public typealias ValueConvertible = ValueInitializable & ValueRepresentable
 
+public protocol ValueArrayInitializable {
+    init<C>(values: [Value<C>]) throws
+}
+
 public protocol ValueArrayRepresentable {
     func asValueArray() throws -> [AnyValue]
+}
+
+public protocol ValueMapInitializable {
+    init<C>(values: [String: Value<C>]) throws
 }
 
 public protocol ValueMapRepresentable {
     func asValueMap() throws -> [String: AnyValue]
 }
 
+public extension ValueArrayInitializable {
+    init<C>(value: Value<C>) throws {
+        switch value.value {
+        case .sequence(let values): try self.init(values: values)
+        default:
+            throw ValueInitializableError.wrongValueType(got: value.value,
+                                                         for: String(describing: Self.self))
+        }
+    }
+}
+
 public extension ValueArrayRepresentable {
     func asValue() throws -> AnyValue { try .sequence(asValueArray()) }
+}
+
+public extension ValueMapInitializable {
+    init<C>(value: Value<C>) throws {
+        switch value.value {
+        case .map(let fields): try self.init(values: fields)
+        default:
+            throw ValueInitializableError.wrongValueType(got: value.value,
+                                                         for: String(describing: Self.self))
+        }
+    }
 }
 
 public extension ValueMapRepresentable {
@@ -93,16 +123,52 @@ extension Value: ValueRepresentable {
     }
 }
 
-extension Bool: ValueRepresentable {
+extension Bool: ValueConvertible {
+    public init<C>(value: Value<C>) throws {
+        guard let bool = value.bool else {
+            throw ValueInitializableError.wrongValueType(got: value.value,
+                                                         for: "Bool")
+        }
+        self = bool
+    }
+    
     public func asValue() throws -> AnyValue { .bool(self) }
 }
 
-extension String: ValueRepresentable {
+extension String: ValueConvertible {
+    public init<C>(value: Value<C>) throws {
+        guard let string = value.string else {
+            throw ValueInitializableError.wrongValueType(got: value.value,
+                                                         for: "String")
+        }
+        self = string
+    }
+    
     public func asValue() throws -> AnyValue { .string(self) }
 }
 
-extension Data: ValueRepresentable {
+extension Data: ValueConvertible {
+    public init<C>(value: Value<C>) throws {
+        guard let data = value.bytes else {
+            throw ValueInitializableError.wrongValueType(got: value.value,
+                                                         for: "Data")
+        }
+        self = data
+    }
+    
     public func asValue() throws -> AnyValue { .bytes(self) }
+}
+
+extension Character: ValueConvertible {
+    public init<C>(value: Value<C>) throws {
+        guard let char = value.char else {
+            throw ValueInitializableError.wrongValueType(got: value.value,
+                                                         for: "Character")
+        }
+        self = char
+    }
+    
+    public func asValue() throws -> AnyValue { .char(self) }
 }
 
 public extension Sequence where Element: ValueRepresentable {
@@ -111,8 +177,23 @@ public extension Sequence where Element: ValueRepresentable {
     }
 }
 
+extension Array: ValueInitializable where Element: ValueInitializable {}
+extension Array: ValueArrayInitializable where Element: ValueInitializable {
+    public init<C>(values: [Value<C>]) throws {
+        self = try values.map { try Element(value: $0) }
+    }
+}
 extension Array: ValueRepresentable where Element: ValueRepresentable {}
 extension Array: ValueArrayRepresentable where Element: ValueRepresentable {}
+
+extension Set: ValueInitializable where Element: ValueInitializable {}
+extension Set: ValueArrayInitializable where Element: ValueInitializable {
+    public init<C>(values: [Value<C>]) throws {
+        self = try Set(values.map { try Element(value: $0) })
+    }
+}
+extension Set: ValueRepresentable where Element: ValueRepresentable {}
+extension Set: ValueArrayRepresentable where Element: ValueRepresentable {}
 
 extension KeyValuePairs: ValueRepresentable where Key: StringProtocol, Value: ValueRepresentable {}
 extension KeyValuePairs: ValueMapRepresentable where Key: StringProtocol, Value: ValueRepresentable {
@@ -121,6 +202,14 @@ extension KeyValuePairs: ValueMapRepresentable where Key: StringProtocol, Value:
     }
 }
 
+extension Dictionary: ValueInitializable where Key: StringProtocol, Value: ValueInitializable {}
+extension Dictionary: ValueMapInitializable where Key: StringProtocol, Value: ValueInitializable {
+    public init<C>(values: [String: DValue<C>]) throws {
+        try self.init(uniqueKeysWithValues:
+            values.map { try (Key(stringLiteral: $0), Value(value: $1)) }
+        )
+    }
+}
 extension Dictionary: ValueRepresentable where Key: StringProtocol, Value: ValueRepresentable {}
 extension Dictionary: ValueMapRepresentable where Key: StringProtocol, Value: ValueRepresentable {
     public func asValueMap() throws -> [String: AnyValue] {

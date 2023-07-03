@@ -78,66 +78,44 @@ public extension Value {
     
     var bool: Bool? {
         switch value {
-        case .primitive(let p):
-            switch p {
-            case .bool(let b): return b
-            default: return nil
-            }
+        case .primitive(.bool(let b)): return b
         default: return nil
         }
     }
     
     var char: Character? {
         switch value {
-        case .primitive(let p):
-            switch p {
-            case .char(let c): return c
-            default: return nil
-            }
+        case .primitive(.char(let c)): return c
         default: return nil
         }
     }
     
     var string: String? {
         switch value {
-        case .primitive(let p):
-            switch p {
-            case .string(let s): return s
-            default: return nil
-            }
+        case .primitive(.string(let s)): return s
         default: return nil
         }
     }
     
     var u256: UInt256? {
         switch value {
-        case .primitive(let p):
-            switch p {
-            case .u256(let u): return u
-            default: return nil
-            }
+        case .primitive(.u256(let u)): return u
+        case .primitive(.i256(let i)): return UInt256(exactly: i)
         default: return nil
         }
     }
     
     var i256: Int256? {
         switch value {
-        case .primitive(let p):
-            switch p {
-            case .i256(let i): return i
-            default: return nil
-            }
+        case .primitive(.i256(let i)): return i
+        case .primitive(.u256(let u)): return Int256(exactly: u)
         default: return nil
         }
     }
     
     var bytes: Data? {
         switch value {
-        case .primitive(let p):
-            switch p {
-            case .bytes(let b): return b
-            default: return nil
-            }
+        case .primitive(.bytes(let b)): return b
         case .sequence(let vals):
             let arr = vals.compactMap { $0.u256.flatMap { UInt8(exactly: $0) } }
             guard arr.count == vals.count else { return nil }
@@ -383,3 +361,4 @@ extension Value.Primitive: CustomStringConvertible {
 }
 
 public typealias AnyValue = Value<Void>
+public typealias DValue<C> = Value<C>

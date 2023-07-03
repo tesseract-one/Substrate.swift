@@ -275,3 +275,24 @@ extension CustomDecoderFactory where T == BitSequence {
         }
     }
 }
+
+extension BitSequence: ValueConvertible {
+    public init<C>(value: Value<C>) throws {
+        switch value.value {
+        case .bitSequence(let seq):
+            self = seq
+        case .sequence(let vals):
+            let arr = vals.compactMap { $0.bool }
+            guard arr.count == vals.count else {
+                throw ValueInitializableError.wrongValueType(got: value.value, for: "BitSequence")
+            }
+            self.init(arr)
+        default:
+            throw ValueInitializableError.wrongValueType(got: value.value, for: "BitSequence")
+        }
+    }
+    
+    public func asValue() throws -> AnyValue {
+        AnyValue(value: .bitSequence(self), context: ())
+    }
+}
