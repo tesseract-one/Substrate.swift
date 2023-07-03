@@ -27,11 +27,11 @@ private typealias EDPublicKey = Ed25519.Ed25519PublicKey
 
 public struct Ed25519KeyPair: Equatable, Hashable {
     private let _keyPair: EDKeyPair
-    private let _pubKey: STEd25519PublicKey
+    public let publicKey: STEd25519PublicKey
     
     private init(keyPair: EDKeyPair) {
         self._keyPair = keyPair
-        self._pubKey = try! STEd25519PublicKey(keyPair.publicKey.raw)
+        self.publicKey = try! STEd25519PublicKey(keyPair.publicKey.raw)
     }
     
     fileprivate static func convertError<T>(_ cb: () throws -> T) throws -> T {
@@ -58,16 +58,8 @@ public struct Ed25519KeyPair: Equatable, Hashable {
 
 extension Ed25519KeyPair: KeyPair {
     public var raw: Data { _keyPair.raw }
-    public var pubKey: any PublicKey { _pubKey }
+    public var pubKey: any PublicKey { publicKey }
     public var algorithm: CryptoTypeId { .ed25519 }
-    
-    public init(phrase: String, password: String? = nil) throws {
-        let mnemonic = try Self.convertError {
-            try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
-        }
-        let seed = mnemonic.substrate_seed(password: password ?? "")
-        try self.init(seed: Data(seed))
-    }
     
     public init(seed: Data) throws {
         let kpSeed = try Self.convertError {

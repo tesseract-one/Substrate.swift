@@ -16,7 +16,7 @@ import Substrate
 public struct EcdsaKeyPair {
     private let _private: [UInt8]
     private let _public: secp256k1_pubkey
-    private let _pubKey: EcdsaPublicKey
+    public let publicKey: EcdsaPublicKey
     
     private init(privKey: [UInt8]) throws {
         guard Self._context.verify(privKey: privKey) else {
@@ -26,7 +26,7 @@ public struct EcdsaKeyPair {
         let raw = try Data(Self._context.serialize(pubKey: pub, compressed: true))
         self._public = pub
         self._private = privKey
-        self._pubKey = try EcdsaPublicKey(raw)
+        self.publicKey = try EcdsaPublicKey(raw)
     }
     
     fileprivate static let _context = Secp256k1Context()
@@ -34,32 +34,21 @@ public struct EcdsaKeyPair {
 
 extension EcdsaKeyPair: Equatable {
     public static func == (lhs: EcdsaKeyPair, rhs: EcdsaKeyPair) -> Bool {
-        rhs._private == lhs._private && rhs._pubKey == lhs._pubKey
+        rhs._private == lhs._private && rhs.publicKey == lhs.publicKey
     }
 }
 
 extension EcdsaKeyPair: Hashable {
     public func hash(into hasher: inout Swift.Hasher) {
         hasher.combine(_private)
-        hasher.combine(_pubKey)
+        hasher.combine(publicKey)
     }
 }
 
 extension EcdsaKeyPair: KeyPair {
     public var algorithm: CryptoTypeId { .ecdsa }
-    public var pubKey: any PublicKey { _pubKey }
-    public var raw: Data { Data(_private) + _pubKey.raw }
-    
-    public init(phrase: String, password: String? = nil) throws {
-        let mnemonic: Mnemonic
-        do {
-            mnemonic = try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
-        } catch {
-            throw KeyPairError(error: error)
-        }
-        let seed = mnemonic.substrate_seed(password: password ?? "")
-        try self.init(seed: Data(seed))
-    }
+    public var pubKey: any PublicKey { publicKey }
+    public var raw: Data { Data(_private) + publicKey.raw }
     
     public init(seed: Data) throws {
         guard seed.count >= Secp256k1Context.privKeySize else {

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Bip39
 #if !COCOAPODS
 import Substrate
 #endif
@@ -16,7 +17,7 @@ public protocol KeyPair {
     var raw: Data { get }
     
     init()
-    init(phrase: String, password: String?) throws
+    init(phrase: String, password: String?, wordlist: Wordlist) throws
     init(seed: Data) throws
     init(raw: Data) throws
     
@@ -27,6 +28,17 @@ public protocol KeyPair {
 }
 
 public extension KeyPair {
+    init(phrase: String, password: String? = nil, wordlist: Wordlist = .english) throws {
+        let mnemonic: Mnemonic
+        do {
+            mnemonic = try Mnemonic(mnemonic: phrase.components(separatedBy: " "))
+        } catch {
+            throw KeyPairError(error: error)
+        }
+        let seed = mnemonic.substrate_seed(password: password ?? "")
+        try self.init(seed: Data(seed))
+    }
+    
     @inlinable
     func account<A: AccountId>(runtime: any Runtime) throws -> A {
         try pubKey.account(runtime: runtime)

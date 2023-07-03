@@ -14,11 +14,11 @@ import Substrate
 
 public struct Sr25519KeyPair: Equatable, Hashable {
     private let _keyPair: Sr25519.Sr25519KeyPair
-    private let _pubKey: STSr25519PublicKey
+    public let publicKey: STSr25519PublicKey
     
     private init(keyPair: Sr25519.Sr25519KeyPair) {
         self._keyPair = keyPair
-        self._pubKey = try! STSr25519PublicKey(keyPair.publicKey.raw)
+        self.publicKey = try! STSr25519PublicKey(keyPair.publicKey.raw)
     }
     
     fileprivate static func convertError<T>(_ cb: () throws -> T) throws -> T {
@@ -49,16 +49,8 @@ public struct Sr25519KeyPair: Equatable, Hashable {
 
 extension Sr25519KeyPair: KeyPair {
     public var algorithm: CryptoTypeId { .sr25519 }
-    public var pubKey: any PublicKey { _pubKey }
+    public var pubKey: any PublicKey { publicKey }
     public var raw: Data { _keyPair.raw }
-    
-    public init(phrase: String, password: String? = nil) throws {
-        let mnemonic = try Self.convertError {
-            try Mnemonic(mnemonic: phrase.components(separatedBy: " "), wordlist: .english)
-        }
-        let seed = mnemonic.substrate_seed(password: password ?? "")
-        try self.init(seed: Data(seed))
-    }
     
     public init(seed: Data) throws {
         let kp = try Self.convertError {
@@ -117,7 +109,6 @@ extension STSr25519PublicKey: KeyDerivable {
         } catch _ as SizeMismatchError {
             throw KeyPairError.input(error: .publicKey)
         }
-        
     }
 }
 

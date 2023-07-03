@@ -193,7 +193,24 @@ let stream = try await substrate.rpc.subscribe(
 ```
 
 ### Key Chain API
+SDK provides simple in-memory keychain with Secp256k1, Ed25519 and Sr25519 keys support.
+
+#### KeyPairs
 ```swift
+// Not needed for CocoaPods
+import SubstrateKeychain
+
+// Initializers
+let random = EcdsaKeyPair() // Ed25519KeyPair / Sr25519KeyPair
+let mnemonic = Sr25519KeyPair(phrase: "your words")
+let substrate = try Ed25519KeyPair(parsing: "//Alice")
+
+// Key derivation
+let derived = try mnemonic.derive(path: [PathComponent(string: "//Alice")])
+```
+
+#### KeyChain
+```
 ```
 
 ## Author
