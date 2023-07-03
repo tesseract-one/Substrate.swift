@@ -45,7 +45,23 @@ public class StorageApiRegistry<S: SomeSubstrate> {
     }
     
     @inlinable
-    public func entry(name: String, pallet: String) throws -> StorageEntry<S, AnyStorageKey> {
+    public func entry<R: RuntimeDynamicDecodable>(
+        name: String, pallet: String
+    ) throws -> StorageEntry<S, AnyStorageKey<R>> {
+        try entry(R.self, name: name, pallet: pallet)
+    }
+    
+    @inlinable
+    public func valueEntry(
+        name: String, pallet: String
+    ) throws -> StorageEntry<S, AnyValueStorageKey> {
+        try entry(name: name, pallet: pallet)
+    }
+    
+    @inlinable
+    public func entry<R: RuntimeDynamicDecodable>(
+        _ type: R.Type, name: String, pallet: String
+    ) throws -> StorageEntry<S, AnyStorageKey<R>> {
         try StorageEntry(substrate: substrate, params: (name, pallet))
     }
     

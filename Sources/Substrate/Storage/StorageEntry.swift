@@ -169,25 +169,34 @@ public extension StorageEntry where Key: IterableStorageKey, Key.TIterator: Iter
     }
 }
 
-public extension StorageEntry where Key == AnyStorageKey {
+public extension StorageEntry where Key: DynamicStorageKey {
     func size(at hash: S.RC.TBlock.THeader.THasher.THash? = nil) async throws -> UInt64 {
-        try await size(key: Key(name: params.name, pallet: params.pallet, path: []), at: hash)
+        try await size(
+            key: Key(base: (params.name, params.pallet), params: [], runtime: substrate.runtime),
+            at: hash
+        )
     }
     
     func value(at hash: S.RC.TBlock.THeader.THasher.THash? = nil) async throws -> Key.TValue? {
-        try await value(key: Key(name: params.name, pallet: params.pallet, path: []), at: hash)
+        try await value(
+            key: Key(base: (params.name, params.pallet), params: [], runtime: substrate.runtime),
+            at: hash
+        )
     }
     
     func valueOrDefault(at hash: S.RC.TBlock.THeader.THasher.THash? = nil) async throws -> Key.TValue {
-        try await valueOrDefault(key: Key(name: params.name, pallet: params.pallet, path: []), at: hash)
+        try await valueOrDefault(
+            key: Key(base: (params.name, params.pallet), params: [], runtime: substrate.runtime),
+            at: hash
+        )
     }
     
-    func filter(params: [Key.Iterator.TParam]) throws -> Iterator<Key.Iterator> {
+    func filter(params: [Key.TIterator.TIterator.TParam]) throws -> Iterator<Key.TIterator.TIterator> {
         try Iterator(substrate: substrate,
-                     iterator: Key.Iterator(name: self.params.name,
-                                            pallet: self.params.pallet,
-                                            params: params,
-                                            runtime: substrate.runtime))
+                     iterator: Key.TIterator.TIterator(name: self.params.name,
+                                                       pallet: self.params.pallet,
+                                                       params: params,
+                                                       runtime: substrate.runtime))
     }
 }
 

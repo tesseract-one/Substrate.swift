@@ -8,11 +8,26 @@
 import Foundation
 import ScaleCodec
 
-public struct AnyStorageKey: IterableStorageKey {
+public typealias AnyValueStorageKey = AnyStorageKey<Value<RuntimeTypeId>>
+
+public protocol DynamicStorageKey: IterableStorageKey where
+    TParams == [Value<Void>],
+    TBaseParams == (name: String, pallet: String),
+    TIterator: IterableStorageKeyIterator,
+    TIterator.TIterator: DynamicStorageKeyIterator {}
+
+public protocol DynamicStorageKeyIterator: IterableStorageKeyIterator where
+    TParam == Value<Void>,
+    TKey: DynamicStorageKey
+{
+    init(name: String, pallet: String, params: [TParam], runtime: any Runtime) throws
+}
+
+public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
     public typealias TParams = [Value<Void>]
     public typealias TBaseParams = (name: String, pallet: String)
-    public typealias TValue = Value<RuntimeTypeId>
-    public typealias TIterator = RootIterator
+    public typealias TValue = Val
+    public typealias TIterator = Iterator.Root
     
     public var pallet: String
     public var name: String
@@ -72,20 +87,22 @@ public struct AnyStorageKey: IterableStorageKey {
     }
     
     public func decode<D: Decoder>(valueFrom decoder: inout D, runtime: Runtime) throws -> TValue {
-        guard let (_, value, _) = runtime.resolve(storage: self.name, pallet: self.pallet) else {
-            throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
+        return try runtime.decode(from: &decoder) { runtime in
+            guard let (_, value, _) = runtime.resolve(storage: self.name, pallet: self.pallet) else {
+                throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
+            }
+            return value
         }
-        return try runtime.decodeValue(from: &decoder, id: value)
     }
     
     public static func defaultValue(
         base: (name: String, pallet: String),
         runtime: any Runtime
-    ) throws -> Value<RuntimeTypeId> {
+    ) throws -> TValue {
         guard let (_, vType, data) = runtime.resolve(storage: base.name, pallet: base.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
-        return try runtime.decodeValue(from: data, id: vType)
+        return try runtime.decode(from: data, id: vType)
     }
     
     public static func validate(base: (name: String, pallet: String), runtime: Runtime) throws {
@@ -117,37 +134,9 @@ public extension AnyStorageKey {
 }
 
 public extension AnyStorageKey {
-    struct RootIterator: StorageKeyRootIterator, IterableStorageKeyIterator {
-        public typealias TParam = (name: String, pallet: String)
-        public typealias TKey = AnyStorageKey
-        public typealias TIterator = Iterator
-        
-        public let name: String
-        public let pallet: String
-        
-        public var hash: Data {
-            TKey.prefix(name: name, pallet: pallet)
-        }
-        
-        public init(base param: (name: String, pallet: String)) {
-            self.name = param.name
-            self.pallet = param.pallet
-        }
-        
-        public func next(param: Value<Void>, runtime: Runtime) throws -> TIterator {
-            try TIterator(name: name, pallet: pallet, path: []).next(param: param, runtime: runtime)
-        }
-        
-        public func decode<D: Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey {
-            try TKey(from: &decoder, base: (name, pallet), runtime: runtime)
-        }
-    }
-}
-
-public extension AnyStorageKey {
-    struct Iterator: StorageKeyIterator, IterableStorageKeyIterator {
+    struct Iterator: DynamicStorageKeyIterator {
         public typealias TParam = Value<Void>
-        public typealias TKey = AnyStorageKey
+        public typealias TKey = AnyStorageKey<Val>
         public typealias TIterator = Self
         
         public let name: String
@@ -193,6 +182,34 @@ public extension AnyStorageKey {
             let data = try runtime.encode(value: param, as: key.1)
             let newPath = path + [.full(param, key.0.hasher.hash(data: data))]
             return Self(name: name, pallet: pallet, path: newPath)
+        }
+        
+        public func decode<D: Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey {
+            try TKey(from: &decoder, base: (name, pallet), runtime: runtime)
+        }
+    }
+}
+
+public extension AnyStorageKey.Iterator {
+    struct Root: StorageKeyRootIterator, IterableStorageKeyIterator {
+        public typealias TParam = (name: String, pallet: String)
+        public typealias TKey = AnyStorageKey<Val>
+        public typealias TIterator = AnyStorageKey<Val>.Iterator
+        
+        public let name: String
+        public let pallet: String
+        
+        public var hash: Data {
+            TKey.prefix(name: name, pallet: pallet)
+        }
+        
+        public init(base param: (name: String, pallet: String)) {
+            self.name = param.name
+            self.pallet = param.pallet
+        }
+        
+        public func next(param: Value<Void>, runtime: Runtime) throws -> TIterator {
+            try TIterator(name: name, pallet: pallet, path: []).next(param: param, runtime: runtime)
         }
         
         public func decode<D: Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey {
