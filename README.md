@@ -84,6 +84,63 @@ let events = try await tx.signSendAndWatch(signer: from)
 print("Events: \(try events.parsed())")
 ```
 
+### Runtime Calls
+For runtime calls node should support Metadata v15.
+
+```swift
+
+guard substrate.call.has(method: "versions", api: "Metadata") else {
+  fatalError("Node does't have needed call")
+}
+
+// Array<UInt32> is a return value for the call
+// Value<RuntimeTypeId> can be used for fully dynamic parsing
+// AnyValueRuntimeCall is a typealias for fully dynamic call
+let call = AnyRuntimeCall<[UInt32]>(api: "Metadata",
+                                    method: "versions",
+                                    params: .nil)
+
+let versions = try await substrate.call.execute(call: call)
+
+print("Supported metadata versions: \(versions)")
+```
+
+### Constants
+```swift
+
+let deposit = try substrate.constants.get(UInt128.self, name: "ExistentialDeposit", pallet: "Balances")
+
+print("Existential deposit: \(deposit)")
+```
+
+### Storage Keys
+Storage API works through `StorageEntry` helpers, which can be created for some `StorageKey` type.
+
+#### Create StorageEntry for key
+```swift
+```
+
+#### Fetch key value
+```swift
+```
+
+#### Key Iterators
+Map keys support iteration. StorageEntry has set of helpers for this functionality. 
+```swift
+```
+
+#### Subscribe for changes
+```swift
+```
+
+### Custom RPC calls
+```swift
+```
+
+### Key Chain API
+```swift
+```
+
 ## Author
 
  - [Tesseract Systems, Inc.](mailto:info@tesseract.one)
