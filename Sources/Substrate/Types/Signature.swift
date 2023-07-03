@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Signature: RuntimeCodable {
+public protocol Signature: RuntimeCodable, ValueRepresentable {
     var raw: Data { get }
     var algorithm: CryptoTypeId { get }
     
@@ -21,6 +21,8 @@ public extension Signature {
         let sig = Data(repeating: 1, count: algorithm.signatureBytesCount)
         try self.init(raw: sig, algorithm: algorithm, runtime: runtime)
     }
+    
+    func asValue() throws -> AnyValue { .bytes(raw) }
 }
 
 public extension CryptoTypeId {
@@ -157,6 +159,16 @@ extension MultiSignature: Signature {
     }
     public static func algorithms(runtime: any Runtime) throws -> [CryptoTypeId] { Self.supportedCryptoTypes }
     public static let supportedCryptoTypes: [CryptoTypeId] = [.sr25519, .ecdsa, .ed25519]
+}
+
+extension MultiSignature: ValueRepresentable {
+    public func asValue() throws -> AnyValue {
+        switch self {
+        case .ecdsa(let sig): return try .variant(name: "Ecdsa", values: [sig.asValue()])
+        case .ed25519(let sig): return try .variant(name: "Ed25519", values: [sig.asValue()])
+        case .sr25519(let sig): return try .variant(name: "Sr25519", values: [sig.asValue()])
+        }
+    }
 }
 
 extension MultiSignature: ScaleCodec.Codable {
