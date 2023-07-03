@@ -18,7 +18,7 @@ public struct RpcClient<RC: Config, CL: RpcCallableClient & RuntimeHolder> {
     public init(client: CL) {
         self.client = client
         self.rpcMethods = LazyAsyncThrowingProperty {
-            try await Self._rpcMethods(client: client)
+            try await Self.rpcMethods(client: client)
         }
     }
     
@@ -26,7 +26,7 @@ public struct RpcClient<RC: Config, CL: RpcCallableClient & RuntimeHolder> {
         public let methods: Set<String>
     }
     
-    private static func _rpcMethods(client: CL) async throws -> Set<String> {
+    internal static func rpcMethods(client: CL) async throws -> Set<String> {
         let m: RpcMethods = try await client.call(method: "rpc_methods", params: Params())
         return m.methods
     }

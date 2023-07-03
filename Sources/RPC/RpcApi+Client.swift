@@ -27,12 +27,7 @@ extension RpcApiRegistry: RpcSubscribableClient where S.CL: RpcSubscribableClien
 }
 
 public extension RpcApiRegistry where S.CL: RpcCallableClient {
-    private struct Methods: Codable {
-        public let methods: Set<String>
-    }
-    
     func methods() async throws -> Set<String> {
-        let methods: Methods = try await call(method: "rpc_methods", params: Params())
-        return methods.methods
+        try await RpcClient<S.RC, S.CL>.rpcMethods(client: substrate.client)
     }
 }
