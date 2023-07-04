@@ -167,7 +167,7 @@ If substrate network client support subscription we can subscribe for storage ch
 let ALICE = try substrate.runtime.account(ss58: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
 
 // Dynamic entry for System.Account storage key
-let entry = try storage.query.valueEntry(name: "Account", pallet: "System")
+let entry = try substrate.query.valueEntry(name: "Account", pallet: "System")
 
 // It's a Map parameter so we should pass key to watch
 for try await account in entry.watch(path: [ALICE]) {
