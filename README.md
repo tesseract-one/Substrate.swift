@@ -271,6 +271,9 @@ let isSigned = derived.verify(message: data, signature: signature)
 ```
 
 #### Keychain
+In-memory storage for multiple KeyPairs (multi-account support).
+
+##### Initialization and base API
 ```swift
 // Not needed for CocoaPods
 import SubstrateKeychain
@@ -292,19 +295,21 @@ let keyPair = keychain.keyPair(for: pubKey)!
 ```
 
 ##### Api Signer integration
+Keychain can be set as `Signer` for `Api` instance for simpler account management and signing.
+
 ```swift
-// Update substrate signer to created keychain instance
+// Set substrate signer to created keychain instance
 substrate.signer = keychain
 
 // Fetch account from Keychain (it will call Keychain delegate for selection)
 let from = try await substrate.tx.account()
 
-// Keychain will return PublicKey
+// Signer will return PublicKey from Keychain
 // which should be converted to account or address for extrinsics
 print("Account: \(try from.account(in: substrate))")
 
-// We can provide this PublicKey as account for signing.
-// Signing call will be sent to Keychain
+// We can provide this PublicKey as `account` to calls for signing.
+// Signing call will be sent to Keychain through Signer protocol
 let events = try await tx.signSendAndWatch(account: from)
         .waitForFinalized()
         .success()
@@ -314,9 +319,9 @@ print("Events: \(try events.parsed())")
 ```
 
 ##### Keychain Delegate
-Keychain has delegate object which can select public keys for the Signer protocol. It can be used to show UI with account selecter to the user.
+Keychain has delegate object which can select public keys for the Signer protocol. It can be used to show UI with account selecter to the user or implement custom logic.
 
-There is default `KeychainDelegateFirstFound` implementation which returns first found compatible key from Keychain.
+There is default `KeychainDelegateFirstFound` implementation which returns first found compatible key from the Keychain.
 
 Protocol looks like this:
 ```swift
