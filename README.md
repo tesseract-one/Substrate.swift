@@ -49,15 +49,18 @@ Then run `pod install`
 
 ### Initialization
 
-For initialization Substrate needs client and runtime config. For now there is only one client - JsonRPC.
+For initialization `Api` needs client and runtime config. For now there is only one client - JsonRPC.
 
 ```swift
 import Substrate
-// Not needed for CocoaPods
+// Import not needed for CocoaPods.
+// In CocoaPods all types are inside one Substrate module.
 import SubstrateRPC
 
 let nodeUrl = URL(string: "wss://westend-rpc.polkadot.io")!
 
+// DynamicConfig should work for almost all Substrate based networks.
+// It's not most eficient though because uses a lot of dynamic types
 let substrate = try await Api(
     rpc: JsonRpcClient(.ws(url: nodeUrl)),
     config: DynamicConfig()
@@ -69,35 +72,51 @@ let substrate = try await Api(
 // Not needed for CocoaPods
 import SubstrateKeychain
 
+// Create KeyPair for signing
 let mnemonic = "your key 12 words"
 let from = try Sr25519KeyPair(parsing: mnemonic + "//Key1") // hard key derivation
 
-let to = try substrate.runtime.address(ss58: "account s58 address")
+// Create recipient address from ss58 string
+let to = try substrate.runtime.address(ss58: "repicient s58 address")
 
+// Dynamic Call type with Map parameters.
+// any ValueRepresentable type can be used as parameter
 let call = try AnyCall(name: "transfer",
                        pallet: "Balances",
                        map: ["dest": to, "value": 15483812850])
+
+// Create Submittable (transaction) from the call
 let tx = try await substrate.tx.new(call)
+
+// We are using direct signer API here
+// Or we can set Keychain as signer in Api and provide `account` parameter
+// `waitForFinalized()` will wait for block finalization
+// `waitForInBlock()` will wait for inBlock status
+// `success()` will search for failed event and throw in case of failure
 let events = try await tx.signSendAndWatch(signer: from)
         .waitForFinalized()
         .success()
+
+// `parsed()` will dynamically parse all extrinsic events.
+// Check `ExtrinsicEvents` struct for more efficient search methods.
 print("Events: \(try events.parsed())")
 ```
 
 ### Runtime Calls
-For runtime calls node should support Metadata v15.
+For dynamic runtime calls node should support Metadata v15.
 
 ```swift
+// We can check does node have needed runtime call
 guard substrate.call.has(method: "versions", api: "Metadata") else {
-  fatalError("Node does't have needed call")
+  fatalError("Node doesn't have needed call")
 }
 
 // Array<UInt32> is a return value for the call
-// Value<RuntimeTypeId> can be used for fully dynamic parsing
-// AnyValueRuntimeCall is a typealias for fully dynamic call
+// AnyValueRuntimeCall can be used for dynamic return parsing
 let call = AnyRuntimeCall<[UInt32]>(api: "Metadata",
                                     method: "versions")
 
+// Will parse vall result to Array<UInt32>
 let versions = try await substrate.call.execute(call: call)
 
 print("Supported metadata versions: \(versions)")
@@ -105,48 +124,54 @@ print("Supported metadata versions: \(versions)")
 
 ### Constants
 ```swift
+// It will throw if constant is not found or type is wrong
 let deposit = try substrate.constants.get(UInt128.self, name: "ExistentialDeposit", pallet: "Balances")
 
-print("Existential deposit: \(deposit)")
+// This will parse constant to dynamic Value<RuntimeTypeId>
+let dynDeposit = try substrate.constants.dynamic(name: "ExistentialDeposit", pallet: "Balances")
+
+print("Existential deposit: \(deposit), \(dynDeposit)")
 ```
 
 ### Storage Keys
-Storage API works through `StorageEntry` helpers, which can be created for some `StorageKey` type.
+Storage API works through `StorageEntry` helper, which can be created for provided `StorageKey` type.
 
-#### Create StorageEntry for key
+#### Create StorageEntry for storage
 ```swift
-// Typed value
+// dynamic storage key wirh typed Value
 let entry = try substrate.query.entry(UInt128.self, name: "NominatorSlashInEra", pallet: "Stacking")
 
-// Dynamic value. Entry type is Value<RuntimeTypeId>
-let entry = substrate.query.valueEntry(name: "NominatorSlashInEra", pallet: "Stacking")
+// dynamic storage key with dynamic Value
+let dynEntry = substrate.query.dynamic(name: "NominatorSlashInEra", pallet: "Stacking")
 ```
 
 #### Fetch key value
-When we have entry we can fetch values.
+When we have entry we can fetch key values.
 ```swift
+// We want values for this account.
 let accountId = try substrate.runtime.account(ss58: "EoukLS2Rzh6dZvMQSkqFy4zGvqeo14ron28Ue3yopVc8e3Q")
-// NominatorSlashInEra is Double Map (EraIndex, AccountId).
+
+// NominatorSlashInEra storage is Double Map (EraIndex, AccountId).
 // We have to provide 2 keys to get value.
 
-// Optional value
+// optional value
 let optSlash = try await entry.value(path: Tuple(652, accountId))
 print("Value is: \(optSlash ?? 0)")
 
-// Default value used
+// default value used when nil
 let slash = try await entry.valueOrDefault(path: Tuple(652, accountId))
 print("Value is: \(slash)")
 ```
 
 #### Key Iterators
-Map keys support iteration. StorageEntry has set of helpers for this functionality. 
+Map keys support iteration. `StorageEntry` has helpers for this functionality. 
 ```swift
 // We can iterate over Key/Value pairs.
 for try await (key, value) in entry.entries() {
   print("Key: \(key), value: \(value)")
 }
 
-// Or only keys
+// or only over keys
 for try await key in entry.keys() {
   print("Key: \(key)")
 }
@@ -154,20 +179,26 @@ for try await key in entry.keys() {
 // For maps where N > 1 we can filter iterator by first N-1 keys
 // This will set EraIndex value to 652
 let filtered = entry.filter(key: 652)
-// And iterate over filtered Key/Value pairs.
+
+// now we can iterate over filtered Key/Value pairs.
 for try await (key, value) in filtered.entries() {
   print("Key: \(key), value: \(value)")
+}
+
+// or only over keys
+for try await key in filtered.keys() {
+  print("Key: \(key)")
 }
 ```
 
 #### Subscribe for changes
-If substrate network client support subscription we can subscribe for storage changes.
+If Api Client support subscription we can subscribe for storage changes.
 ```swift
 // Some account we want to watch
 let ALICE = try substrate.runtime.account(ss58: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY")
 
 // Dynamic entry for System.Account storage key
-let entry = try substrate.query.valueEntry(name: "Account", pallet: "System")
+let entry = try substrate.query.dynamic(name: "Account", pallet: "System")
 
 // It's a Map parameter so we should pass key to watch
 for try await account in entry.watch(path: [ALICE]) {
@@ -176,7 +207,7 @@ for try await account in entry.watch(path: [ALICE]) {
 ```
 
 ### Custom RPC calls
-Current SDK wraps only basic system calls needed for its APIs. For more calls common call API can be used. 
+Current SDK wraps only RPC calls needed for its API. For more calls common call API can be used.
 ```swift
 // Simple call
 let blockHash: Data = try await substrate.rpc.call(method: "chain_getBlockHash", params: Params(0))
@@ -195,15 +226,17 @@ Substrate SDK provides Signer protocol, which can be implenented for Extrinsic s
 
 Signer can be used in two different ways:
 1. It can be provided directly to the Extrinsic signing calls
-2. It can be stored into `signer` property of the `Substrate` object. In this case PublicKey should be provided for signing calls.
+2. It can be stored into `signer` property of the `Api` object. In this case account `PublicKey` should be provided for signing calls.
 
 First way is good for KeyPair signing. Second is better for full Keychain.
 
 Signer protocol:
 ```swift
 protocol Signer {
+    // get account with proper type
     func account(type: KeyTypeId, algos: [CryptoTypeId]) async -> Result<any PublicKey, SignerError>
     
+    // Sign extrinsic payload
     func sign<RC: Config, C: Call>(
         payload: SigningPayload<C, RC.TExtrinsicManager>,
         with account: any PublicKey,
@@ -221,11 +254,14 @@ SDK provides simple in-memory keychain with Secp256k1, Ed25519 and Sr25519 keys 
 import SubstrateKeychain
 
 // Initializers
-let random = EcdsaKeyPair() // Ed25519KeyPair / Sr25519KeyPair
+// New with random key (OS secure random is used)
+let random = EcdsaKeyPair() // or Ed25519KeyPair / Sr25519KeyPair
+// From Bip39 mnemonic
 let mnemonic = Sr25519KeyPair(phrase: "your words")
+// JS compatible path based parsing
 let path = try Ed25519KeyPair(parsing: "//Alice")
 
-// Key derivation
+// Key derivation (JS compatible)
 let derived = try mnemonic.derive(path: [PathComponent(string: "//Alice")])
 
 // Sign and verify
@@ -239,6 +275,7 @@ let isSigned = derived.verify(message: data, signature: signature)
 // Not needed for CocoaPods
 import SubstrateKeychain
 
+// Create empty keychain object with default delegate
 let keychain = Keychain()
 
 // Will be returned for account request
@@ -248,15 +285,15 @@ keychain.add(radnom, for: .imOnline)
 // Key for all types of requests
 keychain.add(path)
 
-// Search for PubKey
+// Search for PubKey registered for 'account' requests
 let pubKey = keychain.publicKeys(for: .account).first!
-// KeyPair for PubKey
+// get KeyPair for this PubKey
 let keyPair = keychain.keyPair(for: pubKey)!
 ```
 ##### Keychain Delegate
-Keychain has delegate object which can select public keys for Signer protocol. It can be used to show UI with account selecter to the user.
+Keychain has delegate object which can select public keys for the Signer protocol. It can be used to show UI with account selecter to the user.
 
-There is default `KeychainDelegateFirstFound` implementation which returns first found compatible key from keychain.
+There is default `KeychainDelegateFirstFound` implementation which returns first found compatible key from Keychain.
 
 Protocol looks like this:
 ```swift

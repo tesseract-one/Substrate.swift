@@ -37,7 +37,7 @@ final class SubstrateTests: XCTestCase {
     func testStorageValueCall() {
         runAsyncTest(withTimeout: 30) {
             let substrate = try await Api(rpc: self.httpClient, config: DynamicConfig())
-            let entry = try substrate.query.valueEntry(name: "Events", pallet: "System")
+            let entry = try substrate.query.dynamic(name: "Events", pallet: "System")
             let value = try await entry.value()
             XCTAssertNotNil(value)
         }

@@ -69,6 +69,11 @@ public extension ConstantsApiRegistry {
         var decoder = rootApi.runtime.decoder(with: ct.value)
         return try type.decode(valueFrom: &decoder, runtime: rootApi.runtime)
     }
+    
+    @inlinable
+    func `dynamic`(name: String, pallet: String) throws -> Value<RuntimeTypeId> {
+        try get(name: name, pallet: pallet)
+    }
 }
 
 public protocol StaticConstant {

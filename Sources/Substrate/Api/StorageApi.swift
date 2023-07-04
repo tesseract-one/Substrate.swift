@@ -43,35 +43,42 @@ public class StorageApiRegistry<R: RootApi> {
             return api
         }
     }
-    
+}
+
+public extension StorageApiRegistry {
     @inlinable
-    public func entry<D: RuntimeDynamicDecodable>(
+    func entry<D: RuntimeDynamicDecodable>(
         name: String, pallet: String
     ) throws -> StorageEntry<R, AnyStorageKey<D>> {
         try entry(D.self, name: name, pallet: pallet)
     }
     
     @inlinable
-    public func valueEntry(
-        name: String, pallet: String
-    ) throws -> StorageEntry<R, AnyValueStorageKey> {
-        try entry(name: name, pallet: pallet)
-    }
-    
-    @inlinable
-    public func entry<D: RuntimeDynamicDecodable>(
+    func entry<D: RuntimeDynamicDecodable>(
         _ type: D.Type, name: String, pallet: String
     ) throws -> StorageEntry<R, AnyStorageKey<D>> {
         try StorageEntry(api: rootApi, params: (name, pallet))
     }
     
     @inlinable
-    public func entry<Key: StaticStorageKey>(_ type: Key.Type) throws -> StorageEntry<R, Key> {
+    func `dynamic`(
+        name: String, pallet: String
+    ) throws -> StorageEntry<R, AnyValueStorageKey> {
+        try entry(name: name, pallet: pallet)
+    }
+    
+    @inlinable
+    func entry<Key: StaticStorageKey>() throws -> StorageEntry<R, Key> {
         try StorageEntry(api: rootApi, params: ())
     }
     
     @inlinable
-    public func changes(
+    func entry<Key: StaticStorageKey>(_ type: Key.Type) throws -> StorageEntry<R, Key> {
+        try StorageEntry(api: rootApi, params: ())
+    }
+    
+    @inlinable
+    func changes(
         keys: [any StorageKey],
         at hash: R.RC.THasher.THash? = nil
     ) async throws -> [(any StorageKey, Any?)]{
