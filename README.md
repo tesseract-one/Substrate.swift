@@ -281,7 +281,7 @@ let keychain = Keychain()
 // Will be returned for account request
 keychain.add(derived, for: .account)
 // Key for ImOnline
-keychain.add(radnom, for: .imOnline)
+keychain.add(random, for: .imOnline)
 // Key for all types of requests
 keychain.add(path)
 
@@ -290,6 +290,29 @@ let pubKey = keychain.publicKeys(for: .account).first!
 // get KeyPair for this PubKey
 let keyPair = keychain.keyPair(for: pubKey)!
 ```
+
+##### Api Signer integration
+```swift
+// Update substrate signer to created keychain instance
+substrate.signer = keychain
+
+// Fetch account from Keychain (it will call Keychain delegate for selection)
+let from = try await substrate.tx.account()
+
+// Keychain will return PublicKey
+// which should be converted to account or address for extrinsics
+print("Account: \(try from.account(in: substrate))")
+
+// We can provide this PublicKey as account for signing.
+// Signing call will be sent to Keychain
+let events = try await tx.signSendAndWatch(account: from)
+        .waitForFinalized()
+        .success()
+
+// print parsed events
+print("Events: \(try events.parsed())")
+```
+
 ##### Keychain Delegate
 Keychain has delegate object which can select public keys for the Signer protocol. It can be used to show UI with account selecter to the user.
 
@@ -313,12 +336,8 @@ protocol KeychainDelegate: AnyObject {
 ### Batch Extrinsics
 SDK supports batch calls: [#how-can-i-batch-transactions](https://polkadot.js.org/docs/api/cookbook/tx#how-can-i-batch-transactions)
 ```swift
-// Not needed for CocoaPods
-import SubstrateKeychain
-
-// Create KeyPair for signing
-let mnemonic = "your key 12 words"
-let from = try Sr25519KeyPair(phrase: mnemonic)
+// Fetch account from Keychain (should be set in substrate as signer)
+let from = try await substrate.tx.account()
 
 // Create recipient addresses from ss58 string
 let to1 = try substrate.runtime.address(ss58: "recipient1 s58 address")
@@ -336,7 +355,7 @@ let call2 = try AnyCall(name: "transfer",
 let tx = try await substrate.tx.batchAll([call1, call2])
 
 // Sign, send and watch for finalization
-let events = try await tx.signSendAndWatch(signer: from)
+let events = try await tx.signSendAndWatch(account: from)
         .waitForFinalized()
         .success()
 
