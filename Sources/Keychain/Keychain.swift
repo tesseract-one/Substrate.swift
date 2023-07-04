@@ -14,24 +14,24 @@ import Substrate
 public typealias SubstrateKeychainRandom = Sr25519SecureRandom
 
 public enum KeychainDelegateResponse {
-    case cancelledByUser
+    case cancelled
     case noAccount
     case account(any PublicKey)
 }
 
 public protocol KeychainDelegate: AnyObject {
     func account(in keychain: Keychain,
-                 with type: KeyTypeId,
-                 for algos: [CryptoTypeId]) async -> KeychainDelegateResponse
+                 for type: KeyTypeId,
+                 algorithms algos: [CryptoTypeId]) async -> KeychainDelegateResponse
 }
 
 public class KeychainDelegateFirstFound: KeychainDelegate {
     public init() {}
     public func account(in keychain: Keychain,
-                        with type: KeyTypeId,
-                        for algos: [CryptoTypeId]) async -> KeychainDelegateResponse
+                        for type: KeyTypeId,
+                        algorithms algos: [CryptoTypeId]) async -> KeychainDelegateResponse
     {
-        let typed = keychain.publicKeys(with: type).first { algos.contains($0.algorithm) }
+        let typed = keychain.publicKeys(for: type).first { algos.contains($0.algorithm) }
         if let t = typed {
             return .account(t)
         }
@@ -59,8 +59,8 @@ public class Keychain {
         self.delegate = delegate
     }
     
-    public func keyPairs(with type: KeyTypeId? = nil,
-                         for algorithm: CryptoTypeId? = nil) -> [any KeyPair]
+    public func keyPairs(for type: KeyTypeId? = nil,
+                         algorithm: CryptoTypeId? = nil) -> [any KeyPair]
     {
         keyPairs.sync { kps in
             let pairs = type != nil ? (kps[type] ?? []) : kps.values.flatMap { $0 }
@@ -68,10 +68,10 @@ public class Keychain {
         }
     }
     
-    public func publicKeys(with type: KeyTypeId? = nil,
-                           for algorithm: CryptoTypeId? = nil) -> [any PublicKey]
+    public func publicKeys(for type: KeyTypeId? = nil,
+                           algorithm: CryptoTypeId? = nil) -> [any PublicKey]
     {
-        keyPairs(with: type, for: algorithm).map { $0.pubKey }
+        keyPairs(for: type, algorithm: algorithm).map { $0.pubKey }
     }
     
     public func keyPair(for account: any PublicKey) -> (any KeyPair)? {

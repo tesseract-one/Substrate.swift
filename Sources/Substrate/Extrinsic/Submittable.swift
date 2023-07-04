@@ -117,7 +117,7 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
                      overrides: S.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> Submittable<S, C, S.RC.TExtrinsicManager.TSignedExtra> {
         let account = try await signer.account(type: .account,
-                                               algos: S.RC.TSignature.algorithms(runtime: substrate.runtime))
+                                               algos: S.RC.TSignature.algorithms(runtime: substrate.runtime)).get()
         return try await sign(signer: signer, account: account, overrides: overrides)
     }
     
@@ -141,7 +141,9 @@ extension Submittable where E == S.RC.TExtrinsicManager.TUnsignedExtra {
     ) async throws -> Submittable<S, C, S.RC.TExtrinsicManager.TSignedExtra> {
         let params = try await fetchParameters(account: account, overrides: overrides)
         let payload = try await substrate.runtime.extrinsicManager.payload(unsigned: extrinsic, params: params)
-        let signature = try await signer.sign(payload: payload, with: account, runtime: substrate.runtime)
+        let signature = try await signer.sign(payload: payload,
+                                              with: account,
+                                              runtime: substrate.runtime).get()
         let signed = try substrate.runtime.extrinsicManager.signed(payload: payload,
                                                                    address: account.address(runtime: substrate.runtime),
                                                                    signature: signature)

@@ -54,7 +54,7 @@ public extension ExtrinsicApiRegistry {
     
     func account() async throws -> any PublicKey {
         try await signer.account(type: .account,
-                                 algos: S.RC.TSignature.algorithms(runtime: substrate.runtime))
+                                 algos: S.RC.TSignature.algorithms(runtime: substrate.runtime)).get()
     }
     
     func new<C: Call>(

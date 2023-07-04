@@ -8,12 +8,13 @@
 import Foundation
 
 public protocol Signer {
-    func account(type: KeyTypeId, algos: [CryptoTypeId]) async throws -> any PublicKey
+    func account(type: KeyTypeId, algos: [CryptoTypeId]) async -> Result<any PublicKey, SignerError>
+    
     func sign<RC: Config, C: Call>(
         payload: SigningPayload<C, RC.TExtrinsicManager>,
         with account: any PublicKey,
         runtime: ExtendedRuntime<RC>
-    ) async throws -> RC.TSignature
+    ) async -> Result<RC.TSignature, SignerError>
 }
 
 public enum SignerError: Error {

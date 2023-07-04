@@ -192,10 +192,32 @@ let stream = try await substrate.rpc.subscribe(
 )
 ```
 
-### Key Chain API
+### Substrate Signer
+Substrate SDK provides Signer protocol, which can be implenented for Extrinsic signing.
+
+Signer can be used in two different ways:
+1. It can be provided directly to the Extrinsic signing calls
+2. It can be stored into `signer` property of the `Substrate` object. In this case PublicKey should be provided for signing calls.
+
+First way is good for KeyPair signing. Second is better for full Keychain.
+
+Signer protocol:
+```swift
+protocol Signer {
+    func account(type: KeyTypeId, algos: [CryptoTypeId]) async -> Result<any PublicKey, SignerError>
+    
+    func sign<RC: Config, C: Call>(
+        payload: SigningPayload<C, RC.TExtrinsicManager>,
+        with account: any PublicKey,
+        runtime: ExtendedRuntime<RC>
+    ) async -> Result<RC.TSignature, SignerError>
+}
+```
+
+### Keychain API
 SDK provides simple in-memory keychain with Secp256k1, Ed25519 and Sr25519 keys support.
 
-#### KeyPairs
+#### Key Pairs
 ```swift
 // Not needed for CocoaPods
 import SubstrateKeychain
@@ -203,14 +225,54 @@ import SubstrateKeychain
 // Initializers
 let random = EcdsaKeyPair() // Ed25519KeyPair / Sr25519KeyPair
 let mnemonic = Sr25519KeyPair(phrase: "your words")
-let substrate = try Ed25519KeyPair(parsing: "//Alice")
+let path = try Ed25519KeyPair(parsing: "//Alice")
 
 // Key derivation
 let derived = try mnemonic.derive(path: [PathComponent(string: "//Alice")])
+
+// Sign and verify
+let data = Data(repeating: 1, count: 20)
+let signature = derived.sign(message: data)
+let isSigned = derived.verify(message: data, signature: signature)
 ```
 
-#### KeyChain
+#### Keychain
+```swift
+// Not needed for CocoaPods
+import SubstrateKeychain
+
+let keychain = Keychain()
+
+// Will be returned for account request
+keychain.add(derived, for: .account)
+// Key for ImOnline
+keychain.add(radnom, for: .imOnline)
+// Key for all types of requests
+keychain.add(path)
+
+// Search for PubKey
+let pubKey = keychain.publicKeys(for: .account).first!
+// KeyPair for PubKey
+let keyPair = keychain.keyPair(for: pubKey)!
 ```
+##### Keychain Delegate
+Keychain has delegate object which can select public keys for Signer protocol. It can be used to show UI with account selecter to the user.
+
+There is default `KeychainDelegateFirstFound` implementation which returns first found compatible key from keychain.
+
+Protocol looks like this:
+```swift
+enum KeychainDelegateResponse {
+    case cancelled
+    case noAccount
+    case account(any PublicKey)
+}
+
+protocol KeychainDelegate: AnyObject {
+    func account(in keychain: Keychain,
+                 for type: KeyTypeId,
+                 algorithms algos: [CryptoTypeId]) async -> KeychainDelegateResponse
+}
 ```
 
 ## Author
