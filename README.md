@@ -302,6 +302,7 @@ Keychain can be set as `Signer` for `Api` instance for simpler account managemen
 substrate.signer = keychain
 
 // Fetch account from Keychain (it will call Keychain delegate for selection)
+// Can be stored and reused as needed (active account)
 let from = try await substrate.tx.account()
 
 // Signer will return PublicKey from Keychain
