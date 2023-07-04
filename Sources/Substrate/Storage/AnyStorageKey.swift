@@ -11,20 +11,20 @@ import ScaleCodec
 public typealias AnyValueStorageKey = AnyStorageKey<Value<RuntimeTypeId>>
 
 public protocol DynamicStorageKey: IterableStorageKey where
-    TParams == [AnyValue],
+    TParams == [Value<Void>],
     TBaseParams == (name: String, pallet: String),
     TIterator: IterableStorageKeyIterator,
     TIterator.TIterator: DynamicStorageKeyIterator {}
 
 public protocol DynamicStorageKeyIterator: IterableStorageKeyIterator where
-    TParam == AnyValue,
+    TParam == Value<Void>,
     TKey: DynamicStorageKey
 {
-    init(name: String, pallet: String, params: [AnyValue], runtime: any Runtime) throws
+    init(name: String, pallet: String, params: [Value<Void>], runtime: any Runtime) throws
 }
 
 public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
-    public typealias TParams = [AnyValue]
+    public typealias TParams = [Value<Void>]
     public typealias TBaseParams = (name: String, pallet: String)
     public typealias TValue = Val
     public typealias TIterator = Iterator.Root
@@ -33,7 +33,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
     public var name: String
     public var path: [Component]
     
-    public var values: [AnyValue?] {
+    public var values: [Value<Void>?] {
         path.map { $0.value }
     }
     
@@ -51,7 +51,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
         self.path = path
     }
     
-    public init(base: (name: String, pallet: String), params: [AnyValue], runtime: Runtime) throws {
+    public init(base: (name: String, pallet: String), params: [Value<Void>], runtime: Runtime) throws {
         guard let (keys, _, _) = runtime.resolve(storage: base.name, pallet: base.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
@@ -115,9 +115,9 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
 public extension AnyStorageKey {
     enum Component {
         case hash(Data)
-        case full(AnyValue, Data)
+        case full(Value<Void>, Data)
         
-        public var value: AnyValue? {
+        public var value: Value<Void>? {
             switch self {
             case .full(let val, _): return val
             default: return nil
@@ -135,7 +135,7 @@ public extension AnyStorageKey {
 
 public extension AnyStorageKey {
     struct Iterator: DynamicStorageKeyIterator {
-        public typealias TParam = AnyValue
+        public typealias TParam = Value<Void>
         public typealias TKey = AnyStorageKey<Val>
         public typealias TIterator = Self
         
@@ -153,7 +153,7 @@ public extension AnyStorageKey {
             self.path = path
         }
         
-        public init(name: String, pallet: String, params: [AnyValue], runtime: any Runtime) throws {
+        public init(name: String, pallet: String, params: [Value<Void>], runtime: any Runtime) throws {
             guard let (keys, _, _) = runtime.resolve(storage: name, pallet: pallet) else {
                 throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
             }
@@ -170,7 +170,7 @@ public extension AnyStorageKey {
             self.init(name: name, pallet: pallet, path: components)
         }
         
-        public func next(param: AnyValue, runtime: any Runtime) throws -> Self {
+        public func next(param: Value<Void>, runtime: any Runtime) throws -> Self {
             guard let (keys, _, _) = runtime.resolve(storage: name, pallet: pallet) else {
                 throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
             }
@@ -208,7 +208,7 @@ public extension AnyStorageKey.Iterator {
             self.pallet = param.pallet
         }
         
-        public func next(param: AnyValue, runtime: Runtime) throws -> TIterator {
+        public func next(param: Value<Void>, runtime: Runtime) throws -> TIterator {
             try TIterator(name: name, pallet: pallet, path: []).next(param: param, runtime: runtime)
         }
         

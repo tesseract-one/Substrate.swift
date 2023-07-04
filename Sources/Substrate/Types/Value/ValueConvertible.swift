@@ -13,7 +13,7 @@ public protocol ValueInitializable {
 }
 
 public protocol ValueRepresentable {
-    func asValue() throws -> AnyValue
+    func asValue() throws -> Value<Void>
 }
 
 public typealias ValueConvertible = ValueInitializable & ValueRepresentable
@@ -23,7 +23,7 @@ public protocol ValueArrayInitializable {
 }
 
 public protocol ValueArrayRepresentable {
-    func asValueArray() throws -> [AnyValue]
+    func asValueArray() throws -> [Value<Void>]
 }
 
 public protocol ValueMapInitializable {
@@ -31,7 +31,7 @@ public protocol ValueMapInitializable {
 }
 
 public protocol ValueMapRepresentable {
-    func asValueMap() throws -> [String: AnyValue]
+    func asValueMap() throws -> [String: Value<Void>]
 }
 
 public extension ValueArrayInitializable {
@@ -46,7 +46,7 @@ public extension ValueArrayInitializable {
 }
 
 public extension ValueArrayRepresentable {
-    func asValue() throws -> AnyValue { try .sequence(asValueArray()) }
+    func asValue() throws -> Value<Void> { try .sequence(asValueArray()) }
 }
 
 public extension ValueMapInitializable {
@@ -61,7 +61,7 @@ public extension ValueMapInitializable {
 }
 
 public extension ValueMapRepresentable {
-    func asValue() throws -> AnyValue { try .map(asValueMap()) }
+    func asValue() throws -> Value<Void> { try .map(asValueMap()) }
 }
 
 public enum ValueInitializableError<C>: Error {
@@ -94,7 +94,7 @@ public extension FixedWidthInteger {
         }
     }
     
-    func asValue() throws -> AnyValue {
+    func asValue() throws -> Value<Void> {
         Self.isSigned ?  .i256(Int256(self)) : .u256(UInt256(self))
     }
 }
@@ -118,7 +118,7 @@ extension Value: ValueInitializable where C == Void {
 }
 
 extension Value: ValueRepresentable {
-    public func asValue() throws -> AnyValue {
+    public func asValue() throws -> Value<Void> {
         self.mapContext(with: { _ in })
     }
 }
@@ -132,7 +132,7 @@ extension Bool: ValueConvertible {
         self = bool
     }
     
-    public func asValue() throws -> AnyValue { .bool(self) }
+    public func asValue() throws -> Value<Void> { .bool(self) }
 }
 
 extension String: ValueConvertible {
@@ -144,7 +144,7 @@ extension String: ValueConvertible {
         self = string
     }
     
-    public func asValue() throws -> AnyValue { .string(self) }
+    public func asValue() throws -> Value<Void> { .string(self) }
 }
 
 extension Data: ValueConvertible {
@@ -156,7 +156,7 @@ extension Data: ValueConvertible {
         self = data
     }
     
-    public func asValue() throws -> AnyValue { .bytes(self) }
+    public func asValue() throws -> Value<Void> { .bytes(self) }
 }
 
 extension Character: ValueConvertible {
@@ -168,11 +168,11 @@ extension Character: ValueConvertible {
         self = char
     }
     
-    public func asValue() throws -> AnyValue { .char(self) }
+    public func asValue() throws -> Value<Void> { .char(self) }
 }
 
 public extension Sequence where Element: ValueRepresentable {
-    func asValueArray() throws -> [AnyValue] {
+    func asValueArray() throws -> [Value<Void>] {
         try map { try $0.asValue() }
     }
 }
@@ -197,14 +197,14 @@ extension Set: ValueArrayRepresentable where Element: ValueRepresentable {}
 
 extension KeyValuePairs: ValueRepresentable where Key: StringProtocol, Value: ValueRepresentable {}
 extension KeyValuePairs: ValueMapRepresentable where Key: StringProtocol, Value: ValueRepresentable {
-    public func asValueMap() throws -> [String: AnyValue] {
+    public func asValueMap() throws -> [String: Substrate.Value<Void>] {
         try Dictionary(uniqueKeysWithValues: map { try (String($0.key), $0.value.asValue()) })
     }
 }
 
 extension Dictionary: ValueInitializable where Key: StringProtocol, Value: ValueInitializable {}
 extension Dictionary: ValueMapInitializable where Key: StringProtocol, Value: ValueInitializable {
-    public init<C>(values: [String: DValue<C>]) throws {
+    public init<C>(values: [String: Substrate.Value<C>]) throws {
         try self.init(uniqueKeysWithValues:
             values.map { try (Key(stringLiteral: $0), Value(value: $1)) }
         )
@@ -212,7 +212,7 @@ extension Dictionary: ValueMapInitializable where Key: StringProtocol, Value: Va
 }
 extension Dictionary: ValueRepresentable where Key: StringProtocol, Value: ValueRepresentable {}
 extension Dictionary: ValueMapRepresentable where Key: StringProtocol, Value: ValueRepresentable {
-    public func asValueMap() throws -> [String: AnyValue] {
+    public func asValueMap() throws -> [String: Substrate.Value<Void>] {
         try Dictionary<_, _>(uniqueKeysWithValues: map { try (String($0.key), $0.value.asValue()) })
     }
 }

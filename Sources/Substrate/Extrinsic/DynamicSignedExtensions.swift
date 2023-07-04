@@ -12,16 +12,16 @@ import ScaleCodec
 public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
     public var identifier: ExtrinsicExtensionId { .checkSpecVersion }
     
-    public func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
     
-    public func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        .u256(UInt256(substrate.runtime.version.specVersion), id)
+        .u256(UInt256(api.runtime.version.specVersion), id)
     }
 }
 
@@ -29,16 +29,16 @@ public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
 public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
     public var identifier: ExtrinsicExtensionId { .checkTxVersion }
     
-    public func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
     
-    public func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        .u256(UInt256(substrate.runtime.version.transactionVersion), id)
+        .u256(UInt256(api.runtime.version.transactionVersion), id)
     }
 }
 
@@ -46,30 +46,30 @@ public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
 public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     public var identifier: ExtrinsicExtensionId { .checkGenesis }
     
-    public func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
     
-    public func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
-        .bytes(substrate.runtime.genesisHash.data, id)
+        .bytes(api.runtime.genesisHash.data, id)
     }
 }
 
 public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
     public var identifier: ExtrinsicExtensionId { .checkNonZeroSender }
     
-    public func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
     
-    public func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
@@ -79,8 +79,8 @@ public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
 public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
     public var identifier: ExtrinsicExtensionId { .checkNonce }
     
-    public func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         guard let nonce = params.nonce else {
             throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
@@ -89,8 +89,8 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
         return .u256(UInt256(nonce), id)
     }
     
-    public func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
@@ -100,8 +100,8 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
 public struct DynamicCheckMortalitySignedExtension: DynamicExtrinsicExtension {
     public var identifier: ExtrinsicExtensionId { .checkMortality }
     
-    public func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         guard let era = params.era else {
             throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
@@ -110,8 +110,8 @@ public struct DynamicCheckMortalitySignedExtension: DynamicExtrinsicExtension {
         return try era.asValue().mapContext { id }
     }
     
-    public func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         guard let hash = params.blockHash else {
             throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
@@ -125,14 +125,14 @@ public struct DynamicCheckMortalitySignedExtension: DynamicExtrinsicExtension {
 public struct DynamicCheckWeightExtension: DynamicExtrinsicExtension {
     public var identifier: ExtrinsicExtensionId { .checkWeight }
     
-    public func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
     
-    public func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
@@ -143,8 +143,8 @@ public struct DynamicCheckWeightExtension: DynamicExtrinsicExtension {
 public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtension {
     public var identifier: ExtrinsicExtensionId { .chargeTransactionPayment }
     
-    public func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         guard let tip = params.tip else {
             throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
@@ -153,8 +153,8 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
         return try tip.asValue().mapContext { id }
     }
     
-    public func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
@@ -163,14 +163,14 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
 public struct DynamicPrevalidateAttestsExtension: DynamicExtrinsicExtension {
     public var identifier: ExtrinsicExtensionId { .prevalidateAttests }
     
-    public func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }
     
-    public func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    public func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId> {
         .nil(id)
     }

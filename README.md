@@ -58,7 +58,7 @@ import SubstrateRPC
 
 let nodeUrl = URL(string: "wss://westend-rpc.polkadot.io")!
 
-let substrate = try await Substrate(
+let substrate = try await Api(
     rpc: JsonRpcClient(.ws(url: nodeUrl)),
     config: DynamicConfig()
 )
@@ -88,7 +88,6 @@ print("Events: \(try events.parsed())")
 For runtime calls node should support Metadata v15.
 
 ```swift
-
 guard substrate.call.has(method: "versions", api: "Metadata") else {
   fatalError("Node does't have needed call")
 }
@@ -106,7 +105,6 @@ print("Supported metadata versions: \(versions)")
 
 ### Constants
 ```swift
-
 let deposit = try substrate.constants.get(UInt128.self, name: "ExistentialDeposit", pallet: "Balances")
 
 print("Existential deposit: \(deposit)")
@@ -118,10 +116,10 @@ Storage API works through `StorageEntry` helpers, which can be created for some 
 #### Create StorageEntry for key
 ```swift
 // Typed value
-let entry = try storage.query.entry(UInt128.self, name: "NominatorSlashInEra", pallet: "Stacking")
+let entry = try substrate.query.entry(UInt128.self, name: "NominatorSlashInEra", pallet: "Stacking")
 
 // Dynamic value. Entry type is Value<RuntimeTypeId>
-let entry = storage.query.valueEntry(name: "NominatorSlashInEra", pallet: "Stacking")
+let entry = substrate.query.valueEntry(name: "NominatorSlashInEra", pallet: "Stacking")
 ```
 
 #### Fetch key value

@@ -61,8 +61,8 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         }
     }
     
-    open func setSubstrate<S: SomeSubstrate<RC>>(substrate: S) throws {
-        try self.extrinsicManager.setSubstrate(substrate: substrate)
+    open func setRootApi<A: RootApi<RC>>(api: A) throws {
+        try self.extrinsicManager.setRootApi(api: api)
     }
 }
 

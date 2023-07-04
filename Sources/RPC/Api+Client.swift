@@ -1,5 +1,5 @@
 //
-//  Subbstrate+Client.swift
+//  Api+Client.swift
 //  
 //
 //  Created by Yehor Popovych on 27/06/2023.
@@ -10,7 +10,7 @@ import Foundation
 import Substrate
 #endif
 
-public extension Substrate {
+public extension Api {
     convenience init<RPC>(
         rpc client: RPC, config: RC, signer: Signer? = nil, at hash: RC.THasher.THash? = nil
     ) async throws where RPC: RpcCallableClient & RuntimeHolder, CL == RpcClient<RC, RPC> {

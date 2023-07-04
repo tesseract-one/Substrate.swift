@@ -292,7 +292,7 @@ extension BitSequence: ValueConvertible {
         }
     }
     
-    public func asValue() throws -> AnyValue {
-        AnyValue(value: .bitSequence(self), context: ())
+    public func asValue() throws -> Value<Void> {
+        Value<Void>(value: .bitSequence(self), context: ())
     }
 }

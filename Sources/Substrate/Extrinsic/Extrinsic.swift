@@ -63,7 +63,7 @@ public typealias AnyExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, Eithe
 public protocol OpaqueExtrinsic<TManager>: Swift.Decodable {
     associatedtype TManager: ExtrinsicManager
     
-    func hash() -> TManager.RT.THasher.THash
+    func hash() -> TManager.RC.THasher.THash
     
     func decode<C: Call & RuntimeDecodable>() throws -> AnyExtrinsic<C, TManager>
     
@@ -83,8 +83,8 @@ public typealias SignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.
 public typealias UnsignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.TUnsignedExtra>
 public typealias SigningPayload<C: Call, M: ExtrinsicManager> = ExtrinsicSignPayload<C, M.TSigningExtra>
 
-public protocol ExtrinsicManager<RT> {
-    associatedtype RT: Config
+public protocol ExtrinsicManager<RC> {
+    associatedtype RC: Config
     associatedtype TUnsignedParams
     associatedtype TSigningParams
     associatedtype TUnsignedExtra: ExtrinsicExtra
@@ -113,15 +113,15 @@ public protocol ExtrinsicManager<RT> {
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra>
     
     func signed<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
-                         address: RT.TAddress,
-                         signature: RT.TSignature) throws -> Extrinsic<C, TSignedExtra>
+                         address: RC.TAddress,
+                         signature: RC.TSignature) throws -> Extrinsic<C, TSignedExtra>
     func encode<C: Call, E: ScaleCodec.Encoder>(signed extrinsic: Extrinsic<C, TSignedExtra>,
                                                 in encoder: inout E) throws
     func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
         from decoder: inout D
     ) throws -> AnyExtrinsic<C, Self>
     
-    mutating func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws
+    mutating func setRootApi<A: RootApi<RC>>(api: A) throws
     
     static var version: UInt8 { get }
     static func get(from runtime: any Runtime) throws -> Self
@@ -130,8 +130,8 @@ public protocol ExtrinsicManager<RT> {
 public extension ExtrinsicManager {
     var version: UInt8 { Self.version }
     
-    static func get(from runtime: any Runtime) throws -> Self where RT: Config {
-        guard let extended = runtime as? ExtendedRuntime<RT> else {
+    static func get(from runtime: any Runtime) throws -> Self where RC: Config {
+        guard let extended = runtime as? ExtendedRuntime<RC> else {
             throw ExtrinsicCodingError.unsupportedSubstrate(reason: "Runtime is not ER or different config")
         }
         guard let manager = extended.extrinsicManager as? Self else {
@@ -141,7 +141,7 @@ public extension ExtrinsicManager {
     }    
 }
 
-public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where TManager.RT: Config {
+public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where TManager.RC: Config {
     public typealias TManager = TManager
     
     public let data: Data
@@ -153,8 +153,8 @@ public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where 
         self.data = try container.decode(Data.self)
     }
     
-    public func hash() -> TManager.RT.THasher.THash {
-        try! TManager.RT.THasher.THash(runtime.hasher.hash(data: data))
+    public func hash() -> TManager.RC.THasher.THash {
+        try! TManager.RC.THasher.THash(runtime.hasher.hash(data: data))
     }
     
     public func decode<C: Call & RuntimeDecodable>() throws -> AnyExtrinsic<C, TManager> {

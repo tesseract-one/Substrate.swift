@@ -29,14 +29,14 @@ public struct ExtrinsicEvents<H: Hash, BE: SomeBlockEvents, Failure: SomeExtrins
         self.index = index
     }
     
-    public init<S>(substrate: S, blockHash: H, extrinsicHash: H) async throws
-        where S: SomeSubstrate, H == S.RC.THasher.THash, BE == S.RC.TBlockEvents
+    public init<R>(api: R, blockHash: H, extrinsicHash: H) async throws
+        where R: RootApi, H == R.RC.THasher.THash, BE == R.RC.TBlockEvents
     {
-        let block = try await substrate.client.block(at: blockHash, runtime: substrate.runtime)
+        let block = try await api.client.block(at: blockHash, runtime: api.runtime)
         guard let idx = block?.block.extrinsics.firstIndex(where: { $0.hash().data == extrinsicHash.data }) else {
             throw Error.extrinsicNotFound(extrinsicHash)
         }
-        let events = try await substrate.client.events(at: blockHash, runtime: substrate.runtime) ?? .default
+        let events = try await api.client.events(at: blockHash, runtime: api.runtime) ?? .default
         self.init(events: events, blockHash: blockHash, extrinsicHash: extrinsicHash, index: UInt32(idx))
     }
     

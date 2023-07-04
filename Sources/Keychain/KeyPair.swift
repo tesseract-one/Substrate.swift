@@ -50,12 +50,12 @@ public extension KeyPair {
     }
     
     @inlinable
-    func account<S: SomeSubstrate>(in substrate: S) throws -> S.RC.TAccountId {
-        try pubKey.account(in: substrate)
+    func account<R: RootApi>(in api: R) throws -> R.RC.TAccountId {
+        try pubKey.account(in: api)
     }
     
     @inlinable
-    func address<S: SomeSubstrate>(in substrate: S) throws -> S.RC.TAddress {
-        try pubKey.address(in: substrate)
+    func address<R: RootApi>(in api: R) throws -> R.RC.TAddress {
+        try pubKey.address(in: api)
     }
 }

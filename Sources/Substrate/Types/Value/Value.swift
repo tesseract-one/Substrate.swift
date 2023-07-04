@@ -359,6 +359,3 @@ extension Value.Primitive: CustomStringConvertible {
         }
     }
 }
-
-public typealias AnyValue = Value<Void>
-public typealias DValue<C> = Value<C>

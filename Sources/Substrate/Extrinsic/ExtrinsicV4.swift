@@ -27,7 +27,7 @@ public struct ExtrinsicV4Extra<Addr, Sig, Extra>: ExtrinsicExtra, CustomStringCo
 }
 
 public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: ExtrinsicManager {
-    public typealias RT = RC
+    public typealias RC = RC
     public typealias TUnsignedParams = Void
     public typealias TSigningParams = SE.TSigningParams
     public typealias TUnsignedExtra = Nothing
@@ -86,8 +86,8 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
     }
     
     public func signed<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
-                                address: RT.TAddress,
-                                signature: RT.TSignature) throws -> Extrinsic<C, TSignedExtra> {
+                                address: RC.TAddress,
+                                signature: RC.TSignature) throws -> Extrinsic<C, TSignedExtra> {
         Extrinsic(call: payload.call,
                   extra: ExtrinsicV4Extra(address: address, signature: signature, extra: payload.extra.extra))
     }
@@ -127,9 +127,9 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
         }
     }
     
-    public func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws {
-        try self.extensions.setSubstrate(substrate: substrate)
-        self.runtime = substrate.runtime
+    public func setRootApi<R: RootApi<RC>>(api: R) throws {
+        try self.extensions.setRootApi(api: api)
+        self.runtime = api.runtime
     }
     
     public static var version: UInt8 { 4 }

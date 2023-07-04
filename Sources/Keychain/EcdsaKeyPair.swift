@@ -65,7 +65,7 @@ extension EcdsaKeyPair: KeyPair {
     }
     
     public init() {
-        try! self.init(seed: Data(SubstrateKeychainRandom.bytes(count: Secp256k1Context.privKeySize)))
+        try! self.init(seed: Data(Random.bytes(count: Secp256k1Context.privKeySize)))
     }
     
     public func sign(message: Data) -> any Signature {

@@ -11,7 +11,7 @@ import ScaleCodec
 public protocol SomeExtrinsicEra: ValueRepresentable, Default {
     var isImmortal: Bool { get }
     
-    func blockHash<S: SomeSubstrate>(substrate: S) async throws -> S.RC.TBlock.THeader.THasher.THash
+    func blockHash<R: RootApi>(api: R) async throws -> R.RC.TBlock.THeader.THasher.THash
     
     static var immortal: Self { get }
 }
@@ -90,15 +90,15 @@ public enum ExtrinsicEra: SomeExtrinsicEra, Default {
         }
     }
     
-    public func blockHash<S: SomeSubstrate>(substrate: S) async throws -> S.RC.TBlock.THeader.THasher.THash {
+    public func blockHash<R: RootApi>(api: R) async throws -> R.RC.TBlock.THeader.THasher.THash {
         switch self {
-        case .immortal:  return substrate.runtime.genesisHash
+        case .immortal:  return api.runtime.genesisHash
         case .mortal(period: _, phase: _):
-            let currentBlock = try await substrate.client.block(header: nil,
-                                                                runtime: substrate.runtime)!.number
+            let currentBlock = try await api.client.block(header: nil,
+                                                          runtime: api.runtime)!.number
             let birthBlock = self.birth(current: UInt64(currentBlock))
-            return try await substrate.client.block(hash: S.RC.TBlock.THeader.TNumber(birthBlock),
-                                                    runtime: substrate.runtime)!
+            return try await api.client.block(hash: R.RC.TBlock.THeader.TNumber(birthBlock),
+                                              runtime: api.runtime)!
         }
     }
 }
@@ -211,7 +211,7 @@ extension ExtrinsicEra: ValueConvertible {
         }
     }
     
-    public func asValue() throws -> AnyValue {
+    public func asValue() throws -> Value<Void> {
         switch self {
         case .immortal: return .variant(name: "Immortal", values: [])
         case .mortal(period: _, phase: _):

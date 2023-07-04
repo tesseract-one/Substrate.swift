@@ -7,10 +7,10 @@
 
 import Foundation
 
-public protocol StorageApi<S> {
-    associatedtype S: SomeSubstrate
-    var substrate: S! { get }
-    init(substrate: S)
+public protocol StorageApi<R> {
+    associatedtype R: RootApi
+    var api: R! { get }
+    init(api: R)
     static var id: String { get }
 }
 
@@ -18,70 +18,70 @@ extension StorageApi {
     public static var id: String { String(describing: self) }
 }
 
-public class StorageApiRegistry<S: SomeSubstrate> {
+public class StorageApiRegistry<R: RootApi> {
     private let _apis: Synced<[String: any StorageApi]>
 
-    public weak var substrate: S!
+    public weak var rootApi: R!
     
-    public init(substrate: S? = nil) {
-        self.substrate = substrate
+    public init(api: R? = nil) {
+        self.rootApi = api
         self._apis = Synced(value: [:])
     }
     
     @inlinable
-    public func setSubstrate(substrate: S) {
-        self.substrate = substrate
+    public func setRootApi(api: R) {
+        self.rootApi = api
     }
     
-    public func getApi<A>(_ t: A.Type) -> A where A: StorageApi, A.S == S {
+    public func getApi<A>(_ t: A.Type) -> A where A: StorageApi, A.R == R {
         _apis.sync { apis in
             if let api = apis[A.id] as? A {
                 return api
             }
-            let api = A(substrate: substrate)
+            let api = A(api: rootApi)
             apis[A.id] = api
             return api
         }
     }
     
     @inlinable
-    public func entry<R: RuntimeDynamicDecodable>(
+    public func entry<D: RuntimeDynamicDecodable>(
         name: String, pallet: String
-    ) throws -> StorageEntry<S, AnyStorageKey<R>> {
-        try entry(R.self, name: name, pallet: pallet)
+    ) throws -> StorageEntry<R, AnyStorageKey<D>> {
+        try entry(D.self, name: name, pallet: pallet)
     }
     
     @inlinable
     public func valueEntry(
         name: String, pallet: String
-    ) throws -> StorageEntry<S, AnyValueStorageKey> {
+    ) throws -> StorageEntry<R, AnyValueStorageKey> {
         try entry(name: name, pallet: pallet)
     }
     
     @inlinable
-    public func entry<R: RuntimeDynamicDecodable>(
-        _ type: R.Type, name: String, pallet: String
-    ) throws -> StorageEntry<S, AnyStorageKey<R>> {
-        try StorageEntry(substrate: substrate, params: (name, pallet))
+    public func entry<D: RuntimeDynamicDecodable>(
+        _ type: D.Type, name: String, pallet: String
+    ) throws -> StorageEntry<R, AnyStorageKey<D>> {
+        try StorageEntry(api: rootApi, params: (name, pallet))
     }
     
     @inlinable
-    public func entry<Key: StaticStorageKey>(_ type: Key.Type) throws -> StorageEntry<S, Key> {
-        try StorageEntry(substrate: substrate, params: ())
+    public func entry<Key: StaticStorageKey>(_ type: Key.Type) throws -> StorageEntry<R, Key> {
+        try StorageEntry(api: rootApi, params: ())
     }
     
     @inlinable
     public func changes(
         keys: [any StorageKey],
-        at hash: S.RC.THasher.THash? = nil
+        at hash: R.RC.THasher.THash? = nil
     ) async throws -> [(any StorageKey, Any?)]{
-        try await substrate.client.storage(anychanges: keys, at: hash, runtime: substrate.runtime)
+        try await rootApi.client.storage(anychanges: keys, at: hash, runtime: rootApi.runtime)
     }
 }
 
-public extension StorageApiRegistry where S.CL: SubscribableClient {
+public extension StorageApiRegistry where R.CL: SubscribableClient {
     @inlinable
     func watch(keys: [any StorageKey]) async throws -> AsyncThrowingStream<(any StorageKey, Any?), Error> {
-        try await substrate.client.subscribe(anystorage: keys, runtime: substrate.runtime)
+        try await rootApi.client.subscribe(anystorage: keys, runtime: rootApi.runtime)
     }
 }

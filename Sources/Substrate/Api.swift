@@ -1,5 +1,5 @@
 //
-//  Substrate.swift
+//  Api.swift
 //
 //
 //  Created by Yehor Popovych on 1/11/21.
@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol SomeSubstrate<RC>: AnyObject {
+public protocol RootApi<RC>: AnyObject {
     associatedtype RC: Config
     associatedtype CL: Client where CL.C == RC
     
@@ -24,7 +24,7 @@ public protocol SomeSubstrate<RC>: AnyObject {
     var tx: ExtrinsicApiRegistry<Self> { get }
 }
 
-public final class Substrate<RC: Config, CL: Client>: SomeSubstrate where CL.C == RC {
+public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     public typealias RC = RC
     public typealias CL = CL
     
@@ -32,11 +32,11 @@ public final class Substrate<RC: Config, CL: Client>: SomeSubstrate where CL.C =
     public let runtime: ExtendedRuntime<RC>
     public var signer: Signer?
     
-    public let rpc: RpcApiRegistry<Substrate<RC, CL>>
-    public let call: RuntimeCallApiRegistry<Substrate<RC, CL>>
-    public let tx: ExtrinsicApiRegistry<Substrate<RC, CL>>
-    public let constants: ConstantsApiRegistry<Substrate<RC, CL>>
-    public let query: StorageApiRegistry<Substrate<RC, CL>>
+    public let rpc: RpcApiRegistry<Api<RC, CL>>
+    public let call: RuntimeCallApiRegistry<Api<RC, CL>>
+    public let tx: ExtrinsicApiRegistry<Api<RC, CL>>
+    public let constants: ConstantsApiRegistry<Api<RC, CL>>
+    public let query: StorageApiRegistry<Api<RC, CL>>
     
     public init(client: CL, runtime: ExtendedRuntime<RC>, signer: Signer? = nil) throws {
         self.signer = signer
@@ -54,14 +54,14 @@ public final class Substrate<RC: Config, CL: Client>: SomeSubstrate where CL.C =
         self.constants = ConstantsApiRegistry()
         
         // Init runtime
-        try runtime.setSubstrate(substrate: self)
+        try runtime.setRootApi(api: self)
         
         // Init registries
-        rpc.setSubstrate(substrate: self)
-        tx.setSubstrate(substrate: self)
-        call.setSubstrate(substrate: self)
-        query.setSubstrate(substrate: self)
-        constants.setSubstrate(substrate: self)
+        rpc.setRootApi(api: self)
+        tx.setRootApi(api: self)
+        call.setRootApi(api: self)
+        query.setRootApi(api: self)
+        constants.setRootApi(api: self)
     }
     
     public convenience init(client: CL, config: RC, signer: Signer? = nil,

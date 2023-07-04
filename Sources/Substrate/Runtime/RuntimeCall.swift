@@ -63,9 +63,9 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
     public let api: String
     public let method: String
     
-    public let params: AnyValue
+    public let params: Value<Void>
     
-    public init(api: String, method: String, params: AnyValue) {
+    public init(api: String, method: String, params: Value<Void>) {
         self.api = api
         self.method = method
         self.params = params
@@ -134,9 +134,9 @@ public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<RuntimeTypeId>>
 
 public enum RuntimeCallCodingError: Error {
     case callNotFound(method: String, api: String)
-    case expectedMapOrSequence(got: AnyValue)
-    case wrongParametersCount(params: [AnyValue], expected: [(String, RuntimeTypeInfo)])
-    case parameterNotFound(name: String, inParams: [String: AnyValue])
+    case expectedMapOrSequence(got: Value<Void>)
+    case wrongParametersCount(params: [Value<Void>], expected: [(String, RuntimeTypeInfo)])
+    case parameterNotFound(name: String, inParams: [String: Value<Void>])
 }
 
 public protocol SomeMetadataVersionsRuntimeCall: StaticCodableRuntimeCall

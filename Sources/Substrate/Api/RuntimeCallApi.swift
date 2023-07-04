@@ -7,10 +7,10 @@
 
 import Foundation
 
-public protocol RuntimeCallApi<S> {
-    associatedtype S: SomeSubstrate
-    var substrate: S! { get }
-    init(substrate: S)
+public protocol RuntimeCallApi<R> {
+    associatedtype R: RootApi
+    var api: R! { get }
+    init(api: R)
     static var id: String { get }
 }
 
@@ -18,26 +18,26 @@ extension RuntimeCallApi {
     public static var id: String { String(describing: self) }
 }
 
-public class RuntimeCallApiRegistry<S: SomeSubstrate> {
+public class RuntimeCallApiRegistry<R: RootApi> {
     private let _apis: Synced<[String: any RuntimeCallApi]>
     
-    public weak var substrate: S!
+    public weak var rootApi: R!
     
-    public init(substrate: S? = nil) {
-        self.substrate = substrate
+    public init(api: R? = nil) {
+        self.rootApi = api
         self._apis = Synced(value: [:])
     }
     
-    public func setSubstrate(substrate: S) {
-        self.substrate = substrate
+    public func setRootApi(api: R) {
+        self.rootApi = api
     }
     
-    public func getApi<A>(_ t: A.Type) -> A where A: RuntimeCallApi, A.S == S {
+    public func getApi<A>(_ t: A.Type) -> A where A: RuntimeCallApi, A.R == R {
         _apis.sync { apis in
             if let api = apis[A.id] as? A {
                 return api
             }
-            let api = A(substrate: self.substrate)
+            let api = A(api: rootApi)
             apis[A.id] = api
             return api
         }
@@ -46,7 +46,7 @@ public class RuntimeCallApiRegistry<S: SomeSubstrate> {
 
 public extension RuntimeCallApiRegistry {
     func has(method: String, api: String) -> Bool {
-        substrate.runtime.resolve(runtimeCall: method, api: api) != nil
+        rootApi.runtime.resolve(runtimeCall: method, api: api) != nil
     }
     
     func has<C: RuntimeCall>(call: C) -> Bool {
@@ -58,7 +58,7 @@ public extension RuntimeCallApiRegistry {
     }
     
     func execute<C: RuntimeCall>(call: C,
-                                 at hash: S.RC.THasher.THash? = nil) async throws -> C.TReturn {
-        try await substrate.client.execute(call: call, at: hash, runtime: substrate.runtime)
+                                 at hash: R.RC.THasher.THash? = nil) async throws -> C.TReturn {
+        try await rootApi.client.execute(call: call, at: hash, runtime: rootApi.runtime)
     }
 }

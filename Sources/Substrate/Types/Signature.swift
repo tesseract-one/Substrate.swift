@@ -22,7 +22,7 @@ public extension Signature {
         try self.init(raw: sig, algorithm: algorithm, runtime: runtime)
     }
     
-    func asValue() throws -> AnyValue { .bytes(raw) }
+    func asValue() throws -> Value<Void> { .bytes(raw) }
 }
 
 public extension CryptoTypeId {
@@ -162,7 +162,7 @@ extension MultiSignature: Signature {
 }
 
 extension MultiSignature: ValueRepresentable {
-    public func asValue() throws -> AnyValue {
+    public func asValue() throws -> Value<Void> {
         switch self {
         case .ecdsa(let sig): return try .variant(name: "Ecdsa", values: [sig.asValue()])
         case .ed25519(let sig): return try .variant(name: "Ed25519", values: [sig.asValue()])

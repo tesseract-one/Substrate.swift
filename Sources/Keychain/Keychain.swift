@@ -11,7 +11,7 @@ import Sr25519
 import Substrate
 #endif
 
-public typealias SubstrateKeychainRandom = Sr25519SecureRandom
+public typealias Random = Sr25519SecureRandom
 
 public enum KeychainDelegateResponse {
     case cancelled

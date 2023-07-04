@@ -8,8 +8,8 @@
 import Foundation
 import ScaleCodec
 
-public protocol SignedExtensionsProvider<RT> {
-    associatedtype RT: Config
+public protocol SignedExtensionsProvider<RC> {
+    associatedtype RC: Config
     associatedtype TExtra
     associatedtype TAdditionalSigned
     associatedtype TSigningParams
@@ -23,7 +23,7 @@ public protocol SignedExtensionsProvider<RT> {
     func extra<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TExtra
     func additionalSigned<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TAdditionalSigned
     
-    mutating func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws
+    mutating func setRootApi<R: RootApi<RC>>(api: R) throws
 }
 
 public protocol AnyNonceSigningParameter {
@@ -241,22 +241,22 @@ public struct ExtrinsicExtensionId: Equatable, Hashable, RawRepresentable {
 public protocol DynamicExtrinsicExtension {
     var identifier: ExtrinsicExtensionId { get }
     
-    func extra<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    func extra<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId>
     
-    func additionalSigned<S: SomeSubstrate>(
-        substrate: S, params: AnySigningParams<S.RC>, id: RuntimeTypeId
+    func additionalSigned<R: RootApi>(
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
     ) async throws -> Value<RuntimeTypeId>
 }
 
-public class DynamicSignedExtensionsProvider<RT: Config>: SignedExtensionsProvider {
-    public typealias RT = RT
+public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvider {
+    public typealias RC = RC
     public typealias TExtra = Value<RuntimeTypeId>
     public typealias TAdditionalSigned = [Value<RuntimeTypeId>]
-    public typealias TSigningParams = AnySigningParams<RT>
+    public typealias TSigningParams = AnySigningParams<RC>
     
-    private var _substrate: (any _SomeSubstrateWrapper<RT>)!
+    private var _api: (any _RootApiWrapper<RC>)!
     
     public let extensions: [String: DynamicExtrinsicExtension]
     public let version: UInt8
@@ -273,95 +273,95 @@ public class DynamicSignedExtensionsProvider<RT: Config>: SignedExtensionsProvid
     public func defaultParams() async throws -> TSigningParams { AnySigningParams() }
     
     public func extra(params: TSigningParams) async throws -> TExtra {
-        try await _substrate.extra(params: params)
+        try await _api.extra(params: params)
     }
     
     public func additionalSigned(params: TSigningParams) async throws -> TAdditionalSigned {
-        try await _substrate.additionalSigned(params: params)
+        try await _api.additionalSigned(params: params)
     }
     
     public func encode<E: ScaleCodec.Encoder>(extra: TExtra, in encoder: inout E) throws {
-        try extra.encode(in: &encoder, runtime: _substrate.runtime)
+        try extra.encode(in: &encoder, runtime: _api.runtime)
     }
     
     public func encode<E: ScaleCodec.Encoder>(additionalSigned: TAdditionalSigned, in encoder: inout E) throws {
-        guard additionalSigned.count == _substrate.additionalSignedTypes.count else {
-            throw ExtrinsicCodingError.badExtrasCount(expected: _substrate.additionalSignedTypes.count,
+        guard additionalSigned.count == _api.additionalSignedTypes.count else {
+            throw ExtrinsicCodingError.badExtrasCount(expected: _api.additionalSignedTypes.count,
                                                       got: additionalSigned.count)
         }
         for ext in additionalSigned {
-            try ext.encode(in: &encoder, runtime: _substrate.runtime)
+            try ext.encode(in: &encoder, runtime: _api.runtime)
         }
     }
     
     public func extra<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TExtra {
-        try TExtra(from: &decoder, as: _substrate.extraType, runtime: _substrate.runtime)
+        try TExtra(from: &decoder, as: _api.extraType, runtime: _api.runtime)
     }
     
     public func additionalSigned<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TAdditionalSigned {
-        try _substrate.additionalSignedTypes.map { tId in
-            try Value(from: &decoder, as: tId, runtime: _substrate.runtime)
+        try _api.additionalSignedTypes.map { tId in
+            try Value(from: &decoder, as: tId, runtime: _api.runtime)
         }
     }
     
-    public func setSubstrate<S: SomeSubstrate<RT>>(substrate: S) throws {
-        self._substrate = try _SubstrateWrapper(substrate: substrate, version: version, extensions: extensions)
+    public func setRootApi<R: RootApi<RC>>(api: R) throws {
+        self._api = try _ApiWrapper(api: api, version: version, extensions: extensions)
     }
 }
 
-private protocol _SomeSubstrateWrapper<RT> {
-    associatedtype RT: Config
+private protocol _RootApiWrapper<RC> {
+    associatedtype RC: Config
     
     var extraType: RuntimeTypeId { get }
     var additionalSignedTypes: [RuntimeTypeId] { get }
     var runtime: any Runtime { get }
     
-    func extra(params: AnySigningParams<RT>) async throws -> Value<RuntimeTypeId>
-    func additionalSigned(params: AnySigningParams<RT>) async throws -> [Value<RuntimeTypeId>]
+    func extra(params: AnySigningParams<RC>) async throws -> Value<RuntimeTypeId>
+    func additionalSigned(params: AnySigningParams<RC>) async throws -> [Value<RuntimeTypeId>]
 }
 
-private struct _SubstrateWrapper<ST: SomeSubstrate>: _SomeSubstrateWrapper {
-    typealias RT = ST.RC
+private struct _ApiWrapper<R: RootApi>: _RootApiWrapper {
+    typealias RC = R.RC
     
-    weak var substrate: ST!
+    weak var api: R!
     let extensions: [(ext: DynamicExtrinsicExtension, eId: RuntimeTypeId, aId: RuntimeTypeId)]
     
     let extraType: RuntimeTypeId
     let additionalSignedTypes: [RuntimeTypeId]
     @inlinable
-    var runtime: any Runtime { substrate.runtime }
+    var runtime: any Runtime { api.runtime }
     
-    init(substrate: ST, version: UInt8, extensions: [String: DynamicExtrinsicExtension]) throws {
-        guard substrate.runtime.metadata.extrinsic.version == version else {
+    init(api: R, version: UInt8, extensions: [String: DynamicExtrinsicExtension]) throws {
+        guard api.runtime.metadata.extrinsic.version == version else {
             throw ExtrinsicCodingError.badExtrinsicVersion(
                 supported: version,
-                got: substrate.runtime.metadata.extrinsic.version)
+                got: api.runtime.metadata.extrinsic.version)
         }
-        self.extraType = try substrate.runtime.types.extrinsicExtra.id
-        self.extensions = try substrate.runtime.metadata.extrinsic.extensions.map { info in
+        self.extraType = try api.runtime.types.extrinsicExtra.id
+        self.extensions = try api.runtime.metadata.extrinsic.extensions.map { info in
             guard let ext = extensions[info.identifier] else {
                 throw  ExtrinsicCodingError.unknownExtension(identifier: info.identifier)
             }
             return (ext, info.type.id, info.additionalSigned.id)
         }
         self.additionalSignedTypes = self.extensions.map { $0.aId }
-        self.substrate = substrate
+        self.api = api
     }
     
-    func extra(params: AnySigningParams<ST.RC>) async throws -> Value<RuntimeTypeId> {
+    func extra(params: AnySigningParams<R.RC>) async throws -> Value<RuntimeTypeId> {
         var extra: [Value<RuntimeTypeId>] = []
         extra.reserveCapacity(extensions.count)
         for ext in extensions {
-            try await extra.append(ext.ext.extra(substrate: substrate, params: params, id: ext.eId))
+            try await extra.append(ext.ext.extra(api: api, params: params, id: ext.eId))
         }
         return Value(value: .sequence(extra), context: extraType)
     }
     
-    func additionalSigned(params: AnySigningParams<ST.RC>) async throws -> [Value<RuntimeTypeId>] {
+    func additionalSigned(params: AnySigningParams<R.RC>) async throws -> [Value<RuntimeTypeId>] {
         var extra: [Value<RuntimeTypeId>] = []
         extra.reserveCapacity(extensions.count)
         for ext in extensions {
-            try await extra.append(ext.ext.additionalSigned(substrate: substrate, params: params, id: ext.aId))
+            try await extra.append(ext.ext.additionalSigned(api: api, params: params, id: ext.aId))
         }
         return extra
     }

@@ -12,7 +12,7 @@ class Secp256k1Context {
     var context: OpaquePointer!
     
     init() {
-        let seed = SubstrateKeychainRandom.bytes(count: 32)
+        let seed = Random.bytes(count: 32)
         context = secp256k1_context_create(UInt32(SECP256K1_CONTEXT_SIGN|SECP256K1_CONTEXT_VERIFY))
         let _ = secp256k1_context_randomize(context, seed)
     }

@@ -8,10 +8,10 @@
 import Foundation
 import ScaleCodec
 
-public protocol ConstantsApi<S> {
-    associatedtype S: SomeSubstrate
-    var substrate: S! { get }
-    init(substrate: S)
+public protocol ConstantsApi<R> {
+    associatedtype R: RootApi
+    var api: R! { get }
+    init(api: R)
     static var id: String { get }
 }
 
@@ -23,26 +23,26 @@ public enum ConstantsApiError: Error {
     case constantNotFound(name: String, pallet: String)
 }
 
-public class ConstantsApiRegistry<S: SomeSubstrate> {
+public class ConstantsApiRegistry<R: RootApi> {
     private let _apis: Synced<[String: any ConstantsApi]>
     
-    public weak var substrate: S!
+    public weak var rootApi: R!
     
-    public init(substrate: S? = nil) {
-        self.substrate = substrate
+    public init(api: R? = nil) {
+        self.rootApi = api
         self._apis = Synced(value: [:])
     }
     
-    public func setSubstrate(substrate: S) {
-        self.substrate = substrate
+    public func setRootApi(api: R) {
+        self.rootApi = api
     }
     
-    public func getApi<A>(_ t: A.Type) -> A where A: ConstantsApi, A.S == S {
+    public func getApi<A>(_ t: A.Type) -> A where A: ConstantsApi, A.R == R {
         _apis.sync { apis in
             if let api = apis[A.id] as? A {
                 return api
             }
-            let api = A(substrate: self.substrate)
+            let api = A(api: self.rootApi)
             apis[A.id] = api
             return api
         }
@@ -51,10 +51,10 @@ public class ConstantsApiRegistry<S: SomeSubstrate> {
 
 public extension ConstantsApiRegistry {
     func get<V: RuntimeDynamicDecodable>(name: String, pallet: String) throws -> V {
-        guard let ct = substrate.runtime.resolve(constant: name, pallet: pallet) else {
+        guard let ct = rootApi.runtime.resolve(constant: name, pallet: pallet) else {
             throw ConstantsApiError.constantNotFound(name: name, pallet: pallet)
         }
-        return try substrate.runtime.decode(from: ct.value, id: ct.type.id)
+        return try rootApi.runtime.decode(from: ct.value, id: ct.type.id)
     }
     
     @inlinable
@@ -63,11 +63,11 @@ public extension ConstantsApiRegistry {
     }
     
     func get<C: StaticConstant>(_ type: C.Type) throws -> C.TValue {
-        guard let ct = substrate.runtime.resolve(constant: type.name, pallet: type.pallet) else {
+        guard let ct = rootApi.runtime.resolve(constant: type.name, pallet: type.pallet) else {
             throw ConstantsApiError.constantNotFound(name: type.name, pallet: type.pallet)
         }
-        var decoder = substrate.runtime.decoder(with: ct.value)
-        return try type.decode(valueFrom: &decoder, runtime: substrate.runtime)
+        var decoder = rootApi.runtime.decoder(with: ct.value)
+        return try type.decode(valueFrom: &decoder, runtime: rootApi.runtime)
     }
 }
 

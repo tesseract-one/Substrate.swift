@@ -27,11 +27,11 @@ private typealias EDPublicKey = Ed25519.Ed25519PublicKey
 
 public struct Ed25519KeyPair: Equatable, Hashable {
     private let _keyPair: EDKeyPair
-    public let publicKey: STEd25519PublicKey
+    public let publicKey: Substrate.Ed25519PublicKey
     
     private init(keyPair: EDKeyPair) {
         self._keyPair = keyPair
-        self.publicKey = try! STEd25519PublicKey(keyPair.publicKey.raw)
+        self.publicKey = try! Substrate.Ed25519PublicKey(keyPair.publicKey.raw)
     }
     
     fileprivate static func convertError<T>(_ cb: () throws -> T) throws -> T {
@@ -69,7 +69,7 @@ extension Ed25519KeyPair: KeyPair {
     }
     
     public init() {
-        try! self.init(seed: Data(SubstrateKeychainRandom.bytes(count: EDSeed.size)))
+        try! self.init(seed: Data(Random.bytes(count: EDSeed.size)))
     }
     
     public init(raw: Data) throws {
@@ -80,7 +80,7 @@ extension Ed25519KeyPair: KeyPair {
     }
     
     public func sign(message: Data) -> any Signature {
-        return try! STEd25519Signature(raw: _keyPair.sign(message: message).raw)
+        return try! Substrate.Ed25519Signature(raw: _keyPair.sign(message: message).raw)
     }
     
     public func verify(message: Data, signature: any Signature) -> Bool {
@@ -112,13 +112,13 @@ extension Ed25519KeyPair: KeyDerivable {
     }
 }
 
-extension STEd25519PublicKey: KeyDerivable {
-    public func derive(path: [PathComponent]) throws -> STEd25519PublicKey {
+extension Substrate.Ed25519PublicKey: KeyDerivable {
+    public func derive(path: [PathComponent]) throws -> Substrate.Ed25519PublicKey {
         throw KeyPairError.derive(error: .softDeriveIsNotSupported)
     }
 }
 
-extension STEd25519PublicKey {
+extension Substrate.Ed25519PublicKey {
     public func verify(signature: any Signature, message: Data) -> Bool {
         guard signature.algorithm == self.algorithm else {
             return false

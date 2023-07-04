@@ -14,11 +14,11 @@ import Substrate
 
 public struct Sr25519KeyPair: Equatable, Hashable {
     private let _keyPair: Sr25519.Sr25519KeyPair
-    public let publicKey: STSr25519PublicKey
+    public let publicKey: Substrate.Sr25519PublicKey
     
     private init(keyPair: Sr25519.Sr25519KeyPair) {
         self._keyPair = keyPair
-        self.publicKey = try! STSr25519PublicKey(keyPair.publicKey.raw)
+        self.publicKey = try! Substrate.Sr25519PublicKey(keyPair.publicKey.raw)
     }
     
     fileprivate static func convertError<T>(_ cb: () throws -> T) throws -> T {
@@ -67,11 +67,11 @@ extension Sr25519KeyPair: KeyPair {
     }
     
     public init() {
-        try! self.init(seed: Data(SubstrateKeychainRandom.bytes(count: Sr25519Seed.size)))
+        try! self.init(seed: Data(Random.bytes(count: Sr25519Seed.size)))
     }
     
     public func sign(message: Data) -> any Signature {
-        try! STSr25519Signature(raw: _keyPair.sign(message: message).raw)
+        try! Substrate.Sr25519Signature(raw: _keyPair.sign(message: message).raw)
     }
     
     public func verify(message: Data, signature: any Signature) -> Bool {
@@ -97,22 +97,22 @@ extension Sr25519KeyPair: KeyDerivable {
     }
 }
 
-extension STSr25519PublicKey: KeyDerivable {
-    public func derive(path: [PathComponent]) throws -> STSr25519PublicKey {
+extension Substrate.Sr25519PublicKey: KeyDerivable {
+    public func derive(path: [PathComponent]) throws -> Substrate.Sr25519PublicKey {
         let pub = try path.reduce(Sr25519.Sr25519PublicKey(raw: raw)) { (pub, cmp) in
             guard cmp.isSoft else { throw KeyPairError.derive(error: .publicDeriveHasHardPath) }
             let chainCode = try Sr25519KeyPair.convertError { try Sr25519ChainCode(raw: cmp.bytes) }
             return pub.derive(chainCode: chainCode)
         }
         do {
-            return try STSr25519PublicKey(pub.raw)
+            return try Substrate.Sr25519PublicKey(pub.raw)
         } catch _ as SizeMismatchError {
             throw KeyPairError.input(error: .publicKey)
         }
     }
 }
 
-extension STSr25519PublicKey {
+extension Substrate.Sr25519PublicKey {
     public func verify(signature: any Signature, message: Data) -> Bool {
         guard signature.algorithm == self.algorithm else {
             return false
