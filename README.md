@@ -77,7 +77,7 @@ let mnemonic = "your key 12 words"
 let from = try Sr25519KeyPair(parsing: mnemonic + "//Key1") // hard key derivation
 
 // Create recipient address from ss58 string
-let to = try substrate.runtime.address(ss58: "repicient s58 address")
+let to = try substrate.runtime.address(ss58: "recipient s58 address")
 
 // Dynamic Call type with Map parameters.
 // any ValueRepresentable type can be used as parameter
@@ -308,6 +308,40 @@ protocol KeychainDelegate: AnyObject {
                  for type: KeyTypeId,
                  algorithms algos: [CryptoTypeId]) async -> KeychainDelegateResponse
 }
+```
+
+### Batch Extrinsics
+SDK supports batch calls: [#how-can-i-batch-transactions](https://polkadot.js.org/docs/api/cookbook/tx#how-can-i-batch-transactions)
+```swift
+// Not needed for CocoaPods
+import SubstrateKeychain
+
+// Create KeyPair for signing
+let mnemonic = "your key 12 words"
+let from = try Sr25519KeyPair(phrase: mnemonic)
+
+// Create recipient addresses from ss58 string
+let to1 = try substrate.runtime.address(ss58: "recipient1 s58 address")
+let to2 = try substrate.runtime.address(ss58: "recipient2 s58 address")
+
+// Create 2 calls
+let call1 = try AnyCall(name: "transfer",
+                        pallet: "Balances",
+                        map: ["dest": to1, "value": 15483812850])
+let call2 = try AnyCall(name: "transfer",
+                        pallet: "Balances",
+                        map: ["dest": to2, "value": 21234567890])
+
+// Create batch transaction from the calls (batch or batchAll methods)
+let tx = try await substrate.tx.batchAll([call1, call2])
+
+// Sign, send and watch for finalization
+let events = try await tx.signSendAndWatch(signer: from)
+        .waitForFinalized()
+        .success()
+
+// Parsed events
+print("Events: \(try events.parsed())")
 ```
 
 ## Author

@@ -58,9 +58,9 @@ struct Environment {
     
     public var keyPairs: [Sr25519KeyPair] { mutating get { [kpAlice, kpBob, kbJohn, kbJane] } }
     
-    public mutating func randomKeyPair(exclude kp: Sr25519KeyPair? = nil) -> Sr25519KeyPair {
-        if let excl = kp {
-            return keyPairs.filter { $0 != excl }.randomElement()!
+    public mutating func randomKeyPair(exclude kps: [Sr25519KeyPair] = []) -> Sr25519KeyPair {
+        if kps.count > 0 {
+            return Set(keyPairs).subtracting(kps).randomElement()!
         } else {
             return keyPairs.randomElement()!
         }

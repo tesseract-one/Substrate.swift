@@ -55,7 +55,7 @@ final class SubstrateTests: XCTestCase {
     func testTransferTx() {
         runAsyncTest(withTimeout: 20) {
             let from = self.env.kpAlice //self.env.randomKeyPair()
-            let toKp = self.env.randomKeyPair(exclude: from)
+            let toKp = self.env.randomKeyPair(exclude: [from])
             let substrate = try await Api(rpc: self.httpClient, config: DynamicConfig())
             let to = try toKp.address(in: substrate)
             let call = try AnyCall(name: "transfer_allow_death",
@@ -70,13 +70,36 @@ final class SubstrateTests: XCTestCase {
     func testTransferAndWatchTx() {
         runAsyncTest(withTimeout: 300) {
             let from = self.env.kpAlice //self.env.randomKeyPair()
-            let toKp = self.env.randomKeyPair(exclude: from)
+            let toKp = self.env.randomKeyPair(exclude: [from])
             let substrate = try await Api(rpc: self.wsClient, config: DynamicConfig())
             let to = try toKp.address(in: substrate)
             let call = try AnyCall(name: "transfer_allow_death",
                                    pallet: "Balances",
                                    map: ["dest": to, "value": 15483812850])
             let tx = try await substrate.tx.new(call)
+            let events = try await tx.signSendAndWatch(signer: from)
+                .waitForFinalized()
+                .success()
+            XCTAssert(events.events.count > 0)
+            print("Events: \(try events.parsed())")
+        }
+    }
+    
+    func testTransferAndWatchBatchTx() {
+        runAsyncTest(withTimeout: 300) {
+            let from = self.env.kpAlice //self.env.randomKeyPair()
+            let toKp1 = self.env.randomKeyPair(exclude: [from])
+            let toKp2 = self.env.randomKeyPair(exclude: [from, toKp1])
+            let substrate = try await Api(rpc: self.wsClient, config: DynamicConfig())
+            let to1 = try toKp1.address(in: substrate)
+            let to2 = try toKp2.address(in: substrate)
+            let call1 = try AnyCall(name: "transfer_allow_death",
+                                    pallet: "Balances",
+                                    map: ["dest": to1, "value": 15383812800])
+            let call2 = try AnyCall(name: "transfer_allow_death",
+                                    pallet: "Balances",
+                                    map: ["dest": to2, "value": 15583812810])
+            let tx = try await substrate.tx.batchAll([call1, call2])
             let events = try await tx.signSendAndWatch(signer: from)
                 .waitForFinalized()
                 .success()

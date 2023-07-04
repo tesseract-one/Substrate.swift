@@ -8,9 +8,12 @@
 import Foundation
 import ScaleCodec
 
-public struct Submittable<R: RootApi, C: Call, E: ExtrinsicExtra> {
+public struct Submittable<R: RootApi, C: Call, E: ExtrinsicExtra>: CallHolder {
+    public typealias TCall = C
+    
     public let extrinsic: Extrinsic<C, E>
     public let api: R
+    @inlinable public var call: C { extrinsic.call }
     
     public init(api: R, extinsic: Extrinsic<C, E>) {
         self.api = api

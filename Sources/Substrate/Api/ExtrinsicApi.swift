@@ -89,7 +89,7 @@ public extension ExtrinsicApiRegistry where R.CL: SubscribableClient {
 
 public extension ExtrinsicApiRegistry where R.RC: BatchSupportedConfig {
     func batch(
-        calls: [Call], params: R.RC.TExtrinsicManager.TUnsignedParams
+        calls: [any Call], params: R.RC.TExtrinsicManager.TUnsignedParams
     ) async throws -> Submittable<R, R.RC.TBatchCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
         guard rootApi.runtime.isBatchSupported else {
             throw SubmittableError.batchIsNotSupported
@@ -99,8 +99,15 @@ public extension ExtrinsicApiRegistry where R.RC: BatchSupportedConfig {
                                      params: params)
     }
     
+    @inlinable
+    func batch(
+        txs: [any CallHolder], params: R.RC.TExtrinsicManager.TUnsignedParams
+    ) async throws -> Submittable<R, R.RC.TBatchCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+        try await batch(calls: txs.map{$0.call}, params: params)
+    }
+    
     func batchAll(
-        calls: [Call], params: R.RC.TExtrinsicManager.TUnsignedParams
+        calls: [any Call], params: R.RC.TExtrinsicManager.TUnsignedParams
     ) async throws -> Submittable<R, R.RC.TBatchAllCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
         guard rootApi.runtime.isBatchSupported else {
             throw SubmittableError.batchIsNotSupported
@@ -109,6 +116,13 @@ public extension ExtrinsicApiRegistry where R.RC: BatchSupportedConfig {
                                      call: R.RC.TBatchAllCall(calls: calls),
                                      params: params)
     }
+    
+    @inlinable
+    func batchAll(
+        txs: [any CallHolder], params: R.RC.TExtrinsicManager.TUnsignedParams
+    ) async throws -> Submittable<R, R.RC.TBatchAllCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+        try await batchAll(calls: txs.map{$0.call}, params: params)
+    }
 }
 
 public extension ExtrinsicApiRegistry
@@ -116,15 +130,29 @@ public extension ExtrinsicApiRegistry
 {
     @inlinable
     func batch(
-        _ calls: [Call]
+        _ calls: [any Call]
     ) async throws -> Submittable<R, R.RC.TBatchCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
         try await batch(calls: calls, params: ())
     }
     
     @inlinable
+    func batch(
+        _ txs: [any CallHolder]
+    ) async throws -> Submittable<R, R.RC.TBatchCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+        try await batch(txs: txs, params: ())
+    }
+    
+    @inlinable
     func batchAll(
-        _ calls: [Call]
+        _ calls: [any Call]
     ) async throws -> Submittable<R, R.RC.TBatchAllCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
         try await batchAll(calls: calls, params: ())
+    }
+    
+    @inlinable
+    func batchAll(
+        _ txs: [any CallHolder]
+    ) async throws -> Submittable<R, R.RC.TBatchAllCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+        try await batchAll(txs: txs, params: ())
     }
 }

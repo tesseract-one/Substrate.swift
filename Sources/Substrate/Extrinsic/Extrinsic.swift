@@ -8,7 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public struct Extrinsic<C: Call, Extra: ExtrinsicExtra>: CustomStringConvertible {
+public struct Extrinsic<C: Call, Extra: ExtrinsicExtra>: CustomStringConvertible, CallHolder {
+    public typealias TCall = C
+    
     public let call: C
     public let extra: Extra
     
@@ -30,7 +32,9 @@ public protocol ExtrinsicExtra {
     var isSigned: Bool { get }
 }
 
-public struct ExtrinsicSignPayload<C: Call, Extra>: CustomStringConvertible {
+public struct ExtrinsicSignPayload<C: Call, Extra>: CustomStringConvertible, CallHolder {
+    public typealias TCall = C
+    
     public let call: C
     public let extra: Extra
     

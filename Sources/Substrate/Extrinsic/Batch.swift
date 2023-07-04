@@ -26,3 +26,9 @@ public extension SomeBatchCall {
         }
     }
 }
+
+public protocol CallHolder<TCall> {
+    associatedtype TCall: Call
+    
+    var call: TCall { get }
+}
