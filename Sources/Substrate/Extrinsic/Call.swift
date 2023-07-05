@@ -86,21 +86,31 @@ public struct AnyCall<C>: Call {
 }
 
 public extension AnyCall where C == Void {
-    init<V: ValueRepresentable>(name: String, pallet: String, param: V) throws {
-        try self.init(name: name, pallet: pallet, seq: [param])
+    init(name: String, pallet: String) {
+        self.init(name: name, pallet: pallet, params: .nil)
     }
     
-    init(name: String, pallet: String, map: [String: ValueRepresentable]) throws {
+    init(name: String, pallet: String, param: any ValueRepresentable) throws {
+        try self.init(name: name, pallet: pallet, params: param.asValue())
+    }
+    
+    init(name: String, pallet: String, from: any ValueMapRepresentable) throws {
+        try self.init(name: name, pallet: pallet, params: .map(from: from))
+    }
+    
+    init(name: String, pallet: String, from: any ValueArrayRepresentable) throws {
+        try self.init(name: name, pallet: pallet, params: .sequence(from: from))
+    }
+    
+    init(name: String, pallet: String, map: [String: any ValueRepresentable]) throws {
         try self.init(name: name, pallet: pallet, params: .map(map))
     }
     
-    init<M: ValueMapRepresentable>(name: String, pallet: String, map: M) throws {
-        try self.init(name: name, pallet: pallet, params: .map(map: map))
+    init(name: String, pallet: String, sequence: [any ValueRepresentable]) throws {
+        try self.init(name: name, pallet: pallet, params: .sequence(sequence))
     }
     
-    init<S: ValueArrayRepresentable>(name: String, pallet: String, seq: S) throws {
-        try self.init(name: name, pallet: pallet, params: .sequence(array: seq))
-    }
+    
 }
 
 extension AnyCall: CustomStringConvertible {

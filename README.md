@@ -155,11 +155,11 @@ let accountId = try substrate.runtime.account(ss58: "EoukLS2Rzh6dZvMQSkqFy4zGvqe
 // We have to provide 2 keys to get value.
 
 // optional value
-let optSlash = try await entry.value(path: Tuple(652, accountId))
+let optSlash = try await entry.value(keys: [652, accountId])
 print("Value is: \(optSlash ?? 0)")
 
 // default value used when nil
-let slash = try await entry.valueOrDefault(path: Tuple(652, accountId))
+let slash = try await entry.valueOrDefault(keys: [652, accountId])
 print("Value is: \(slash)")
 ```
 

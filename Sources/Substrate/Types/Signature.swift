@@ -164,9 +164,9 @@ extension MultiSignature: Signature {
 extension MultiSignature: ValueRepresentable {
     public func asValue() throws -> Value<Void> {
         switch self {
-        case .ecdsa(let sig): return try .variant(name: "Ecdsa", values: [sig.asValue()])
-        case .ed25519(let sig): return try .variant(name: "Ed25519", values: [sig.asValue()])
-        case .sr25519(let sig): return try .variant(name: "Sr25519", values: [sig.asValue()])
+        case .ecdsa(let sig): return try .variant(name: sig.algorithm.signatureName, values: [sig.asValue()])
+        case .ed25519(let sig): return try .variant(name: sig.algorithm.signatureName, values: [sig.asValue()])
+        case .sr25519(let sig): return try .variant(name: sig.algorithm.signatureName, values: [sig.asValue()])
         }
     }
 }

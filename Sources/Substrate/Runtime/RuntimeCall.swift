@@ -75,20 +75,24 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
         self.init(api: api, method: method, params: .nil)
     }
     
-    public init<V: ValueRepresentable>(api: String, method: String, param: V) throws {
-        try self.init(api: api, method: method, seq: [param])
+    public init(api: String, method: String, param: any ValueRepresentable) throws {
+        try self.init(api: api, method: method, params: param.asValue())
     }
     
-    public init(api: String, method: String, map: [String: ValueRepresentable]) throws {
+    public init(api: String, method: String, map: [String: any ValueRepresentable]) throws {
         try self.init(api: api, method: method, params: .map(map))
     }
     
-    public init<M: ValueMapRepresentable>(api: String, method: String, map: M) throws {
-        try self.init(api: api, method: method, params: .map(map: map))
+    public init(api: String, method: String, sequence: [any ValueRepresentable]) throws {
+        try self.init(api: api, method: method, params: .sequence(sequence))
     }
     
-    public init<S: ValueArrayRepresentable>(api: String, method: String, seq: S) throws {
-        try self.init(api: api, method: method, params: .sequence(array: seq))
+    public init(api: String, method: String, from: any ValueMapRepresentable) throws {
+        try self.init(api: api, method: method, params: .map(from: from))
+    }
+    
+    public init(api: String, method: String, from: any ValueArrayRepresentable) throws {
+        try self.init(api: api, method: method, params: .sequence(from: from))
     }
     
     public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {

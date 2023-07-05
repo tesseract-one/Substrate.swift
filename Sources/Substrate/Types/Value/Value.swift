@@ -138,25 +138,34 @@ public extension Value {
         Self(value: .map(map), context: context)
     }
     
-    static func sequence<CL: Collection>(_ seq: CL, _ context: C) -> Self where CL.Element == Value<C> {
+    static func sequence<S: Sequence>(_ seq: S, _ context: C) -> Self
+        where S.Element == Value<C>
+    {
         Self(value: .sequence(Array(seq)), context: context)
     }
     
-    static func variant(name: String, fields: [String: Value<C>], _ context: C) -> Self {
-        Self(value: .variant(.map(name: name,
-                                  fields: fields)),
-             context: context)
+    static func variant<S: Sequence>(name: String, fields: S, _ context: C) -> Self
+        where S.Element == (key: String, value: Value<C>)
+    {
+        let dict = Dictionary(uniqueKeysWithValues: fields.map{($0, $1)})
+        return Self(value: .variant(.map(name: name,
+                                         fields: dict)),
+                    context: context)
     }
     
-    static func variant<CL: Collection>(name: String, values: CL, _ context: C) -> Self
-        where CL.Element == Value<C>
+    static func variant<S: Sequence>(name: String, values: S, _ context: C) -> Self
+        where S.Element == Value<C>
     {
         Self(value: .variant(.sequence(name: name, values: Array(values))),
              context: context)
     }
     
-    static func bits<CL: Collection>(_ seq: CL, _ context: C) -> Self where CL.Element == Bool {
-        Self(value: .bitSequence(BitSequence(seq)), context: context)
+    static func bits(_ seq: BitSequence, _ context: C) -> Self {
+        Self(value: .bitSequence(seq), context: context)
+    }
+    
+    static func bits<S: Sequence>(array: S, _ context: C) -> Self where S.Element == Bool {
+        .bits(BitSequence(array), context)
     }
     
     static func bool(_ val: Bool, _ context: C) -> Self {
@@ -183,56 +192,74 @@ public extension Value {
         Self(value: .primitive(.bytes(val)), context: context)
     }
     
+    static func bytes<S: Sequence>(array val: S, _ context: C) -> Self where S.Element == UInt8 {
+        .bytes(Data(val), context)
+    }
+    
     static func `nil`(_ context: C) -> Self {
         Self(value: .sequence([]), context: context)
     }
 }
 
 public extension Value where C == Void {
-    static func map(_ map: [String: ValueRepresentable]) throws -> Self {
+    static func map(_ map: [String: any ValueRepresentable]) throws -> Self {
         try .map(map.mapValues { try $0.asValue() }, ())
     }
     
-    static func map(_ map: [String: Value<C>]) -> Self {
+    static func map(fields map: [String: Value<C>]) -> Self {
         .map(map, ())
     }
     
-    static func map<M: ValueMapRepresentable>(map: M) throws -> Self {
+    static func map(from map: any ValueMapRepresentable) throws -> Self {
         try .map(map.asValueMap(), ())
     }
+    
+    static func sequence(_ seq: [any ValueRepresentable]) throws -> Self {
+        try .sequence(seq.map{try $0.asValue()}, ())
+    }
 
-    static func sequence<CL: ValueArrayRepresentable>(array: CL) throws -> Self {
-        try .sequence(array.asValueArray(), ())
+    static func sequence(from seq: any ValueArrayRepresentable) throws -> Self {
+        try .sequence(seq.asValueArray(), ())
     }
     
-    static func sequence<CL: Collection>(_ seq: CL) -> Self where CL.Element == Value<C> {
+    static func sequence<S: Sequence>(values seq: S) -> Self where S.Element == Value<C> {
         .sequence(seq, ())
     }
     
-    static func variant(name: String, fields: [String: ValueRepresentable]) throws -> Self {
-        try .variant(name: name, fields: fields.mapValues { try $0.asValue() }, ())
+    static func variant(name: String, map: [String: any ValueRepresentable]) throws -> Self {
+        try .variant(name: name, fields: map.mapValues { try $0.asValue() }, ())
     }
     
-    static func variant(name: String, fields: [String: Value<C>]) -> Self {
+    static func variant<S: Sequence>(name: String, fields: S) -> Self
+        where S.Element == (key: String, value: Value<Void>)
+    {
         .variant(name: name, fields: fields, ())
     }
     
-    static func variant<M: ValueMapRepresentable>(name: String, map: M) throws -> Self {
+    static func variant(name: String, from map: any ValueMapRepresentable) throws -> Self {
         try .variant(name: name, fields: map.asValueMap(), ())
     }
     
-    static func variant<A: ValueArrayRepresentable>(name: String, array: A) throws -> Self {
-        try .variant(name: name, values: array.asValueArray(), ())
+    static func variant(name: String, sequence: [any ValueRepresentable]) throws -> Self {
+        try .variant(name: name, values: sequence.map{try $0.asValue()}, ())
     }
     
-    static func variant<CL: Collection>(name: String, values: CL) -> Self
-        where CL.Element == Value<C>
+    static func variant<S: Sequence>(name: String, values: S) -> Self
+        where S.Element == Value<C>
     {
         .variant(name: name, values: values, ())
     }
     
-    static func bits<CL: Collection>(_ seq: CL) -> Self where CL.Element == Bool {
+    static func variant(name: String, from array: any ValueArrayRepresentable) throws -> Self {
+        try .variant(name: name, values: array.asValueArray(), ())
+    }
+    
+    static func bits(_ seq: BitSequence) -> Self {
         .bits(seq, ())
+    }
+    
+    static func bits<S: Sequence>(array: S) -> Self where S.Element == Bool {
+        .bits(array: array, ())
     }
     
     static func bool(_ val: Bool) -> Self { .bool(val, ()) }
@@ -241,6 +268,9 @@ public extension Value where C == Void {
     static func u256(_ val: UInt256) -> Self { .u256(val, ()) }
     static func i256(_ val: Int256) -> Self { .i256(val, ()) }
     static func bytes(_ val: Data) -> Self { .bytes(val, ()) }
+    static func bytes<S: Sequence>(array val: S) -> Self where S.Element == UInt8 {
+        .bytes(array: val, ())
+    }
     static let `nil`: Self = .nil(())
 }
 
