@@ -188,6 +188,27 @@ public struct DynamicConfig: Config {
     ]
 }
 
+public extension ConfigRegistry where C == DynamicConfig {
+    @inlinable
+    static func dynamic(extrinsicExtensions: [DynamicExtrinsicExtension] = DynamicConfig.allExtensions,
+                        headerSelector: [String] = ["Header"],
+                        dispatchInfoSelector: [String] = ["DispatchInfo"],
+                        dispatchErrorSelector: [String] = ["DispatchError"],
+                        transactionValidityErrorSelector: [String] = ["TransactionValidityError"],
+                        feeDetailsSelector: [String] = ["FeeDetails"],
+                        eventRecordSelector: [String] = ["EventRecord"]) -> Self {
+        let config = DynamicConfig(
+            extrinsicExtensions: extrinsicExtensions, headerSelector: headerSelector,
+            dispatchInfoSelector: dispatchInfoSelector, dispatchErrorSelector: dispatchErrorSelector,
+            transactionValidityErrorSelector: transactionValidityErrorSelector,
+            feeDetailsSelector: feeDetailsSelector, eventRecordSelector: eventRecordSelector
+        )
+        return Self(config: config)
+    }
+    
+    @inlinable static var dynamic: Self { dynamic() }
+}
+
 
 // Helper structs
 public extension DynamicConfig {

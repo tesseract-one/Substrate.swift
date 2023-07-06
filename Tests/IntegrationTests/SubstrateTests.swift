@@ -30,13 +30,13 @@ final class SubstrateTests: XCTestCase {
     
     func testInitialization() {
         runAsyncTest(withTimeout: 3000) {
-            let _ = try await Api(rpc: self.httpClient, config: DynamicConfig())
+            let _ = try await Api(rpc: self.httpClient, config: .dynamic)
         }
     }
     
     func testStorageValueCall() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: DynamicConfig())
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
             let entry = try substrate.query.dynamic(name: "Events", pallet: "System")
             let value = try await entry.value()
             XCTAssertNotNil(value)
@@ -45,7 +45,7 @@ final class SubstrateTests: XCTestCase {
     
     func testBlock() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: DynamicConfig())
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
             let block = try await substrate.client.block(config: substrate.runtime.config)
             XCTAssertNotNil(block)
             let _ = try block!.block.extrinsics.parsed()
@@ -56,7 +56,7 @@ final class SubstrateTests: XCTestCase {
         runAsyncTest(withTimeout: 20) {
             let from = self.env.kpAlice //self.env.randomKeyPair()
             let toKp = self.env.randomKeyPair(exclude: [from])
-            let substrate = try await Api(rpc: self.httpClient, config: DynamicConfig())
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
             let to = try toKp.address(in: substrate)
             let call = try AnyCall(name: "transfer_allow_death",
                                    pallet: "Balances",
@@ -71,7 +71,7 @@ final class SubstrateTests: XCTestCase {
         runAsyncTest(withTimeout: 300) {
             let from = self.env.kpAlice //self.env.randomKeyPair()
             let toKp = self.env.randomKeyPair(exclude: [from])
-            let substrate = try await Api(rpc: self.wsClient, config: DynamicConfig())
+            let substrate = try await Api(rpc: self.wsClient, config: .dynamic)
             let to = try toKp.address(in: substrate)
             let call = try AnyCall(name: "transfer_allow_death",
                                    pallet: "Balances",
@@ -90,7 +90,7 @@ final class SubstrateTests: XCTestCase {
             let from = self.env.kpAlice //self.env.randomKeyPair()
             let toKp1 = self.env.randomKeyPair(exclude: [from])
             let toKp2 = self.env.randomKeyPair(exclude: [from, toKp1])
-            let substrate = try await Api(rpc: self.wsClient, config: DynamicConfig())
+            let substrate = try await Api(rpc: self.wsClient, config: .dynamic)
             let to1 = try toKp1.address(in: substrate)
             let to2 = try toKp2.address(in: substrate)
             let call1 = try AnyCall(name: "transfer_allow_death",

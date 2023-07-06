@@ -17,4 +17,11 @@ public extension Api {
         let systemClient = RpcClient<RC, RPC>(client: client)
         try await self.init(client: systemClient, config: config, signer: signer, at: hash)
     }
+    
+    convenience init<RPC>(
+        rpc client: RPC, config: ConfigRegistry<RC>, signer: Signer? = nil, at hash: RC.THasher.THash? = nil
+    ) async throws where RPC: RpcCallableClient & RuntimeHolder, CL == RpcClient<RC, RPC> {
+        let systemClient = RpcClient<RC, RPC>(client: client)
+        try await self.init(client: systemClient, config: config, signer: signer, at: hash)
+    }
 }

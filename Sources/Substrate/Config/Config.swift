@@ -86,3 +86,8 @@ public extension BatchSupportedConfig {
         metadata.resolve(pallet: TBatchAllCall.pallet)?.callIndex(name: TBatchAllCall.name) != nil
     }
 }
+
+public struct ConfigRegistry<C: Config> {
+    public let config: C
+    @inlinable public init(config: C) { self.config = config }
+}
