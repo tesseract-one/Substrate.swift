@@ -16,7 +16,7 @@ public struct DynamicConfig: Config {
     public typealias TAccountId = AccountId32
     public typealias TAddress = MultiAddress<TAccountId, TIndex>
     public typealias TSignature = MultiSignature
-    public typealias TBlock = Block<AnyBlockHeader<THasher>, BlockExtrinsic<TExtrinsicManager>>
+    public typealias TBlock = AnyBlock<AnyBlockHeader<THasher, TIndex>, BlockExtrinsic<TExtrinsicManager>>
     public typealias TSignedBlock = ChainBlock<TBlock, SerializableValue>
     
     public typealias TExtrinsicManager = ExtrinsicV4Manager<Self, DynamicSignedExtensionsProvider<Self>>

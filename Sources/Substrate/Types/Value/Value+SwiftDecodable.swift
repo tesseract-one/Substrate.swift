@@ -6,12 +6,15 @@
 //
 
 import Foundation
+import ContextCodable
 import ScaleCodec
 
-extension Value where C == RuntimeTypeId {
-    public init(from decoder: Swift.Decoder, `as` type: RuntimeTypeId) throws {
+extension Value: ContextDecodable where C == RuntimeTypeId {}
+
+extension Value: RuntimeDynamicSwiftDecodable where C == RuntimeTypeId {
+    public init(from decoder: Swift.Decoder, as type: RuntimeTypeId, runtime: Runtime) throws {
         var value = ValueDecodingContainer(decoder)
-        try self.init(from: &value, as: type, runtime: decoder.runtime)
+        try self.init(from: &value, as: type, runtime: runtime)
     }
     
     public init(from container: inout ValueDecodingContainer,

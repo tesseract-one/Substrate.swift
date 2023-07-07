@@ -166,7 +166,7 @@ public struct RuntimeExtrinsicSignedExtensionV14: ScaleCodec.Codable {
 
 public struct RuntimeMetadataV14: ScaleCodec.Codable, RuntimeMetadata {
     public var version: UInt8 { 14 }
-    public let types: [RuntimeTypeInfo]
+    public let types: RuntimeTypeRegistry
     public let pallets: [RuntimePalletMetadataV14]
     public let extrinsic: RuntimeExtrinsicMetadataV14
     public let runtimeType: RuntimeTypeId

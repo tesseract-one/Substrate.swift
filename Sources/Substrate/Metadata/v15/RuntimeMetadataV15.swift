@@ -43,7 +43,7 @@ public struct RuntimePalletMetadataV15: ScaleCodec.Codable {
 
 public struct RuntimeMetadataV15: ScaleCodec.Codable, RuntimeMetadata {
     public var version: UInt8 { 15 }
-    public let types: [RuntimeTypeInfo]
+    public let types: RuntimeTypeRegistry
     public let pallets: [RuntimePalletMetadataV15]
     public let extrinsic: RuntimeExtrinsicMetadataV14
     public let runtimeType: RuntimeTypeId

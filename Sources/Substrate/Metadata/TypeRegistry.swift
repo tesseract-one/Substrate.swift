@@ -1,5 +1,5 @@
 //
-//  PortableTypes.swift
+//  TypeRegistry.swift
 //  
 //
 //  Created by Yehor Popovych on 28.12.2022.
@@ -7,6 +7,8 @@
 
 import Foundation
 import ScaleCodec
+
+public typealias RuntimeTypeRegistry = Array<RuntimeTypeInfo>
 
 public struct RuntimeTypeId: ScaleCodec.Codable, Hashable, Equatable,
                              ExpressibleByIntegerLiteral, RawRepresentable,

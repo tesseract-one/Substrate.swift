@@ -110,16 +110,18 @@ extension RpcClient: Client {
     
     @inlinable
     public func block(
-        at hash: C.TBlock.THeader.THasher.THash? = nil, config: C
+        at hash: C.TBlock.THeader.THasher.THash? = nil, runtime: ExtendedRuntime<C>
     ) async throws -> C.TSignedBlock? {
-        try await call(method: "chain_getBlock", params: Params(hash))
+        try await call(method: "chain_getBlock", params: Params(hash),
+                       context: (runtime, { try $0.types.blockHeader.id }))
     }
     
     @inlinable
     public func block(
-        header hash: C.TBlock.THeader.THasher.THash?, config: C
+        header hash: C.TBlock.THeader.THasher.THash?, runtime: ExtendedRuntime<C>
     ) async throws -> C.TBlock.THeader? {
-        try await call(method: "chain_getHeader", params: Params(hash))
+        try await call(method: "chain_getHeader", params: Params(hash),
+                       context: (runtime, { try $0.types.blockHeader.id }))
     }
     
     public func events(

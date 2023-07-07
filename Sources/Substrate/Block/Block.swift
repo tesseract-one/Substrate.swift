@@ -7,9 +7,9 @@
 
 import Foundation
 import ScaleCodec
+import ContextCodable
 
-
-public protocol SomeBlock: Swift.Decodable {
+public protocol SomeBlock: RuntimeDynamicSwiftDecodable {
     associatedtype THeader: SomeBlockHeader
     associatedtype TExtrinsic: OpaqueExtrinsic
     
@@ -22,7 +22,7 @@ public extension SomeBlock {
     var hash: THeader.THasher.THash { header.hash }
 }
 
-public protocol SomeBlockHeader: Swift.Decodable {
+public protocol SomeBlockHeader: RuntimeDynamicSwiftDecodable {
     associatedtype TNumber: UnsignedInteger & DataConvertible
     associatedtype THasher: FixedHasher
     
@@ -33,20 +33,29 @@ public protocol SomeBlockHeader: Swift.Decodable {
 // Simple marker for static implementations
 public protocol StaticBlockHeader: SomeBlockHeader {}
 
-public protocol SomeChainBlock<TBlock>: Swift.Decodable {
+public protocol SomeChainBlock<TBlock>: ContextDecodable where
+    DecodingContext == (runtime: Runtime, blockType: (Runtime) throws -> RuntimeTypeId)
+{
     associatedtype TBlock: SomeBlock
     
     var block: TBlock { get }
 }
 
-public struct Block<H: SomeBlockHeader, E: OpaqueExtrinsic>: SomeBlock {
-    public let header: H
-    public let extrinsics: [E]
-}
-
 public struct ChainBlock<B: SomeBlock, J: Swift.Decodable>: SomeChainBlock {
     public let block: B
     public let justifications: J
+    
+    enum CodingKeys: CodingKey {
+        case block
+        case justifications
+    }
+    
+    public init(from decoder: Swift.Decoder, context: DecodingContext) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        block = try container.decode(B.self, forKey: .block,
+                                     context: (context.runtime, context.blockType))
+        justifications = try container.decode(J.self, forKey: .justifications)
+    }
 }
 
 public extension Array where Element: OpaqueExtrinsic {

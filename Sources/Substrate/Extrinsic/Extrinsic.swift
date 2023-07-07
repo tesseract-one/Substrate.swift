@@ -64,7 +64,7 @@ extension Either: ExtrinsicExtra where Left: ExtrinsicExtra, Right: ExtrinsicExt
 
 public typealias AnyExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, Either<M.TUnsignedExtra, M.TSignedExtra>>
 
-public protocol OpaqueExtrinsic<TManager>: Swift.Decodable {
+public protocol OpaqueExtrinsic<TManager>: RuntimeSwiftDecodable {
     associatedtype TManager: ExtrinsicManager
     
     func hash() -> TManager.RC.THasher.THash
@@ -151,10 +151,10 @@ public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where 
     public let data: Data
     public let runtime: any Runtime
     
-    public init(from decoder: Swift.Decoder) throws {
-        self.runtime = decoder.runtime
+    public init(from decoder: Swift.Decoder, runtime: any Runtime) throws {
         let container = try decoder.singleValueContainer()
         self.data = try container.decode(Data.self)
+        self.runtime = runtime
     }
     
     public func hash() -> TManager.RC.THasher.THash {

@@ -12,12 +12,15 @@ public protocol Client<C> {
     
     var hasDryRun: Bool { get async throws }
     
+    // Config based calls (needed for Runtime init)
     func runtimeVersion(at hash: C.TBlock.THeader.THasher.THash?, config: C) async throws -> C.TRuntimeVersion
     func metadata(at hash: C.TBlock.THeader.THasher.THash?, config: C) async throws -> Metadata
     func systemProperties(config: C) async throws -> C.TSystemProperties
     func block(hash index: C.TBlock.THeader.TNumber?, config: C) async throws -> C.TBlock.THeader.THasher.THash?
-    func block(at hash: C.TBlock.THeader.THasher.THash?, config: C) async throws -> C.TSignedBlock?
-    func block(header hash: C.TBlock.THeader.THasher.THash?, config: C) async throws -> C.TBlock.THeader?
+    
+    func block(at hash: C.TBlock.THeader.THasher.THash?, runtime: ExtendedRuntime<C>) async throws -> C.TSignedBlock?
+    func block(header hash: C.TBlock.THeader.THasher.THash?,
+               runtime: ExtendedRuntime<C>) async throws -> C.TBlock.THeader?
     
     func accountNextIndex(id: C.TAccountId, runtime: ExtendedRuntime<C>) async throws -> C.TIndex
     func events(
@@ -85,15 +88,5 @@ public extension Client {
     func block(hash index: C.TBlock.THeader.TNumber?,
                runtime: ExtendedRuntime<C>) async throws -> C.TBlock.THeader.THasher.THash? {
         try await block(hash: index, config: runtime.config)
-    }
-    @inlinable
-    func block(at hash: C.TBlock.THeader.THasher.THash?,
-               runtime: ExtendedRuntime<C>) async throws -> C.TSignedBlock? {
-        try await block(at: hash, config: runtime.config)
-    }
-    @inlinable
-    func block(header hash: C.TBlock.THeader.THasher.THash?,
-               runtime: ExtendedRuntime<C>) async throws -> C.TBlock.THeader? {
-        try await block(header: hash, config: runtime.config)
     }
 }

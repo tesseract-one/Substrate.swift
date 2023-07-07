@@ -49,19 +49,6 @@ public protocol Runtime: AnyObject {
     ) -> (keys: [(StorageHasher, RuntimeTypeId)], value: RuntimeTypeId, `default`: Data)?
 }
 
-public protocol RuntimeTypes {
-    var blockHeader: RuntimeTypeInfo { get throws }
-    var address: RuntimeTypeInfo { get throws }
-    var signature: RuntimeTypeInfo { get throws }
-    var call: RuntimeTypeInfo { get throws }
-    var event: RuntimeTypeInfo { get throws }
-    var extrinsicExtra: RuntimeTypeInfo { get throws }
-    var dispatchInfo: RuntimeTypeInfo { get throws }
-    var dispatchError: RuntimeTypeInfo { get throws }
-    var feeDetails: RuntimeTypeInfo { get throws }
-    var transactionValidityError: RuntimeTypeInfo { get throws }
-}
-
 public extension Runtime {
     @inlinable
     func resolve(type id: RuntimeTypeId) -> RuntimeType? {

@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol ApiError: Error, RuntimeDecodable, Swift.Decodable {}
+public protocol ApiError: Error, RuntimeDynamicDecodable, RuntimeDynamicSwiftDecodable {}
 
 public protocol DynamicApiError: ApiError {
     init(value: Value<RuntimeTypeId>) throws
