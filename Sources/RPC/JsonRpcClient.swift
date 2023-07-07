@@ -7,12 +7,13 @@
 
 import Foundation
 import JsonRPC
+import ContextCodable
 import Serializable
 #if !COCOAPODS
 import Substrate
 #endif
 
-public class JsonRpcCallableClient: RpcCallableClient, RuntimeHolder {
+public class JsonRpcCallableClient: RpcCallableClient {
     public private (set) var client: JsonRPC.Client & ContentCodersProvider
     
     public var debug: Bool {
@@ -27,19 +28,38 @@ public class JsonRpcCallableClient: RpcCallableClient, RuntimeHolder {
         }
     }
     
+    @inlinable
     public func call<Params: Encodable, Res: Decodable>(
         method: String, params: Params
     ) async throws -> Res {
         try await client.call(method: method, params: params, SerializableValue.self)
     }
     
-    public var runtime: any Runtime {
-       self.client.contentEncoder.runtime
+    @inlinable
+    public func call<Params: ContextEncodable, Res: Decodable>(
+        method: String, params: Params, context: Params.EncodingContext
+    ) async throws -> Res {
+        try await client.call(method: method, params: params,
+                              context: context, SerializableValue.self)
     }
     
-    public func setRuntime(runtime: any Runtime) throws {
-        self.client.contentEncoder.runtime = runtime
-        self.client.contentDecoder.runtime = runtime
+    @inlinable
+    public func call<Params: Encodable, Res: ContextDecodable>(
+        method: String, params: Params, context: Res.DecodingContext
+    ) async throws -> Res {
+        try await client.call(method: method, params: params,
+                              context: context, SerializableValue.self)
+    }
+    
+    @inlinable
+    public func call<Params: ContextEncodable, Res: ContextDecodable>(
+        method: String, params: Params,
+        encoding econtext: Params.EncodingContext,
+        decoding dcontext: Res.DecodingContext
+    ) async throws -> Res {
+        try await client.call(method: method, params: params,
+                              encoding: econtext, decoding: dcontext,
+                              SerializableValue.self)
     }
     
     deinit {
@@ -59,7 +79,9 @@ public extension JsonRpcClientDelegate {
     func rpcClientSubscriptionError(client: JsonRpcSubscribableClient, error: JsonRpcSubscribableClient.Error) {}
 }
 
-public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDelegate, ErrorDelegate, ConnectableDelegate, RpcSubscribableClient {
+public class JsonRpcSubscribableClient:
+    JsonRpcCallableClient, NotificationDelegate, ErrorDelegate, ConnectableDelegate, RpcSubscribableClient
+{
     public enum Error: Swift.Error {
         case codec(CodecError)
         case request(RequestError<[AnyEncodable], SerializableValue>)
@@ -88,7 +110,7 @@ public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDeleg
         let subscription: String
     }
     
-    private struct RpcSubscriptionFull<E: Decodable>: Decodable {
+    fileprivate struct RpcSubscriptionFull<E> {
         let subscription: String
         let result: E
     }
@@ -129,47 +151,41 @@ public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDeleg
         client.delegate = self
     }
     
-    public func subscribe<P, E>(
-        method: String, params: P, unsubscribe umethod: String
-    ) async throws -> AsyncThrowingStream<E, Swift.Error> where P : Encodable, E : Decodable {
-        let subscriptionId: String = try await client.call(method: method, params: params, SerializableValue.self)
-        return AsyncThrowingStream { continuation in
-            let unsubscribe = { [weak self] in
-                guard let this = self else { return }
-                Task {
-                    do {
-                        try await this.unsubscribe(id: subscriptionId, method: umethod)
-                    } catch {
-                        this.onError(.from(any: error))
-                    }
-                }
-            }
-            continuation.onTermination = { @Sendable _ in unsubscribe() }
-            Task {
-                do {
-                    try await self.subscriptions.add(id: subscriptionId) { result in
-                        switch result {
-                        case .failure(let err): continuation.finish(throwing: err)
-                        case .success(let parsable):
-                            switch parsable.parse(to: RpcSubscriptionFull<E>.self) {
-                            case .failure(let error):
-                                continuation.finish(throwing: Error.codec(error))
-                                unsubscribe()
-                            case .success(let value):
-                                guard let value = value else {
-                                    continuation.finish(throwing: Error.empty)
-                                    unsubscribe()
-                                    return
-                                }
-                                continuation.yield(value.result)
-                            }
-                        }
-                    }
-                } catch {
-                    continuation.finish(throwing: error)
-                    unsubscribe()
-                }
-            }
+    public func subscribe<Params: Encodable, Event: Decodable>(
+        method: String, params: Params, unsubscribe umethod: String
+    ) async throws -> AsyncThrowingStream<Event, Swift.Error> {
+        let subscriptionId: String = try await call(method: method, params: params)
+        return stream(subscriptionId: subscriptionId, unsubscribe: umethod) {
+            $0.parse(to: RpcSubscriptionFull<Event>.self).map { $0?.result }
+        }
+    }
+    
+    public func subscribe<Params: ContextEncodable, Event: Decodable>(
+        method: String, params: Params, unsubscribe umethod: String, context: Params.EncodingContext
+    ) async throws -> AsyncThrowingStream<Event, Swift.Error> {
+        let subscriptionId: String = try await call(method: method, params: params, context: context)
+        return stream(subscriptionId: subscriptionId, unsubscribe: umethod) {
+            $0.parse(to: RpcSubscriptionFull<Event>.self).map { $0?.result }
+        }
+    }
+    
+    public func subscribe<Params: Encodable, Event: ContextDecodable>(
+        method: String, params: Params, unsubscribe umethod: String, context: Event.DecodingContext
+    ) async throws -> AsyncThrowingStream<Event, Swift.Error> {
+        let subscriptionId: String = try await call(method: method, params: params)
+        return stream(subscriptionId: subscriptionId, unsubscribe: umethod) {
+            $0.parse(to: RpcSubscriptionFull<Event>.self, context: context).map { $0?.result }
+        }
+    }
+    
+    public func subscribe<Params: ContextEncodable, Event: ContextDecodable>(
+        method: String, params: Params, unsubscribe umethod: String,
+        encoding econtext: Params.EncodingContext,
+        decoding dcontext: Event.DecodingContext
+    ) async throws -> AsyncThrowingStream<Event, Swift.Error> {
+        let subscriptionId: String = try await call(method: method, params: params, context: econtext)
+        return stream(subscriptionId: subscriptionId, unsubscribe: umethod) {
+            $0.parse(to: RpcSubscriptionFull<Event>.self, context: dcontext).map { $0?.result }
         }
     }
     
@@ -202,6 +218,50 @@ public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDeleg
         self.delegate?.rpcClientStateUpdated(client: self, state: state)
     }
     
+    private func stream<Ev>(
+        subscriptionId: String, unsubscribe method: String,
+        decoder: @escaping (Parsable) -> Result<Ev?, CodecError>
+    ) -> AsyncThrowingStream<Ev, Swift.Error> {
+        AsyncThrowingStream { continuation in
+            let unsubscribe = { [weak self] in
+                guard let this = self else { return }
+                Task {
+                    do {
+                        try await this.unsubscribe(id: subscriptionId, method: method)
+                    } catch {
+                        this.onError(.from(any: error))
+                    }
+                }
+            }
+            continuation.onTermination = { @Sendable _ in unsubscribe() }
+            Task {
+                do {
+                    try await self.subscriptions.add(id: subscriptionId) { result in
+                        switch result {
+                        case .failure(let err): continuation.finish(throwing: err)
+                        case .success(let parsable):
+                            switch decoder(parsable) {
+                            case .failure(let error):
+                                continuation.finish(throwing: Error.codec(error))
+                                unsubscribe()
+                            case .success(let value):
+                                guard let value = value else {
+                                    continuation.finish(throwing: Error.empty)
+                                    unsubscribe()
+                                    return
+                                }
+                                continuation.yield(value)
+                            }
+                        }
+                    }
+                } catch {
+                    continuation.finish(throwing: error)
+                    unsubscribe()
+                }
+            }
+        }
+    }
+    
     private func onError(_ error: Error) {
         self.delegate?.rpcClientSubscriptionError(client: self, error: error)
     }
@@ -217,6 +277,17 @@ public class JsonRpcSubscribableClient: JsonRpcCallableClient, NotificationDeleg
         for (_, cb) in subscriptions {
             cb(.failure(reason))
         }
+    }
+}
+
+extension JsonRpcSubscribableClient.RpcSubscriptionFull: Decodable where E: Decodable {}
+extension JsonRpcSubscribableClient.RpcSubscriptionFull: ContextDecodable where E: ContextDecodable {
+    typealias DecodingContext = E.DecodingContext
+    
+    init(from decoder: Decoder, context: DecodingContext) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        subscription = try container.decode(String.self, forKey: .subscription)
+        result = try container.decode(E.self, forKey: .result, context: context)
     }
 }
 

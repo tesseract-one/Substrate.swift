@@ -31,17 +31,3 @@ extension JSONDecoder {
         return decoder
     }()
 }
-
-extension ContentEncoder {
-    public var runtime: any Runtime {
-        get { context[.substrateRuntime]! as! any Runtime }
-        set { context[.substrateRuntime] = newValue }
-    }
-}
-
-extension ContentDecoder {
-    public var runtime: any Runtime {
-        get { context[.substrateRuntime]! as! any Runtime }
-        set { context[.substrateRuntime] = newValue }
-    }
-}

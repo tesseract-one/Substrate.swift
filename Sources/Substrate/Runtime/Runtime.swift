@@ -49,14 +49,6 @@ public protocol Runtime: AnyObject {
     ) -> (keys: [(StorageHasher, RuntimeTypeId)], value: RuntimeTypeId, `default`: Data)?
 }
 
-public protocol RuntimeAware {
-    var runtime: any Runtime { get }
-}
-
-public protocol RuntimeHolder: RuntimeAware {
-    func setRuntime(runtime: any Runtime) throws
-}
-
 public protocol RuntimeTypes {
     var blockHeader: RuntimeTypeInfo { get throws }
     var address: RuntimeTypeInfo { get throws }

@@ -7,11 +7,12 @@
 
 import Foundation
 import ScaleCodec
+import ContextCodable
 #if !COCOAPODS
 import Substrate
 #endif
 
-public struct RpcClient<RC: Config, CL: RpcCallableClient & RuntimeHolder> {
+public struct RpcClient<RC: Config, CL: RpcCallableClient> {
     public let client: CL
     public let rpcMethods: LazyAsyncThrowingProperty<Set<String>>
     
@@ -39,15 +40,29 @@ extension RpcClient: RpcCallableClient {
     ) async throws -> Res {
         try await client.call(method: method, params: params)
     }
-}
-
-extension RpcClient: RuntimeHolder {
-    @inlinable
-    public var runtime: Runtime { client.runtime }
     
     @inlinable
-    public func setRuntime(runtime: Runtime) throws {
-        try client.setRuntime(runtime: runtime)
+    public func call<Params: ContextEncodable, Res: Swift.Decodable>(
+        method: String, params: Params, context: Params.EncodingContext
+    ) async throws -> Res {
+        try await client.call(method: method, params: params, context: context)
+    }
+    
+    @inlinable
+    public func call<Params: Swift.Encodable, Res: ContextDecodable>(
+        method: String, params: Params, context: Res.DecodingContext
+    ) async throws -> Res {
+        try await client.call(method: method, params: params, context: context)
+    }
+    
+    @inlinable
+    public func call<Params: ContextEncodable, Res: ContextDecodable>(
+        method: String, params: Params,
+        encoding econtext: Params.EncodingContext,
+        decoding dcontext: Res.DecodingContext
+    ) async throws -> Res {
+        try await client.call(method: method, params: params,
+                              encoding: econtext, decoding: dcontext)
     }
 }
 
@@ -269,6 +284,35 @@ extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
         method: String, params: Params, unsubscribe umethod: String
     ) async throws -> AsyncThrowingStream<Event, Error> {
         try await client.subscribe(method: method, params: params, unsubscribe: umethod)
+    }
+    
+    @inlinable
+    public func subscribe<Params: ContextEncodable, Event: Swift.Decodable>(
+        method: String, params: Params, unsubscribe umethod: String,
+        context: Params.EncodingContext
+    ) async throws -> AsyncThrowingStream<Event, Error> {
+        try await client.subscribe(method: method, params: params,
+                                   unsubscribe: method, context: context)
+    }
+    
+    @inlinable
+    public func subscribe<Params: Swift.Encodable, Event: ContextDecodable>(
+        method: String, params: Params, unsubscribe umethod: String,
+        context: Event.DecodingContext
+    ) async throws -> AsyncThrowingStream<Event, Error> {
+        try await client.subscribe(method: method, params: params,
+                                   unsubscribe: method, context: context)
+    }
+    
+    @inlinable
+    public func subscribe<Params: ContextEncodable, Event: ContextDecodable>(
+        method: String, params: Params, unsubscribe umethod: String,
+        encoding econtext: Params.EncodingContext,
+        decoding dcontext: Event.DecodingContext
+    ) async throws -> AsyncThrowingStream<Event, Error> {
+        try await client.subscribe(method: method, params: params,
+                                   unsubscribe: method, encoding: econtext,
+                                   decoding: dcontext)
     }
 }
 

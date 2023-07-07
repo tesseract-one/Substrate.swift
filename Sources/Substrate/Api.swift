@@ -43,9 +43,6 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
         self.client = client
         self.runtime = runtime
         
-        // Set runtime for JSON decoders
-        try self.client.setRuntime(runtime: runtime)
-        
         // Create registries
         self.rpc = RpcApiRegistry()
         self.tx = ExtrinsicApiRegistry()

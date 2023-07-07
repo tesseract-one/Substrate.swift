@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol Client<C>: RuntimeHolder {
+public protocol Client<C> {
     associatedtype C: Config
     
     var hasDryRun: Bool { get async throws }

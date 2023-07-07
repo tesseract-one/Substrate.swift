@@ -19,6 +19,7 @@ var package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/tesseract-one/swift-scale-codec.git", .upToNextMinor(from: "0.3.0")),
+        .package(url: "https://github.com/tesseract-one/ContextCodable.swift.git", .upToNextMinor(from: "0.1.0")),
         .package(url: "https://github.com/tesseract-one/Blake2.swift.git", .upToNextMinor(from: "0.1.2")),
         .package(url: "https://github.com/tesseract-one/UncommonCrypto.swift.git", .upToNextMinor(from: "0.1.3")),
         .package(url: "https://github.com/tesseract-one/Sr25519.swift.git", .upToNextMinor(from: "0.1.3")),
@@ -26,7 +27,7 @@ var package = Package(
         .package(url: "https://github.com/tesseract-one/Bip39.swift.git", .upToNextMinor(from: "0.1.1")),
         .package(url: "https://github.com/daisuke-t-jp/xxHash-Swift.git", .upToNextMinor(from: "1.1.1")),
         .package(url: "https://github.com/tesseract-one/Serializable.swift.git", .upToNextMinor(from: "0.2.3")),
-        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", .upToNextMinor(from: "0.2.0")),
+        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", branch: "main"),
     ],
     targets: [
         .target(
@@ -34,6 +35,7 @@ var package = Package(
             dependencies: [
                 .product(name: "Serializable", package: "Serializable.swift"),
                 .product(name: "ScaleCodec", package: "swift-scale-codec"),
+                .product(name: "ContextCodable", package: "ContextCodable.swift"),
                 .product(name: "Blake2", package: "Blake2.swift"),
                 "xxHash-Swift"
             ]),
