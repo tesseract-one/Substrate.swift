@@ -6,8 +6,9 @@
 //
 
 import Foundation
+import ScaleCodec
 
-public protocol SomeExtrinsicFailureEvent<Err>: StaticEvent {
+public protocol SomeExtrinsicFailureEvent: StaticEvent {
     associatedtype Err: ApiError
     var error: Err { get }
 }
@@ -114,4 +115,29 @@ public extension ExtrinsicEvents {
     func last<E: StaticEvent>(event type: E.Type) throws -> E? {
         try _events.last(event: type, extrinsic: index)
     }
+}
+
+
+public struct AnyExtrinsicFailureEvent: SomeExtrinsicFailureEvent {
+    public struct ExtrinsicFailed: DynamicApiError {
+        public let body: Value<RuntimeType.Id>
+        public init(value: Value<RuntimeType.Id>, runtime: Runtime) throws {
+            self.body = value
+        }
+    }
+    public typealias Err = ExtrinsicFailed
+    public let error: ExtrinsicFailed
+    
+    public init<D: ScaleCodec.Decoder>(paramsFrom decoder: inout D, runtime: Runtime) throws {
+        fatalError()
+//        guard let evType = runtime.resolve(eventType: Self.pallet) else {
+//            
+//        }
+//        switch evType.type.definition {
+//            
+//        }
+    }
+    
+    public static let pallet: String = "System"
+    public static let name: String = "ExtrinsicFailed"
 }

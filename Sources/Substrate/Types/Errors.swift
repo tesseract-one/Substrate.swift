@@ -8,13 +8,11 @@
 import Foundation
 
 public struct AnyDispatchError: DynamicApiError, CustomStringConvertible {
-    public let value: Value<RuntimeTypeId>
+    public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
-    public static func errorType(runtime: any Runtime) throws -> RuntimeTypeInfo {
-        try runtime.types.dispatchError
-    }
+    public let value: Value<RuntimeType.Id>
     
-    public init(value: Value<RuntimeTypeId>) throws {
+    public init(value: Value<RuntimeType.Id>, runtime: any Runtime) throws {
         self.value = value
     }
     
@@ -24,13 +22,11 @@ public struct AnyDispatchError: DynamicApiError, CustomStringConvertible {
 }
 
 public struct AnyTransactionValidityError: DynamicApiError, CustomStringConvertible {
-    public let value: Value<RuntimeTypeId>
+    public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
-    public static func errorType(runtime: any Runtime) throws -> RuntimeTypeInfo {
-        try runtime.types.transactionValidityError
-    }
+    public let value: Value<RuntimeType.Id>
     
-    public init(value: Value<RuntimeTypeId>) throws {
+    public init(value: Value<RuntimeType.Id>, runtime: any Runtime) throws {
         self.value = value
     }
     

@@ -134,12 +134,12 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
     }
 }
 
-public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<RuntimeTypeId>>
+public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<RuntimeType.Id>>
 
 public enum RuntimeCallCodingError: Error {
     case callNotFound(method: String, api: String)
     case expectedMapOrSequence(got: Value<Void>)
-    case wrongParametersCount(params: [Value<Void>], expected: [(String, RuntimeTypeInfo)])
+    case wrongParametersCount(params: [Value<Void>], expected: [(String, RuntimeType.Info)])
     case parameterNotFound(name: String, inParams: [String: Value<Void>])
 }
 

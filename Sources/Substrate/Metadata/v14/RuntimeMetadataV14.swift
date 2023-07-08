@@ -11,10 +11,10 @@ import ScaleCodec
 public struct RuntimePalletMetadataV14: ScaleCodec.Codable {
     public let name: String
     public let storage: Optional<RuntimePalletStorageMedatadaV14>
-    public let call: Optional<RuntimeTypeId>
-    public let event: Optional<RuntimeTypeId>
+    public let call: Optional<RuntimeType.Id>
+    public let event: Optional<RuntimeType.Id>
     public let constants: [RuntimePalletConstantMetadataV14]
-    public let error: Optional<RuntimeTypeId>
+    public let error: Optional<RuntimeType.Id>
     public let index: UInt8
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
@@ -54,8 +54,8 @@ public struct RuntimePalletStorageMedatadaV14: ScaleCodec.Codable {
 }
 
 public enum RuntimePalletStorageEntryTypeV14: ScaleCodec.Codable {
-    case plain(_ value: RuntimeTypeId)
-    case map(hashers: [StorageHasher], key: RuntimeTypeId, value: RuntimeTypeId)
+    case plain(_ value: RuntimeType.Id)
+    case map(hashers: [StorageHasher], key: RuntimeType.Id, value: RuntimeType.Id)
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         let caseId = try decoder.decode(.enumCaseId)
@@ -109,7 +109,7 @@ public struct RuntimePalletStorageEntryMedatadaV14: ScaleCodec.Codable {
 
 public struct RuntimePalletConstantMetadataV14: ScaleCodec.Codable {
     public let name: String
-    public let type: RuntimeTypeId
+    public let type: RuntimeType.Id
     public let value: Data
     public let documentation: [String]
     
@@ -129,7 +129,7 @@ public struct RuntimePalletConstantMetadataV14: ScaleCodec.Codable {
 }
 
 public struct RuntimeExtrinsicMetadataV14: ScaleCodec.Codable {
-    public let type: RuntimeTypeId
+    public let type: RuntimeType.Id
     public let version: UInt8
     public let signedExtensions: [RuntimeExtrinsicSignedExtensionV14]
     
@@ -148,8 +148,8 @@ public struct RuntimeExtrinsicMetadataV14: ScaleCodec.Codable {
 
 public struct RuntimeExtrinsicSignedExtensionV14: ScaleCodec.Codable {
     public let identifier: String
-    public let type: RuntimeTypeId
-    public let additionalSigned: RuntimeTypeId
+    public let type: RuntimeType.Id
+    public let additionalSigned: RuntimeType.Id
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         identifier = try decoder.decode()
@@ -166,10 +166,10 @@ public struct RuntimeExtrinsicSignedExtensionV14: ScaleCodec.Codable {
 
 public struct RuntimeMetadataV14: ScaleCodec.Codable, RuntimeMetadata {
     public var version: UInt8 { 14 }
-    public let types: RuntimeTypeRegistry
+    public let types: RuntimeType.Registry
     public let pallets: [RuntimePalletMetadataV14]
     public let extrinsic: RuntimeExtrinsicMetadataV14
-    public let runtimeType: RuntimeTypeId
+    public let runtimeType: RuntimeType.Id
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         types = try decoder.decode()

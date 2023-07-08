@@ -127,7 +127,7 @@ print("Supported metadata versions: \(versions)")
 // It will throw if constant is not found or type is wrong
 let deposit = try substrate.constants.get(UInt128.self, name: "ExistentialDeposit", pallet: "Balances")
 
-// This will parse constant to dynamic Value<RuntimeTypeId>
+// This will parse constant to dynamic Value<RuntimeType.Id>
 let dynDeposit = try substrate.constants.dynamic(name: "ExistentialDeposit", pallet: "Balances")
 
 print("Existential deposit: \(deposit), \(dynDeposit)")

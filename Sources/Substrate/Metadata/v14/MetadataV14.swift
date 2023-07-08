@@ -14,19 +14,17 @@ public class MetadataV14: Metadata {
     public var pallets: [String] { Array(palletsByName.keys) }
     public var apis: [String] { [] }
     
-    public let types: [RuntimeTypeId: RuntimeType]
-    public let typesByPath: [String: RuntimeTypeInfo] // joined by "."
+    public let types: [RuntimeType.Id: RuntimeType]
+    public let typesByPath: [String: RuntimeType.Info] // joined by "."
     public let palletsByIndex: [UInt8: PalletMetadataV14]
     public let palletsByName: [String: PalletMetadataV14]
     
     public init(runtime: RuntimeMetadataV14) throws {
-        let types = Dictionary<RuntimeTypeId, RuntimeType>(
+        let types = Dictionary<RuntimeType.Id, RuntimeType>(
             uniqueKeysWithValues: runtime.types.map { ($0.id, $0.type) }
         )
         self.types = types
-        let byPathPairs = runtime.types.compactMap {
-            $0.type.path.count > 0 ? ($0.type.path.joined(separator: "."), $0) : nil
-        }
+        let byPathPairs = runtime.types.compactMap { i in i.type.name.map { ($0, i) } }
         self.typesByPath = Dictionary(byPathPairs) { (l, r) in l }
         self.extrinsic = ExtrinsicMetadataV14(runtime: runtime.extrinsic, types: types)
         let pallets = try runtime.pallets.map { try PalletMetadataV14(runtime: $0, types: types) }
@@ -35,15 +33,15 @@ public class MetadataV14: Metadata {
     }
     
     @inlinable
-    public func resolve(type id: RuntimeTypeId) -> RuntimeType? { types[id] }
+    public func resolve(type id: RuntimeType.Id) -> RuntimeType? { types[id] }
     
     @inlinable
-    public func resolve(type path: [String]) -> RuntimeTypeInfo? {
+    public func resolve(type path: [String]) -> RuntimeType.Info? {
         typesByPath[path.joined(separator: ".")]
     }
     
     @inlinable
-    public func search(type cb: @escaping ([String]) -> Bool) -> RuntimeTypeInfo? {
+    public func search(type cb: @escaping ([String]) -> Bool) -> RuntimeType.Info? {
         for type in typesByPath.values {
             if cb(type.type.path) {
                 return type
@@ -65,8 +63,8 @@ public class MetadataV14: Metadata {
 public class PalletMetadataV14: PalletMetadata {
     public let name: String
     public let index: UInt8
-    public let call: RuntimeTypeInfo?
-    public let event: RuntimeTypeInfo?
+    public let call: RuntimeType.Info?
+    public let event: RuntimeType.Info?
     
     public let callIdxByName: [String: UInt8]?
     public let callNameByIdx: [UInt8: String]?
@@ -84,11 +82,11 @@ public class PalletMetadataV14: PalletMetadata {
         Array(constantByName.keys)
     }
     
-    public init(runtime: RuntimePalletMetadataV14, types: [RuntimeTypeId: RuntimeType]) throws {
+    public init(runtime: RuntimePalletMetadataV14, types: [RuntimeType.Id: RuntimeType]) throws {
         self.name = runtime.name
         self.index = runtime.index
-        self.call = runtime.call.map { RuntimeTypeInfo(id: $0, type: types[$0]!) }
-        self.event = runtime.event.map { RuntimeTypeInfo(id: $0, type: types[$0]!) }
+        self.call = runtime.call.map { RuntimeType.Info(id: $0, type: types[$0]!) }
+        self.event = runtime.event.map { RuntimeType.Info(id: $0, type: types[$0]!) }
         let calls = self.call.flatMap { Self.variants(for: $0.type.definition) }
         self.callIdxByName = calls.map {
             Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0.index) })
@@ -134,7 +132,9 @@ public class PalletMetadataV14: PalletMetadata {
     @inlinable
     public func storage(name: String) -> StorageMetadata? { storageByName?[name] }
     
-    private static func variants(for def: RuntimeTypeDefinition) -> [RuntimeTypeVariantItem]? {
+    private static func variants(
+        for def: RuntimeType.Definition
+    ) -> [RuntimeType.VariantItem]? {
         switch def {
         case .variant(variants: let vars): return vars
         default: return nil
@@ -145,20 +145,21 @@ public class PalletMetadataV14: PalletMetadata {
 public class StorageMetadataV14: StorageMetadata {
     public let name: String
     public let modifier: StorageEntryModifier
-    public let types: (keys: [(StorageHasher, RuntimeTypeInfo)], value: RuntimeTypeInfo)
+    public let types:
+        (keys: [(StorageHasher, RuntimeType.Info)], value: RuntimeType.Info)
     public let defaultValue: Data
     public let documentation: [String]
     
     public init(runtime: RuntimePalletStorageEntryMedatadaV14,
                 pallet: String,
-                types: [RuntimeTypeId: RuntimeType]
-    ) throws {
+                types: [RuntimeType.Id: RuntimeType]) throws
+    {
         self.name = runtime.name
         self.modifier = runtime.modifier
         self.defaultValue = runtime.defaultValue
         self.documentation = runtime.documentation
-        var keys: [(StorageHasher, RuntimeTypeInfo)]
-        var valueType: RuntimeTypeId
+        var keys: [(StorageHasher, RuntimeType.Info)]
+        var valueType: RuntimeType.Id
         switch runtime.type {
         case .plain(let vType):
             keys = []
@@ -172,7 +173,7 @@ public class StorageMetadataV14: StorageMetadata {
                                                            name: runtime.name,
                                                            pallet: pallet)
             case 1:
-                keys = [(hashers[0], RuntimeTypeInfo(id: kType, type: types[kType]!))]
+                keys = [(hashers[0], RuntimeType.Info(id: kType, type: types[kType]!))]
             default:
                 switch types[kType]!.definition {
                 case .tuple(components: let fields): // DoubleMap / NMap
@@ -183,7 +184,7 @@ public class StorageMetadataV14: StorageMetadata {
                                                                    pallet: pallet)
                     }
                     keys = zip(hashers, fields).map { hash, field in
-                        (hash, RuntimeTypeInfo(id: field, type: types[field]!))
+                        (hash, RuntimeType.Info(id: field, type: types[field]!))
                     }
                 case .composite(fields: let fields): // Array / Struct
                     guard hashers.count == fields.count else {
@@ -193,47 +194,49 @@ public class StorageMetadataV14: StorageMetadata {
                                                                    pallet: pallet)
                     }
                     keys = zip(hashers, fields).map { hash, field in
-                        (hash, RuntimeTypeInfo(id: field.type, type: types[field.type]!))
+                        (hash, RuntimeType.Info(id: field.type, type: types[field.type]!))
                     }
                 default:
                     throw MetadataError.storageNonCompositeKey(
                         name: runtime.name, pallet: pallet,
-                        type: RuntimeTypeInfo(id: kType, type: types[kType]!))
+                        type: RuntimeType.Info(id: kType, type: types[kType]!))
                 }
             }
         }
         self.types = (keys: keys,
-                      value: RuntimeTypeInfo(id: valueType, type: types[valueType]!))
+                      value: RuntimeType.Info(id: valueType, type: types[valueType]!))
     }
 }
 
 public class ConstantMetadataV14: ConstantMetadata {
     public let name: String
-    public let type: RuntimeTypeInfo
+    public let type: RuntimeType.Info
     public let value: Data
     public let documentation: [String]
     
-    public init(runtime: RuntimePalletConstantMetadataV14, types: [RuntimeTypeId: RuntimeType]) {
+    public init(runtime: RuntimePalletConstantMetadataV14,
+                types: [RuntimeType.Id: RuntimeType])
+    {
         self.name = runtime.name
         self.value = runtime.value
         self.documentation = runtime.documentation
-        self.type = RuntimeTypeInfo(id: runtime.type, type: types[runtime.type]!)
+        self.type = RuntimeType.Info(id: runtime.type, type: types[runtime.type]!)
     }
 }
 
 public class ExtrinsicMetadataV14: ExtrinsicMetadata {
     public let version: UInt8
-    public let type: RuntimeTypeInfo
+    public let type: RuntimeType.Info
     public let extensions: [ExtrinsicExtensionMetadata]
     
-    public var addressType: RuntimeTypeInfo? { nil }
-    public var callType: RuntimeTypeInfo? { nil }
-    public var signatureType: RuntimeTypeInfo? { nil }
-    public var extraType: RuntimeTypeInfo? { nil }
+    public var addressType: RuntimeType.Info? { nil }
+    public var callType: RuntimeType.Info? { nil }
+    public var signatureType: RuntimeType.Info? { nil }
+    public var extraType: RuntimeType.Info? { nil }
     
-    public init(runtime: RuntimeExtrinsicMetadataV14, types: [RuntimeTypeId: RuntimeType]) {
+    public init(runtime: RuntimeExtrinsicMetadataV14, types: [RuntimeType.Id: RuntimeType]) {
         self.version = runtime.version
-        self.type = RuntimeTypeInfo(id: runtime.type, type: types[runtime.type]!)
+        self.type = RuntimeType.Info(id: runtime.type, type: types[runtime.type]!)
         self.extensions = runtime.signedExtensions.map {
             ExtrinsicExtensionMetadataV14(runtime: $0, types: types)
         }
@@ -242,13 +245,15 @@ public class ExtrinsicMetadataV14: ExtrinsicMetadata {
 
 public class ExtrinsicExtensionMetadataV14: ExtrinsicExtensionMetadata {
     public let identifier: String
-    public let type: RuntimeTypeInfo
-    public let additionalSigned: RuntimeTypeInfo
+    public let type: RuntimeType.Info
+    public let additionalSigned: RuntimeType.Info
     
-    public init(runtime: RuntimeExtrinsicSignedExtensionV14, types: [RuntimeTypeId: RuntimeType]) {
+    public init(runtime: RuntimeExtrinsicSignedExtensionV14,
+                types: [RuntimeType.Id: RuntimeType])
+    {
         self.identifier = runtime.identifier
-        self.type = RuntimeTypeInfo(id: runtime.type, type: types[runtime.type]!)
-        self.additionalSigned = RuntimeTypeInfo(id: runtime.additionalSigned,
-                                                type: types[runtime.additionalSigned]!)
+        self.type = RuntimeType.Info(id: runtime.type, type: types[runtime.type]!)
+        self.additionalSigned = RuntimeType.Info(id: runtime.additionalSigned,
+                                                 type: types[runtime.additionalSigned]!)
     }
 }

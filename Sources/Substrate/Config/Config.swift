@@ -20,7 +20,7 @@ public protocol Config {
     associatedtype TExtrinsicEra: SomeExtrinsicEra
     associatedtype TExtrinsicPayment: ValueRepresentable & Default
     associatedtype TBlockEvents: SomeBlockEvents
-    associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent<TDispatchError>
+    associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent
     associatedtype TDispatchError: ApiError
     associatedtype TTransactionValidityError: ApiError
     associatedtype TDispatchInfo: RuntimeDynamicDecodable
@@ -44,16 +44,16 @@ public protocol Config {
     func encoder() -> ScaleCodec.Encoder
     func decoder(data: Data) -> ScaleCodec.Decoder
     
-    func blockHeaderType(metadata: any Metadata) throws -> RuntimeTypeInfo
-    func dispatchInfoType(metadata: any Metadata) throws -> RuntimeTypeInfo
-    func feeDetailsType(metadata: any Metadata) throws -> RuntimeTypeInfo
-    func dispatchErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo
-    func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo
+    func blockHeaderType(metadata: any Metadata) throws -> RuntimeType.Info
+    func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info
+    func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info
+    func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info
+    func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info
     
     // Can be safely removed after removing metadata v14 (v15 has them)
-    func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeTypeInfo, addr: RuntimeTypeInfo,
-                                                           signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
-    func eventType(metadata: any Metadata) throws -> RuntimeTypeInfo
+    func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
+                                                           signature: RuntimeType.Info, extra: RuntimeType.Info)
+    func eventType(metadata: any Metadata) throws -> RuntimeType.Info
 }
 
 public extension Config {
@@ -68,7 +68,7 @@ public extension Config where THasher: StaticHasher {
 }
 
 public extension Config where TBlock.THeader: StaticBlockHeader {
-    func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo {
+    func blockHeaderType(metadata: Metadata) throws -> RuntimeType.Info {
         fatalError("Should not be called for StaticBlockHeader!")
     }
 }

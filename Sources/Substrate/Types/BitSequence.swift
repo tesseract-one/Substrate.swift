@@ -65,8 +65,8 @@ extension BitSequence {
         }
         
         public enum Error: Swift.Error {
-            case storeFormatNotFound(RuntimeTypeId)
-            case orderFormatNotFound(RuntimeTypeId)
+            case storeFormatNotFound(RuntimeType.Id)
+            case orderFormatNotFound(RuntimeType.Id)
             case storeFormatNotSupported(RuntimeType)
             case orderFormatNotSupported(RuntimeType)
         }
@@ -214,7 +214,7 @@ extension BitSequence {
 }
 
 extension BitSequence.Format {
-    public init(store: RuntimeTypeId, order: RuntimeTypeId, runtime: Runtime) throws {
+    public init(store: RuntimeType.Id, order: RuntimeType.Id, runtime: Runtime) throws {
         try self.init(store: Store(type: store, runtime: runtime),
                       order: Order(type: order, runtime: runtime))
     }
@@ -229,7 +229,7 @@ extension BitSequence.Format {
 }
 
 extension BitSequence.Format.Store {
-    public init(type: RuntimeTypeId, runtime: Runtime) throws {
+    public init(type: RuntimeType.Id, runtime: Runtime) throws {
         guard let bitStore = runtime.resolve(type: type) else {
             throw BitSequence.Format.Error.storeFormatNotFound(type)
         }
@@ -248,7 +248,7 @@ extension BitSequence.Format.Store {
 }
 
 extension BitSequence.Format.Order {
-    public init(type: RuntimeTypeId, runtime: Runtime) throws {
+    public init(type: RuntimeType.Id, runtime: Runtime) throws {
         guard let orderStore = runtime.resolve(type: type) else {
             throw BitSequence.Format.Error.orderFormatNotFound(type)
         }

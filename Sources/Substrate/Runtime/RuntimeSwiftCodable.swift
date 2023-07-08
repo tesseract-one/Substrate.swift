@@ -8,8 +8,37 @@
 import Foundation
 import ContextCodable
 
-public typealias RuntimeSwiftCodableContext = Runtime
-public typealias RuntimeDynamicSwiftCodableContext = (runtime: Runtime, type: (Runtime) throws -> RuntimeTypeId)
+public protocol SomeRuntimeDynamicSwiftCodableContext {
+    var runtime: Runtime { get }
+    var type: RuntimeType.LazyId { get }
+    
+    init(runtime: Runtime, type: @escaping RuntimeType.LazyId)
+}
+
+public struct RuntimeSwiftCodableContext: SomeRuntimeDynamicSwiftCodableContext {
+    public var runtime: Runtime
+    public var type: RuntimeType.LazyId
+    
+    public init(runtime: Runtime, type: @escaping RuntimeType.LazyId) {
+        self.runtime = runtime
+        self.type = type
+    }
+    
+    public init(runtime: Runtime) {
+        self.runtime = runtime
+        self.type = RuntimeType.IdNever
+    }
+}
+
+public struct RuntimeDynamicSwiftCodableContext: SomeRuntimeDynamicSwiftCodableContext {
+    public let runtime: Runtime
+    public let type: RuntimeType.LazyId
+    
+    public init(runtime: Runtime, type: @escaping RuntimeType.LazyId) {
+        self.runtime = runtime
+        self.type = type
+    }
+}
 
 public protocol RuntimeSwiftDecodable: ContextDecodable where
     DecodingContext == RuntimeSwiftCodableContext
@@ -26,20 +55,27 @@ public protocol RuntimeSwiftEncodable: ContextEncodable where
 public typealias RuntimeSwiftCodable = RuntimeSwiftDecodable & RuntimeSwiftEncodable
 
 public protocol RuntimeDynamicSwiftDecodable: ContextDecodable where
-    DecodingContext == RuntimeDynamicSwiftCodableContext
+    DecodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
-    init(from decoder: Decoder, `as` type: RuntimeTypeId, runtime: Runtime) throws
+    init(from decoder: Decoder, `as` type: RuntimeType.Id, runtime: Runtime) throws
 }
 
 public protocol RuntimeDynamicSwiftEncodable: ContextEncodable where
-    EncodingContext == RuntimeDynamicSwiftCodableContext
+    EncodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
-    func encode(to encoder: Encoder, `as` type: RuntimeTypeId, runtime: any Runtime) throws
+    func encode(to encoder: Encoder, `as` type: RuntimeType.Id, runtime: any Runtime) throws
 }
+
+public typealias RuntimeDynamicSwiftCodable = RuntimeDynamicSwiftDecodable & RuntimeDynamicSwiftEncodable
 
 public extension Swift.Decodable {
     @inlinable
     init(from decoder: Decoder, runtime: any Runtime) throws {
+        try self.init(from: decoder)
+    }
+    
+    @inlinable
+    init(from decoder: Decoder, `as` type: RuntimeType.Id, runtime: Runtime) throws {
         try self.init(from: decoder)
     }
 }
@@ -47,18 +83,23 @@ public extension Swift.Decodable {
 public extension Swift.Encodable {
     @inlinable
     func encode(to encoder: Encoder, runtime: any Runtime) throws {
-        try self.encode(to: encoder)
+        try encode(to: encoder)
+    }
+    
+    @inlinable
+    func encode(to encoder: Encoder, `as` type: RuntimeType.Id, runtime: any Runtime) throws {
+        try encode(to: encoder, runtime: runtime)
     }
 }
 
 public extension RuntimeSwiftDecodable {
     @inlinable
     init(from decoder: Decoder, context: DecodingContext) throws {
-        try self.init(from: decoder, runtime: context)
+        try self.init(from: decoder, runtime: context.runtime)
     }
     
     @inlinable
-    init(from decoder: Decoder, `as` type: RuntimeTypeId, runtime: Runtime) throws {
+    init(from decoder: Decoder, `as` type: RuntimeType.Id, runtime: Runtime) throws {
         try self.init(from: decoder, runtime: runtime)
     }
 }
@@ -66,24 +107,28 @@ public extension RuntimeSwiftDecodable {
 public extension RuntimeSwiftEncodable {
     @inlinable
     func encode(to encoder: Encoder, context: EncodingContext) throws {
-        try encode(to: encoder, runtime: context)
+        try encode(to: encoder, runtime: context.runtime)
     }
     
     @inlinable
-    func encode(to encoder: Encoder, `as` type: RuntimeTypeId, runtime: any Runtime) throws {
+    func encode(to encoder: Encoder, `as` type: RuntimeType.Id, runtime: any Runtime) throws {
         try encode(to: encoder, runtime: runtime)
+    }
+}
+
+public extension RuntimeDynamicSwiftDecodable where
+    DecodingContext == RuntimeDynamicSwiftCodableContext
+{
+    @inlinable
+    init(from decoder: Decoder, context: DecodingContext) throws {
+        try self.init(from: decoder, runtime: context.runtime, id: context.type)
     }
 }
 
 public extension RuntimeDynamicSwiftDecodable {
     @inlinable
-    init(from decoder: Decoder, context: DecodingContext) throws {
-        try self.init(from: decoder, runtime: context.runtime, where: context.type)
-    }
-    
-    @inlinable
     init(from decoder: Decoder, runtime: any Runtime,
-         where id: @escaping(Runtime) throws -> RuntimeTypeId) throws
+         id: @escaping RuntimeType.LazyId) throws
     {
         switch Self.self {
         case let sself as Swift.Decodable.Type:
@@ -95,15 +140,19 @@ public extension RuntimeDynamicSwiftDecodable {
     }
 }
 
-public extension RuntimeDynamicSwiftEncodable {
+public extension RuntimeDynamicSwiftEncodable where
+    EncodingContext == RuntimeDynamicSwiftCodableContext
+{
     @inlinable
     func encode(to encoder: Encoder, context: EncodingContext) throws {
-        try encode(to: encoder, runtime: context.runtime, where: context.type)
+        try encode(to: encoder, runtime: context.runtime, id: context.type)
     }
-    
+}
+
+public extension RuntimeDynamicSwiftEncodable {
     @inlinable
     func encode(to encoder: Encoder, runtime: any Runtime,
-                where id: @escaping(Runtime) throws -> RuntimeTypeId) throws
+                id: @escaping RuntimeType.LazyId) throws
     {
         switch self {
         case let sself as Swift.Encodable: try sself.encode(to: encoder)

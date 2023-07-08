@@ -9,16 +9,18 @@ import Foundation
 import ContextCodable
 import ScaleCodec
 
-extension Value: ContextDecodable where C == RuntimeTypeId {}
+extension Value: ContextDecodable where C == RuntimeType.Id {}
 
-extension Value: RuntimeDynamicSwiftDecodable where C == RuntimeTypeId {
-    public init(from decoder: Swift.Decoder, as type: RuntimeTypeId, runtime: Runtime) throws {
+extension Value: RuntimeDynamicSwiftDecodable where C == RuntimeType.Id {
+    public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
+    
+    public init(from decoder: Swift.Decoder, as type: RuntimeType.Id, runtime: Runtime) throws {
         var value = ValueDecodingContainer(decoder)
         try self.init(from: &value, as: type, runtime: runtime)
     }
     
     public init(from container: inout ValueDecodingContainer,
-                `as` type: RuntimeTypeId,
+                `as` type: RuntimeType.Id,
                 runtime: Runtime) throws
     {
         guard let typeInfo = runtime.resolve(type: type) else {
@@ -30,7 +32,7 @@ extension Value: RuntimeDynamicSwiftDecodable where C == RuntimeTypeId {
         case .sequence(of: let vType):
             self = try Self._decodeSequence(from: &container, type: type, valueType: vType, runtime: runtime)
         case .variant(variants: let vars):
-            self = try Self._decodeVariant(from: &container, path: typeInfo.pathBasedName,
+            self = try Self._decodeVariant(from: &container, name: typeInfo.name,
                                            type: type, variants: vars, runtime: runtime)
         case .array(count: let count, of: let vType):
             self = try Self._decodeArray(from: &container, type: type, count: count,
@@ -147,10 +149,10 @@ public enum ValueDecodingContainer {
     }
 }
 
-private extension Value where C == RuntimeTypeId {
+private extension Value where C == RuntimeType.Id {
     static func _decodeComposite(
-        from: inout ValueDecodingContainer, type: RuntimeTypeId,
-        fields: [RuntimeTypeField], runtime: Runtime
+        from: inout ValueDecodingContainer, type: RuntimeType.Id,
+        fields: [RuntimeType.Field], runtime: Runtime
     ) throws -> Self {
         guard fields.count > 0 else {
             guard try from.decodeNil() else {
@@ -178,8 +180,8 @@ private extension Value where C == RuntimeTypeId {
     }
     
     static func _decodeSequence(
-        from: inout ValueDecodingContainer, type: RuntimeTypeId,
-        valueType: RuntimeTypeId, runtime: Runtime
+        from: inout ValueDecodingContainer, type: RuntimeType.Id,
+        valueType: RuntimeType.Id, runtime: Runtime
     ) throws -> Self {
         guard let vTypeInfo = runtime.resolve(type: valueType) else {
             throw DecodingError.typeNotFound(valueType)
@@ -208,10 +210,10 @@ private extension Value where C == RuntimeTypeId {
     }
     
     static func _decodeVariant(
-        from: inout ValueDecodingContainer, path: String?, type: RuntimeTypeId,
-        variants: [RuntimeTypeVariantItem], runtime: Runtime
+        from: inout ValueDecodingContainer, name: String?, type: RuntimeType.Id,
+        variants: [RuntimeType.VariantItem], runtime: Runtime
     ) throws -> Self {
-        guard path != "Option" else { // Option<T> can be null or value
+        guard name != "Option" else { // Option<T> can be null or value
             let someType = variants.first(where: { $0.name == "Some" })!.fields[0].type
             if try from.decodeNil() {
                 return Value(value: .variant(.sequence(name: "None", values: [])), context: type)
@@ -223,7 +225,7 @@ private extension Value where C == RuntimeTypeId {
             return try runtime.decodeValue(from: data, id: type)
         } else {
             var container = try from.nestedKeyedContainer()
-            var variant: RuntimeTypeVariantItem
+            var variant: RuntimeType.VariantItem
             if try container.contains(key: "name") {
                 try container.next(key: "name")
                 let name = try container.decode(String.self)
@@ -260,8 +262,8 @@ private extension Value where C == RuntimeTypeId {
     }
     
     static func _decodeArray(
-        from: inout ValueDecodingContainer, type: RuntimeTypeId,
-        count: UInt32, valueType: RuntimeTypeId, runtime: Runtime
+        from: inout ValueDecodingContainer, type: RuntimeType.Id,
+        count: UInt32, valueType: RuntimeType.Id, runtime: Runtime
     ) throws -> Self {
         guard let vTypeInfo = runtime.resolve(type: valueType) else {
             throw DecodingError.typeNotFound(valueType)
@@ -297,7 +299,8 @@ private extension Value where C == RuntimeTypeId {
     }
     
     static func _decodeTuple(
-        from: inout ValueDecodingContainer, type: RuntimeTypeId, fields: [RuntimeTypeId], runtime: Runtime
+        from: inout ValueDecodingContainer, type: RuntimeType.Id,
+        fields: [RuntimeType.Id], runtime: Runtime
     ) throws -> Self {
         // Should we check 1 element tuples as value?
         if let data = try? from.decode(Data.self) { // SCALE serialized
@@ -310,7 +313,8 @@ private extension Value where C == RuntimeTypeId {
     }
     
     static func _decodePrimitive(
-        from: inout ValueDecodingContainer, type: RuntimeTypeId, prim: RuntimeTypePrimitive, runtime: Runtime
+        from: inout ValueDecodingContainer, type: RuntimeType.Id,
+        prim: RuntimeType.Primitive, runtime: Runtime
     ) throws -> Self {
         switch prim {
         case .bool: return Value(value: .primitive(.bool(try from.decode(Bool.self))), context: type)
@@ -338,7 +342,8 @@ private extension Value where C == RuntimeTypeId {
     }
     
     static func _decodeCompact(
-        from: inout ValueDecodingContainer, type: RuntimeTypeId, of: RuntimeTypeId, runtime: Runtime
+        from: inout ValueDecodingContainer, type: RuntimeType.Id,
+        of: RuntimeType.Id, runtime: Runtime
     ) throws -> Self {
         var innerTypeId = of
         var value: Self? = nil
@@ -371,8 +376,8 @@ private extension Value where C == RuntimeTypeId {
     }
     
     static func _decodeBitSequence(
-        from: inout ValueDecodingContainer, type: RuntimeTypeId,
-        store: RuntimeTypeId, order: RuntimeTypeId, runtime: Runtime
+        from: inout ValueDecodingContainer, type: RuntimeType.Id,
+        store: RuntimeType.Id, order: RuntimeType.Id, runtime: Runtime
     ) throws -> Self {
         if let data = try? from.decode(Data.self) { // SCALE serialized
             return try runtime.decodeValue(from: data, id: type)

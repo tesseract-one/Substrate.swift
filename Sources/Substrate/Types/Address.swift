@@ -10,17 +10,29 @@ import Foundation
 import Foundation
 import ScaleCodec
 
-public protocol Address: RuntimeCodable,
-                         RuntimeDynamicDecodable,
-                         RuntimeDynamicEncodable,
-                         ValueRepresentable
-{
+public protocol Address<TAccountId>: RuntimeDynamicCodable, ValueRepresentable {
     associatedtype TAccountId: AccountId
     
+    init(accountId: TAccountId,
+         runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+}
+
+public protocol StaticAddress<TAccountId>: Address, RuntimeCodable where TAccountId: StaticAccountId {
     init(accountId: TAccountId, runtime: any Runtime) throws
 }
 
-public enum MultiAddress<Id: AccountId & Hashable,
+public extension StaticAddress {
+    @inlinable
+    init(accountId: TAccountId,
+         runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    {
+        try self.init(accountId: accountId, runtime: runtime)
+    }
+}
+
+public enum MultiAddress<Id: StaticAccountId & Hashable,
                          Index: CompactCodable & Hashable & ValueRepresentable>: Equatable, Hashable {
     case id(Id)
     case index(Index)
@@ -56,7 +68,7 @@ extension MultiAddress: ValueRepresentable {
     }
 }
 
-extension MultiAddress: Address {
+extension MultiAddress: StaticAddress {
     public typealias TAccountId = Id
     
     public init(accountId: Id, runtime: Runtime) throws {

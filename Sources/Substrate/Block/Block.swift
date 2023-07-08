@@ -34,7 +34,7 @@ public protocol SomeBlockHeader: RuntimeDynamicSwiftDecodable {
 public protocol StaticBlockHeader: SomeBlockHeader {}
 
 public protocol SomeChainBlock<TBlock>: ContextDecodable where
-    DecodingContext == (runtime: Runtime, blockType: (Runtime) throws -> RuntimeTypeId)
+    DecodingContext == (runtime: Runtime, blockType: RuntimeType.LazyId)
 {
     associatedtype TBlock: SomeBlock
     
@@ -52,14 +52,17 @@ public struct ChainBlock<B: SomeBlock, J: Swift.Decodable>: SomeChainBlock {
     
     public init(from decoder: Swift.Decoder, context: DecodingContext) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        block = try container.decode(B.self, forKey: .block,
-                                     context: (context.runtime, context.blockType))
+        block = try container.decode(
+            B.self, forKey: .block,
+            context: B.DecodingContext(runtime: context.runtime,
+                                       type: context.blockType)
+        )
         justifications = try container.decode(J.self, forKey: .justifications)
     }
 }
 
 public extension Array where Element: OpaqueExtrinsic {
-    func parsed() throws -> [AnyExtrinsic<AnyCall<RuntimeTypeId>, Element.TManager>] {
+    func parsed() throws -> [AnyExtrinsic<AnyCall<RuntimeType.Id>, Element.TManager>] {
         try map { try $0.decode() }
     }
 }

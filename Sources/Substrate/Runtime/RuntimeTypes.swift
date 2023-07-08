@@ -6,30 +6,58 @@
 //
 
 import Foundation
+import ScaleCodec
+
+public extension RuntimeType {
+    typealias LazyId = (Runtime) throws -> Id
+    
+    struct IdNeverCalledError: Error, CustomStringConvertible {
+        public var description: String { "Asked for IdNever" }
+        public init() {}
+    }
+    
+    static func IdNever(_ r: Runtime) throws -> RuntimeType.Id { throw IdNeverCalledError() }
+}
 
 public protocol RuntimeTypes {
-    var blockHeader: RuntimeTypeInfo { get throws }
-    var address: RuntimeTypeInfo { get throws }
-    var signature: RuntimeTypeInfo { get throws }
-    var call: RuntimeTypeInfo { get throws }
-    var event: RuntimeTypeInfo { get throws }
-    var extrinsicExtra: RuntimeTypeInfo { get throws }
-    var dispatchInfo: RuntimeTypeInfo { get throws }
-    var dispatchError: RuntimeTypeInfo { get throws }
-    var feeDetails: RuntimeTypeInfo { get throws }
-    var transactionValidityError: RuntimeTypeInfo { get throws }
+    var block: RuntimeType.Info { get throws }
+    var blockHeader: RuntimeType.Info { get throws }
+    var account: RuntimeType.Info { get throws }
+    var address: RuntimeType.Info { get throws }
+    var signature: RuntimeType.Info { get throws }
+    var call: RuntimeType.Info { get throws }
+    var event: RuntimeType.Info { get throws }
+    var extrinsicExtra: RuntimeType.Info { get throws }
+    var dispatchInfo: RuntimeType.Info { get throws }
+    var dispatchError: RuntimeType.Info { get throws }
+    var feeDetails: RuntimeType.Info { get throws }
+    var transactionValidityError: RuntimeType.Info { get throws }
+}
+
+public extension Runtime {
+    @inlinable
+    func decode<E: Event>(event: E.Type, from data: Data) throws -> E {
+        try decode(from: data) { try $0.types.event.id }
+    }
+    
+    @inlinable
+    func decode<E: Event, D: ScaleCodec.Decoder>(
+        event: E.Type, from decoder: inout D
+    ) throws -> E {
+        try decode(from: &decoder) { try $0.types.event.id }
+    }
 }
 
 public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
     private struct State {
-        var blockHeader: Result<RuntimeTypeInfo, Error>?
-        var extrinsic: Result<(call: RuntimeTypeInfo, addr: RuntimeTypeInfo,
-                               signature: RuntimeTypeInfo, extra: RuntimeTypeInfo), Error>?
-        var event: Result<RuntimeTypeInfo, Error>?
-        var dispatchInfo: Result<RuntimeTypeInfo, Error>?
-        var dispatchError: Result<RuntimeTypeInfo, Error>?
-        var feeDetails: Result<RuntimeTypeInfo, Error>?
-        var transactionValidityError: Result<RuntimeTypeInfo, Error>?
+        var blockHeader: Result<RuntimeType.Info, Error>?
+        var extrinsic: Result<(call: RuntimeType.Info, addr: RuntimeType.Info,
+                               signature: RuntimeType.Info, extra: RuntimeType.Info), Error>?
+        var event: Result<RuntimeType.Info, Error>?
+        var dispatchInfo: Result<RuntimeType.Info, Error>?
+        var dispatchError: Result<RuntimeType.Info, Error>?
+        var feeDetails: Result<RuntimeType.Info, Error>?
+        var transactionValidityError: Result<RuntimeType.Info, Error>?
     }
     
     private var _state: Synced<State>
@@ -42,7 +70,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         self._metadata = metadata
     }
     
-    public var blockHeader: RuntimeTypeInfo { get throws {
+    public var blockHeader: RuntimeType.Info { get throws {
         try _state.sync { state in
             if let res = state.blockHeader { return try res.get() }
             state.blockHeader = Result { try self._config.blockHeaderType(metadata: self._metadata) }
@@ -50,12 +78,12 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    public var call: RuntimeTypeInfo { get throws { try _extrinsic.call }}
-    public var address: RuntimeTypeInfo { get throws { try _extrinsic.addr } }
-    public var signature: RuntimeTypeInfo { get throws { try _extrinsic.signature }}
-    public var extrinsicExtra: RuntimeTypeInfo { get throws { try _extrinsic.extra }}
+    public var call: RuntimeType.Info { get throws { try _extrinsic.call }}
+    public var address: RuntimeType.Info { get throws { try _extrinsic.addr } }
+    public var signature: RuntimeType.Info { get throws { try _extrinsic.signature }}
+    public var extrinsicExtra: RuntimeType.Info { get throws { try _extrinsic.extra }}
     
-    public var dispatchInfo: RuntimeTypeInfo { get throws {
+    public var dispatchInfo: RuntimeType.Info { get throws {
         try _state.sync { state in
             if let res = state.dispatchInfo { return try res.get() }
             state.dispatchInfo = Result { try self._config.dispatchInfoType(metadata: self._metadata) }
@@ -63,7 +91,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    public var dispatchError: RuntimeTypeInfo { get throws {
+    public var dispatchError: RuntimeType.Info { get throws {
         try _state.sync { state in
             if let res = state.dispatchError { return try res.get() }
             state.dispatchError = Result { try self._config.dispatchErrorType(metadata: self._metadata) }
@@ -71,7 +99,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    public var feeDetails: RuntimeTypeInfo { get throws {
+    public var feeDetails: RuntimeType.Info { get throws {
         try _state.sync { state in
             if let res = state.feeDetails { return try res.get() }
             state.feeDetails = Result { try self._config.feeDetailsType(metadata: self._metadata) }
@@ -79,7 +107,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    public var transactionValidityError: RuntimeTypeInfo { get throws {
+    public var transactionValidityError: RuntimeType.Info { get throws {
         try _state.sync { state in
             if let res = state.transactionValidityError { return try res.get() }
             state.transactionValidityError = Result {
@@ -89,7 +117,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    public var event: RuntimeTypeInfo { get throws {
+    public var event: RuntimeType.Info { get throws {
         try _state.sync { state in
             if let res = state.event { return try res.get() }
             if let event = _metadata.enums?.eventType {
@@ -102,8 +130,8 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
     }}
     
     
-    private var _extrinsic: (call: RuntimeTypeInfo, addr: RuntimeTypeInfo,
-                             signature: RuntimeTypeInfo, extra: RuntimeTypeInfo)
+    private var _extrinsic: (call: RuntimeType.Info, addr: RuntimeType.Info,
+                             signature: RuntimeType.Info, extra: RuntimeType.Info)
     { get throws {
         try _state.sync { state in
             if let res = state.extrinsic { return try res.get() }

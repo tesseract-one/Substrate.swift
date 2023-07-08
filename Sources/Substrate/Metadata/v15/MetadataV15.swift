@@ -13,20 +13,18 @@ public class MetadataV15: Metadata {
     public var pallets: [String] { Array(palletsByName.keys) }
     public var apis: [String] { Array(apisByName.keys) }
     
-    public let types: [RuntimeTypeId: RuntimeType]
-    public let typesByPath: [String: RuntimeTypeInfo] // joined by "."
+    public let types: [RuntimeType.Id: RuntimeType]
+    public let typesByPath: [String: RuntimeType.Info] // joined by "."
     public let palletsByIndex: [UInt8: PalletMetadataV15]
     public let palletsByName: [String: PalletMetadataV15]
     public let apisByName: [String: RuntimeApiMetadataV15]!
     
     public init(runtime: RuntimeMetadataV15) throws {
-        let types = Dictionary<RuntimeTypeId, RuntimeType>(
+        let types = Dictionary<RuntimeType.Id, RuntimeType>(
             uniqueKeysWithValues: runtime.types.map { ($0.id, $0.type) }
         )
         self.types = types
-        let byPathPairs = runtime.types.compactMap {
-            $0.type.path.count > 0 ? ($0.type.path.joined(separator: "."), $0) : nil
-        }
+        let byPathPairs = runtime.types.compactMap { i in i.type.name.map { ($0, i) } }
         self.typesByPath = Dictionary(byPathPairs) { (l, r) in l }
         self.extrinsic = ExtrinsicMetadataV14(runtime: runtime.extrinsic, types: types)
         let pallets = try runtime.pallets.map { try PalletMetadataV15(runtime: $0, types: types) }
@@ -40,15 +38,15 @@ public class MetadataV15: Metadata {
     }
     
     @inlinable
-    public func resolve(type id: RuntimeTypeId) -> RuntimeType? { types[id] }
+    public func resolve(type id: RuntimeType.Id) -> RuntimeType? { types[id] }
     
     @inlinable
-    public func resolve(type path: [String]) -> RuntimeTypeInfo? {
+    public func resolve(type path: [String]) -> RuntimeType.Info? {
         typesByPath[path.joined(separator: ".")]
     }
     
     @inlinable
-    public func search(type cb: @escaping ([String]) -> Bool) -> RuntimeTypeInfo? {
+    public func search(type cb: @escaping ([String]) -> Bool) -> RuntimeType.Info? {
         for type in typesByPath.values {
             if cb(type.type.path) {
                 return type
@@ -70,8 +68,8 @@ public class MetadataV15: Metadata {
 public class PalletMetadataV15: PalletMetadata {
     public let name: String
     public let index: UInt8
-    public let call: RuntimeTypeInfo?
-    public let event: RuntimeTypeInfo?
+    public let call: RuntimeType.Info?
+    public let event: RuntimeType.Info?
     
     public let callIdxByName: [String: UInt8]?
     public let callNameByIdx: [UInt8: String]?
@@ -89,11 +87,11 @@ public class PalletMetadataV15: PalletMetadata {
         Array(constantByName.keys)
     }
     
-    public init(runtime: RuntimePalletMetadataV15, types: [RuntimeTypeId: RuntimeType]) throws {
+    public init(runtime: RuntimePalletMetadataV15, types: [RuntimeType.Id: RuntimeType]) throws {
         self.name = runtime.name
         self.index = runtime.index
-        self.call = runtime.call.map { RuntimeTypeInfo(id: $0, type: types[$0]!) }
-        self.event = runtime.event.map { RuntimeTypeInfo(id: $0, type: types[$0]!) }
+        self.call = runtime.call.map { RuntimeType.Info(id: $0, type: types[$0]!) }
+        self.event = runtime.event.map { RuntimeType.Info(id: $0, type: types[$0]!) }
         let calls = self.call.flatMap { Self.variants(for: $0.type.definition) }
         self.callIdxByName = calls.map {
             Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0.index) })
@@ -139,7 +137,9 @@ public class PalletMetadataV15: PalletMetadata {
     @inlinable
     public func storage(name: String) -> StorageMetadata? { storageByName?[name] }
     
-    private static func variants(for def: RuntimeTypeDefinition) -> [RuntimeTypeVariantItem]? {
+    private static func variants(
+        for def: RuntimeType.Definition
+    ) -> [RuntimeType.VariantItem]? {
         switch def {
         case .variant(variants: let vars): return vars
         default: return nil
@@ -151,22 +151,25 @@ public struct RuntimeApiMetadataV15: RuntimeApiMetadata {
     public let name: String
     public var methods: [String] { Array(methodsByName.keys) }
     
-    public let methodsByName: [String: (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)]
+    public let methodsByName:
+        [String: (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)]
     
-    public init(runtime: RuntimeRuntimeApiMetadataV15, types: [RuntimeTypeId: RuntimeType]) {
+    public init(runtime: RuntimeRuntimeApiMetadataV15, types: [RuntimeType.Id: RuntimeType]) {
         self.name = runtime.name
         self.methodsByName = Dictionary(
             uniqueKeysWithValues: runtime.methods.map { method in
                 let params = method.inputs.map {
-                    ($0.name, RuntimeTypeInfo(id: $0.type, type: types[$0.type]!))
+                    ($0.name, RuntimeType.Info(id: $0.type, type: types[$0.type]!))
                 }
-                let result = RuntimeTypeInfo(id: method.output, type: types[method.output]!)
+                let result = RuntimeType.Info(id: method.output, type: types[method.output]!)
                 return (method.name, (params, result))
             }
         )
     }
     
-    public func resolve(method name: String) -> (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)? {
+    public func resolve(
+        method name: String
+    ) -> (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)? {
         methodsByName[name]
     }
 }

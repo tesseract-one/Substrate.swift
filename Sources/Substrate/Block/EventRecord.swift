@@ -48,11 +48,11 @@ public struct EventRecord<H: Hash>: SomeEventRecord, CustomStringConvertible {
     }
     
     public var any: AnyEvent { get throws {
-        try _runtime.decode(from: data)
+        try _runtime.decode(event: AnyEvent.self, from: data)
     } }
     
     public func typed<E: StaticEvent>(_ type: E.Type) throws -> E {
-        try _runtime.decode(from: data)
+        try _runtime.decode(event: E.self, from: data)
     }
     
     public var description: String {

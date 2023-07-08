@@ -8,10 +8,13 @@
 import Foundation
 import ScaleCodec
 
-public protocol AccountId: RuntimeCodable, Swift.Codable, ValueRepresentable {
-    init(from string: String, runtime: any Runtime) throws
-    init(pub: any PublicKey, runtime: any Runtime) throws
-    init(raw: Data, runtime: any Runtime) throws
+public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable, ValueRepresentable {
+    init(from string: String, runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    init(pub: any PublicKey, runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    init(raw: Data, runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
     
     var raw: Data { get }
     var string: String { get }
@@ -19,33 +22,18 @@ public protocol AccountId: RuntimeCodable, Swift.Codable, ValueRepresentable {
 }
 
 public extension AccountId {
-    init(from string: String, runtime: any Runtime) throws {
+    init(from string: String, runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    {
         let (raw, format) = try SS58.decode(string: string)
         guard format == runtime.addressFormat else {
             throw SS58.Error.formatNotAllowed
         }
-        try self.init(raw: raw, runtime: runtime)
-    }
-    
-    init(from decoder: Swift.Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        if let u8arr = try? container.decode([UInt8].self) {
-            try self.init(raw: Data(u8arr), runtime: decoder.runtime)
-        } else if let data = try? container.decode(Data.self) {
-            try self.init(raw: data, runtime: decoder.runtime)
-        } else {
-            let string = try container.decode(String.self)
-            try self.init(from: string, runtime: decoder.runtime)
-        }
+        try self.init(raw: raw, runtime: runtime, id: id)
     }
     
     var string: String {
         SS58.encode(data: raw, format: runtime.addressFormat)
-    }
-    
-    func encode(to encoder: Swift.Encoder) throws {
-        var container = encoder.singleValueContainer()
-        try container.encode(self.string)
     }
     
     func address<A: Address>() throws -> A where A.TAccountId == Self {
@@ -53,8 +41,12 @@ public extension AccountId {
     }
 }
 
-public protocol StaticAccountId: AccountId {
+public protocol StaticAccountId: AccountId, RuntimeCodable, RuntimeSwiftCodable {
     init(checked raw: Data, runtime: any Runtime) throws
+    
+    init(from string: String, runtime: any Runtime) throws
+    init(pub: any PublicKey, runtime: any Runtime) throws
+    init(raw: Data, runtime: any Runtime) throws
     
     static var byteCount: Int { get }
 }
@@ -67,6 +59,28 @@ public extension StaticAccountId {
         try self.init(checked: raw, runtime: runtime)
     }
     
+    init(from string: String, runtime: any Runtime) throws {
+        try self.init(raw: raw, runtime: runtime, id: RuntimeType.IdNever)
+    }
+    
+    init(from string: String, runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    {
+        try self.init(from: string, runtime: runtime)
+    }
+    
+    init(pub: any PublicKey, runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    {
+        try self.init(pub: pub, runtime: runtime)
+    }
+    
+    init(raw: Data, runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    {
+        try self.init(raw: raw, runtime: runtime)
+    }
+    
     init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws {
         let raw = try decoder.decode(.fixed(UInt(Self.byteCount)))
         try self.init(checked: raw, runtime: runtime)
@@ -75,9 +89,29 @@ public extension StaticAccountId {
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: any Runtime) throws {
         try encoder.encode(raw, .fixed(UInt(Self.byteCount)))
     }
+    
+    init(from decoder: Swift.Decoder, runtime: Runtime) throws {
+        let container = try decoder.singleValueContainer()
+        if let u8arr = try? container.decode([UInt8].self) {
+            try self.init(raw: Data(u8arr), runtime: runtime)
+        } else if let data = try? container.decode(Data.self) {
+            try self.init(raw: data, runtime: runtime)
+        } else {
+            let string = try container.decode(String.self)
+            try self.init(from: string, runtime: runtime)
+        }
+    }
+    
+    func encode(to encoder: Swift.Encoder, runtime: Runtime) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(self.string)
+    }
 }
 
 public struct AccountId32: StaticAccountId, Hashable, Equatable {
+    public typealias DecodingContext = RuntimeSwiftCodableContext
+    public typealias EncodingContext = RuntimeSwiftCodableContext
+    
     public let raw: Data
     public let runtime: any Runtime
     

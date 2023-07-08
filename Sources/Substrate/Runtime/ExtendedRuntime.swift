@@ -69,7 +69,23 @@ open class ExtendedRuntime<RC: Config>: Runtime {
 public extension ExtendedRuntime {
     @inlinable
     func account(ss58: String) throws -> RC.TAccountId {
-        try RC.TAccountId(from: ss58, runtime: self)
+        try RC.TAccountId(from: ss58, runtime: self) { try $0.types.account.id }
+    }
+    
+    @inlinable
+    func account(pub: any PublicKey) throws -> RC.TAccountId {
+        try RC.TAccountId(pub: pub, runtime: self) { try $0.types.account.id }
+    }
+    
+    @inlinable
+    func account(raw: Data) throws -> RC.TAccountId {
+        try RC.TAccountId(raw: raw, runtime: self) { try $0.types.account.id }
+    }
+    
+    @inlinable
+    func address(account: RC.TAccountId) throws -> RC.TAddress {
+        
+        try account(ss58: ss58).address()
     }
     
     @inlinable
@@ -77,10 +93,7 @@ public extension ExtendedRuntime {
         try account(ss58: ss58).address()
     }
     
-    @inlinable
-    func account(pub: any PublicKey) throws -> RC.TAccountId {
-        try pub.account(runtime: self)
-    }
+    
     
     @inlinable
     func address(pub: any PublicKey) throws -> RC.TAddress {

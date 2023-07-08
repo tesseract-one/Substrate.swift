@@ -11,10 +11,10 @@ import ScaleCodec
 public struct RuntimePalletMetadataV15: ScaleCodec.Codable {
     public let name: String
     public let storage: Optional<RuntimePalletStorageMedatadaV14>
-    public let call: Optional<RuntimeTypeId>
-    public let event: Optional<RuntimeTypeId>
+    public let call: Optional<RuntimeType.Id>
+    public let event: Optional<RuntimeType.Id>
     public let constants: [RuntimePalletConstantMetadataV14]
-    public let error: Optional<RuntimeTypeId>
+    public let error: Optional<RuntimeType.Id>
     public let index: UInt8
     public let docs: [String]
     
@@ -43,13 +43,13 @@ public struct RuntimePalletMetadataV15: ScaleCodec.Codable {
 
 public struct RuntimeMetadataV15: ScaleCodec.Codable, RuntimeMetadata {
     public var version: UInt8 { 15 }
-    public let types: RuntimeTypeRegistry
+    public let types: RuntimeType.Registry
     public let pallets: [RuntimePalletMetadataV15]
     public let extrinsic: RuntimeExtrinsicMetadataV14
-    public let runtimeType: RuntimeTypeId
+    public let runtimeType: RuntimeType.Id
     public let apis: [RuntimeRuntimeApiMetadataV15]
 //    public let outerEnums: RuntimeMetadataOuterEnumsV15
-//    public let custom: Dictionary<String, (RuntimeTypeId, Data)>
+//    public let custom: Dictionary<String, (RuntimeType.Id, Data)>
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         types = try decoder.decode()
@@ -103,7 +103,7 @@ public struct RuntimeRuntimeApiMetadataV15: ScaleCodec.Codable {
 public struct RuntimeRuntimeApiMethodMetadataV15: ScaleCodec.Codable {
     public let name: String
     public let inputs: [RuntimeRuntimeApiMethodParamMetadataV15]
-    public let output: RuntimeTypeId
+    public let output: RuntimeType.Id
     public let docs: [String]
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
@@ -123,7 +123,7 @@ public struct RuntimeRuntimeApiMethodMetadataV15: ScaleCodec.Codable {
 
 public struct RuntimeRuntimeApiMethodParamMetadataV15: ScaleCodec.Codable {
     public let name: String
-    public let type: RuntimeTypeId
+    public let type: RuntimeType.Id
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         name = try decoder.decode()
@@ -138,9 +138,9 @@ public struct RuntimeRuntimeApiMethodParamMetadataV15: ScaleCodec.Codable {
 
 public struct RuntimeMetadataOuterEnumsV15: ScaleCodec.Codable {
     /// The type of the outer `RuntimeCall` enum.
-    public let callEnumType: RuntimeTypeId
+    public let callEnumType: RuntimeType.Id
     /// The type of the outer `RuntimeEvent` enum.
-    public let eventEnumType: RuntimeTypeId
+    public let eventEnumType: RuntimeType.Id
     /// The module error type of the
     /// [`DispatchError::Module`](https://docs.rs/sp-runtime/24.0.0/sp_runtime/enum.DispatchError.html#variant.Module) variant.
     ///
@@ -156,7 +156,7 @@ public struct RuntimeMetadataOuterEnumsV15: ScaleCodec.Codable {
     ///   chain. It provides just the information needed to decode `sp_runtime::DispatchError::Module`.
     /// - Decoding the 5 error bytes into this type will not always lead to all of the bytes being consumed;
     ///   many error types do not require all of the bytes to represent them fully.
-    public let moduleErrorEnumType: RuntimeTypeId
+    public let moduleErrorEnumType: RuntimeType.Id
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         callEnumType = try decoder.decode()

@@ -18,55 +18,57 @@ public protocol Runtime: AnyObject {
     func encoder() -> any ScaleCodec.Encoder
     func decoder(with data: Data) -> any ScaleCodec.Decoder
     
-    func resolve(type id: RuntimeTypeId) -> RuntimeType?
-    func resolve(type path: [String]) -> RuntimeTypeInfo?
+    func resolve(type id: RuntimeType.Id) -> RuntimeType?
+    func resolve(type path: [String]) -> RuntimeType.Info?
     func resolve(palletName index: UInt8) -> String?
     func resolve(palletIndex name: String) -> UInt8?
         
     // Calls
-    func resolve(callType pallet: UInt8) -> RuntimeTypeInfo?
-    func resolve(callType pallet: String) -> RuntimeTypeInfo?
+    func resolve(callType pallet: UInt8) -> RuntimeType.Info?
+    func resolve(callType pallet: String) -> RuntimeType.Info?
     func resolve(callName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(callIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
     
     // Runtime Calls
     func resolve(
         runtimeCall method: String, api: String
-    ) -> (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)?
+    ) -> (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)?
     
     // Events
-    func resolve(eventType pallet: UInt8) -> RuntimeTypeInfo?
-    func resolve(eventType pallet: String) -> RuntimeTypeInfo?
+    func resolve(eventType pallet: UInt8) -> RuntimeType.Info?
+    func resolve(eventType pallet: String) -> RuntimeType.Info?
     func resolve(eventName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(eventIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
     
     //Constants
-    func resolve(constant name: String, pallet: String) -> (value: Data, type: RuntimeTypeInfo)?
+    func resolve(
+        constant name: String, pallet: String
+    ) -> (value: Data, type: RuntimeType.Info)?
     
     // Storage
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(StorageHasher, RuntimeTypeId)], value: RuntimeTypeId, `default`: Data)?
+    ) -> (keys: [(StorageHasher, RuntimeType.Info)], value: RuntimeType.Info, `default`: Data)?
 }
 
 public extension Runtime {
     @inlinable
-    func resolve(type id: RuntimeTypeId) -> RuntimeType? {
+    func resolve(type id: RuntimeType.Id) -> RuntimeType? {
         metadata.resolve(type: id)
     }
     
     @inlinable
-    func resolve(type path: [String]) -> RuntimeTypeInfo? {
+    func resolve(type path: [String]) -> RuntimeType.Info? {
         metadata.resolve(type: path)
     }
     
     @inlinable
-    func resolve(callType pallet: UInt8) -> RuntimeTypeInfo? {
+    func resolve(callType pallet: UInt8) -> RuntimeType.Info? {
         metadata.resolve(pallet: pallet)?.call
     }
     
     @inlinable
-    func resolve(callType pallet: String) -> RuntimeTypeInfo? {
+    func resolve(callType pallet: String) -> RuntimeType.Info? {
         metadata.resolve(pallet: pallet)?.call
     }
     
@@ -87,17 +89,17 @@ public extension Runtime {
     @inlinable
     func resolve(
         runtimeCall method: String, api: String
-    ) -> (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)? {
+    ) -> (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)? {
         metadata.resolve(api: api)?.resolve(method: method)
     }
     
     @inlinable
-    func resolve(eventType pallet: UInt8) -> RuntimeTypeInfo? {
+    func resolve(eventType pallet: UInt8) -> RuntimeType.Info? {
         metadata.resolve(pallet: pallet)?.event
     }
     
     @inlinable
-    func resolve(eventType pallet: String) -> RuntimeTypeInfo? {
+    func resolve(eventType pallet: String) -> RuntimeType.Info? {
         metadata.resolve(pallet: pallet)?.event
     }
     
@@ -126,7 +128,9 @@ public extension Runtime {
     }
     
     @inlinable
-    func resolve(constant name: String, pallet: String) -> (value: Data, type: RuntimeTypeInfo)? {
+    func resolve(
+        constant name: String, pallet: String
+    ) -> (value: Data, type: RuntimeType.Info)? {
         guard let constant = metadata.resolve(pallet: pallet)?.constant(name: name) else {
             return nil
         }
@@ -136,10 +140,12 @@ public extension Runtime {
     @inlinable
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(StorageHasher, RuntimeTypeId)], value: RuntimeTypeId, `default`: Data)? {
+    ) -> (keys: [(StorageHasher, RuntimeType.Info)], value: RuntimeType.Info, `default`: Data)? {
         metadata.resolve(pallet: pallet)?.storage(name: name).flatMap {
             let (keys, value) = $0.types
-            return (keys.map { ($0.0, $0.1.id) }, value.id, $0.defaultValue)
+            return (keys.map { ($0.0, $0.1) }, value, $0.defaultValue)
         }
     }
 }
+
+

@@ -24,8 +24,8 @@ public struct DynamicConfig: Config {
     
     public typealias TExtrinsicEra = ExtrinsicEra
     public typealias TExtrinsicPayment = UInt256
-    public typealias TFeeDetails = Value<RuntimeTypeId>
-    public typealias TDispatchInfo = Value<RuntimeTypeId>
+    public typealias TFeeDetails = Value<RuntimeType.Id>
+    public typealias TDispatchInfo = Value<RuntimeType.Id>
     public typealias TDispatchError = AnyDispatchError
     public typealias TTransactionValidityError = AnyTransactionValidityError
     public typealias TExtrinsicFailureEvent = System.Events.ExtrinsicFailure<TDispatchError>
@@ -40,8 +40,8 @@ public struct DynamicConfig: Config {
     
     public enum Error: Swift.Error {
         case typeNotFound(name: String, selector: Set<String>)
-        case hashTypeNotFound(header: RuntimeTypeInfo)
-        case eventTypeNotFound(record: RuntimeTypeInfo)
+        case hashTypeNotFound(header: RuntimeType.Info)
+        case eventTypeNotFound(record: RuntimeType.Info)
         case extrinsicInfoNotFound
         case unknownHashName(String)
     }
@@ -93,7 +93,7 @@ public struct DynamicConfig: Config {
         return hasher
     }
     
-    public func blockHeaderType(metadata: Metadata) throws -> RuntimeTypeInfo {
+    public func blockHeaderType(metadata: Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: {headerSelector.isSubset(of: $0)}) else {
             throw Error.typeNotFound(name: "header", selector: headerSelector)
         }
@@ -102,12 +102,12 @@ public struct DynamicConfig: Config {
     
     public func extrinsicTypes(
         metadata: Metadata
-    ) throws -> (call: RuntimeTypeInfo, addr: RuntimeTypeInfo,
-                 signature: RuntimeTypeInfo, extra: RuntimeTypeInfo) {
-        var addressTypeId: RuntimeTypeId? = nil
-        var sigTypeId: RuntimeTypeId? = nil
-        var extraTypeId: RuntimeTypeId? = nil
-        var callTypeId: RuntimeTypeId? = nil
+    ) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
+                 signature: RuntimeType.Info, extra: RuntimeType.Info) {
+        var addressTypeId: RuntimeType.Id? = nil
+        var sigTypeId: RuntimeType.Id? = nil
+        var extraTypeId: RuntimeType.Id? = nil
+        var callTypeId: RuntimeType.Id? = nil
         for param in metadata.extrinsic.type.type.parameters {
             switch param.name.lowercased() {
             case "address": addressTypeId = param.type
@@ -128,41 +128,41 @@ public struct DynamicConfig: Config {
         {
             throw Error.extrinsicInfoNotFound
         }
-        return (call: RuntimeTypeInfo(id: callTypeId, type: callType),
-                addr: RuntimeTypeInfo(id: addressTypeId, type: addressType),
-                signature: RuntimeTypeInfo(id: sigTypeId, type: sigType),
-                extra: RuntimeTypeInfo(id: extraTypeId, type: extraType))
+        return (call: RuntimeType.Info(id: callTypeId, type: callType),
+                addr: RuntimeType.Info(id: addressTypeId, type: addressType),
+                signature: RuntimeType.Info(id: sigTypeId, type: sigType),
+                extra: RuntimeType.Info(id: extraTypeId, type: extraType))
     }
     
-    public func dispatchInfoType(metadata: any Metadata) throws -> RuntimeTypeInfo {
+    public func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: {dispatchInfoSelector.isSubset(of: $0)}) else {
             throw Error.typeNotFound(name: "dispatchInfo", selector: dispatchInfoSelector)
         }
         return type
     }
     
-    public func dispatchErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo {
+    public func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: {dispatchErrorSelector.isSubset(of: $0)}) else {
             throw Error.typeNotFound(name: "dispatchError", selector: dispatchErrorSelector)
         }
         return type
     }
     
-    public func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeTypeInfo {
+    public func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: {transactionValidityErrorSelector.isSubset(of: $0)}) else {
             throw Error.typeNotFound(name: "transactionValidityError", selector: transactionValidityErrorSelector)
         }
         return type
     }
     
-    public func feeDetailsType(metadata: any Metadata) throws -> RuntimeTypeInfo {
+    public func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: {feeDetailsSelector.isSubset(of: $0)}) else {
             throw Error.typeNotFound(name: "feeDetails", selector: feeDetailsSelector)
         }
         return type
     }
     
-    public func eventType(metadata: Metadata) throws -> RuntimeTypeInfo {
+    public func eventType(metadata: Metadata) throws -> RuntimeType.Info {
         guard let record = metadata.search(type: {eventRecordSelector.isSubset(of: $0)}) else {
             throw Error.typeNotFound(name: "eventRecord", selector: eventRecordSelector)
         }
@@ -172,7 +172,7 @@ public struct DynamicConfig: Config {
         })?.type else {
             throw Error.eventTypeNotFound(record: record)
         }
-        return RuntimeTypeInfo(id: field, type: metadata.resolve(type: field)!)
+        return RuntimeType.Info(id: field, type: metadata.resolve(type: field)!)
     }
     
     public static let allExtensions: [DynamicExtrinsicExtension] = [
@@ -319,7 +319,8 @@ public extension DynamicConfig {
                 public let error: Err
                 
                 public init<D: ScaleCodec.Decoder>(paramsFrom decoder: inout D, runtime: Runtime) throws {
-                    self.error = try Err(from: &decoder, runtime: runtime)
+                    fatalError()
+                    //self.error = try Err(from: &decoder, runtime: runtime)
                 }
             }
         }

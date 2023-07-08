@@ -8,12 +8,12 @@
 import Foundation
 import ScaleCodec
 
-public protocol Event: RuntimeDecodable {
+public protocol Event: RuntimeDynamicDecodable {
     var pallet: String { get }
     var name: String { get }
 }
 
-public protocol StaticEvent: Event {
+public protocol StaticEvent: Event, RuntimeDecodable {
     static var pallet: String { get }
     static var name: String { get }
     
@@ -42,16 +42,19 @@ public struct AnyEvent: Event, CustomStringConvertible {
     public let pallet: String
     public let name: String
     
-    public let params: Value<RuntimeTypeId>
+    public let params: Value<RuntimeType.Id>
     
-    public init(name: String, pallet: String, params: Value<RuntimeTypeId>) {
+    public init(name: String, pallet: String, params: Value<RuntimeType.Id>) {
         self.pallet = pallet
         self.name = name
         self.params = params
     }
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
-        var value = try Value(from: &decoder, as: runtime.types.event.id, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
+                                       as type: RuntimeType.Id,
+                                       runtime: Runtime) throws
+    {
+        var value = try Value(from: &decoder, as: type, runtime: runtime)
         let pallet: String
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
@@ -100,6 +103,6 @@ public struct AnyEvent: Event, CustomStringConvertible {
 public enum EventDecodingError: Error {
     case eventNotFound(index: UInt8, pallet: UInt8)
     case foundWrongEvent(found: (name: String, pallet: String), expected: (name: String, pallet: String))
-    case decodedNonVariantValue(Value<RuntimeTypeId>)
-    case tooManyFieldsInVariant(variant: Value<RuntimeTypeId>, expected: Int)
+    case decodedNonVariantValue(Value<RuntimeType.Id>)
+    case tooManyFieldsInVariant(variant: Value<RuntimeType.Id>, expected: Int)
 }

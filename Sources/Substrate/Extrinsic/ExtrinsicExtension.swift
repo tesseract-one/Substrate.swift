@@ -242,18 +242,18 @@ public protocol DynamicExtrinsicExtension {
     var identifier: ExtrinsicExtensionId { get }
     
     func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
-    ) async throws -> Value<RuntimeTypeId>
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+    ) async throws -> Value<RuntimeType.Id>
     
     func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeTypeId
-    ) async throws -> Value<RuntimeTypeId>
+        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+    ) async throws -> Value<RuntimeType.Id>
 }
 
 public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvider {
     public typealias RC = RC
-    public typealias TExtra = Value<RuntimeTypeId>
-    public typealias TAdditionalSigned = [Value<RuntimeTypeId>]
+    public typealias TExtra = Value<RuntimeType.Id>
+    public typealias TAdditionalSigned = [Value<RuntimeType.Id>]
     public typealias TSigningParams = AnySigningParams<RC>
     
     private var _api: (any _RootApiWrapper<RC>)!
@@ -312,22 +312,22 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
 private protocol _RootApiWrapper<RC> {
     associatedtype RC: Config
     
-    var extraType: RuntimeTypeId { get }
-    var additionalSignedTypes: [RuntimeTypeId] { get }
+    var extraType: RuntimeType.Id { get }
+    var additionalSignedTypes: [RuntimeType.Id] { get }
     var runtime: any Runtime { get }
     
-    func extra(params: AnySigningParams<RC>) async throws -> Value<RuntimeTypeId>
-    func additionalSigned(params: AnySigningParams<RC>) async throws -> [Value<RuntimeTypeId>]
+    func extra(params: AnySigningParams<RC>) async throws -> Value<RuntimeType.Id>
+    func additionalSigned(params: AnySigningParams<RC>) async throws -> [Value<RuntimeType.Id>]
 }
 
 private struct _ApiWrapper<R: RootApi>: _RootApiWrapper {
     typealias RC = R.RC
     
     weak var api: R!
-    let extensions: [(ext: DynamicExtrinsicExtension, eId: RuntimeTypeId, aId: RuntimeTypeId)]
+    let extensions: [(ext: DynamicExtrinsicExtension, eId: RuntimeType.Id, aId: RuntimeType.Id)]
     
-    let extraType: RuntimeTypeId
-    let additionalSignedTypes: [RuntimeTypeId]
+    let extraType: RuntimeType.Id
+    let additionalSignedTypes: [RuntimeType.Id]
     @inlinable
     var runtime: any Runtime { api.runtime }
     
@@ -348,8 +348,8 @@ private struct _ApiWrapper<R: RootApi>: _RootApiWrapper {
         self.api = api
     }
     
-    func extra(params: AnySigningParams<R.RC>) async throws -> Value<RuntimeTypeId> {
-        var extra: [Value<RuntimeTypeId>] = []
+    func extra(params: AnySigningParams<R.RC>) async throws -> Value<RuntimeType.Id> {
+        var extra: [Value<RuntimeType.Id>] = []
         extra.reserveCapacity(extensions.count)
         for ext in extensions {
             try await extra.append(ext.ext.extra(api: api, params: params, id: ext.eId))
@@ -357,8 +357,8 @@ private struct _ApiWrapper<R: RootApi>: _RootApiWrapper {
         return Value(value: .sequence(extra), context: extraType)
     }
     
-    func additionalSigned(params: AnySigningParams<R.RC>) async throws -> [Value<RuntimeTypeId>] {
-        var extra: [Value<RuntimeTypeId>] = []
+    func additionalSigned(params: AnySigningParams<R.RC>) async throws -> [Value<RuntimeType.Id>] {
+        var extra: [Value<RuntimeType.Id>] = []
         extra.reserveCapacity(extensions.count)
         for ext in extensions {
             try await extra.append(ext.ext.additionalSigned(api: api, params: params, id: ext.aId))

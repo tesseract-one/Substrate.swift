@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public typealias AnyValueStorageKey = AnyStorageKey<Value<RuntimeTypeId>>
+public typealias AnyValueStorageKey = AnyStorageKey<Value<RuntimeType.Id>>
 
 public protocol DynamicStorageKey: IterableStorageKey where
     TParams == [Value<Void>],
@@ -62,7 +62,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
         var components = Array<Component>()
         components.reserveCapacity(params.count)
         for (key, val) in zip(keys, params) {
-            let data = try runtime.encode(value: val, as: key.1)
+            let data = try runtime.encode(value: val, as: key.1.id)
             components.append(.full(val, key.0.hasher.hash(data: data)))
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
@@ -80,7 +80,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
         let components: [Component] = try keys.map { (hash, tId) in
             let raw: Data = try decoder.decode(.fixed(UInt(hash.hasher.hashPartByteLength)))
             return hash.hasher.isConcat
-                ? try .full(runtime.decodeValue(from: &decoder, id: tId).removingContext(), raw)
+                ? try .full(runtime.decodeValue(from: &decoder, id: tId.id).removingContext(), raw)
                 : .hash(raw)
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
@@ -91,7 +91,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
             guard let (_, value, _) = runtime.resolve(storage: self.name, pallet: self.pallet) else {
                 throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
             }
-            return value
+            return value.id
         }
     }
     
@@ -102,7 +102,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
         guard let (_, vType, data) = runtime.resolve(storage: base.name, pallet: base.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
-        return try runtime.decode(from: data, id: vType)
+        return try runtime.decode(from: data, id: vType.id)
     }
     
     public static func validate(base: (name: String, pallet: String), runtime: Runtime) throws {
@@ -164,7 +164,7 @@ public extension AnyStorageKey {
             var components = Array<Component>()
             components.reserveCapacity(params.count)
             for (key, val) in zip(keys, params) {
-                let data = try runtime.encode(value: val, as: key.1)
+                let data = try runtime.encode(value: val, as: key.1.id)
                 components.append(.full(val, key.0.hasher.hash(data: data)))
             }
             self.init(name: name, pallet: pallet, path: components)
@@ -179,7 +179,7 @@ public extension AnyStorageKey {
                                                                      expected: keys.count - 1)
             }
             let key = keys[path.count]
-            let data = try runtime.encode(value: param, as: key.1)
+            let data = try runtime.encode(value: param, as: key.1.id)
             let newPath = path + [.full(param, key.0.hasher.hash(data: data))]
             return Self(name: name, pallet: pallet, path: newPath)
         }

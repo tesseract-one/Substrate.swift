@@ -15,7 +15,7 @@ extension Value {
             /// The composite value that is the wrong length.
             actual: [String: Value<C>],
             /// The type we're trying to encode it into.
-            expected: RuntimeTypeId,
+            expected: RuntimeType.Id,
             /// The length we're expecting our composite type to be to encode properly.
             expectedLen: Int
         )
@@ -23,7 +23,7 @@ extension Value {
             /// The composite value that is the wrong length.
             actual: [Value<C>],
             /// The type we're trying to encode it into.
-            expected: RuntimeTypeId,
+            expected: RuntimeType.Id,
             /// The length we're expecting our composite type to be to encode properly.
             expectedLen: Int
         )
@@ -32,31 +32,34 @@ extension Value {
             /// The variant type we're trying to encode.
             actual: Variant,
             /// The type we're trying to encode it into.
-            expected: RuntimeTypeId
+            expected: RuntimeType.Id
         )
         /// The variant or composite field we're trying to encode is not present in the type we're encoding into.
         case mapFieldIsMissing(
             /// The name of the composite field we can't find.
             missingFieldName: String,
             /// The type we're trying to encode this into.
-            expected: RuntimeTypeId
+            expected: RuntimeType.Id
         )
         /// The type we're trying to encode into cannot be found in the type registry provided.
-        case typeNotFound(RuntimeTypeId)
+        case typeNotFound(RuntimeType.Id)
         /// The [`Value`] type we're trying to encode is not the correct shape for the type we're trying to encode it into.
         case wrongShape(
             /// The value we're trying to encode.
             actual: Value<C>,
             /// The type we're trying to encode it into.
-            expected: RuntimeTypeId
+            expected: RuntimeType.Id
         )
         /// The type ID given is supposed to be compact encoded, but this is not possible to do automatically.
-        case cannotCompactEncode(RuntimeTypeId)
+        case cannotCompactEncode(RuntimeType.Id)
     }
 }
 
 extension Value: RuntimeDynamicEncodable {
-    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, as type: RuntimeTypeId, runtime: Runtime) throws {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
+                                              as type: RuntimeType.Id,
+                                              runtime: Runtime) throws
+    {
         guard let typeInfo = runtime.resolve(type: type) else {
             throw EncodingError.typeNotFound(type)
         }
@@ -82,14 +85,17 @@ extension Value: RuntimeDynamicEncodable {
 }
 
 extension Runtime {
-    public func encode<C, E: ScaleCodec.Encoder>(value: Value<C>, `as` type: RuntimeTypeId, in encoder: inout E) throws {
+    public func encode<C, E: ScaleCodec.Encoder>(value: Value<C>,
+                                                 `as` type: RuntimeType.Id,
+                                                 in encoder: inout E) throws
+    {
         try value.encode(in: &encoder, as: type, runtime: self)
     }
 }
 
 private extension Value {
     func _encodeComposite<E: ScaleCodec.Encoder>(
-        id: RuntimeTypeId, fields: [RuntimeTypeField], runtime: Runtime, in encoder: inout E
+        id: RuntimeType.Id, fields: [RuntimeType.Field], runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
         case .map(let mFields):
@@ -126,7 +132,7 @@ private extension Value {
     }
     
     func _encodeSequence<E: ScaleCodec.Encoder>(
-        id: RuntimeTypeId, valueType: RuntimeTypeId, runtime: Runtime, in encoder: inout E
+        id: RuntimeType.Id, valueType: RuntimeType.Id, runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
         case .sequence(let values):
@@ -152,7 +158,7 @@ private extension Value {
     }
     
     func _encodeArray<E: ScaleCodec.Encoder>(
-        id: RuntimeTypeId, valueType: RuntimeTypeId, count: UInt32,
+        id: RuntimeType.Id, valueType: RuntimeType.Id, count: UInt32,
         runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
@@ -187,7 +193,7 @@ private extension Value {
     }
     
     func _encodeTuple<E: ScaleCodec.Encoder>(
-        id: RuntimeTypeId, fields: [RuntimeTypeId], runtime: Runtime, in encoder: inout E
+        id: RuntimeType.Id, fields: [RuntimeType.Id], runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
         case .sequence(let values):
@@ -211,7 +217,7 @@ private extension Value {
     }
     
     func _encodeVariant<E: ScaleCodec.Encoder>(
-        id: RuntimeTypeId, variants: [RuntimeTypeVariantItem], runtime: Runtime, in encoder: inout E
+        id: RuntimeType.Id, variants: [RuntimeType.VariantItem], runtime: Runtime, in encoder: inout E
     ) throws {
         guard case .variant(let variant) = value else {
             throw EncodingError.wrongShape(actual: self, expected: id)
@@ -233,7 +239,7 @@ private extension Value {
     }
     
     func _encodeCompositeFields<E: ScaleCodec.Encoder>(
-        id: RuntimeTypeId, fields: [RuntimeTypeField], runtime: Runtime, in encoder: inout E
+        id: RuntimeType.Id, fields: [RuntimeType.Field], runtime: Runtime, in encoder: inout E
     ) throws {
         if let map = self.map {
             guard map.count == fields.count else {
@@ -267,7 +273,7 @@ private extension Value {
     }
     
     func _encodePrimitive<E: ScaleCodec.Encoder>(
-        id: RuntimeTypeId, type: RuntimeTypePrimitive, in encoder: inout E
+        id: RuntimeType.Id, type: RuntimeType.Primitive, in encoder: inout E
     ) throws {
         guard case .primitive(let primitive) = value else {
             throw EncodingError.wrongShape(actual: self, expected: id)
@@ -306,7 +312,7 @@ private extension Value {
     }
     
     func _pritimiveToInt<INT: FixedWidthInteger>(
-        primitive: Primitive, id: RuntimeTypeId, _ type: INT.Type
+        primitive: Primitive, id: RuntimeType.Id, _ type: INT.Type
     ) throws -> INT {
         switch primitive {
         case .i256(let int):
@@ -325,7 +331,7 @@ private extension Value {
     }
     
     func _encodeCompact<E: ScaleCodec.Encoder>(
-        id: RuntimeTypeId, type: RuntimeTypeId, runtime: Runtime, in encoder: inout E
+        id: RuntimeType.Id, type: RuntimeType.Id, runtime: Runtime, in encoder: inout E
     ) throws {
         // Resolve to a primitive type inside the compact encoded type (or fail if
         // we hit some type we wouldn't know how to work with).
@@ -418,7 +424,7 @@ private extension Value {
     }
     
     func _encodeBitSequence<E: ScaleCodec.Encoder>(
-        id: RuntimeTypeId, store: RuntimeTypeId, order: RuntimeTypeId,
+        id: RuntimeType.Id, store: RuntimeType.Id, order: RuntimeType.Id,
         runtime: Runtime, in encoder: inout E
     ) throws {
         let format = try BitSequence.Format(store: store, order: order, runtime: runtime)
@@ -438,7 +444,7 @@ private extension Value {
     }
 }
 
-extension Value: RuntimeEncodable where C == RuntimeTypeId {
+extension Value: RuntimeEncodable where C == RuntimeType.Id {
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
         try self.encode(in: &encoder, as: context, runtime: runtime)
     }

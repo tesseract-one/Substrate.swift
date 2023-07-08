@@ -119,7 +119,7 @@ extension AnyCall: CustomStringConvertible {
     }
 }
 
-extension AnyCall: RuntimeDecodable where C == RuntimeTypeId {
+extension AnyCall: RuntimeDecodable where C == RuntimeType.Id {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         var value = try Value(from: &decoder, as: runtime.types.call.id, runtime: runtime)
         let pallet: String
@@ -156,6 +156,6 @@ public enum CallCodingError: Error {
     case callNotFound(index: UInt8, pallet: UInt8)
     case callNotFound(name: String, pallet: String)
     case foundWrongCall(found: (name: String, pallet: String), expected: (name: String, pallet: String))
-    case tooManyFieldsInVariant(variant: Value<RuntimeTypeId>, expected: Int)
-    case decodedNonVariantValue(Value<RuntimeTypeId>)
+    case tooManyFieldsInVariant(variant: Value<RuntimeType.Id>, expected: Int)
+    case decodedNonVariantValue(Value<RuntimeType.Id>)
 }

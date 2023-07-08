@@ -24,9 +24,9 @@ public protocol Metadata {
     var apis: [String] { get }
     
     // Search is O(n). Try to resolve directly by path
-    func search(type cb: @escaping ([String]) -> Bool) -> RuntimeTypeInfo?
-    func resolve(type id: RuntimeTypeId) -> RuntimeType?
-    func resolve(type path: [String]) -> RuntimeTypeInfo?
+    func search(type cb: @escaping ([String]) -> Bool) -> RuntimeType.Info?
+    func resolve(type id: RuntimeType.Id) -> RuntimeType?
+    func resolve(type path: [String]) -> RuntimeType.Info?
     func resolve(pallet index: UInt8) -> PalletMetadata?
     func resolve(pallet name: String) -> PalletMetadata?
     func resolve(api name: String) -> RuntimeApiMetadata?
@@ -35,8 +35,8 @@ public protocol Metadata {
 public protocol PalletMetadata {
     var name: String { get }
     var index: UInt8 { get }
-    var call: RuntimeTypeInfo? { get }
-    var event: RuntimeTypeInfo? { get }
+    var call: RuntimeType.Info? { get }
+    var event: RuntimeType.Info? { get }
     var storage: [String] { get }
     var constants: [String] { get }
     
@@ -52,51 +52,54 @@ public protocol PalletMetadata {
 public protocol StorageMetadata {
     var name: String { get }
     var modifier: StorageEntryModifier { get }
-    var types: (keys: [(StorageHasher, RuntimeTypeInfo)], value: RuntimeTypeInfo) { get }
+    var types:
+        (keys: [(StorageHasher, RuntimeType.Info)], value: RuntimeType.Info) { get }
     var defaultValue: Data { get }
     var documentation: [String] { get }
 }
 
 public protocol ExtrinsicMetadata {
     var version: UInt8 { get }
-    var type: RuntimeTypeInfo { get }
+    var type: RuntimeType.Info { get }
     var extensions: [ExtrinsicExtensionMetadata] { get }
     // Make non optional after v14 metadata drop
-    var addressType: RuntimeTypeInfo? { get }
-    var callType: RuntimeTypeInfo? { get }
-    var signatureType: RuntimeTypeInfo? { get }
-    var extraType: RuntimeTypeInfo? { get }
+    var addressType: RuntimeType.Info? { get }
+    var callType: RuntimeType.Info? { get }
+    var signatureType: RuntimeType.Info? { get }
+    var extraType: RuntimeType.Info? { get }
 }
 
 public protocol ConstantMetadata {
     var name: String { get }
-    var type: RuntimeTypeInfo { get }
+    var type: RuntimeType.Info { get }
     var value: Data { get }
     var documentation: [String] { get }
 }
 
 public protocol ExtrinsicExtensionMetadata {
     var identifier: String { get }
-    var type: RuntimeTypeInfo { get }
-    var additionalSigned: RuntimeTypeInfo { get }
+    var type: RuntimeType.Info { get }
+    var additionalSigned: RuntimeType.Info { get }
 }
 
 public protocol RuntimeApiMetadata {
     var name: String { get }
     var methods: [String] { get }
     
-    func resolve(method name: String) -> (params: [(String, RuntimeTypeInfo)], result: RuntimeTypeInfo)?
+    func resolve(
+        method name: String
+    ) -> (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)?
 }
 
 public protocol OuterEnumsMetadata {
-    var callType: RuntimeTypeInfo { get }
-    var eventType: RuntimeTypeInfo { get }
-    var moduleErrorType: RuntimeTypeInfo { get }
+    var callType: RuntimeType.Info { get }
+    var eventType: RuntimeType.Info { get }
+    var moduleErrorType: RuntimeType.Info { get }
 }
 
 public enum MetadataError: Error {
     case storageBadHashersCount(expected: Int, got: Int, name: String, pallet: String)
-    case storageNonCompositeKey(name: String, pallet: String, type: RuntimeTypeInfo)
+    case storageNonCompositeKey(name: String, pallet: String, type: RuntimeType.Info)
 }
 
 public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable {
