@@ -46,7 +46,7 @@ final class SubstrateTests: XCTestCase {
     func testBlock() {
         runAsyncTest(withTimeout: 30) {
             let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
-            let block = try await substrate.client.block(config: substrate.runtime.config)
+            let block = try await substrate.client.block(runtime: substrate.runtime)
             XCTAssertNotNil(block)
             let _ = try block!.block.extrinsics.parsed()
         }
