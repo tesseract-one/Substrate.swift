@@ -8,12 +8,22 @@
 import Foundation
 import ScaleCodec
 
-public protocol Call: RuntimeEncodable {
+public protocol Call: RuntimeDynamicEncodable {
     var pallet: String { get }
     var name: String { get }
 }
 
-public protocol StaticCall: Call, RuntimeDecodable {
+public protocol IdentifiableCall: Call, RuntimeDynamicDecodable {
+    static var pallet: String { get }
+    static var name: String { get }
+}
+
+public extension IdentifiableCall {
+    var pallet: String { Self.pallet }
+    var name: String { Self.name }
+}
+
+public protocol StaticCall: IdentifiableCall, RuntimeEncodable, RuntimeDecodable {
     static var pallet: String { get }
     static var name: String { get }
     
@@ -22,9 +32,6 @@ public protocol StaticCall: Call, RuntimeDecodable {
 }
 
 public extension StaticCall {
-    var pallet: String { Self.pallet }
-    var name: String { Self.name }
-    
     init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         let modIndex = try decoder.decode(UInt8.self)
         let callIndex = try decoder.decode(UInt8.self)
@@ -60,7 +67,10 @@ public struct AnyCall<C>: Call {
         self.params = params
     }
     
-    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
+                                              as type: RuntimeType.Id,
+                                              runtime: Runtime) throws
+    {
         var variant: Value<C>
         switch params.value {
         case .variant(let val):
@@ -80,8 +90,7 @@ public struct AnyCall<C>: Call {
                             context: params.context)
         }
         try Value(value: .variant(.sequence(name: pallet, values: [variant])),
-                  context: params.context)
-            .encode(in: &encoder, as: runtime.types.call.id, runtime: runtime)
+                  context: params.context).encode(in: &encoder, as: type, runtime: runtime)
     }
 }
 
@@ -109,8 +118,6 @@ public extension AnyCall where C == Void {
     init(name: String, pallet: String, sequence: [any ValueRepresentable]) throws {
         try self.init(name: name, pallet: pallet, params: .sequence(sequence))
     }
-    
-    
 }
 
 extension AnyCall: CustomStringConvertible {
@@ -119,9 +126,12 @@ extension AnyCall: CustomStringConvertible {
     }
 }
 
-extension AnyCall: RuntimeDecodable where C == RuntimeType.Id {
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
-        var value = try Value(from: &decoder, as: runtime.types.call.id, runtime: runtime)
+extension AnyCall: RuntimeDynamicDecodable where C == RuntimeType.Id {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
+                                       as type: RuntimeType.Id,
+                                       runtime: Runtime) throws
+    {
+        var value = try Value(from: &decoder, as: type, runtime: runtime)
         let pallet: String
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):

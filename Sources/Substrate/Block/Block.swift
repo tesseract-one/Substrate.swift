@@ -16,6 +16,9 @@ public protocol SomeBlock: RuntimeDynamicSwiftDecodable {
     var hash: THeader.THasher.THash { get }
     var header: THeader { get }
     var extrinsics: [TExtrinsic] { get }
+    
+    static func headerType(runtime: any Runtime,
+                           block id: RuntimeType.Id) throws -> RuntimeType.Id
 }
 
 public extension SomeBlock {
@@ -30,8 +33,15 @@ public protocol SomeBlockHeader: RuntimeDynamicSwiftDecodable {
     var hash: THasher.THash { get }
 }
 
-// Simple marker for static implementations
-public protocol StaticBlockHeader: SomeBlockHeader {}
+public protocol StaticBlock: SomeBlock, RuntimeSwiftDecodable where THeader: RuntimeSwiftDecodable {}
+
+public extension StaticBlock {
+    // Should never be called because of the static Header parsing
+    static func headerType(runtime: any Runtime,
+                           block id: @escaping RuntimeType.LazyId) throws -> RuntimeType.Id {
+        try RuntimeType.IdNever(runtime)
+    }
+}
 
 public protocol SomeChainBlock<TBlock>: ContextDecodable where
     DecodingContext == (runtime: Runtime, blockType: RuntimeType.LazyId)
@@ -41,7 +51,18 @@ public protocol SomeChainBlock<TBlock>: ContextDecodable where
     var block: TBlock { get }
 }
 
-public struct ChainBlock<B: SomeBlock, J: Swift.Decodable>: SomeChainBlock {
+public protocol StaticChainBlock: SomeChainBlock where TBlock: StaticBlock {
+    init(from decoder: Swift.Decoder, runtime: any Runtime) throws
+}
+
+public extension StaticChainBlock {
+    init(from decoder: Swift.Decoder,
+         context: (runtime: Runtime, blockType: RuntimeType.LazyId)) throws {
+        try self.init(from: decoder, runtime: context.runtime)
+    }
+}
+
+public struct AnyChainBlock<B: SomeBlock, J: Swift.Decodable>: SomeChainBlock {
     public let block: B
     public let justifications: J
     

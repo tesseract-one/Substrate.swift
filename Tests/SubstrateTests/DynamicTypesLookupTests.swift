@@ -24,7 +24,7 @@ final class DynamicTypesLookupTests: XCTestCase {
         let config = try DynamicConfig()
         
         let _ = try config.hasher(metadata: metadata)
-        let _ = try config.blockHeaderType(metadata: metadata)
+        let _ = try config.blockType(metadata: metadata)
         let _ = try config.dispatchInfoType(metadata: metadata)
         let _ = try config.feeDetailsType(metadata: metadata)
         let _ = try config.dispatchErrorType(metadata: metadata)

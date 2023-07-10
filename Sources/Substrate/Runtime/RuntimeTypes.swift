@@ -21,7 +21,6 @@ public extension RuntimeType {
 
 public protocol RuntimeTypes {
     var block: RuntimeType.Info { get throws }
-    var blockHeader: RuntimeType.Info { get throws }
     var account: RuntimeType.Info { get throws }
     var address: RuntimeType.Info { get throws }
     var signature: RuntimeType.Info { get throws }
@@ -93,5 +92,19 @@ public extension Runtime {
         address: A, in encoder: inout E
     ) throws {
         try address.encode(in: &encoder, runtime: self) { try $0.types.address.id }
+    }
+    
+    @inlinable
+    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
+        call: C.Type, from decoder: inout D
+    ) throws -> C {
+        try decode(from: &decoder) { try $0.types.call.id }
+    }
+    
+    @inlinable
+    func encode<C: Call, E: ScaleCodec.Encoder>(
+        call: C, in encoder: inout E
+    ) throws {
+        try call.encode(in: &encoder, runtime: self) { try $0.types.call.id }
     }
 }

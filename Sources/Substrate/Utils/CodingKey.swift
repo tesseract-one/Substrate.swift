@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct AnyCodableCodingKey: CodingKey, Equatable {
+public struct AnyCodableCodingKey: CodingKey, Equatable, Hashable {
     public let stringValue: String
     public let intValue: Int?
     

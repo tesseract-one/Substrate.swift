@@ -18,7 +18,8 @@ public protocol Client<C> {
     func systemProperties(config: C) async throws -> C.TSystemProperties
     func block(hash index: C.TBlock.THeader.TNumber?, config: C) async throws -> C.TBlock.THeader.THasher.THash?
     
-    func block(at hash: C.TBlock.THeader.THasher.THash?, runtime: ExtendedRuntime<C>) async throws -> C.TSignedBlock?
+    func block(at hash: C.TBlock.THeader.THasher.THash?,
+               runtime: ExtendedRuntime<C>) async throws -> C.TChainBlock?
     func block(header hash: C.TBlock.THeader.THasher.THash?,
                runtime: ExtendedRuntime<C>) async throws -> C.TBlock.THeader?
     

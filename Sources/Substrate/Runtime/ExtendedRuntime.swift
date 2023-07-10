@@ -102,7 +102,6 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
     private struct State {
         var block: Result<RuntimeType.Info, Error>?
         var account: Result<RuntimeType.Info, Error>?
-        var blockHeader: Result<RuntimeType.Info, Error>?
         var extrinsic: Result<(call: RuntimeType.Info, addr: RuntimeType.Info,
                                signature: RuntimeType.Info, extra: RuntimeType.Info), Error>?
         var event: Result<RuntimeType.Info, Error>?
@@ -121,14 +120,6 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         self._config = config
         self._metadata = metadata
     }
-    
-    public var blockHeader: RuntimeType.Info { get throws {
-        try _state.sync { state in
-            if let res = state.blockHeader { return try res.get() }
-            state.blockHeader = Result { try self._config.blockHeaderType(metadata: self._metadata) }
-            return try state.blockHeader!.get()
-        }
-    }}
     
     public var block: RuntimeType.Info { get throws {
         try _state.sync { state in

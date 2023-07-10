@@ -49,7 +49,7 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
                                                        in encoder: inout E) throws {
         var inner = runtime.encoder()
         try inner.encode(Self.version & 0b0111_1111)
-        try extrinsic.call.encode(in: &inner, runtime: runtime)
+        try runtime.encode(call: extrinsic.call, in: &inner)
         try encoder.encode(inner.output)
     }
     
@@ -71,15 +71,15 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
     
     public func encode<C: Call, E: ScaleCodec.Encoder>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
                                                        in encoder: inout E) throws {
-        try payload.call.encode(in: &encoder, runtime: runtime)
+        try runtime.encode(call: payload.call, in: &encoder)
         try extensions.encode(extra: payload.extra.extra, in: &encoder)
         try extensions.encode(additionalSigned: payload.extra.additional, in: &encoder)
     }
     
-    public func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
+    public func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         payload decoder: inout D
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra> {
-        let call = try C(from: &decoder, runtime: runtime)
+        let call = try runtime.decode(call: C.self, from: &decoder)
         let extra = try extensions.extra(from: &decoder)
         let additional = try extensions.additionalSigned(from: &decoder)
         return ExtrinsicSignPayload(call: call, extra: (extra, additional))
@@ -100,11 +100,11 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
         try runtime.encode(address: extrinsic.extra.address, in: &inner)
         try extrinsic.extra.signature.encode(in: &inner, runtime: runtime)
         try extensions.encode(extra: extrinsic.extra.extra, in: &inner)
-        try extrinsic.call.encode(in: &inner, runtime: runtime)
+        try runtime.encode(call: extrinsic.call, in: &inner)
         try encoder.encode(inner.output)
     }
     
-    public func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
+    public func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         from decoder: inout D
     ) throws -> Extrinsic<C, Either<TUnsignedExtra, TSignedExtra>> {
         var decoder = try runtime.decoder(with: decoder.decode(Data.self))
@@ -119,10 +119,10 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
             let address = try runtime.decode(address: RC.TAddress.self, from: &decoder)
             let signature = try RC.TSignature(from: &decoder, runtime: runtime)
             let extra = try extensions.extra(from: &decoder)
-            return Extrinsic(call: try C(from: &decoder, runtime: runtime),
+            return Extrinsic(call: try runtime.decode(call: C.self, from: &decoder),
                              extra: .right(ExtrinsicV4Extra(address: address, signature: signature, extra: extra)))
         } else {
-            return Extrinsic(call: try C(from: &decoder, runtime: runtime),
+            return Extrinsic(call: try runtime.decode(call: C.self, from: &decoder),
                              extra: .left(nil))
         }
     }

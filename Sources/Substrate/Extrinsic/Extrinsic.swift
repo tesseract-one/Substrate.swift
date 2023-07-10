@@ -69,7 +69,7 @@ public protocol OpaqueExtrinsic<TManager>: RuntimeSwiftDecodable {
     
     func hash() -> TManager.RC.THasher.THash
     
-    func decode<C: Call & RuntimeDecodable>() throws -> AnyExtrinsic<C, TManager>
+    func decode<C: Call & RuntimeDynamicDecodable>() throws -> AnyExtrinsic<C, TManager>
     
     static var version: UInt8 { get }
 }
@@ -112,7 +112,7 @@ public protocol ExtrinsicManager<RC> {
     ) async throws -> ExtrinsicSignPayload<C, TSigningExtra>
     func encode<C: Call, E: ScaleCodec.Encoder>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
                                                 in encoder: inout E) throws
-    func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
+    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         payload decoder: inout D
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra>
     
@@ -121,7 +121,7 @@ public protocol ExtrinsicManager<RC> {
                          signature: RC.TSignature) throws -> Extrinsic<C, TSignedExtra>
     func encode<C: Call, E: ScaleCodec.Encoder>(signed extrinsic: Extrinsic<C, TSignedExtra>,
                                                 in encoder: inout E) throws
-    func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
+    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         from decoder: inout D
     ) throws -> AnyExtrinsic<C, Self>
     
@@ -161,7 +161,7 @@ public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where 
         try! TManager.RC.THasher.THash(runtime.hasher.hash(data: data))
     }
     
-    public func decode<C: Call & RuntimeDecodable>() throws -> AnyExtrinsic<C, TManager> {
+    public func decode<C: Call & RuntimeDynamicDecodable>() throws -> AnyExtrinsic<C, TManager> {
         var decoder = runtime.decoder(with: data)
         return try TManager.get(from: runtime).decode(from: &decoder)
     }

@@ -16,8 +16,8 @@ public struct DynamicConfig: Config {
     public typealias TAccountId = AccountId32
     public typealias TAddress = MultiAddress<TAccountId, TIndex>
     public typealias TSignature = MultiSignature
-    public typealias TBlock = AnyBlock<AnyBlockHeader<THasher, TIndex>, BlockExtrinsic<TExtrinsicManager>>
-    public typealias TSignedBlock = ChainBlock<TBlock, SerializableValue>
+    public typealias TBlock = AnyBlock<THasher, TIndex, BlockExtrinsic<TExtrinsicManager>>
+    public typealias TChainBlock = AnyChainBlock<TBlock, SerializableValue>
     
     public typealias TExtrinsicManager = ExtrinsicV4Manager<Self, DynamicSignedExtensionsProvider<Self>>
     public typealias TTransactionStatus = TransactionStatus<THasher.THash, THasher.THash>
@@ -80,7 +80,7 @@ public struct DynamicConfig: Config {
     }
     
     public func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
-        try System.Storage.Events<TBlockEvents>((), runtime: runtime)
+        AnyStorageKey(name: "Events", pallet: "System", path: [])
     }
     
     public func extrinsicManager() throws -> TExtrinsicManager {
@@ -90,10 +90,22 @@ public struct DynamicConfig: Config {
     }
     
     public func hasher(metadata: Metadata) throws -> AnyFixedHasher {
-        let header = try blockHeaderType(metadata: metadata)
-        let hashType = header.type.parameters.first { $0.name.lowercased() == "hash" }?.type
+        var header: RuntimeType.Info? = nil
+        if let block = try? blockType(metadata: metadata) {
+            let headerType = block.type.parameters.first{ $0.name.lowercased() == "header" }?.type
+            if let id = headerType, let type = metadata.resolve(type: id) {
+                header = RuntimeType.Info(id: id, type: type)
+            }
+        }
+        if header == nil {
+            guard let type = metadata.search(type: { headerSelector.matches($0) }) else {
+                throw Error.typeNotFound(name: "Header", selector: headerSelector)
+            }
+            header = type
+        }
+        let hashType = header!.type.parameters.first { $0.name.lowercased() == "hash" }?.type
         guard let hashType = hashType, let hashName = metadata.resolve(type: hashType)?.path.last else {
-            throw Error.hashTypeNotFound(header: header)
+            throw Error.hashTypeNotFound(header: header!)
         }
         guard let hasher = AnyFixedHasher(name: hashName) else {
             throw Error.unknownHashName(hashName)
@@ -104,19 +116,6 @@ public struct DynamicConfig: Config {
     public func blockType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: { blockSelector.matches($0) }) else {
             throw Error.typeNotFound(name: "Block", selector: blockSelector)
-        }
-        return type
-    }
-    
-    public func blockHeaderType(metadata: any Metadata) throws -> RuntimeType.Info {
-        if let block = try? blockType(metadata: metadata) {
-            let headerType = block.type.parameters.first{ $0.name.lowercased() == "header" }?.type
-            if let id = headerType, let type = metadata.resolve(type: id) {
-                return RuntimeType.Info(id: id, type: type)
-            }
-        }
-        guard let type = metadata.search(type: { headerSelector.matches($0) }) else {
-            throw Error.typeNotFound(name: "Header", selector: headerSelector)
         }
         return type
     }
@@ -365,34 +364,6 @@ public extension DynamicConfig {
 }
 
 extension DynamicConfig: BatchSupportedConfig {
-    public typealias TBatchCall = Utility.Calls.Batch
-    public typealias TBatchAllCall = Utility.Calls.BatchAll
-    
-    public struct Utility {
-        public struct Calls {
-            public struct Batch: SomeBatchCall {
-                public let calls: [Call]
-                public init(calls: [Call]) {
-                    self.calls = calls
-                }
-                public func add(_ call: Call) -> Self {
-                    Self(calls: calls + [call])
-                }
-                public static var name = "batch"
-                public static var pallet = Utility.name
-            }
-            public struct BatchAll: SomeBatchCall {
-                public let calls: [Call]
-                public init(calls: [Call]) {
-                    self.calls = calls
-                }
-                public func add(_ call: Call) -> Self {
-                    Self(calls: calls + [call])
-                }
-                public static var name = "batch_all"
-                public static var pallet = Utility.name
-            }
-        }
-        public static let name = "Utility"
-    }
+    public typealias TBatchCall = AnyBatchCall
+    public typealias TBatchAllCall = AnyBatchAllCall
 }

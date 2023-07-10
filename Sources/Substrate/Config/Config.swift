@@ -15,7 +15,7 @@ public protocol Config {
     associatedtype TAddress: Address where TAddress.TAccountId == TAccountId
     associatedtype TSignature: Signature
     associatedtype TBlock: SomeBlock where TBlock.THeader.THasher == THasher
-    associatedtype TSignedBlock: SomeChainBlock<TBlock>
+    associatedtype TChainBlock: SomeChainBlock<TBlock>
     
     associatedtype TExtrinsicEra: SomeExtrinsicEra
     associatedtype TExtrinsicPayment: ValueRepresentable & Default
@@ -40,7 +40,7 @@ public protocol Config {
     
     // Metadata Info Providers
     func blockType(metadata: any Metadata) throws -> RuntimeType.Info
-    func blockHeaderType(metadata: any Metadata) throws -> RuntimeType.Info
+//    func blockHeaderType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info
     func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info
@@ -50,7 +50,6 @@ public protocol Config {
     func eventType(metadata: any Metadata) throws -> RuntimeType.Info
     func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
                                                            signature: RuntimeType.Info, extra: RuntimeType.Info)
-    
     // Object Builders
     func hasher(metadata: any Metadata) throws -> THasher
     func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
@@ -73,9 +72,9 @@ public extension Config where THasher: StaticHasher {
     func hasher(metadata: Metadata) throws -> THasher { THasher.instance }
 }
 
-// Static Block Header doesn't need runtime type
-public extension Config where TBlock.THeader: StaticBlockHeader {
-    func blockHeaderType(metadata: Metadata) throws -> RuntimeType.Info {
+// Static Block doesn't need runtime type
+public extension Config where TBlock: StaticBlock {
+    func blockType(metadata: Metadata) throws -> RuntimeType.Info {
         throw RuntimeType.IdNeverCalledError()
     }
 }

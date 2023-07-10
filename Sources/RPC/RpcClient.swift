@@ -115,9 +115,9 @@ extension RpcClient: Client {
     @inlinable
     public func block(
         at hash: C.TBlock.THeader.THasher.THash? = nil, runtime: ExtendedRuntime<C>
-    ) async throws -> C.TSignedBlock? {
+    ) async throws -> C.TChainBlock? {
         try await call(method: "chain_getBlock", params: Params(hash),
-                       context: (runtime, { try $0.types.blockHeader.id }))
+                       context: (runtime, { try $0.types.block.id }))
     }
     
     @inlinable
@@ -125,7 +125,7 @@ extension RpcClient: Client {
         header hash: C.TBlock.THeader.THasher.THash?, runtime: ExtendedRuntime<C>
     ) async throws -> C.TBlock.THeader? {
         let context = C.TBlock.THeader.DecodingContext(runtime: runtime) {
-            try $0.types.blockHeader.id
+            try C.TBlock.headerType(runtime: $0, block: $0.types.block.id)
         }
         return try await call(method: "chain_getHeader", params: Params(hash),
                               context: context)
