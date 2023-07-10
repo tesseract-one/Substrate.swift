@@ -32,13 +32,13 @@ public extension PublicKey {
     
     @inlinable
     func account<A: AccountId>(runtime: any Runtime) throws -> A {
-        try A(pub: self, runtime: runtime)
+        try runtime.create(account: A.self, pub: self)
     }
     
     @inlinable
     func address<A: Address>(runtime: any Runtime) throws -> A {
         let account: A.TAccountId = try self.account(runtime: runtime)
-        return try A(accountId: account, runtime: runtime)
+        return try account.address()
     }
     
     @inlinable

@@ -8,8 +8,8 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeExtrinsicFailureEvent: StaticEvent {
-    associatedtype Err: ApiError
+public protocol SomeExtrinsicFailureEvent: IdentifiableEvent {
+    associatedtype Err: Error
     var error: Err { get }
 }
 
@@ -60,7 +60,7 @@ public extension ExtrinsicEvents {
         _events.has(event: event, pallet: pallet, extrinsic: index)
     }
     
-    func has<E: StaticEvent>(_ type: E.Type) -> Bool {
+    func has<E: IdentifiableEvent>(_ type: E.Type) -> Bool {
         _events.has(type, extrinsic: index)
     }
     
@@ -76,11 +76,11 @@ public extension ExtrinsicEvents {
         try _events.all(events: event, pallet: pallet, extrinsic: index)
     }
     
-    func all<E: StaticEvent>(records type: E.Type) -> [BE.ER] {
+    func all<E: IdentifiableEvent>(records type: E.Type) -> [BE.ER] {
         _events.all(records: type)
     }
     
-    func all<E: StaticEvent>(events type: E.Type) throws -> [E] {
+    func all<E: IdentifiableEvent>(events type: E.Type) throws -> [E] {
         try _events.all(events: type, extrinsic: index)
     }
     
@@ -92,11 +92,11 @@ public extension ExtrinsicEvents {
         try _events.first(event: name, pallet: pallet, extrinsic: index)
     }
     
-    func first<E: StaticEvent>(record type: E.Type) -> BE.ER? {
+    func first<E: IdentifiableEvent>(record type: E.Type) -> BE.ER? {
         _events.first(record: type, extrinsic: index)
     }
     
-    func first<E: StaticEvent>(event type: E.Type) throws -> E? {
+    func first<E: IdentifiableEvent>(event type: E.Type) throws -> E? {
         try _events.first(event: type, extrinsic: index)
     }
     
@@ -108,34 +108,25 @@ public extension ExtrinsicEvents {
         try _events.last(event: name, pallet: pallet, extrinsic: index)
     }
     
-    func last<E: StaticEvent>(record type: E.Type) -> BE.ER? {
+    func last<E: IdentifiableEvent>(record type: E.Type) -> BE.ER? {
         _events.last(record: type, extrinsic: index)
     }
     
-    func last<E: StaticEvent>(event type: E.Type) throws -> E? {
+    func last<E: IdentifiableEvent>(event type: E.Type) throws -> E? {
         try _events.last(event: type, extrinsic: index)
     }
 }
 
-
 public struct AnyExtrinsicFailureEvent: SomeExtrinsicFailureEvent {
-    public struct ExtrinsicFailed: DynamicApiError {
+    public struct ExtrinsicFailed: Error {
         public let body: Value<RuntimeType.Id>
-        public init(value: Value<RuntimeType.Id>, runtime: Runtime) throws {
-            self.body = value
-        }
     }
     public typealias Err = ExtrinsicFailed
     public let error: ExtrinsicFailed
     
-    public init<D: ScaleCodec.Decoder>(paramsFrom decoder: inout D, runtime: Runtime) throws {
-        fatalError()
-//        guard let evType = runtime.resolve(eventType: Self.pallet) else {
-//            
-//        }
-//        switch evType.type.definition {
-//            
-//        }
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: RuntimeType.Id, runtime: Runtime) throws {
+        let value = try Value<RuntimeType.Id>(from: &decoder, as: type, runtime: runtime)
+        self.error = ExtrinsicFailed(body: value)
     }
     
     public static let pallet: String = "System"

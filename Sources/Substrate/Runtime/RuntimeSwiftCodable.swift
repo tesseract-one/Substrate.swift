@@ -73,22 +73,12 @@ public extension Swift.Decodable {
     init(from decoder: Decoder, runtime: any Runtime) throws {
         try self.init(from: decoder)
     }
-    
-    @inlinable
-    init(from decoder: Decoder, `as` type: RuntimeType.Id, runtime: Runtime) throws {
-        try self.init(from: decoder)
-    }
 }
 
 public extension Swift.Encodable {
     @inlinable
     func encode(to encoder: Encoder, runtime: any Runtime) throws {
         try encode(to: encoder)
-    }
-    
-    @inlinable
-    func encode(to encoder: Encoder, `as` type: RuntimeType.Id, runtime: any Runtime) throws {
-        try encode(to: encoder, runtime: runtime)
     }
 }
 
@@ -97,7 +87,11 @@ public extension RuntimeSwiftDecodable {
     init(from decoder: Decoder, context: DecodingContext) throws {
         try self.init(from: decoder, runtime: context.runtime)
     }
-    
+}
+
+public extension RuntimeSwiftDecodable where
+    DecodingContext == RuntimeSwiftCodableContext
+{
     @inlinable
     init(from decoder: Decoder, `as` type: RuntimeType.Id, runtime: Runtime) throws {
         try self.init(from: decoder, runtime: runtime)

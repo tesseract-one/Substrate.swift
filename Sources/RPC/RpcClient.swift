@@ -78,7 +78,11 @@ extension RpcClient: Client {
     
     @inlinable
     public func accountNextIndex(id: C.TAccountId, runtime: ExtendedRuntime<C>) async throws -> C.TIndex {
-        try await call(method: "system_accountNextIndex", params: Params(id))
+        let context = RC.TAccountId.EncodingContext(runtime: runtime) {
+            try $0.types.account.id
+        }
+        return try await call(method: "system_accountNextIndex",
+                              params: [id.any(context: context)])
     }
     
     @inlinable
@@ -120,8 +124,11 @@ extension RpcClient: Client {
     public func block(
         header hash: C.TBlock.THeader.THasher.THash?, runtime: ExtendedRuntime<C>
     ) async throws -> C.TBlock.THeader? {
-        try await call(method: "chain_getHeader", params: Params(hash),
-                       context: (runtime, { try $0.types.blockHeader.id }))
+        let context = C.TBlock.THeader.DecodingContext(runtime: runtime) {
+            try $0.types.blockHeader.id
+        }
+        return try await call(method: "chain_getHeader", params: Params(hash),
+                              context: context)
     }
     
     public func events(
@@ -144,8 +151,18 @@ extension RpcClient: Client {
     ) async throws -> Result<Void, Either<C.TDispatchError, C.TTransactionValidityError>> {
         var encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        let dispatchErrorCtx = C.TDispatchError.DecodingContext(runtime: runtime) {
+            try $0.types.dispatchError.id
+        }
+        let transactionErrorCtx = C.TTransactionValidityError.DecodingContext(runtime: runtime) {
+            try $0.types.transactionValidityError.id
+        }
+        let nothingCtx = RuntimeSwiftCodableContext(runtime: runtime)
+        let context = (value: (value: nothingCtx, error: dispatchErrorCtx), error: transactionErrorCtx)
         let result: RpcResult<RpcResult<Nothing, C.TDispatchError>, C.TTransactionValidityError> =
-            try await call(method: "system_dryRun", params: Params(encoder.output, hash))
+            try await call(method: "system_dryRun",
+                           params: Params(encoder.output, hash),
+                           context: context)
         if let value = result.value {
             if value.isOk {
                 return .success(())
@@ -373,5 +390,19 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
            params: keys,
            unsubscribe: "state_unsubscribeStorage"
        )
+    }
+}
+
+private extension RpcClient {
+    struct DryRunResult<DE: ApiError, TVE: ApiError>: ContextDecodable {
+        
+        
+        typealias DecodingContext = (runtime: Runtime,
+                                     deId: RuntimeType.LazyId,
+                                     tveId: RuntimeType.LazyId)
+        
+        init(from decoder: Swift.Decoder, context: DecodingContext) throws {
+            
+        }
     }
 }

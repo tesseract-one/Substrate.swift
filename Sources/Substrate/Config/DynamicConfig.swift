@@ -28,7 +28,7 @@ public struct DynamicConfig: Config {
     public typealias TDispatchInfo = Value<RuntimeType.Id>
     public typealias TDispatchError = AnyDispatchError
     public typealias TTransactionValidityError = AnyTransactionValidityError
-    public typealias TExtrinsicFailureEvent = System.Events.ExtrinsicFailure<TDispatchError>
+    public typealias TExtrinsicFailureEvent = AnyExtrinsicFailureEvent
     public typealias TBlockEvents = BlockEvents<EventRecord<THasher.THash>>
     public typealias TRuntimeVersion = AnyRuntimeVersion
     public typealias TStorageChangeSet = StorageChangeSet<THasher.THash>
@@ -39,7 +39,7 @@ public struct DynamicConfig: Config {
     public typealias TTransactionPaymentFeeDetailsRuntimeCall = Api.TransactionPayment.QueryFeeDetails<TFeeDetails>
     
     public enum Error: Swift.Error {
-        case typeNotFound(name: String, selector: Set<String>)
+        case typeNotFound(name: String, selector: NSRegularExpression)
         case hashTypeNotFound(header: RuntimeType.Info)
         case eventTypeNotFound(record: RuntimeType.Info)
         case extrinsicInfoNotFound
@@ -47,28 +47,36 @@ public struct DynamicConfig: Config {
     }
     
     public let extrinsicExtensions: [DynamicExtrinsicExtension]
-    public let headerSelector: Set<String>
-    public let dispatchInfoSelector: Set<String>
-    public let dispatchErrorSelector: Set<String>
-    public let transactionValidityErrorSelector: Set<String>
-    public let feeDetailsSelector: Set<String>
-    public let eventRecordSelector: Set<String>
+    public let blockSelector: NSRegularExpression
+    public let headerSelector: NSRegularExpression
+    public let accountSelector: NSRegularExpression
+    public let dispatchInfoSelector: NSRegularExpression
+    public let dispatchErrorSelector: NSRegularExpression
+    public let transactionValidityErrorSelector: NSRegularExpression
+    public let feeDetailsSelector: NSRegularExpression
+    public let eventRecordSelector: NSRegularExpression
     
     public init(extrinsicExtensions: [DynamicExtrinsicExtension] = Self.allExtensions,
-                headerSelector: [String] = ["Header"],
-                dispatchInfoSelector: [String] = ["DispatchInfo"],
-                dispatchErrorSelector: [String] = ["DispatchError"],
-                transactionValidityErrorSelector: [String] = ["TransactionValidityError"],
-                feeDetailsSelector: [String] = ["FeeDetails"],
-                eventRecordSelector: [String] = ["EventRecord"])
+                blockSelector: String = "^.*Block$",
+                headerSelector: String = "^.*Header$",
+                accountSelector: String = "^.*AccountId[0-9]*$",
+                dispatchInfoSelector: String = "^.*DispatchInfo$",
+                dispatchErrorSelector: String = "^.*DispatchError$",
+                transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
+                feeDetailsSelector: String = "^.*FeeDetails$",
+                eventRecordSelector: String = "^.*EventRecord$") throws
     {
         self.extrinsicExtensions = extrinsicExtensions
-        self.headerSelector = Set(headerSelector)
-        self.dispatchInfoSelector = Set(dispatchInfoSelector)
-        self.dispatchErrorSelector = Set(dispatchErrorSelector)
-        self.transactionValidityErrorSelector = Set(transactionValidityErrorSelector)
-        self.feeDetailsSelector = Set(feeDetailsSelector)
-        self.eventRecordSelector = Set(eventRecordSelector)
+        self.blockSelector = try NSRegularExpression(pattern: blockSelector)
+        self.accountSelector = try NSRegularExpression(pattern: accountSelector)
+        self.headerSelector = try NSRegularExpression(pattern: headerSelector)
+        self.dispatchInfoSelector = try NSRegularExpression(pattern: dispatchInfoSelector)
+        self.dispatchErrorSelector = try NSRegularExpression(pattern: dispatchErrorSelector)
+        self.transactionValidityErrorSelector = try NSRegularExpression(
+            pattern: transactionValidityErrorSelector
+        )
+        self.feeDetailsSelector = try NSRegularExpression(pattern: feeDetailsSelector)
+        self.eventRecordSelector = try NSRegularExpression(pattern: eventRecordSelector)
     }
     
     public func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
@@ -83,7 +91,7 @@ public struct DynamicConfig: Config {
     
     public func hasher(metadata: Metadata) throws -> AnyFixedHasher {
         let header = try blockHeaderType(metadata: metadata)
-        let hashType = header.type.parameters.first { $0.name == "Hash" }?.type
+        let hashType = header.type.parameters.first { $0.name.lowercased() == "hash" }?.type
         guard let hashType = hashType, let hashName = metadata.resolve(type: hashType)?.path.last else {
             throw Error.hashTypeNotFound(header: header)
         }
@@ -93,9 +101,22 @@ public struct DynamicConfig: Config {
         return hasher
     }
     
-    public func blockHeaderType(metadata: Metadata) throws -> RuntimeType.Info {
-        guard let type = metadata.search(type: {headerSelector.isSubset(of: $0)}) else {
-            throw Error.typeNotFound(name: "header", selector: headerSelector)
+    public func blockType(metadata: any Metadata) throws -> RuntimeType.Info {
+        guard let type = metadata.search(type: { blockSelector.matches($0) }) else {
+            throw Error.typeNotFound(name: "Block", selector: blockSelector)
+        }
+        return type
+    }
+    
+    public func blockHeaderType(metadata: any Metadata) throws -> RuntimeType.Info {
+        if let block = try? blockType(metadata: metadata) {
+            let headerType = block.type.parameters.first{ $0.name.lowercased() == "header" }?.type
+            if let id = headerType, let type = metadata.resolve(type: id) {
+                return RuntimeType.Info(id: id, type: type)
+            }
+        }
+        guard let type = metadata.search(type: { headerSelector.matches($0) }) else {
+            throw Error.typeNotFound(name: "Header", selector: headerSelector)
         }
         return type
     }
@@ -134,39 +155,54 @@ public struct DynamicConfig: Config {
                 extra: RuntimeType.Info(id: extraTypeId, type: extraType))
     }
     
+    public func accountType(metadata: any Metadata,
+                            address: RuntimeType.Info) throws -> RuntimeType.Info
+    {
+        let selectors = ["accountid", "t::accountid", "account", "acc", "a"]
+        let accid = address.type.parameters.first{selectors.contains($0.name.lowercased())}?.type
+        if let id = accid, let info = metadata.resolve(type: id) {
+            return RuntimeType.Info(id: id, type: info)
+        }
+        guard let type = metadata.search(type: {accountSelector.matches($0)}) else {
+            throw Error.typeNotFound(name: "AccountId", selector: dispatchInfoSelector)
+        }
+        return type
+    }
+    
     public func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info {
-        guard let type = metadata.search(type: {dispatchInfoSelector.isSubset(of: $0)}) else {
-            throw Error.typeNotFound(name: "dispatchInfo", selector: dispatchInfoSelector)
+        guard let type = metadata.search(type: {dispatchInfoSelector.matches($0)}) else {
+            throw Error.typeNotFound(name: "DispatchInfo", selector: dispatchInfoSelector)
         }
         return type
     }
     
     public func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
-        guard let type = metadata.search(type: {dispatchErrorSelector.isSubset(of: $0)}) else {
-            throw Error.typeNotFound(name: "dispatchError", selector: dispatchErrorSelector)
+        guard let type = metadata.search(type: {dispatchErrorSelector.matches($0)}) else {
+            throw Error.typeNotFound(name: "DispatchError", selector: dispatchErrorSelector)
         }
         return type
     }
     
     public func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
-        guard let type = metadata.search(type: {transactionValidityErrorSelector.isSubset(of: $0)}) else {
-            throw Error.typeNotFound(name: "transactionValidityError", selector: transactionValidityErrorSelector)
+        guard let type = metadata.search(type: {transactionValidityErrorSelector.matches($0)}) else {
+            throw Error.typeNotFound(name: "TransactionValidityError",
+                                     selector: transactionValidityErrorSelector)
         }
         return type
     }
     
     public func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info {
-        guard let type = metadata.search(type: {feeDetailsSelector.isSubset(of: $0)}) else {
-            throw Error.typeNotFound(name: "feeDetails", selector: feeDetailsSelector)
+        guard let type = metadata.search(type: {feeDetailsSelector.matches($0)}) else {
+            throw Error.typeNotFound(name: "FeeDetails", selector: feeDetailsSelector)
         }
         return type
     }
     
     public func eventType(metadata: Metadata) throws -> RuntimeType.Info {
-        guard let record = metadata.search(type: {eventRecordSelector.isSubset(of: $0)}) else {
-            throw Error.typeNotFound(name: "eventRecord", selector: eventRecordSelector)
+        guard let record = metadata.search(type: {eventRecordSelector.matches($0)}) else {
+            throw Error.typeNotFound(name: "EventRecord", selector: eventRecordSelector)
         }
-        let eventNames = ["e", "ev", "event"]
+        let eventNames = ["e", "ev", "event", "t::event"]
         guard let field = record.type.parameters.first(where: {
             eventNames.contains($0.name.lowercased())
         })?.type else {
@@ -191,14 +227,17 @@ public struct DynamicConfig: Config {
 public extension ConfigRegistry where C == DynamicConfig {
     @inlinable
     static func dynamic(extrinsicExtensions: [DynamicExtrinsicExtension] = DynamicConfig.allExtensions,
-                        headerSelector: [String] = ["Header"],
-                        dispatchInfoSelector: [String] = ["DispatchInfo"],
-                        dispatchErrorSelector: [String] = ["DispatchError"],
-                        transactionValidityErrorSelector: [String] = ["TransactionValidityError"],
-                        feeDetailsSelector: [String] = ["FeeDetails"],
-                        eventRecordSelector: [String] = ["EventRecord"]) -> Self {
-        let config = DynamicConfig(
-            extrinsicExtensions: extrinsicExtensions, headerSelector: headerSelector,
+                        blockSelector: String = "^.*Block$",
+                        headerSelector: String = "^.*Header$",
+                        accountSelector: String = "^.*AccountId[0-9]*$",
+                        dispatchInfoSelector: String = "^.*DispatchInfo$",
+                        dispatchErrorSelector: String = "^.*DispatchError$",
+                        transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
+                        feeDetailsSelector: String = "^.*FeeDetails$",
+                        eventRecordSelector: String = "^.*EventRecord$") throws -> Self {
+        let config = try DynamicConfig(
+            extrinsicExtensions: extrinsicExtensions, blockSelector: blockSelector,
+            headerSelector: headerSelector, accountSelector: accountSelector,
             dispatchInfoSelector: dispatchInfoSelector, dispatchErrorSelector: dispatchErrorSelector,
             transactionValidityErrorSelector: transactionValidityErrorSelector,
             feeDetailsSelector: feeDetailsSelector, eventRecordSelector: eventRecordSelector
@@ -206,9 +245,8 @@ public extension ConfigRegistry where C == DynamicConfig {
         return Self(config: config)
     }
     
-    @inlinable static var dynamic: Self { dynamic() }
+    @inlinable static var dynamic: Self { try! dynamic() }
 }
-
 
 // Helper structs
 public extension DynamicConfig {
@@ -309,21 +347,6 @@ public extension DynamicConfig {
     }
     
     struct System {
-        public struct Events {
-            public struct ExtrinsicFailure<Err: ApiError>: SomeExtrinsicFailureEvent {
-   
-                public typealias Err = Err
-                public static var pallet: String { System.name }
-                public static var name: String { "ExtrinsicFailure" }
-                
-                public let error: Err
-                
-                public init<D: ScaleCodec.Decoder>(paramsFrom decoder: inout D, runtime: Runtime) throws {
-                    fatalError()
-                    //self.error = try Err(from: &decoder, runtime: runtime)
-                }
-            }
-        }
         public struct Storage {
             public struct Events<BE: SomeBlockEvents>: StaticStorageKey {
                 public typealias TParams = Void

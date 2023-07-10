@@ -38,24 +38,29 @@ public protocol Config {
     
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
     
-    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
-    func hasher(metadata: any Metadata) throws -> THasher
-    func extrinsicManager() throws -> TExtrinsicManager
-    func encoder() -> ScaleCodec.Encoder
-    func decoder(data: Data) -> ScaleCodec.Decoder
-    
+    // Metadata Info Providers
+    func blockType(metadata: any Metadata) throws -> RuntimeType.Info
     func blockHeaderType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info
     func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info
     func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info
-    
-    // Can be safely removed after removing metadata v14 (v15 has them)
+    func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info
+    // Both can be safely removed after removing metadata v14 (v15 has them)
+    func eventType(metadata: any Metadata) throws -> RuntimeType.Info
     func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
                                                            signature: RuntimeType.Info, extra: RuntimeType.Info)
-    func eventType(metadata: any Metadata) throws -> RuntimeType.Info
+    
+    // Object Builders
+    func hasher(metadata: any Metadata) throws -> THasher
+    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
+    func extrinsicManager() throws -> TExtrinsicManager
+    // If you want your own Scale Codec coders
+    func encoder() -> ScaleCodec.Encoder
+    func decoder(data: Data) -> ScaleCodec.Decoder
 }
 
+// Default Encoder and Decoder
 public extension Config {
     @inlinable
     func encoder() -> ScaleCodec.Encoder { ScaleCodec.encoder() }
@@ -63,13 +68,15 @@ public extension Config {
     func decoder(data: Data) -> ScaleCodec.Decoder { ScaleCodec.decoder(from: data) }
 }
 
+// Static Hasher can be returned by instance
 public extension Config where THasher: StaticHasher {
     func hasher(metadata: Metadata) throws -> THasher { THasher.instance }
 }
 
+// Static Block Header doesn't need runtime type
 public extension Config where TBlock.THeader: StaticBlockHeader {
     func blockHeaderType(metadata: Metadata) throws -> RuntimeType.Info {
-        fatalError("Should not be called for StaticBlockHeader!")
+        throw RuntimeType.IdNeverCalledError()
     }
 }
 
@@ -87,6 +94,7 @@ public extension BatchSupportedConfig {
     }
 }
 
+// Type for Config registrations. Provides better constructors for RootApi
 public struct ConfigRegistry<C: Config> {
     public let config: C
     @inlinable public init(config: C) { self.config = config }

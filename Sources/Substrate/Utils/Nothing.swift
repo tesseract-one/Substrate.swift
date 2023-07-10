@@ -15,14 +15,14 @@ public struct Nothing: Hashable, Equatable, CustomStringConvertible, Expressible
     public static let nothing = Nothing()
 }
 
-extension Nothing: Swift.Encodable {
+extension Nothing: Swift.Encodable, RuntimeSwiftEncodable, RuntimeDynamicSwiftEncodable {
     public func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encodeNil()
     }
 }
 
-extension Nothing: Swift.Decodable {
+extension Nothing: Swift.Decodable, RuntimeSwiftDecodable, RuntimeDynamicSwiftDecodable {
     public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         guard container.decodeNil() else {

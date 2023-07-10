@@ -13,10 +13,17 @@ public protocol Event: RuntimeDynamicDecodable {
     var name: String { get }
 }
 
-public protocol StaticEvent: Event, RuntimeDecodable {
+public protocol IdentifiableEvent: Event {
     static var pallet: String { get }
     static var name: String { get }
-    
+}
+
+public extension IdentifiableEvent {
+    var pallet: String { Self.pallet }
+    var name: String { Self.name }
+}
+
+public protocol StaticEvent: IdentifiableEvent, RuntimeDecodable {
     init<D: ScaleCodec.Decoder>(paramsFrom decoder: inout D, runtime: Runtime) throws
 }
 

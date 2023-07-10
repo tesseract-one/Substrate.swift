@@ -29,17 +29,8 @@ public enum StorageHasher: CaseIterable, ScaleCodec.Codable, CustomStringConvert
         }
     }
     
-    public var description: String {
-        switch self {
-        case .blake2b128: return "Blake2_128"
-        case .blake2b256: return "Blake2_256"
-        case .blake2b128concat: return "Blake2_128Concat"
-        case .xx128: return "Twox128"
-        case .xx256: return "Twox256"
-        case .xx64concat: return "Twox64Concat"
-        case .identity: return "Identity"
-        }
-    }
+    @inlinable
+    public var description: String { hasher.name }
 }
 
 public enum StorageEntryModifier: CaseIterable, ScaleCodec.Codable, CustomStringConvertible {

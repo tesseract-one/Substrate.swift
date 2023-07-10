@@ -24,7 +24,7 @@ public protocol Metadata {
     var apis: [String] { get }
     
     // Search is O(n). Try to resolve directly by path
-    func search(type cb: @escaping ([String]) -> Bool) -> RuntimeType.Info?
+    func search(type cb: @escaping (String) -> Bool) -> RuntimeType.Info?
     func resolve(type id: RuntimeType.Id) -> RuntimeType?
     func resolve(type path: [String]) -> RuntimeType.Info?
     func resolve(pallet index: UInt8) -> PalletMetadata?

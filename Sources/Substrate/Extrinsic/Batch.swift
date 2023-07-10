@@ -16,7 +16,7 @@ public protocol SomeBatchCall: StaticCall {
 
 public extension SomeBatchCall {
     init<D: ScaleCodec.Decoder>(decodingParams decoder: inout D, runtime: Runtime) throws {
-        let calls = try Array<AnyCall<TypeId>>(from: &decoder, runtime: runtime)
+        let calls = try Array<AnyCall<RuntimeType.Id>>(from: &decoder, runtime: runtime)
         self.init(calls: calls)
     }
     

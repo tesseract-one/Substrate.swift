@@ -13,12 +13,18 @@ import Blake2
 public protocol Hasher {
     var hashPartByteLength: Int { get }
     var isConcat: Bool { get }
+    var name: String { get }
     
     func hash(data: Data) -> Data
 }
 
 public protocol StaticHasher: Hasher {
+    static var name: String { get }
     static var instance: Self { get }
+}
+
+public extension StaticHasher {
+    @inlinable var name: String { Self.name }
 }
 
 public protocol FixedHasher: Hasher {
@@ -72,6 +78,7 @@ public struct HBlake2b128: StaticFixedHasher {
         return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
     }
     
+    public static let name = "Blake2_128"
     public static let bitWidth: Int = 128
     public static let instance = Self()
 }
@@ -82,6 +89,7 @@ public struct HBlake2b128Concat: StaticConcatHasher {
         return try! Blake2.hash(.b2b, size: Self.hashPartBitWidth / 8, data: data) + data
     }
     
+    public static let name = "Blake2_128Concat"
     public static let hashPartBitWidth: Int = 128
     public static let instance = Self()
 }
@@ -94,6 +102,7 @@ public struct HBlake2b256: StaticFixedHasher {
         return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
     }
     
+    public static let name = "Blake2_256"
     public static let bitWidth: Int = 256
     public static let instance = Self()
 }
@@ -106,6 +115,7 @@ public struct HBlake2b512: StaticFixedHasher {
         return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
     }
     
+    public static let name = "Blake2_512"
     public static let bitWidth: Int = 512
     public static let instance = Self()
 }
@@ -115,6 +125,7 @@ public struct HXX64Concat: StaticConcatHasher {
         return xxHash(data: data, bitWidth: Self.hashPartBitWidth) + data
     }
     
+    public static let name = "Twox64Concat"
     public static let hashPartBitWidth: Int = 64
     public static let instance = Self()
 }
@@ -126,6 +137,7 @@ public struct HXX128: StaticFixedHasher {
         return xxHash(data: data, bitWidth: Self.bitWidth)
     }
     
+    public static let name = "Twox128"
     public static let bitWidth: Int = 128
     public static let instance = Self()
 }
@@ -137,6 +149,7 @@ public struct HXX256: StaticFixedHasher {
         return xxHash(data: data, bitWidth: Self.bitWidth)
     }
     
+    public static let name = "Twox256"
     public static let bitWidth: Int = 256
     public static let instance = Self()
 }
@@ -147,6 +160,7 @@ public struct HIdentity: StaticConcatHasher {
         return data
     }
     
+    public static let name = "Identity"
     public static let hashPartBitWidth: Int = 0
     public static let instance = Self()
 }
@@ -196,6 +210,8 @@ public struct AnyFixedHasher: FixedHasher {
         self.hasher = type.hasher
     }
     
+    @inlinable
+    public var name: String { hasher.name }
     @inlinable
     public var hashPartByteLength: Int { hasher.hashPartByteLength }
     @inlinable

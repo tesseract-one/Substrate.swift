@@ -18,7 +18,7 @@ public protocol Address<TAccountId>: RuntimeDynamicCodable, ValueRepresentable {
          id: @escaping RuntimeType.LazyId) throws
 }
 
-public protocol StaticAddress<TAccountId>: Address, RuntimeCodable where TAccountId: StaticAccountId {
+public protocol StaticAddress<TAccountId>: Address, RuntimeCodable {
     init(accountId: TAccountId, runtime: any Runtime) throws
 }
 
@@ -32,7 +32,7 @@ public extension StaticAddress {
     }
 }
 
-public enum MultiAddress<Id: StaticAccountId & Hashable,
+public enum MultiAddress<Id: AccountId & Hashable,
                          Index: CompactCodable & Hashable & ValueRepresentable>: Equatable, Hashable {
     case id(Id)
     case index(Index)
@@ -80,7 +80,7 @@ extension MultiAddress: RuntimeCodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws {
         let type = try decoder.decode(.enumCaseId)
         switch type {
-        case 0: self = try .id(Id(from: &decoder, runtime: runtime))
+        case 0: self = try .id(runtime.decode(account: Id.self, from: &decoder))
         case 1: self = try .index(decoder.decode(.compact))
         case 2: self = try .raw(decoder.decode())
         case 3: self = try .address32(decoder.decode(.fixed(32)))
@@ -93,7 +93,7 @@ extension MultiAddress: RuntimeCodable {
         switch self {
         case .id(let id):
             try encoder.encode(0, .enumCaseId)
-            try id.encode(in: &encoder, runtime: runtime)
+            try runtime.encode(account: id, in: &encoder)
         case .index(let index):
             try encoder.encode(1, .enumCaseId)
             try encoder.encode(index, .compact)

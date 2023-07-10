@@ -50,7 +50,8 @@ public struct ChainBlock<B: SomeBlock, J: Swift.Decodable>: SomeChainBlock {
         case justifications
     }
     
-    public init(from decoder: Swift.Decoder, context: DecodingContext) throws {
+    public init(from decoder: Swift.Decoder,
+                context: (runtime: Runtime, blockType: RuntimeType.LazyId)) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         block = try container.decode(
             B.self, forKey: .block,

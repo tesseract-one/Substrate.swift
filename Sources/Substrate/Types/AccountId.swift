@@ -37,7 +37,7 @@ public extension AccountId {
     }
     
     func address<A: Address>() throws -> A where A.TAccountId == Self {
-        try A(accountId: self, runtime: runtime)
+        try runtime.create(address: A.self, account: self)
     }
 }
 
@@ -60,7 +60,7 @@ public extension StaticAccountId {
     }
     
     init(from string: String, runtime: any Runtime) throws {
-        try self.init(raw: raw, runtime: runtime, id: RuntimeType.IdNever)
+        try self.init(from: string, runtime: runtime, id: RuntimeType.IdNever)
     }
     
     init(from string: String, runtime: any Runtime,

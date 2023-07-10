@@ -46,7 +46,7 @@ extension Optional: RuntimeSwiftEncodable where Wrapped: RuntimeSwiftEncodable {
 extension Optional: ContextDecodable where Wrapped: RuntimeSwiftDecodable {}
 extension Optional: RuntimeSwiftDecodable where Wrapped: RuntimeSwiftDecodable {
     public init(from decoder: Decoder, runtime: any Runtime) throws {
-        var container = try decoder.singleValueContainer()
+        let container = try decoder.singleValueContainer()
         if container.decodeNil() {
             self = nil
         } else {
@@ -60,7 +60,8 @@ extension Array: RuntimeSwiftEncodable where Element: RuntimeSwiftEncodable {
     public func encode(to encoder: Encoder, runtime: any Runtime) throws {
         var container = encoder.unkeyedContainer()
         for value in self {
-            try container.encode(value, context: runtime)
+            try container.encode(value,
+                                 context: RuntimeSwiftCodableContext(runtime: runtime))
         }
     }
 }
@@ -72,7 +73,10 @@ extension Array: RuntimeSwiftDecodable where Element: RuntimeSwiftDecodable {
         var array = Array<Element>()
         if let count = container.count { array.reserveCapacity(count) }
         while !container.isAtEnd {
-            try array.append(container.decode(Element.self, context: runtime))
+            try array.append(
+                container.decode(Element.self,
+                                 context: RuntimeSwiftCodableContext(runtime: runtime))
+            )
         }
         self = array
     }
@@ -83,7 +87,8 @@ extension Set: RuntimeSwiftEncodable where Element: RuntimeSwiftEncodable {
     public func encode(to encoder: Encoder, runtime: any Runtime) throws {
         var container = encoder.unkeyedContainer()
         for value in self {
-            try container.encode(value, context: runtime)
+            try container.encode(value,
+                                 context: RuntimeSwiftCodableContext(runtime: runtime))
         }
     }
 }
@@ -95,7 +100,10 @@ extension Set: RuntimeSwiftDecodable where Element: RuntimeSwiftDecodable {
         var array = Array<Element>()
         if let count = container.count { array.reserveCapacity(count) }
         while !container.isAtEnd {
-            try array.append(container.decode(Element.self, context: runtime))
+            try array.append(
+                container.decode(Element.self,
+                                 context: RuntimeSwiftCodableContext(runtime: runtime))
+            )
         }
         self = Set(array)
     }
@@ -107,7 +115,7 @@ extension Dictionary: RuntimeSwiftEncodable where Key: StringProtocol, Value: Ru
         var container = encoder.container(keyedBy: AnyCodableCodingKey.self)
         for (key, val) in self {
             try container.encode(val, forKey: AnyCodableCodingKey(String(key)),
-                                 context: runtime)
+                                 context: RuntimeSwiftCodableContext(runtime: runtime))
         }
     }
 }
@@ -121,8 +129,9 @@ extension Dictionary: RuntimeSwiftDecodable where Key: StringProtocol, Value: Ru
         var dict = Dictionary<Key, Value>()
         dict.reserveCapacity(allKeys.count)
         for key in allKeys {
-            dict[Key(stringLiteral: key.stringValue)] = try container.decode(Value.self, forKey: key,
-                                                                             context: runtime)
+            dict[Key(stringLiteral: key.stringValue)] = try container.decode(
+                Value.self, forKey: key, context: RuntimeSwiftCodableContext(runtime: runtime)
+            )
         }
         self = dict
     }
@@ -140,8 +149,12 @@ extension Result: RuntimeSwiftEncodable where Success: RuntimeSwiftEncodable, Fa
     public func encode(to encoder: Encoder, runtime: any Runtime) throws {
         var container = encoder.container(keyedBy: Keys.self)
         switch self {
-        case .success(let val): try container.encode(val, forKey: .ok, context: runtime)
-        case .failure(let err): try container.encode(err, forKey: .err, context: runtime)
+        case .success(let val):
+            try container.encode(val, forKey: .ok,
+                                 context: RuntimeSwiftCodableContext(runtime: runtime))
+        case .failure(let err):
+            try container.encode(err, forKey: .err,
+                                 context: RuntimeSwiftCodableContext(runtime: runtime))
         }
     }
 }
@@ -151,9 +164,15 @@ extension Result: RuntimeSwiftDecodable where Success: RuntimeSwiftDecodable, Fa
     public init(from decoder: Decoder, runtime: any Runtime) throws {
         let container = try decoder.container(keyedBy: Keys.self)
         if container.contains(.ok) {
-            self = try .success(container.decode(Success.self, forKey: .ok, context: runtime))
+            self = try .success(
+                container.decode(Success.self, forKey: .ok,
+                                 context: RuntimeSwiftCodableContext(runtime: runtime))
+            )
         } else if container.contains(.err) {
-            self = try .failure(container.decode(Failure.self, forKey: .err, context: runtime))
+            self = try .failure(
+                container.decode(Failure.self, forKey: .err,
+                                 context: RuntimeSwiftCodableContext(runtime: runtime))
+            )
         } else {
             throw DecodingError.keyNotFound(Keys.ok, .init(codingPath: container.codingPath,
                                                            debugDescription: "No Ok and Err keys"))
