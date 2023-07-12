@@ -81,9 +81,9 @@ let to = try substrate.runtime.address(ss58: "recipient s58 address")
 
 // Dynamic Call type with Map parameters.
 // any ValueRepresentable type can be used as parameter
-let call = try AnyCall(name: "transfer",
-                       pallet: "Balances",
-                       map: ["dest": to, "value": 15483812850])
+let call = AnyCall(name: "transfer",
+                   pallet: "Balances",
+                   params: ["dest": to, "value": 15483812850])
 
 // Create Submittable (transaction) from the call
 let tx = try await substrate.tx.new(call)
@@ -155,11 +155,11 @@ let accountId = try substrate.runtime.account(ss58: "EoukLS2Rzh6dZvMQSkqFy4zGvqe
 // We have to provide 2 keys to get value.
 
 // optional value
-let optSlash = try await entry.value(keys: [652, accountId])
+let optSlash = try await entry.value([652, accountId])
 print("Value is: \(optSlash ?? 0)")
 
 // default value used when nil
-let slash = try await entry.valueOrDefault(keys: [652, accountId])
+let slash = try await entry.valueOrDefault([652, accountId])
 print("Value is: \(slash)")
 ```
 
@@ -178,7 +178,7 @@ for try await key in entry.keys() {
 
 // For maps where N > 1 we can filter iterator by first N-1 keys
 // This will set EraIndex value to 652
-let filtered = entry.filter(key: 652)
+let filtered = entry.filter(652)
 
 // now we can iterate over filtered Key/Value pairs.
 for try await (key, value) in filtered.entries() {
@@ -201,7 +201,7 @@ let ALICE = try substrate.runtime.account(ss58: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERH
 let entry = try substrate.query.dynamic(name: "Account", pallet: "System")
 
 // It's a Map parameter so we should pass key to watch
-for try await account in entry.watch(path: [ALICE]) {
+for try await account in entry.watch([ALICE]) {
   print("Account updated: \(account)")
 }
 ```
@@ -350,12 +350,12 @@ let to1 = try substrate.runtime.address(ss58: "recipient1 s58 address")
 let to2 = try substrate.runtime.address(ss58: "recipient2 s58 address")
 
 // Create 2 calls
-let call1 = try AnyCall(name: "transfer",
-                        pallet: "Balances",
-                        map: ["dest": to1, "value": 15483812850])
-let call2 = try AnyCall(name: "transfer",
-                        pallet: "Balances",
-                        map: ["dest": to2, "value": 21234567890])
+let call1 = AnyCall(name: "transfer",
+                    pallet: "Balances",
+                    params: ["dest": to1, "value": 15483812850])
+let call2 = AnyCall(name: "transfer",
+                    pallet: "Balances",
+                    params: ["dest": to2, "value": 21234567890])
 
 // Create batch transaction from the calls (batch or batchAll methods)
 let tx = try await substrate.tx.batchAll([call1, call2])
