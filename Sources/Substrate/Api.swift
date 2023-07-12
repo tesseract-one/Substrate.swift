@@ -64,16 +64,16 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     public convenience init(client: CL, config: RC, signer: Signer? = nil,
                             at hash: RC.THasher.THash? = nil) async throws {
         // Obtain initial data
-        let runtimeVersion = try await client.runtimeVersion(at: hash, config: config)
-        let properties = try await client.systemProperties(config: config)
-        let genesisHash = try await client.block(hash: 0, config: config)!
-        let metadata = try await client.metadata(at: hash, config: config)
-        let runtime = try ExtendedRuntime(config: config,
-                                          metadata: metadata,
-                                          metadataHash: hash,
-                                          genesisHash: genesisHash,
-                                          version: runtimeVersion,
-                                          properties: properties)
+        async let runtimeVersion = await client.runtimeVersion(at: hash, config: config)
+        async let properties = await client.systemProperties(config: config)
+        async let genesisHash = await client.block(hash: 0, config: config)!
+        async let metadata = await client.metadata(at: hash, config: config)
+        let runtime = try await ExtendedRuntime(config: config,
+                                                metadata: metadata,
+                                                metadataHash: hash,
+                                                genesisHash: genesisHash,
+                                                version: runtimeVersion,
+                                                properties: properties)
         try self.init(client: client, runtime: runtime, signer: signer)
     }
     
