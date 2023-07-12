@@ -316,9 +316,9 @@ public extension RuntimeType {
         case i128
         case i256
         
-        public var description: String { name }
+        @inlinable public var description: String { name }
         
-        public var name: String {
+        @inlinable public var name: String {
             switch self {
             case .bool: return "Bool"
             case .char: return "Character"
@@ -336,6 +336,167 @@ public extension RuntimeType {
             case .i128: return "Int128"
             case .i256: return "Int256"
             }
+        }
+        
+        @inlinable public var isInt: Bool {
+            switch self {
+            case .i8, .i16, .i32, .i64, .i128, .i256: return true
+            default: return false
+            }
+        }
+        
+        @inlinable public var isUInt: Bool {
+            switch self {
+            case .u8, .u16, .u32, .u64, .u128, .u256: return true
+            default: return false
+            }
+        }
+        
+        @inlinable public var isAnyInt: Bool { isInt || isUInt }
+        
+        @inlinable public var isBool: Bool {
+            switch self {
+            case .bool: return true
+            default: return false
+            }
+        }
+        
+        @inlinable public var isString: Bool {
+            switch self {
+            case .str: return true
+            default: return false
+            }
+        }
+        
+        @inlinable public var isChar: Bool {
+            switch self {
+            case .char: return true
+            default: return false
+            }
+        }
+    }
+}
+
+
+public extension RuntimeType.Definition {
+    func flatten(metadata: any Metadata) -> Self {
+        switch self{
+        case .composite(fields: let fields):
+            guard fields.count == 1 else { return self }
+            return metadata.resolve(type: fields[0].type)!.definition
+                .flatten(metadata: metadata)
+        case .tuple(components: let types):
+            guard types.count == 1 else { return self }
+            return metadata.resolve(type: types[0])!.definition
+                .flatten(metadata: metadata)
+        default: return self
+        }
+    }
+    
+    func asPrimitive(metadata: any Metadata) -> RuntimeType.Primitive? {
+        switch flatten(metadata: metadata) {
+        case .primitive(let p): return p
+        case .compact(of: let type):
+            return metadata.resolve(type: type)?.definition
+                .asPrimitive(metadata: metadata)
+        default: return nil
+        }
+    }
+    
+    func asResult(metadata: any Metadata) -> (ok: RuntimeType.Field, err: RuntimeType.Field)? {
+        switch flatten(metadata: metadata) {
+        case .variant(variants: let vars):
+            guard vars.count == 2 else { return nil }
+            guard let ok = vars.first(where: {$0.name == "Ok"}) else { return nil }
+            guard let err = vars.first(where: {$0.name == "Err"}) else { return nil }
+            return (ok: ok.fields.first!, err: err.fields.first!)
+        default: return nil
+        }
+    }
+    
+    func asOptional(metadata: any Metadata) -> RuntimeType.Field? {
+        switch flatten(metadata: metadata) {
+        case .variant(variants: let vars):
+            guard vars.count == 2 else { return nil }
+            guard let some = vars.first(where: {$0.name == "Some"}) else { return nil }
+            return some.fields.first!
+        default: return nil
+        }
+    }
+    
+    func isEmpty(metadata: any Metadata) -> Bool {
+        switch flatten(metadata: metadata) {
+        case .tuple(components: let c): return c.count == 0
+        case .array(count: let c, of: _): return c == 0
+        case .composite(fields: let f): return f.count == 0
+        default: return false
+        }
+    }
+    
+    func isBitSequence(metadata: any Metadata) -> Bool {
+        switch flatten(metadata: metadata) {
+        case .bitsequence(store: _, order: _): return true
+        default: return false
+        }
+    }
+    
+    func asBytes(metadata: any Metadata) -> UInt32? {
+        let subtype: RuntimeType.Id
+        let count: UInt32
+        switch flatten(metadata: metadata) {
+        case .sequence(of: let type): subtype = type; count = 0
+        case .array(count: let c, of: let type): subtype = type; count = c
+        default: return nil
+        }
+        guard case .primitive(is: .u8) = metadata.resolve(type: subtype)?.definition else {
+            return nil
+        }
+        return count
+    }
+}
+
+public extension RuntimeType {
+    @inlinable
+    func asPrimitive(metadata: any Metadata) -> RuntimeType.Primitive? {
+        definition.asPrimitive(metadata: metadata)
+    }
+    
+    @inlinable
+    func asBytes(metadata: any Metadata) -> UInt32? {
+        definition.asBytes(metadata: metadata)
+    }
+    
+    @inlinable
+    func isEmpty(metadata: any Metadata) -> Bool {
+        definition.isEmpty(metadata: metadata)
+    }
+    
+    @inlinable
+    func asOptional(metadata: any Metadata) -> RuntimeType.Field? {
+        definition.asOptional(metadata: metadata)
+    }
+    
+    @inlinable
+    func isBitSequence(metadata: any Metadata) -> Bool {
+        definition.isBitSequence(metadata: metadata)
+    }
+    
+    @inlinable
+    func asResult(metadata: any Metadata) -> (ok: RuntimeType.Field, err: RuntimeType.Field)? {
+        definition.asResult(metadata: metadata)
+    }
+    
+    func flatten(metadata: any Metadata) -> Self {
+        switch self.definition {
+        case .composite(fields: let fields):
+            guard fields.count == 1 else { return self }
+            return metadata.resolve(type: fields[0].type)!
+                .flatten(metadata: metadata)
+        case .tuple(components: let types):
+            guard types.count == 1 else { return self }
+            return metadata.resolve(type: types[0])!
+                .flatten(metadata: metadata)
+        default: return self
         }
     }
 }

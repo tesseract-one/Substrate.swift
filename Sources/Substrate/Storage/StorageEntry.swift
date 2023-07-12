@@ -166,62 +166,62 @@ public extension StorageEntry where Key: IterableStorageKey, Key.TIterator: Iter
     }
 }
 
-// ValueArrayRepresentable helpers
-public extension StorageEntry where Key.TParams == Array<Value<Void>> {
-    func value(
-        keys params: [any ValueRepresentable],
-        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
-    ) async throws -> Key.TValue? {
-        try await value(params.map { try $0.asValue() }, at: hash)
-    }
-    
-    func value(
-        keysFrom params: any ValueArrayRepresentable,
-        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
-    ) async throws -> Key.TValue? {
-        try await value(params.asValueArray(), at: hash)
-    }
-    
-    func valueOrDefault(
-        keys params: [any ValueRepresentable],
-        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
-    ) async throws -> Key.TValue {
-        try await valueOrDefault(params.map { try $0.asValue() }, at: hash)
-    }
-    
-    func valueOrDefault(
-        keysFrom params: any ValueArrayRepresentable,
-        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
-    ) async throws -> Key.TValue {
-        try await valueOrDefault(params.asValueArray(), at: hash)
-    }
-    
-    func size(
-        keys params: [any ValueRepresentable],
-        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
-    ) async throws -> UInt64 {
-        try await size(params.map { try $0.asValue() }, at: hash)
-    }
-    
-    func size(
-        keysFrom params: any ValueArrayRepresentable,
-        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
-    ) async throws -> UInt64 {
-        try await size(params.asValueArray(), at: hash)
-    }
-}
+//// ValueArrayRepresentable helpers
+//public extension StorageEntry where Key.TParams == Array<ValueRepresentable> {
+//    func value(
+//        keys params: [any ValueRepresentable],
+//        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
+//    ) async throws -> Key.TValue? {
+//        try await value(params.map { try $0.asValue() }, at: hash)
+//    }
+//
+//    func value(
+//        keysFrom params: any ValueArrayRepresentable,
+//        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
+//    ) async throws -> Key.TValue? {
+//        try await value(params.asValueArray(), at: hash)
+//    }
+//
+//    func valueOrDefault(
+//        keys params: [any ValueRepresentable],
+//        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
+//    ) async throws -> Key.TValue {
+//        try await valueOrDefault(params.map { try $0.asValue() }, at: hash)
+//    }
+//
+//    func valueOrDefault(
+//        keysFrom params: any ValueArrayRepresentable,
+//        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
+//    ) async throws -> Key.TValue {
+//        try await valueOrDefault(params.asValueArray(), at: hash)
+//    }
+//
+//    func size(
+//        keys params: [any ValueRepresentable],
+//        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
+//    ) async throws -> UInt64 {
+//        try await size(params.map { try $0.asValue() }, at: hash)
+//    }
+//
+//    func size(
+//        keysFrom params: any ValueArrayRepresentable,
+//        at hash: R.RC.TBlock.THeader.THasher.THash? = nil
+//    ) async throws -> UInt64 {
+//        try await size(params.asValueArray(), at: hash)
+//    }
+//}
 
-public extension StorageEntry where
-    Key: IterableStorageKey, Key.TIterator: IterableStorageKeyIterator,
-    Key.TIterator.TIterator.TParam == Value<Void>
-{
-    func filter(
-        key param: any ValueRepresentable
-    ) throws -> Iterator<Key.TIterator.TIterator> {
-        try Iterator(api: api,
-                     iterator: iterator.next(param: param.asValue(), runtime: api.runtime))
-    }
-}
+//public extension StorageEntry where
+//    Key: IterableStorageKey, Key.TIterator: IterableStorageKeyIterator,
+//    Key.TIterator.TIterator.TParam == Value<Void>
+//{
+//    func filter(
+//        key param: any ValueRepresentable
+//    ) throws -> Iterator<Key.TIterator.TIterator> {
+//        try Iterator(api: api,
+//                     iterator: iterator.next(param: param.asValue(), runtime: api.runtime))
+//    }
+//}
 
 public extension StorageEntry where Key: DynamicStorageKey {
     func size(at hash: R.RC.TBlock.THeader.THasher.THash? = nil) async throws -> UInt64 {
@@ -249,15 +249,7 @@ public extension StorageEntry where Key: DynamicStorageKey {
         try Iterator(api: api,
                      iterator: Key.TIterator.TIterator(name: self.params.name,
                                                        pallet: self.params.pallet,
-                                                       params: keys.map{try $0.asValue()},
-                                                       runtime: api.runtime))
-    }
-    
-    func filter(keysFrom params: any ValueArrayRepresentable) throws -> Iterator<Key.TIterator.TIterator> {
-        try Iterator(api: api,
-                     iterator: Key.TIterator.TIterator(name: self.params.name,
-                                                       pallet: self.params.pallet,
-                                                       params: params.asValueArray(),
+                                                       params: keys,
                                                        runtime: api.runtime))
     }
 }
@@ -286,17 +278,17 @@ public extension StorageEntry.Iterator where Iter: IterableStorageKeyIterator {
     }
 }
 
-public extension StorageEntry.Iterator where
-    Iter: IterableStorageKeyIterator, Iter.TIterator.TParam == Value<Void>
-{
-    func filter<V: ValueRepresentable>(
-        key param: V
-    ) throws -> StorageEntry.Iterator<Iter.TIterator> {
-        try StorageEntry.Iterator<_>(api: api,
-                                     iterator: iterator.next(param: param.asValue(),
-                                                             runtime: api.runtime))
-    }
-}
+//public extension StorageEntry.Iterator where
+//    Iter: IterableStorageKeyIterator, Iter.TIterator.TParam == Value<Void>
+//{
+//    func filter<V: ValueRepresentable>(
+//        key param: V
+//    ) throws -> StorageEntry.Iterator<Iter.TIterator> {
+//        try StorageEntry.Iterator<_>(api: api,
+//                                     iterator: iterator.next(param: param.asValue(),
+//                                                             runtime: api.runtime))
+//    }
+//}
 
 public extension StorageEntry where R.CL: SubscribableClient {
     func watch(keys: [Key]) async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {
@@ -308,14 +300,14 @@ public extension StorageEntry where R.CL: SubscribableClient {
     }
 }
 
-// ValueArrayRepresentable helpers
-public extension StorageEntry where R.CL: SubscribableClient, Key.TParams == Array<Value<Void>> {
-    func watch<A: ValueArrayRepresentable>(
-        path params: A
-    ) async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {
-        try await watch(params.asValueArray())
-    }
-}
+//// ValueArrayRepresentable helpers
+//public extension StorageEntry where R.CL: SubscribableClient, Key.TParams == Array<Value<Void>> {
+//    func watch<A: ValueArrayRepresentable>(
+//        path params: A
+//    ) async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {
+//        try await watch(params.asValueArray())
+//    }
+//}
 
 public extension StorageEntry where R.CL: SubscribableClient, Key.TParams == Void {
     func watch() async throws -> AsyncThrowingStream<(Key, Key.TValue?), Error> {

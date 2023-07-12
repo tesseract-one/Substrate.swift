@@ -22,7 +22,22 @@ public extension Signature {
         try self.init(raw: sig, algorithm: algorithm, runtime: runtime)
     }
     
-    func asValue() throws -> Value<Void> { .bytes(raw) }
+    func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+        guard let info = runtime.resolve(type: type) else {
+            throw ValueRepresentableError.typeNotFound(type)
+        }
+        guard let count = info.asBytes(metadata: runtime.metadata) else {
+            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+        }
+        let bytes = raw
+        guard count == 0 || bytes.count == count else {
+            throw ValueRepresentableError.wrongValuesCount(in: info, expected: bytes.count,
+                                                           for: String(describing: Self.self))
+        }
+        return .bytes(bytes, type)
+    }
+    
+    func asValue() -> Value<Void> { .bytes(raw) }
 }
 
 public extension CryptoTypeId {
@@ -34,7 +49,9 @@ public extension CryptoTypeId {
     }
 }
 
-public struct EcdsaSignature: FixedDataCodable, Signature, Hashable, Equatable, CustomStringConvertible {
+public struct EcdsaSignature: FixedDataCodable, Signature, VoidValueRepresentable,
+                              Hashable, Equatable, CustomStringConvertible
+{
     public let signature: Data
     
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
@@ -64,7 +81,9 @@ public struct EcdsaSignature: FixedDataCodable, Signature, Hashable, Equatable, 
     public static let fixedBytesCount: Int = CryptoTypeId.ecdsa.signatureBytesCount
 }
 
-public struct Ed25519Signature: FixedDataCodable, Signature, Hashable, Equatable, CustomStringConvertible {
+public struct Ed25519Signature: FixedDataCodable, Signature, VoidValueRepresentable,
+                                Hashable, Equatable, CustomStringConvertible
+{
     public let signature: Data
     
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
@@ -94,7 +113,9 @@ public struct Ed25519Signature: FixedDataCodable, Signature, Hashable, Equatable
     public static let fixedBytesCount: Int = CryptoTypeId.ed25519.signatureBytesCount
 }
 
-public struct Sr25519Signature: FixedDataCodable, Signature, Hashable, Equatable, CustomStringConvertible {
+public struct Sr25519Signature: FixedDataCodable, Signature, VoidValueRepresentable,
+                                Hashable, Equatable, CustomStringConvertible
+{
     public let signature: Data
     
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
@@ -157,17 +178,37 @@ extension MultiSignature: Signature {
         case .ed25519(let sig): return sig.raw
         }
     }
+    
+    public var signature: any Signature {
+        switch self {
+        case .ecdsa(let sig): return sig
+        case .sr25519(let sig): return sig
+        case .ed25519(let sig): return sig
+        }
+    }
+    
     public static func algorithms(runtime: any Runtime) throws -> [CryptoTypeId] { Self.supportedCryptoTypes }
     public static let supportedCryptoTypes: [CryptoTypeId] = [.sr25519, .ecdsa, .ed25519]
 }
 
 extension MultiSignature: ValueRepresentable {
-    public func asValue() throws -> Value<Void> {
-        switch self {
-        case .ecdsa(let sig): return try .variant(name: sig.algorithm.signatureName, values: [sig.asValue()])
-        case .ed25519(let sig): return try .variant(name: sig.algorithm.signatureName, values: [sig.asValue()])
-        case .sr25519(let sig): return try .variant(name: sig.algorithm.signatureName, values: [sig.asValue()])
+    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+        guard let info = runtime.resolve(type: type) else {
+            throw ValueRepresentableError.typeNotFound(type)
         }
+        let selfvars = Set(Self.supportedCryptoTypes.map{$0.signatureName})
+        guard case .variant(variants: let variants) = info.definition else {
+            throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
+        }
+        guard selfvars.elementsEqual(variants.map{$0.name}) else {
+            throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
+        }
+        let sig = self.signature
+        guard let field = variants.first(where: {$0.name == sig.algorithm.signatureName})?.fields.first else {
+            throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
+        }
+        return try .variant(name: sig.algorithm.signatureName,
+                            values: [sig.asValue(runtime: runtime, type: field.type)], type)
     }
 }
 
@@ -197,10 +238,11 @@ extension MultiSignature: ScaleCodec.Codable {
     }
 }
 
-extension MultiSignature: RuntimeCodable {}
+extension MultiSignature: RuntimeCodable, RuntimeDynamicCodable {}
 
 public extension Signature {
     var description: String {
         "\(algorithm)(\(raw.hex()))"
     }
 }
+

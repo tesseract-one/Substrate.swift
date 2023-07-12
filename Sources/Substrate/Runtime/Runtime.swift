@@ -24,19 +24,16 @@ public protocol Runtime: AnyObject {
     func resolve(palletIndex name: String) -> UInt8?
         
     // Calls
-    func resolve(callType pallet: UInt8) -> RuntimeType.Info?
-    func resolve(callType pallet: String) -> RuntimeType.Info?
     func resolve(callName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(callIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
+    func resolve(callParams name: String, pallet: String) -> [RuntimeType.Field]?
     
     // Runtime Calls
     func resolve(
         runtimeCall method: String, api: String
-    ) -> (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)?
+    ) -> (params: [(name: String, type: RuntimeType.Info)], result: RuntimeType.Info)?
     
     // Events
-    func resolve(eventType pallet: UInt8) -> RuntimeType.Info?
-    func resolve(eventType pallet: String) -> RuntimeType.Info?
     func resolve(eventName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(eventIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
     
@@ -63,16 +60,6 @@ public extension Runtime {
     }
     
     @inlinable
-    func resolve(callType pallet: UInt8) -> RuntimeType.Info? {
-        metadata.resolve(pallet: pallet)?.call
-    }
-    
-    @inlinable
-    func resolve(callType pallet: String) -> RuntimeType.Info? {
-        metadata.resolve(pallet: pallet)?.call
-    }
-    
-    @inlinable
     func resolve(callName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)? {
         metadata.resolve(pallet: pallet).flatMap { pallet in
             pallet.callName(index: index).map { (pallet.name, $0) }
@@ -87,20 +74,15 @@ public extension Runtime {
     }
     
     @inlinable
+    func resolve(callParams name: String, pallet: String) -> [RuntimeType.Field]? {
+        metadata.resolve(pallet: pallet)?.callParams(name: name)
+    }
+    
+    @inlinable
     func resolve(
         runtimeCall method: String, api: String
-    ) -> (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)? {
+    ) -> (params: [(name: String, type: RuntimeType.Info)], result: RuntimeType.Info)? {
         metadata.resolve(api: api)?.resolve(method: method)
-    }
-    
-    @inlinable
-    func resolve(eventType pallet: UInt8) -> RuntimeType.Info? {
-        metadata.resolve(pallet: pallet)?.event
-    }
-    
-    @inlinable
-    func resolve(eventType pallet: String) -> RuntimeType.Info? {
-        metadata.resolve(pallet: pallet)?.event
     }
     
     @inlinable

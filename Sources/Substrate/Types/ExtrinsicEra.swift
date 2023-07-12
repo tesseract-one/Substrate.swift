@@ -131,92 +131,102 @@ extension ExtrinsicEra: ScaleCodec.Codable {
 
 extension ExtrinsicEra: RuntimeCodable, RuntimeDynamicDecodable, RuntimeDynamicEncodable {}
 
-extension ExtrinsicEra: ValueConvertible {
-    public init<C>(value: Value<C>) throws {
-        let parseFields = { (fields: [String: Value<C>]) -> Self in
-            guard fields.count == 2 else {
-                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
-                                                                  expected: 2,
-                                                                  for: "ExtrinsicEra")
-            }
-            guard let period = fields["period"]?.u256 else {
-                throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "ExtrinsicEra")
-            }
-            if let phase = fields["phase"]?.u256 {
-                return .mortal(period: UInt64(period), phase: UInt64(phase))
-            } else if let current = fields["current"]?.u256 {
-                return Self(period: UInt64(period), current: UInt64(current))
-            } else {
-                throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "ExtrinsicEra")
-            }
-        }
-        switch value.value {
-        case .map(let fields):
-            guard fields.count == 2 else {
-                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
-                                                                  expected: 2,
-                                                                  for: "ExtrinsicEra")
-            }
-            self = try parseFields(fields)
-        case .sequence(let values):
-            guard values.count == 2 else {
-                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
-                                                                  expected: 2,
-                                                                  for: "ExtrinsicEra")
-            }
-            guard let period = values[0].u256, let phase = values[1].u256 else {
-                throw ValueInitializableError<C>.wrongValueType(got: value.value,
-                                                                for: "ExtrinsicExtra")
-            }
-            self = .mortal(period: UInt64(period), phase: UInt64(phase))
-        case .variant(let variant):
-            if variant.name == "Immortal" {
-                self = .immortal
-                return
-            }
-            guard variant.name.starts(with: "Mortal") else {
-                throw ValueInitializableError<C>.unknownVariant(name: variant.name,
-                                                                in: value.value,
-                                                                for: "ExtrinsicEra")
-            }
-            if variant.name == "Mortal" {
-                guard let fields = variant.fields else {
-                    throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "ExtrinsicEra")
-                }
-                self = try parseFields(fields)
-            } else {
-                let vals = variant.values
-                guard vals.count == 1 else {
-                    throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
-                                                                      expected: 1,
-                                                                      for: "ExtrinsicEra")
-                }
-                guard let second = vals.first?.u256 else {
-                    throw ValueInitializableError<C>.wrongValueType(got: value.value,
-                                                                    for: "ExtrinsicExtra")
-                }
-                let first = UInt8(variant.name.replacingOccurrences(of: "Mortal", with: ""), radix: 10)
-                guard let first = first else {
-                    throw ValueInitializableError<C>.unknownVariant(name: variant.name,
-                                                                    in: value.value,
-                                                                    for: "ExtrinsicEra")
-                }
-                guard let val = Self(b1: first, b2: UInt8(second)) else {
-                    throw ValueInitializableError<C>.wrongValueType(got: value.value,
-                                                                    for: "ExtrinsicExtra")
-                }
-                self = val
-            }
-        default: throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "ExtrinsicEra")
-        }
-    }
+extension ExtrinsicEra: ValueRepresentable {
+//    public init<C>(value: Value<C>) throws {
+//        let parseFields = { (fields: [String: Value<C>]) -> Self in
+//            guard fields.count == 2 else {
+//                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
+//                                                                  expected: 2,
+//                                                                  for: "ExtrinsicEra")
+//            }
+//            guard let period = fields["period"]?.u256 else {
+//                throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "ExtrinsicEra")
+//            }
+//            if let phase = fields["phase"]?.u256 {
+//                return .mortal(period: UInt64(period), phase: UInt64(phase))
+//            } else if let current = fields["current"]?.u256 {
+//                return Self(period: UInt64(period), current: UInt64(current))
+//            } else {
+//                throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "ExtrinsicEra")
+//            }
+//        }
+//        switch value.value {
+//        case .map(let fields):
+//            guard fields.count == 2 else {
+//                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
+//                                                                  expected: 2,
+//                                                                  for: "ExtrinsicEra")
+//            }
+//            self = try parseFields(fields)
+//        case .sequence(let values):
+//            guard values.count == 2 else {
+//                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
+//                                                                  expected: 2,
+//                                                                  for: "ExtrinsicEra")
+//            }
+//            guard let period = values[0].u256, let phase = values[1].u256 else {
+//                throw ValueInitializableError<C>.wrongValueType(got: value.value,
+//                                                                for: "ExtrinsicExtra")
+//            }
+//            self = .mortal(period: UInt64(period), phase: UInt64(phase))
+//        case .variant(let variant):
+//            if variant.name == "Immortal" {
+//                self = .immortal
+//                return
+//            }
+//            guard variant.name.starts(with: "Mortal") else {
+//                throw ValueInitializableError<C>.unknownVariant(name: variant.name,
+//                                                                in: value.value,
+//                                                                for: "ExtrinsicEra")
+//            }
+//            if variant.name == "Mortal" {
+//                guard let fields = variant.fields else {
+//                    throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "ExtrinsicEra")
+//                }
+//                self = try parseFields(fields)
+//            } else {
+//                let vals = variant.values
+//                guard vals.count == 1 else {
+//                    throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
+//                                                                      expected: 1,
+//                                                                      for: "ExtrinsicEra")
+//                }
+//                guard let second = vals.first?.u256 else {
+//                    throw ValueInitializableError<C>.wrongValueType(got: value.value,
+//                                                                    for: "ExtrinsicExtra")
+//                }
+//                let first = UInt8(variant.name.replacingOccurrences(of: "Mortal", with: ""), radix: 10)
+//                guard let first = first else {
+//                    throw ValueInitializableError<C>.unknownVariant(name: variant.name,
+//                                                                    in: value.value,
+//                                                                    for: "ExtrinsicEra")
+//                }
+//                guard let val = Self(b1: first, b2: UInt8(second)) else {
+//                    throw ValueInitializableError<C>.wrongValueType(got: value.value,
+//                                                                    for: "ExtrinsicExtra")
+//                }
+//                self = val
+//            }
+//        default: throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "ExtrinsicEra")
+//        }
+//    }
     
-    public func asValue() throws -> Value<Void> {
+    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+        guard let info = runtime.resolve(type: type) else {
+            throw ValueRepresentableError.typeNotFound(type)
+        }
+        guard case .variant(variants: let variants) = info.definition else {
+            throw ValueRepresentableError.wrongType(got: info, for: "ExtrinsicEra")
+        }
+        guard variants.count == UInt8.max else {
+            throw ValueRepresentableError.wrongType(got: info, for: "ExtrinsicEra")
+        }
+        let bodyType = variants[2].fields.first!.type
         switch self {
-        case .immortal: return .variant(name: "Immortal", values: [])
+        case .immortal: return .variant(name: "Immortal", values: [], type)
         case .mortal(period: _, phase: _):
             let (first, second) = self.serialize()
-            return .variant(name: "Mortal\(first)", values: [.u256(UInt256(second!))])
+            return .variant(name: "Mortal\(first)", values: [.u256(UInt256(second!), bodyType)], type)
         }
     }
 }

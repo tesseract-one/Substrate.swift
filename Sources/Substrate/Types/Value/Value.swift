@@ -202,56 +202,28 @@ public extension Value {
 }
 
 public extension Value where C == Void {
-    static func map(_ map: [String: any ValueRepresentable]) throws -> Self {
-        try .map(map.mapValues { try $0.asValue() }, ())
+    static func map<S: Sequence>(_ seq: S) -> Self
+        where S.Element == (key: String, value: VoidValueRepresentable)
+    {
+        .map(Dictionary(uniqueKeysWithValues: seq.map{($0.key, $0.value.asValue())}), ())
     }
     
-    static func map(fields map: [String: Value<C>]) -> Self {
-        .map(map, ())
-    }
-    
-    static func map(from map: any ValueMapRepresentable) throws -> Self {
-        try .map(map.asValueMap(), ())
-    }
-    
-    static func sequence(_ seq: [any ValueRepresentable]) throws -> Self {
-        try .sequence(seq.map{try $0.asValue()}, ())
+    static func sequence<S: Sequence>(_ seq: S) -> Self
+        where S.Element == VoidValueRepresentable
+    {
+        .sequence(seq.map{$0.asValue()}, ())
     }
 
-    static func sequence(from seq: any ValueArrayRepresentable) throws -> Self {
-        try .sequence(seq.asValueArray(), ())
-    }
-    
-    static func sequence<S: Sequence>(values seq: S) -> Self where S.Element == Value<C> {
-        .sequence(seq, ())
-    }
-    
-    static func variant(name: String, map: [String: any ValueRepresentable]) throws -> Self {
-        try .variant(name: name, fields: map.mapValues { try $0.asValue() }, ())
-    }
-    
     static func variant<S: Sequence>(name: String, fields: S) -> Self
-        where S.Element == (key: String, value: Value<Void>)
+        where S.Element == (key: String, value: any VoidValueRepresentable)
     {
-        .variant(name: name, fields: fields, ())
-    }
-    
-    static func variant(name: String, from map: any ValueMapRepresentable) throws -> Self {
-        try .variant(name: name, fields: map.asValueMap(), ())
-    }
-    
-    static func variant(name: String, sequence: [any ValueRepresentable]) throws -> Self {
-        try .variant(name: name, values: sequence.map{try $0.asValue()}, ())
+        .variant(name: name, fields: fields.map { ($0.key, $0.value.asValue()) }, ())
     }
     
     static func variant<S: Sequence>(name: String, values: S) -> Self
-        where S.Element == Value<C>
+        where S.Element == VoidValueRepresentable
     {
-        .variant(name: name, values: values, ())
-    }
-    
-    static func variant(name: String, from array: any ValueArrayRepresentable) throws -> Self {
-        try .variant(name: name, values: array.asValueArray(), ())
+        .variant(name: name, values: values.map{$0.asValue()}, ())
     }
     
     static func bits(_ seq: BitSequence) -> Self {

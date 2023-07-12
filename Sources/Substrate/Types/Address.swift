@@ -57,16 +57,70 @@ public enum MultiAddress<Id: AccountId & Hashable,
 }
 
 extension MultiAddress: ValueRepresentable {
-    public func asValue() throws -> Value<Void> {
+    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+        guard let info = runtime.resolve(type: type) else {
+            throw ValueRepresentableError.typeNotFound(type)
+        }
+        let selfvars: Set<String> = ["Id", "Index", "Address20", "Raw", "Address32"]
+        guard case .variant(variants: let variants) = info.definition else {
+            throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
+        }
+        guard selfvars.elementsEqual(variants.map{$0.name}) else {
+            throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
+        }
         switch self {
-        case .id(let id): return try .variant(name: "Id", values: [id.asValue()])
-        case .index(let index): return try .variant(name: "Index", values: [index.asValue()])
-        case .address20(let data): return .variant(name: "Address20", values: [.bytes(data)])
-        case .raw(let data): return .variant(name: "Raw", values: [.bytes(data)])
-        case .address32(let data): return .variant(name: "Address32", values: [.bytes(data)])
+        case .id(let id):
+            guard let field = variants.first(where: {$0.name == "Id"})?.fields.first else {
+                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
+            }
+            return try .variant(name: "Id",
+                                values: [id.asValue(runtime: runtime, type: field.type)],
+                                type)
+        case .index(let index):
+            guard let field = variants.first(where: {$0.name == "Index"})?.fields.first else {
+                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
+            }
+            return try .variant(name: "Index",
+                                values: [index.asValue(runtime: runtime, type: field.type)],
+                                type)
+        case .address20(let data):
+            guard let field = variants.first(where: {$0.name == "Address20"})?.fields.first else {
+                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
+            }
+            return try .variant(name: "Address20",
+                                values: [data.asValue(runtime: runtime, type: field.type)],
+                                type)
+        case .raw(let data):
+            guard let field = variants.first(where: {$0.name == "Raw"})?.fields.first else {
+                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
+            }
+            return try .variant(name: "Raw",
+                                values: [data.asValue(runtime: runtime, type: field.type)],
+                                type)
+        case .address32(let data):
+            guard let field = variants.first(where: {$0.name == "Address32"})?.fields.first else {
+                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
+            }
+            return try .variant(name: "Address32",
+                                values: [data.asValue(runtime: runtime, type: field.type)],
+                                type)
         }
     }
 }
+
+//extension MultiAddress: VoidValueRepresentable where
+//    Id: VoidValueRepresentable, Index: VoidValueRepresentable
+//{
+//    public func asValue() -> Value<Void> {
+//        switch self {
+//        case .id(let id): return .variant(name: "Id", values: [id.asValue()])
+//        case .index(let index): return .variant(name: "Index", values: [index.asValue()])
+//        case .address20(let data): return .variant(name: "Address20", values: [data.asValue()])
+//        case .raw(let data): return .variant(name: "Raw", values: [data.asValue()])
+//        case .address32(let data): return .variant(name: "Address32", values: [data.asValue()])
+//        }
+//    }
+//}
 
 extension MultiAddress: StaticAddress {
     public typealias TAccountId = Id

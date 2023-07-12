@@ -179,4 +179,3 @@ extension Result: RuntimeSwiftDecodable where Success: RuntimeSwiftDecodable, Fa
         }
     }
 }
-

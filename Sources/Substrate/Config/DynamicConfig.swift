@@ -316,7 +316,7 @@ public extension DynamicConfig {
             }
             
             public struct QueryFeeDetails<FD: RuntimeDynamicDecodable>:
-                    SomeTransactionPaymentFeeDetailsRuntimeCall
+                SomeTransactionPaymentFeeDetailsRuntimeCall
             {
                 public typealias TReturn = FD
                 
@@ -343,23 +343,6 @@ public extension DynamicConfig {
             
             public static let name = "TransactionPaymentApi"
         }
-    }
-    
-    struct System {
-        public struct Storage {
-            public struct Events<BE: SomeBlockEvents>: StaticStorageKey {
-                public typealias TParams = Void
-                public typealias TValue = BE
-                
-                public static var name: String { "Events" }
-                public static var pallet: String { System.name }
-                
-                public init(_ params: TParams, runtime: any Runtime) throws {}
-                public init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws {}
-                public var pathHash: Data { Data() }
-            }
-        }
-        public static let name = "System"
     }
 }
 

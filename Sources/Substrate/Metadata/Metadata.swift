@@ -42,6 +42,7 @@ public protocol PalletMetadata {
     
     func callName(index: UInt8) -> String?
     func callIndex(name: String) -> UInt8?
+    func callParams(name: String) -> [RuntimeType.Field]?
     func eventName(index: UInt8) -> String?
     func eventIndex(name: String) -> UInt8?
     

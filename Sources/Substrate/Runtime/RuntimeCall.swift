@@ -63,36 +63,20 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
     public let api: String
     public let method: String
     
-    public let params: Value<Void>
+    public let params: [String: any ValueRepresentable]
     
-    public init(api: String, method: String, params: Value<Void>) {
+    public init(api: String, method: String, params: [String: any ValueRepresentable]) {
         self.api = api
         self.method = method
         self.params = params
     }
     
     public init(api: String, method: String) {
-        self.init(api: api, method: method, params: .nil)
+        self.init(api: api, method: method, params: [:])
     }
     
-    public init(api: String, method: String, param: any ValueRepresentable) throws {
-        try self.init(api: api, method: method, params: param.asValue())
-    }
-    
-    public init(api: String, method: String, map: [String: any ValueRepresentable]) throws {
-        try self.init(api: api, method: method, params: .map(map))
-    }
-    
-    public init(api: String, method: String, sequence: [any ValueRepresentable]) throws {
-        try self.init(api: api, method: method, params: .sequence(sequence))
-    }
-    
-    public init(api: String, method: String, from: any ValueMapRepresentable) throws {
-        try self.init(api: api, method: method, params: .map(from: from))
-    }
-    
-    public init(api: String, method: String, from: any ValueArrayRepresentable) throws {
-        try self.init(api: api, method: method, params: .sequence(from: from))
+    public init(api: String, method: String, param: any ValueRepresentable) {
+        self.init(api: api, method: method, params: ["": param])
     }
     
     public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
@@ -100,27 +84,20 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
             throw RuntimeCallCodingError.callNotFound(method: method, api: api)
         }
         guard call.params.count > 0 else { return }
-        if call.params.count == 1 {
-            try params.encode(in: &encoder, as: call.params.first!.1.id, runtime: runtime)
+        guard params.count == call.params.count else {
+            throw RuntimeCallCodingError.wrongParametersCount(params: params, expected: call.params)
         }
-        switch params.value {
-        case .sequence(let seq):
-            guard seq.count == call.params.count else {
-                throw RuntimeCallCodingError.wrongParametersCount(params: seq, expected: call.params)
-            }
-            for (param, info) in zip(seq, call.params) {
-                try param.encode(in: &encoder, as: info.1.id, runtime: runtime)
-            }
-        case .map(let fields):
-            for info in call.params {
-                guard let param = fields[info.0] else {
-                    throw RuntimeCallCodingError.parameterNotFound(name: info.0,
-                                                                   inParams: fields)
+        if call.params.count == 1 {
+            try params.first!.value.asValue(runtime: runtime, type: call.params.first!.type.id)
+                .encode(in: &encoder, as: call.params.first!.type.id, runtime: runtime)
+        } else {
+            for param in call.params {
+                guard let val = params[param.name] else {
+                    throw RuntimeCallCodingError.parameterNotFound(name: param.name, inParams: params)
                 }
-                try param.encode(in: &encoder, as: info.1.id, runtime: runtime)
+                try val.asValue(runtime: runtime, type: param.type.id)
+                    .encode(in: &encoder, as: param.type.id, runtime: runtime)
             }
-        default:
-            throw RuntimeCallCodingError.expectedMapOrSequence(got: params)
         }
     }
     
@@ -138,9 +115,9 @@ public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<RuntimeType.Id>>
 
 public enum RuntimeCallCodingError: Error {
     case callNotFound(method: String, api: String)
-    case expectedMapOrSequence(got: Value<Void>)
-    case wrongParametersCount(params: [Value<Void>], expected: [(String, RuntimeType.Info)])
-    case parameterNotFound(name: String, inParams: [String: Value<Void>])
+    case wrongParametersCount(params: [String: any ValueRepresentable],
+                              expected: [(String, RuntimeType.Info)])
+    case parameterNotFound(name: String, inParams: [String: any ValueRepresentable])
 }
 
 public protocol SomeMetadataVersionsRuntimeCall: StaticCodableRuntimeCall

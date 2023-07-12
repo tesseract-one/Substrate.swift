@@ -33,8 +33,8 @@ public protocol StaticCall: IdentifiableCall, RuntimeEncodable, RuntimeDecodable
 
 public extension StaticCall {
     init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
-        let modIndex = try decoder.decode(UInt8.self)
-        let callIndex = try decoder.decode(UInt8.self)
+        let modIndex = try decoder.decode(.enumCaseId)
+        let callIndex = try decoder.decode(.enumCaseId)
         guard let info = runtime.resolve(callName: callIndex, pallet: modIndex) else {
             throw CallCodingError.callNotFound(index: callIndex, pallet: modIndex)
         }
@@ -49,8 +49,8 @@ public extension StaticCall {
         guard let info = runtime.resolve(callIndex: name, pallet: pallet) else {
             throw CallCodingError.callNotFound(name: name, pallet: pallet)
         }
-        try encoder.encode(info.pallet)
-        try encoder.encode(info.index)
+        try encoder.encode(info.pallet, .enumCaseId)
+        try encoder.encode(info.index, .enumCaseId)
         try encodeParams(in: &encoder, runtime: runtime)
     }
 }
@@ -59,74 +59,103 @@ public struct AnyCall<C>: Call {
     public let pallet: String
     public let name: String
     
-    public let params: Value<C>
+    private let _params: [String: any ValueRepresentable]
     
-    public init(name: String, pallet: String, params: Value<C>) {
+    private init(name: String, pallet: String, _params: [String: any ValueRepresentable]) {
         self.pallet = pallet
         self.name = name
-        self.params = params
+        self._params = _params
     }
     
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
                                               as type: RuntimeType.Id,
                                               runtime: Runtime) throws
     {
-        var variant: Value<C>
-        switch params.value {
-        case .variant(let val):
-            guard val.name == self.name else {
-                throw CallCodingError.foundWrongCall(found: (name: val.name, pallet: pallet),
-                                                     expected: (name: self.name, pallet: pallet))
+        guard let callParams = runtime.resolve(callParams: name, pallet: pallet) else {
+            throw CallCodingError.callNotFound(name: name, pallet: pallet)
+        }
+        let variant: Value<RuntimeType.Id>
+        if callParams.first?.name != nil { // Map
+            let pairs = try callParams.enumerated().map { (idx, el) in
+                let value: any ValueRepresentable
+                if let val = _params[el.name!] {
+                    value = val
+                } else if let val = _params[String(idx)] {
+                    value = val
+                } else {
+                    throw CallCodingError.valueNotFound(key: el.name!)
+                }
+                return try (el.name!, value.asValue(runtime: runtime, type: el.type))
             }
-            variant = params
-        case .map(let fields):
-            variant = Value(value: .variant(.map(name: name, fields: fields)),
-                            context: params.context)
-        case .sequence(let vals):
-            variant = Value(value: .variant(.sequence(name: name, values: vals)),
-                            context: params.context)
-        default:
-            variant = Value(value: .variant(.sequence(name: name, values: [params])),
-                            context: params.context)
+            let map = Dictionary(uniqueKeysWithValues: pairs)
+            variant = Value(value: .variant(.map(name: name, fields: map)), context: type)
+        } else { // Sequence
+            let values = try callParams.enumerated().map { (idx, el) in
+                guard let value = _params[String(idx)] else {
+                    throw CallCodingError.valueNotFound(key: String(idx))
+                }
+                return try value.asValue(runtime: runtime, type: el.type)
+            }
+            variant = Value(value: .variant(.sequence(name: name, values: values)), context: type)
         }
         try Value(value: .variant(.sequence(name: pallet, values: [variant])),
-                  context: params.context).encode(in: &encoder, as: type, runtime: runtime)
+                  context: type).encode(in: &encoder, as: type, runtime: runtime)
     }
 }
 
 public extension AnyCall where C == Void {
+    var params: [String: any ValueRepresentable] { _params }
+    
     init(name: String, pallet: String) {
-        self.init(name: name, pallet: pallet, params: .nil)
+        self.init(name: name, pallet: pallet, _params: [:])
     }
     
-    init(name: String, pallet: String, param: any ValueRepresentable) throws {
-        try self.init(name: name, pallet: pallet, params: param.asValue())
+    init(name: String, pallet: String, param: any ValueRepresentable) {
+        self.init(name: name, pallet: pallet, params: [param])
     }
     
-    init(name: String, pallet: String, from: any ValueMapRepresentable) throws {
-        try self.init(name: name, pallet: pallet, params: .map(from: from))
+    init(name: String, pallet: String, params: [any ValueRepresentable]) {
+        let pairs = params.enumerated().map{(String($0.offset), $0.element)}
+        self.init(name: name, pallet: pallet, _params: Dictionary(uniqueKeysWithValues: pairs))
     }
     
-    init(name: String, pallet: String, from: any ValueArrayRepresentable) throws {
-        try self.init(name: name, pallet: pallet, params: .sequence(from: from))
-    }
-    
-    init(name: String, pallet: String, map: [String: any ValueRepresentable]) throws {
-        try self.init(name: name, pallet: pallet, params: .map(map))
-    }
-    
-    init(name: String, pallet: String, sequence: [any ValueRepresentable]) throws {
-        try self.init(name: name, pallet: pallet, params: .sequence(sequence))
+    init(name: String, pallet: String, params: [String: any ValueRepresentable]) {
+        self.init(name: name, pallet: pallet, _params: params)
     }
 }
 
 extension AnyCall: CustomStringConvertible {
     public var description: String {
-        "\(pallet).\(name)(\(params))"
+        "\(pallet).\(name)(\(_params))"
+    }
+}
+
+public extension AnyCall where C == RuntimeType.Id {
+    var params: [String: Value<RuntimeType.Id>] {
+        _params as! [String: Value<RuntimeType.Id>]
+    }
+    
+    init(name: String, pallet: String) {
+        self.init(name: name, pallet: pallet, _params: [:])
+    }
+    
+    init(name: String, pallet: String, param: Value<C>) {
+        self.init(name: name, pallet: pallet, params: [param])
+    }
+    
+    init(name: String, pallet: String, params: [Value<C>]) {
+        let pairs = params.enumerated().map{(String($0.offset), $0.element)}
+        self.init(name: name, pallet: pallet, _params: Dictionary(uniqueKeysWithValues: pairs))
+    }
+    
+    init(name: String, pallet: String, params: [String: Value<C>]) {
+        self.init(name: name, pallet: pallet, _params: params)
     }
 }
 
 extension AnyCall: RuntimeDynamicDecodable where C == RuntimeType.Id {
+    
+    
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
                                        as type: RuntimeType.Id,
                                        runtime: Runtime) throws
@@ -150,13 +179,14 @@ extension AnyCall: RuntimeDynamicDecodable where C == RuntimeType.Id {
         }
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
+            let fields = values.enumerated().map{(String($0.offset), $0.element)}
             self.init(name: name,
                       pallet: pallet,
-                      params: Value(value: .sequence(values), context: value.context))
+                      params: Dictionary(uniqueKeysWithValues: fields))
         case .variant(.map(name: let name, fields: let fields)):
             self.init(name: name,
                       pallet: pallet,
-                      params: Value(value: .map(fields), context: value.context))
+                      params: fields)
         default: throw CallCodingError.decodedNonVariantValue(value)
         }
     }
@@ -166,6 +196,7 @@ public enum CallCodingError: Error {
     case callNotFound(index: UInt8, pallet: UInt8)
     case callNotFound(name: String, pallet: String)
     case foundWrongCall(found: (name: String, pallet: String), expected: (name: String, pallet: String))
+    case valueNotFound(key: String)
     case tooManyFieldsInVariant(variant: Value<RuntimeType.Id>, expected: Int)
     case decodedNonVariantValue(Value<RuntimeType.Id>)
 }

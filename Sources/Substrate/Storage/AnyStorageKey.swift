@@ -11,20 +11,20 @@ import ScaleCodec
 public typealias AnyValueStorageKey = AnyStorageKey<Value<RuntimeType.Id>>
 
 public protocol DynamicStorageKey: IterableStorageKey where
-    TParams == [Value<Void>],
+    TParams == [ValueRepresentable],
     TBaseParams == (name: String, pallet: String),
     TIterator: IterableStorageKeyIterator,
     TIterator.TIterator: DynamicStorageKeyIterator {}
 
 public protocol DynamicStorageKeyIterator: IterableStorageKeyIterator where
-    TParam == Value<Void>,
+    TParam == ValueRepresentable,
     TKey: DynamicStorageKey
 {
-    init(name: String, pallet: String, params: [Value<Void>], runtime: any Runtime) throws
+    init(name: String, pallet: String, params: [ValueRepresentable], runtime: any Runtime) throws
 }
 
 public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
-    public typealias TParams = [Value<Void>]
+    public typealias TParams = [ValueRepresentable]
     public typealias TBaseParams = (name: String, pallet: String)
     public typealias TValue = Val
     public typealias TIterator = Iterator.Root
@@ -33,8 +33,12 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
     public var name: String
     public var path: [Component]
     
-    public var values: [Value<Void>?] {
+    public var anyValues: [ValueRepresentable?] {
         path.map { $0.value }
+    }
+    
+    public var values: [Value<RuntimeType.Id>?] {
+        path.map { $0.value.flatMap{$0 as? Value<RuntimeType.Id>} }
     }
     
     public var hashes: [Data] {
@@ -51,7 +55,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
         self.path = path
     }
     
-    public init(base: (name: String, pallet: String), params: [Value<Void>], runtime: Runtime) throws {
+    public init(base: (name: String, pallet: String), params: [ValueRepresentable], runtime: Runtime) throws {
         guard let (keys, _, _) = runtime.resolve(storage: base.name, pallet: base.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
@@ -62,7 +66,8 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
         var components = Array<Component>()
         components.reserveCapacity(params.count)
         for (key, val) in zip(keys, params) {
-            let data = try runtime.encode(value: val, as: key.1.id)
+            let value = try val.asValue(runtime: runtime, type: key.1.id)
+            let data = try runtime.encode(value: value, as: key.1.id)
             components.append(.full(val, key.0.hasher.hash(data: data)))
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
@@ -115,9 +120,9 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
 public extension AnyStorageKey {
     enum Component {
         case hash(Data)
-        case full(Value<Void>, Data)
+        case full(ValueRepresentable, Data)
         
-        public var value: Value<Void>? {
+        public var value: ValueRepresentable? {
             switch self {
             case .full(let val, _): return val
             default: return nil
@@ -135,7 +140,7 @@ public extension AnyStorageKey {
 
 public extension AnyStorageKey {
     struct Iterator: DynamicStorageKeyIterator {
-        public typealias TParam = Value<Void>
+        public typealias TParam = ValueRepresentable
         public typealias TKey = AnyStorageKey<Val>
         public typealias TIterator = Self
         
@@ -153,7 +158,7 @@ public extension AnyStorageKey {
             self.path = path
         }
         
-        public init(name: String, pallet: String, params: [Value<Void>], runtime: any Runtime) throws {
+        public init(name: String, pallet: String, params: [ValueRepresentable], runtime: any Runtime) throws {
             guard let (keys, _, _) = runtime.resolve(storage: name, pallet: pallet) else {
                 throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
             }
@@ -164,13 +169,14 @@ public extension AnyStorageKey {
             var components = Array<Component>()
             components.reserveCapacity(params.count)
             for (key, val) in zip(keys, params) {
-                let data = try runtime.encode(value: val, as: key.1.id)
+                let value = try val.asValue(runtime: runtime, type: key.1.id)
+                let data = try runtime.encode(value: value, as: key.1.id)
                 components.append(.full(val, key.0.hasher.hash(data: data)))
             }
             self.init(name: name, pallet: pallet, path: components)
         }
         
-        public func next(param: Value<Void>, runtime: any Runtime) throws -> Self {
+        public func next(param: ValueRepresentable, runtime: any Runtime) throws -> Self {
             guard let (keys, _, _) = runtime.resolve(storage: name, pallet: pallet) else {
                 throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
             }
@@ -179,7 +185,8 @@ public extension AnyStorageKey {
                                                                      expected: keys.count - 1)
             }
             let key = keys[path.count]
-            let data = try runtime.encode(value: param, as: key.1.id)
+            let value = try param.asValue(runtime: runtime, type: key.1.id)
+            let data = try runtime.encode(value: value, as: key.1.id)
             let newPath = path + [.full(param, key.0.hasher.hash(data: data))]
             return Self(name: name, pallet: pallet, path: newPath)
         }
@@ -208,7 +215,7 @@ public extension AnyStorageKey.Iterator {
             self.pallet = param.pallet
         }
         
-        public func next(param: Value<Void>, runtime: Runtime) throws -> TIterator {
+        public func next(param: ValueRepresentable, runtime: Runtime) throws -> TIterator {
             try TIterator(name: name, pallet: pallet, path: []).next(param: param, runtime: runtime)
         }
         

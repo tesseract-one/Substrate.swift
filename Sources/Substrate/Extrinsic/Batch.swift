@@ -9,69 +9,46 @@ import Foundation
 import ScaleCodec
 
 public protocol SomeBatchCall: IdentifiableCall {
-    var calls: [Call] { get }
-    init(calls: [Call])
-    func add(_ call: Call) -> Self
+    var calls: [any Call] { get }
+    init(calls: [any Call])
+    func add(_ call: any Call) -> Self
 }
 
-public struct AnyBatchCall: SomeBatchCall {
-    public let calls: [Call]
-    public init(calls: [Call]) {
-        self.calls = calls
-    }
-    public func add(_ call: Call) -> AnyBatchCall {
-        Self(calls: calls + [call])
-    }
-    public static var name: String = "batch"
-    public static var pallet: String = "Utility"
+public protocol AnyBatchCallCommon: SomeBatchCall {}
+
+public extension AnyBatchCallCommon {
+    func add(_ call: any Call) -> Self { Self(calls: calls + [call]) }
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: RuntimeType.Id,
-                                       runtime: Runtime) throws
-    {
-        calls = try Array<AnyCall<RuntimeType.Id>>(from: &decoder) { decoder in
-            try AnyCall<RuntimeType.Id>(from: &decoder, runtime: runtime) { _ in type }
+    @inlinable static var pallet: String { "Utility" }
+    
+    init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: RuntimeType.Id, runtime: Runtime) throws {
+        let calls = try Array<AnyCall>(from: &decoder) { decoder in
+            try AnyCall(from: &decoder, as: type, runtime: runtime)
         }
+        self.init(calls: calls)
     }
     
-    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
-                                              as type: RuntimeType.Id,
-                                              runtime: Runtime) throws
-    {
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, as type: RuntimeType.Id, runtime: Runtime) throws {
         try calls.encode(in: &encoder) { call, enc in
             try call.encode(in: &enc, runtime: runtime) { _ in type }
         }
     }
 }
 
-public struct AnyBatchAllCall: SomeBatchCall {
-    public let calls: [Call]
-    public init(calls: [Call]) {
+public struct AnyBatchCall: AnyBatchCallCommon {
+    public let calls: [any Call]
+    public init(calls: [any Call]) {
         self.calls = calls
     }
-    public func add(_ call: Call) -> Self {
-        Self(calls: calls + [call])
+    public static let name = "batch"
+}
+
+public struct AnyBatchAllCall: AnyBatchCallCommon {
+    public let calls: [any Call]
+    public init(calls: [any Call]) {
+        self.calls = calls
     }
-    public static var name = "batch_all"
-    public static var pallet = "Utility"
-    
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: RuntimeType.Id,
-                                       runtime: Runtime) throws
-    {
-        calls = try Array<AnyCall<RuntimeType.Id>>(from: &decoder) { decoder in
-            try AnyCall<RuntimeType.Id>(from: &decoder, runtime: runtime) { _ in type }
-        }
-    }
-    
-    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
-                                              as type: RuntimeType.Id,
-                                              runtime: Runtime) throws
-    {
-        try calls.encode(in: &encoder) { call, enc in
-            try call.encode(in: &enc, runtime: runtime) { _ in type }
-        }
-    }
+    public static let name = "batch_all"
 }
 
 public protocol CallHolder<TCall> {

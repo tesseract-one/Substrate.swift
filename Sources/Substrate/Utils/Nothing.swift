@@ -37,25 +37,18 @@ extension Nothing: ScaleCodec.Codable, RuntimeDecodable {
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {}
 }
 
-extension Nothing: ValueConvertible {
-    public init<C>(value: Value<C>) throws {
-        switch value.value {
-        case .sequence(let vals):
-            guard vals.count == 0 else {
-                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
-                                                                  expected: 0,
-                                                                  for: "Nothing")
-            }
-        case .map(let fields):
-            guard fields.count == 0 else {
-                throw ValueInitializableError<C>.wrongValuesCount(in: value.value,
-                                                                  expected: 0,
-                                                                  for: "Nothing")
-            }
-        default:
-            throw ValueInitializableError<C>.wrongValueType(got: value.value, for: "Nothing")
+extension Nothing: ValueRepresentable {
+    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+        guard let info = runtime.resolve(type: type) else {
+            throw ValueRepresentableError.typeNotFound(type)
         }
+        guard info.isEmpty(metadata: runtime.metadata) else {
+            throw ValueRepresentableError.wrongType(got: info, for: "Nothing")
+        }
+        return .nil(type)
     }
-    
-    public func asValue() throws -> Value<Void> { .sequence([], ()) }
+}
+
+extension Nothing: VoidValueRepresentable {
+    public func asValue() -> Value<Void> { .nil }
 }

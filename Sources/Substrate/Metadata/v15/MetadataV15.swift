@@ -75,6 +75,8 @@ public class PalletMetadataV15: PalletMetadata {
     public let eventIdxByName: [String: UInt8]?
     public let eventNameByIdx: [UInt8: String]?
     
+    public let callFields: [String: [RuntimeType.Field]]?
+    
     public let storageByName: [String: StorageMetadataV14]?
     public var storage: [String] {
         storageByName.map { Array($0.keys) } ?? []
@@ -96,6 +98,9 @@ public class PalletMetadataV15: PalletMetadata {
         }
         self.callNameByIdx = calls.map {
             Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
+        }
+        self.callFields = calls.map {
+            Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0.fields) })
         }
         let events = self.event.flatMap { Self.variants(for:$0.type.definition) }
         self.eventIdxByName = events.map {
@@ -122,6 +127,9 @@ public class PalletMetadataV15: PalletMetadata {
     
     @inlinable
     public func callIndex(name: String) -> UInt8? { callIdxByName?[name] }
+    
+    @inlinable
+    public func callParams(name: String) -> [RuntimeType.Field]? { callFields?[name] }
     
     @inlinable
     public func eventName(index: UInt8) -> String? { eventNameByIdx?[index] }

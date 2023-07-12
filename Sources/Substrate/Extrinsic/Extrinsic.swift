@@ -145,7 +145,7 @@ public extension ExtrinsicManager {
     }    
 }
 
-public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic where TManager.RC: Config {
+public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic {
     public typealias TManager = TManager
     
     public let data: Data

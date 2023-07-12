@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Hash: Swift.Codable, ValueConvertible, Equatable {
+public protocol Hash: Swift.Codable, ValueRepresentable, VoidValueRepresentable, Equatable {
     var data: Data { get }
     init(_ data: Data) throws
 }
@@ -27,19 +27,21 @@ extension Hash {
         try container.encode(data)
     }
     
-    public init<C>(value: Value<C>) throws {
-         switch value.value {
-         case .primitive(.bytes(let data)):
-             try self.init(data)
-         case .sequence(let vals):
-             try self.init(Data(vals.map { try UInt8(value: $0) }))
-         default:
-             throw ValueInitializableError<C>.wrongValueType(got: value.value,
-                                                             for: String(describing: Self.self))
-         }
-     }
+    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+        guard let info = runtime.resolve(type: type) else {
+            throw ValueRepresentableError.typeNotFound(type)
+        }
+        guard let count = info.asBytes(metadata: runtime.metadata) else {
+            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+        }
+        guard count == 0 || data.count == count else {
+            throw ValueRepresentableError.wrongValuesCount(in: info, expected: data.count,
+                                                           for: String(describing: Self.self))
+        }
+        return .bytes(data, type)
+    }
      
-     public func asValue() throws -> Value<Void> {
+     public func asValue() -> Value<Void> {
          .bytes(data)
      }
 }
