@@ -33,11 +33,6 @@ public struct DynamicConfig: Config {
     public typealias TRuntimeVersion = AnyRuntimeVersion
     public typealias TStorageChangeSet = StorageChangeSet<THasher.THash>
     
-    public typealias TMetadataAtVersionRuntimeCall = Api.Metadata.MetadataAtVersion
-    public typealias TMetadataVersionsRuntimeCall = Api.Metadata.MetadataVersions
-    public typealias TTransactionPaymentQueryInfoRuntimeCall = Api.TransactionPayment.QueryInfo<TDispatchInfo>
-    public typealias TTransactionPaymentFeeDetailsRuntimeCall = Api.TransactionPayment.QueryFeeDetails<TFeeDetails>
-    
     public enum Error: Swift.Error {
         case typeNotFound(name: String, selector: NSRegularExpression)
         case hashTypeNotFound(header: RuntimeType.Info)
@@ -78,18 +73,46 @@ public struct DynamicConfig: Config {
         self.feeDetailsSelector = try NSRegularExpression(pattern: feeDetailsSelector)
         self.eventRecordSelector = try NSRegularExpression(pattern: eventRecordSelector)
     }
-    
-    public func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
+}
+
+extension DynamicConfig: BatchSupportedConfig {
+    public typealias TBatchCall = AnyBatchCall
+    public typealias TBatchAllCall = AnyBatchAllCall
+}
+
+// Object getters and properties
+public extension DynamicConfig {
+    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
         AnyStorageKey(name: "Events", pallet: "System", path: [])
     }
     
-    public func extrinsicManager() throws -> TExtrinsicManager {
+    func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]> {
+        MetadataVersionsRuntimeCall()
+    }
+    
+    func metadataAtVersionCall(version: UInt32) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>> {
+        MetadataAtVersionRuntimeCall(version: version)
+    }
+    
+    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
+        AnyRuntimeCall(api: "TransactionPaymentApi",
+                       method: "query_info",
+                       params: [extrinsic, extrinsic.count])
+    }
+    
+    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
+        AnyRuntimeCall(api: "TransactionPaymentApi",
+                       method: "query_fee_details",
+                       params: [extrinsic, extrinsic.count])
+    }
+    
+    func extrinsicManager() throws -> TExtrinsicManager {
         let provider = DynamicSignedExtensionsProvider<Self>(extensions: extrinsicExtensions,
                                                              version: TExtrinsicManager.version)
         return TExtrinsicManager(extensions: provider)
     }
     
-    public func hasher(metadata: Metadata) throws -> AnyFixedHasher {
+    func hasher(metadata: Metadata) throws -> AnyFixedHasher {
         var header: RuntimeType.Info? = nil
         if let block = try? blockType(metadata: metadata) {
             let headerType = block.type.parameters.first{ $0.name.lowercased() == "header" }?.type
@@ -113,17 +136,33 @@ public struct DynamicConfig: Config {
         return hasher
     }
     
-    public func blockType(metadata: any Metadata) throws -> RuntimeType.Info {
+    static let allExtensions: [DynamicExtrinsicExtension] = [
+        DynamicCheckSpecVersionExtension(),
+        DynamicCheckTxVersionExtension(),
+        DynamicCheckGenesisExtension(),
+        DynamicCheckNonZeroSenderExtension(),
+        DynamicCheckNonceExtension(),
+        DynamicCheckMortalitySignedExtension(),
+        DynamicCheckWeightExtension(),
+        DynamicChargeTransactionPaymentExtension(),
+        DynamicPrevalidateAttestsExtension()
+    ]
+}
+
+// Type lookups
+public extension DynamicConfig {
+    func blockType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: { blockSelector.matches($0) }) else {
             throw Error.typeNotFound(name: "Block", selector: blockSelector)
         }
         return type
     }
     
-    public func extrinsicTypes(
+    func extrinsicTypes(
         metadata: Metadata
     ) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
-                 signature: RuntimeType.Info, extra: RuntimeType.Info) {
+                 signature: RuntimeType.Info, extra: RuntimeType.Info)
+    {
         var addressTypeId: RuntimeType.Id? = nil
         var sigTypeId: RuntimeType.Id? = nil
         var extraTypeId: RuntimeType.Id? = nil
@@ -154,8 +193,8 @@ public struct DynamicConfig: Config {
                 extra: RuntimeType.Info(id: extraTypeId, type: extraType))
     }
     
-    public func accountType(metadata: any Metadata,
-                            address: RuntimeType.Info) throws -> RuntimeType.Info
+    func accountType(metadata: any Metadata,
+                     address: RuntimeType.Info) throws -> RuntimeType.Info
     {
         let selectors = ["accountid", "t::accountid", "account", "acc", "a"]
         let accid = address.type.parameters.first{selectors.contains($0.name.lowercased())}?.type
@@ -168,21 +207,21 @@ public struct DynamicConfig: Config {
         return type
     }
     
-    public func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: {dispatchInfoSelector.matches($0)}) else {
             throw Error.typeNotFound(name: "DispatchInfo", selector: dispatchInfoSelector)
         }
         return type
     }
     
-    public func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: {dispatchErrorSelector.matches($0)}) else {
             throw Error.typeNotFound(name: "DispatchError", selector: dispatchErrorSelector)
         }
         return type
     }
     
-    public func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: {transactionValidityErrorSelector.matches($0)}) else {
             throw Error.typeNotFound(name: "TransactionValidityError",
                                      selector: transactionValidityErrorSelector)
@@ -190,14 +229,14 @@ public struct DynamicConfig: Config {
         return type
     }
     
-    public func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: {feeDetailsSelector.matches($0)}) else {
             throw Error.typeNotFound(name: "FeeDetails", selector: feeDetailsSelector)
         }
         return type
     }
     
-    public func eventType(metadata: Metadata) throws -> RuntimeType.Info {
+    func eventType(metadata: Metadata) throws -> RuntimeType.Info {
         guard let record = metadata.search(type: {eventRecordSelector.matches($0)}) else {
             throw Error.typeNotFound(name: "EventRecord", selector: eventRecordSelector)
         }
@@ -209,20 +248,9 @@ public struct DynamicConfig: Config {
         }
         return RuntimeType.Info(id: field, type: metadata.resolve(type: field)!)
     }
-    
-    public static let allExtensions: [DynamicExtrinsicExtension] = [
-        DynamicCheckSpecVersionExtension(),
-        DynamicCheckTxVersionExtension(),
-        DynamicCheckGenesisExtension(),
-        DynamicCheckNonZeroSenderExtension(),
-        DynamicCheckNonceExtension(),
-        DynamicCheckMortalitySignedExtension(),
-        DynamicCheckWeightExtension(),
-        DynamicChargeTransactionPaymentExtension(),
-        DynamicPrevalidateAttestsExtension()
-    ]
 }
 
+// ConfigRegistry helpers
 public extension ConfigRegistry where C == DynamicConfig {
     @inlinable
     static func dynamic(extrinsicExtensions: [DynamicExtrinsicExtension] = DynamicConfig.allExtensions,
@@ -245,108 +273,4 @@ public extension ConfigRegistry where C == DynamicConfig {
     }
     
     @inlinable static var dynamic: Self { try! dynamic() }
-}
-
-// Helper structs
-public extension DynamicConfig {
-    struct Api {
-        public struct Metadata {
-            public struct Metadata: StaticCodableRuntimeCall {
-                public typealias TReturn = VersionedMetadata
-                static public let method = "metadata"
-                static public var api: String { Api.Metadata.name }
-                
-                public init(_ params: Void) throws {}
-                
-                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws {}
-            }
-            
-            public struct MetadataAtVersion: SomeMetadataAtVersionRuntimeCall {
-                public typealias TReturn = Optional<OpaqueMetadata>
-                let version: UInt32
-                
-                public init(version: UInt32) {
-                    self.version = version
-                }
-                
-                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
-                    try encoder.encode(version)
-                }
-                
-                static public let method = "metadata_at_version"
-                static public var api: String { Api.Metadata.name }
-            }
-            
-            public struct MetadataVersions: SomeMetadataVersionsRuntimeCall {
-                public typealias TReturn = [UInt32]
-                static public let method = "metadata_versions"
-                static public var api: String { Api.Metadata.name }
-                
-                public init() {}
-                
-                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws {}
-            }
-            
-            public static let name = "Metadata"
-        }
-        
-        public struct TransactionPayment {
-            public struct QueryInfo<DI: RuntimeDynamicDecodable>: SomeTransactionPaymentQueryInfoRuntimeCall {
-                public typealias TReturn = DI
-                
-                public let extrinsic: Data
-                
-                public init(extrinsic: Data) {
-                    self.extrinsic = extrinsic
-                }
-                
-                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
-                    try encoder.encode(extrinsic)
-                    try encoder.encode(UInt32(extrinsic.count))
-                }
-                
-                public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> DI {
-                    try TReturn(from: &decoder, runtime: runtime) { runtime in
-                        try runtime.types.dispatchInfo.id
-                    }
-                }
-                
-                public static var method: String { "query_info" }
-                public static var api: String { TransactionPayment.name }
-            }
-            
-            public struct QueryFeeDetails<FD: RuntimeDynamicDecodable>:
-                SomeTransactionPaymentFeeDetailsRuntimeCall
-            {
-                public typealias TReturn = FD
-                
-                public let extrinsic: Data
-                
-                public init(extrinsic: Data) {
-                    self.extrinsic = extrinsic
-                }
-                
-                public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
-                    try encoder.encode(extrinsic)
-                    try encoder.encode(UInt32(extrinsic.count))
-                }
-                
-                public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> FD {
-                    try TReturn(from: &decoder, runtime: runtime) { runtime in
-                        try runtime.types.feeDetails.id
-                    }
-                }
-                
-                public static var method: String { "query_fee_details" }
-                public static var api: String { TransactionPayment.name }
-            }
-            
-            public static let name = "TransactionPaymentApi"
-        }
-    }
-}
-
-extension DynamicConfig: BatchSupportedConfig {
-    public typealias TBatchCall = AnyBatchCall
-    public typealias TBatchAllCall = AnyBatchAllCall
 }

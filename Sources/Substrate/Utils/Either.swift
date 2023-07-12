@@ -59,6 +59,15 @@ public enum Either<Left, Right>: CustomStringConvertible {
     }
 }
 
+public extension Either where Left: Error {
+    var result: Result<Right, Left> {
+        switch self {
+        case .left(let err): return .failure(err)
+        case .right(let val): return .success(val)
+        }
+    }
+}
+
 extension Either: Equatable where Left: Equatable, Right: Equatable {}
 extension Either: Hashable where Left: Hashable, Right: Hashable {}
 extension Either: Error where Left: Error, Right: Error {}
@@ -69,7 +78,7 @@ extension Either: ContextDecodable where Left: ContextDecodable, Right: ContextD
     
     public init(from decoder: Decoder, context: DecodingContext) throws {
         if let keys = context.keys {
-            var container = try decoder.container(keyedBy: AnyCodableCodingKey.self)
+            let container = try decoder.container(keyedBy: AnyCodableCodingKey.self)
             if container.contains(AnyCodableCodingKey(keys.left)) {
                 self = try .left(container.decode(Left.self,
                                                   forKey: AnyCodableCodingKey(keys.left),
@@ -92,5 +101,11 @@ extension Either: ContextDecodable where Left: ContextDecodable, Right: ContextD
                 self = try .right(Right(from: decoder, context: context.contexts.right))
             }
         }
+    }
+    
+    public static func resultContext(
+        left: Left.DecodingContext, right: Right.DecodingContext
+    ) -> DecodingContext {
+        (keys: (left: "Err", right: "Ok"), contexts: (left: left, right: right))
     }
 }

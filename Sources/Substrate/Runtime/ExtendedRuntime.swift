@@ -39,6 +39,24 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     @inlinable
     public func decoder(with data: Data) -> ScaleCodec.Decoder { config.decoder(data: data) }
     
+    @inlinable
+    public func queryInfoCall<C: Call>(
+        extrinsic: Extrinsic<C, RC.TExtrinsicManager.TSignedExtra>
+    ) throws -> any RuntimeCall<RC.TDispatchInfo> {
+        var encoder = self.encoder()
+        try extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        return try config.queryInfoCall(extrinsic: encoder.output, runtime: self)
+    }
+    
+    @inlinable
+    public func queryFeeDetailsCall<C: Call>(
+        extrinsic: Extrinsic<C, RC.TExtrinsicManager.TSignedExtra>
+    ) throws -> any RuntimeCall<RC.TFeeDetails> {
+        var encoder = self.encoder()
+        try extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        return try config.queryFeeDetailsCall(extrinsic: encoder.output, runtime: self)
+    }
+    
     public init(config: RC, metadata: any Metadata,
                 metadataHash: RC.THasher.THash?,
                 genesisHash: RC.THasher.THash,

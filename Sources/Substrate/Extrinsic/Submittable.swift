@@ -184,24 +184,20 @@ extension Submittable where E == R.RC.TExtrinsicManager.TSignedExtra {
     public func paymentInfo(
         at block: R.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> R.RC.TDispatchInfo {
-        guard api.call.has(call: R.RC.TTransactionPaymentQueryInfoRuntimeCall.self) else {
+        let call = try api.runtime.queryInfoCall(extrinsic: extrinsic)
+        guard api.call.has(call: call) else {
             throw SubmittableError.queryInfoIsNotSupported
         }
-        var encoder = api.runtime.encoder()
-        try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
-        let call = R.RC.TTransactionPaymentQueryInfoRuntimeCall(extrinsic: encoder.output)
         return try await api.client.execute(call: call, at: block, runtime: api.runtime)
     }
     
     public func feeDetails(
         at block: R.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> R.RC.TFeeDetails {
-        guard api.call.has(call: R.RC.TTransactionPaymentFeeDetailsRuntimeCall.self) else {
+        let call = try api.runtime.queryFeeDetailsCall(extrinsic: extrinsic)
+        guard api.call.has(call: call) else {
             throw SubmittableError.queryFeeDetailsIsNotSupported
         }
-        var encoder = api.runtime.encoder()
-        try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
-        let call = R.RC.TTransactionPaymentFeeDetailsRuntimeCall(extrinsic: encoder.output)
         return try await api.client.execute(call: call, at: block, runtime: api.runtime)
     }
     

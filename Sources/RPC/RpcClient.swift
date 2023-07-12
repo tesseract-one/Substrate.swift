@@ -135,13 +135,7 @@ extension RpcClient: Client {
         at hash: C.THasher.THash?,
         runtime: ExtendedRuntime<C>
     ) async throws -> C.TBlockEvents? {
-        let key = try runtime.eventsStorageKey
-        let data: Data? = try await call(method: "state_getStorage", params: Params(key.hash, hash))
-        guard let data = data, data.count > 0 else {
-            return nil
-        }
-        var decoder = runtime.decoder(with: data)
-        return try key.decode(valueFrom: &decoder, runtime: runtime)
+        return try await self.storage(value: runtime.eventsStorageKey, at: hash, runtime: runtime)
     }
     
     public func dryRun<CL: Call>(
@@ -158,19 +152,19 @@ extension RpcClient: Client {
             try $0.types.transactionValidityError.id
         }
         let nothingCtx = RuntimeSwiftCodableContext(runtime: runtime)
-        let context = (value: (value: nothingCtx, error: dispatchErrorCtx), error: transactionErrorCtx)
-        let result: RpcResult<RpcResult<Nothing, C.TDispatchError>, C.TTransactionValidityError> =
+        let context = Either<C.TTransactionValidityError, Either<C.TDispatchError, Nothing>>
+            .resultContext(
+                left: transactionErrorCtx,
+                right: Either<C.TDispatchError, Nothing>
+                    .resultContext(left: dispatchErrorCtx, right: nothingCtx)
+            )
+        let result: Either<C.TTransactionValidityError, Either<C.TDispatchError, Nothing>> =
             try await call(method: "system_dryRun",
                            params: Params(encoder.output, hash),
                            context: context)
-        if let value = result.value {
-            if value.isOk {
-                return .success(())
-            } else {
-                return .failure(.left(value.error!))
-            }
-        }
-        return .failure(.right(result.error!))
+        return result.result
+            .mapError { .right($0) }
+            .flatMap { $0.result.map{_ in}.mapError{ .left($0) } }
     }
     
     public func execute<CL: StaticCodableRuntimeCall>(call: CL,
@@ -263,7 +257,7 @@ extension RpcClient: Client {
     }
     
     public func metadataFromRuntimeApi(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
-        let versions = try await execute(call: C.TMetadataVersionsRuntimeCall(),
+        let versions = try await execute(call: config.metadataVersionsCall(),
                                          at: hash, config: config)
         let supported = VersionedMetadata.supportedVersions.intersection(versions)
         guard let max = supported.max() else {
@@ -272,7 +266,7 @@ extension RpcClient: Client {
                     path: [],
                     description: "Unsupported metadata versions \(versions)"))
         }
-        let metadata = try await execute(call: C.TMetadataAtVersionRuntimeCall(version: max),
+        let metadata = try await execute(call: config.metadataAtVersionCall(version: max),
                                          at: hash,
                                          config: config)
         guard let metadata = metadata else {

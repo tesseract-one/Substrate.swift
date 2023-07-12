@@ -22,7 +22,7 @@ public extension RuntimeCall {
     var fullName: String { "\(api)_\(method)" }
 }
 
-public protocol StaticRuntimeCall: RuntimeCall {
+public protocol StaticRuntimeCall<TReturn>: RuntimeCall {
     static var api: String { get }
     static var method: String { get }
 }
@@ -38,7 +38,7 @@ public extension StaticRuntimeCall where TReturn: RuntimeDecodable {
     }
 }
 
-public protocol StaticCodableRuntimeCall: StaticRuntimeCall where TReturn: ScaleCodec.Decodable {
+public protocol StaticCodableRuntimeCall<TReturn>: StaticRuntimeCall where TReturn: ScaleCodec.Decodable {
     func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws
     func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D) throws -> TReturn
 }
@@ -76,7 +76,12 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
     }
     
     public init(api: String, method: String, param: any ValueRepresentable) {
-        self.init(api: api, method: method, params: ["": param])
+        self.init(api: api, method: method, params: [param])
+    }
+    
+    public init(api: String, method: String, params: [any ValueRepresentable]) {
+        let pairs = params.enumerated().map{(String($0.offset), $0.element)}
+        self.init(api: api, method: method, params: Dictionary(uniqueKeysWithValues: pairs))
     }
     
     public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
@@ -87,17 +92,17 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
         guard params.count == call.params.count else {
             throw RuntimeCallCodingError.wrongParametersCount(params: params, expected: call.params)
         }
-        if call.params.count == 1 {
-            try params.first!.value.asValue(runtime: runtime, type: call.params.first!.type.id)
-                .encode(in: &encoder, as: call.params.first!.type.id, runtime: runtime)
-        } else {
-            for param in call.params {
-                guard let val = params[param.name] else {
-                    throw RuntimeCallCodingError.parameterNotFound(name: param.name, inParams: params)
-                }
-                try val.asValue(runtime: runtime, type: param.type.id)
-                    .encode(in: &encoder, as: param.type.id, runtime: runtime)
+        for (idx, param) in call.params.enumerated() {
+            let value: ValueRepresentable
+            if let val = params[param.name] {
+                value = val
+            } else if let val = params[String(idx)] {
+                value = val
+            } else {
+                throw RuntimeCallCodingError.parameterNotFound(name: param.name, inParams: params)
             }
+            try value.asValue(runtime: runtime, type: param.type.id)
+                .encode(in: &encoder, as: param.type.id, runtime: runtime)
         }
     }
     
@@ -120,26 +125,24 @@ public enum RuntimeCallCodingError: Error {
     case parameterNotFound(name: String, inParams: [String: any ValueRepresentable])
 }
 
-public protocol SomeMetadataVersionsRuntimeCall: StaticCodableRuntimeCall
-    where TReturn == [UInt32]
-{
-    init()
+public struct MetadataVersionsRuntimeCall: StaticCodableRuntimeCall {
+    public typealias TReturn = [UInt32]
+    public static let method = "metadata_versions"
+    public static let api = "Metadata"
+    
+    init() {}
+    public func encodeParams<E>(in encoder: inout E) throws where E : ScaleCodec.Encoder {}
 }
 
-public protocol SomeMetadataAtVersionRuntimeCall: StaticCodableRuntimeCall
-    where TReturn == Optional<OpaqueMetadata>
-{
-    init(version: UInt32)
-}
-
-public protocol SomeTransactionPaymentQueryInfoRuntimeCall<TReturn>: StaticRuntimeCall
-    where TReturn: RuntimeDynamicDecodable
-{
-    init(extrinsic: Data)
-}
-
-public protocol SomeTransactionPaymentFeeDetailsRuntimeCall<TReturn>: StaticRuntimeCall
-    where TReturn: RuntimeDynamicDecodable
-{    
-    init(extrinsic: Data)
+public struct MetadataAtVersionRuntimeCall: StaticCodableRuntimeCall {
+    public typealias TReturn = Optional<OpaqueMetadata>
+    public static let method = "metadata_at_version"
+    public static let api = "Metadata"
+    
+    public let version: UInt32
+    
+    public init(version: UInt32) { self.version = version }
+    public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+        try encoder.encode(version)
+    }
 }

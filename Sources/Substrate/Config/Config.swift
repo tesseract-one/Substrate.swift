@@ -28,19 +28,11 @@ public protocol Config {
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
     associatedtype TSystemProperties: SystemProperties
     associatedtype TRuntimeVersion: RuntimeVersion
-   
     associatedtype TStorageChangeSet: SomeStorageChangeSet
-   
-    associatedtype TTransactionPaymentQueryInfoRuntimeCall: SomeTransactionPaymentQueryInfoRuntimeCall<TDispatchInfo>
-    associatedtype TTransactionPaymentFeeDetailsRuntimeCall: SomeTransactionPaymentFeeDetailsRuntimeCall<TFeeDetails>
-    associatedtype TMetadataAtVersionRuntimeCall: SomeMetadataAtVersionRuntimeCall
-    associatedtype TMetadataVersionsRuntimeCall: SomeMetadataVersionsRuntimeCall
-    
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
     
     // Metadata Info Providers
     func blockType(metadata: any Metadata) throws -> RuntimeType.Info
-//    func blockHeaderType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info
     func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info
@@ -53,6 +45,10 @@ public protocol Config {
     // Object Builders
     func hasher(metadata: any Metadata) throws -> THasher
     func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
+    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo>
+    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails>
+    func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]>
+    func metadataAtVersionCall(version: UInt32) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>>
     func extrinsicManager() throws -> TExtrinsicManager
     // If you want your own Scale Codec coders
     func encoder() -> ScaleCodec.Encoder
