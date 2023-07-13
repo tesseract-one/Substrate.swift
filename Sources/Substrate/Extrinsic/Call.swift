@@ -74,6 +74,9 @@ public struct AnyCall<C>: Call {
         guard let callParams = runtime.resolve(callParams: name, pallet: pallet) else {
             throw CallCodingError.callNotFound(name: name, pallet: pallet)
         }
+        guard callParams.count == _params.count else {
+            throw CallCodingError.wrongParametersCount(in: asVoid(), expected: callParams.count)
+        }
         let variant: Value<RuntimeType.Id>
         if callParams.first?.name != nil { // Map
             let pairs = try callParams.enumerated().map { (idx, el) in
@@ -100,6 +103,10 @@ public struct AnyCall<C>: Call {
         }
         try Value(value: .variant(.sequence(name: pallet, values: [variant])),
                   context: type).encode(in: &encoder, as: type, runtime: runtime)
+    }
+    
+    public func asVoid() -> AnyCall<Void> {
+        AnyCall<Void>(name: name, pallet: pallet, _params: _params)
     }
 }
 
@@ -151,33 +158,30 @@ public extension AnyCall where C == RuntimeType.Id {
     init(name: String, pallet: String, params: [String: Value<C>]) {
         self.init(name: name, pallet: pallet, _params: params)
     }
-}
-
-extension AnyCall: RuntimeDynamicDecodable where C == RuntimeType.Id {
     
-    
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: RuntimeType.Id,
-                                       runtime: Runtime) throws
-    {
-        var value = try Value(from: &decoder, as: type, runtime: runtime)
+    init(root call: Value<C>) throws {
+        var value = call
         let pallet: String
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
             guard values.count == 1 else {
-                throw CallCodingError.tooManyFieldsInVariant(variant: value, expected: 1)
+                throw CallCodingError.wrongFieldCountInVariant(variant: value, expected: 1)
             }
             pallet = name
             value = values.first!
         case .variant(.map(name: let name, fields: let fields)):
             guard fields.count == 1 else {
-                throw CallCodingError.tooManyFieldsInVariant(variant: value, expected: 1)
+                throw CallCodingError.wrongFieldCountInVariant(variant: value, expected: 1)
             }
             pallet = name
             value = fields.values.first!
         default: throw CallCodingError.decodedNonVariantValue(value)
         }
-        switch value.value {
+        try self.init(pallet: pallet, call: value)
+    }
+    
+    init(pallet: String, call: Value<C>) throws {
+        switch call.value {
         case .variant(.sequence(name: let name, values: let values)):
             let fields = values.enumerated().map{(String($0.offset), $0.element)}
             self.init(name: name,
@@ -187,8 +191,17 @@ extension AnyCall: RuntimeDynamicDecodable where C == RuntimeType.Id {
             self.init(name: name,
                       pallet: pallet,
                       params: fields)
-        default: throw CallCodingError.decodedNonVariantValue(value)
+        default: throw CallCodingError.decodedNonVariantValue(call)
         }
+    }
+}
+
+extension AnyCall: RuntimeDynamicDecodable where C == RuntimeType.Id {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
+                                       as type: RuntimeType.Id,
+                                       runtime: Runtime) throws
+    {
+        try self.init(root: Value(from: &decoder, as: type, runtime: runtime))
     }
 }
 
@@ -197,6 +210,7 @@ public enum CallCodingError: Error {
     case callNotFound(name: String, pallet: String)
     case foundWrongCall(found: (name: String, pallet: String), expected: (name: String, pallet: String))
     case valueNotFound(key: String)
-    case tooManyFieldsInVariant(variant: Value<RuntimeType.Id>, expected: Int)
+    case wrongFieldCountInVariant(variant: Value<RuntimeType.Id>, expected: Int)
+    case wrongParametersCount(in: AnyCall<Void>, expected: Int)
     case decodedNonVariantValue(Value<RuntimeType.Id>)
 }

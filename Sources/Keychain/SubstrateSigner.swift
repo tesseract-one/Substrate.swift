@@ -56,7 +56,9 @@ public extension KeyPair {
         }
         let signature = sign(message: encoder.output)
         do {
-            let signature = try RC.TSignature(raw: signature.raw, algorithm: signature.algorithm, runtime: runtime)
+            let signature = try runtime.create(signature: RC.TSignature.self,
+                                               raw: signature.raw,
+                                               algorithm: signature.algorithm)
             return .success(signature)
         } catch {
             return .failure(.cantCreateSignature(error: error.localizedDescription))

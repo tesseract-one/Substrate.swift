@@ -138,43 +138,6 @@ extension TransactionStatus: Swift.Codable {
     }
 }
 
-//extension TransactionStatus: ScaleRuntimeCodable {
-//    public init(from decoder: ScaleCodec.Decoder, runtime: any Runtime) throws {
-//        let id = try decoder.decode(.enumCaseId)
-//        switch id {
-//        case 0: self = .future
-//        case 1: self = .ready
-//        case 2: self = .broadcast(try decoder.decode())
-//        case 3: self = .inBlock(try decoder.decode())
-//        case 4: self = .retracted(try decoder.decode())
-//        case 5: self = .finalityTimeout(try decoder.decode())
-//        case 6: self = .finalized(try decoder.decode())
-//        case 7: self = .usurped(try decoder.decode())
-//        case 8: self = .dropped
-//        case 9: self = .invalid
-//        default:
-//            throw decoder.enumCaseError(for: id)
-//        }
-//    }
-//
-//    public func encode(in encoder: ScaleCodec.Encoder) throws {
-//        switch self {
-//        case .future: try encoder.encode(0, .enumCaseId)
-//        case .ready: try encoder.encode(1, .enumCaseId)
-//        case .broadcast(let b): try encoder.encode(2, .enumCaseId).encode(b)
-//        case .inBlock(let b): try encoder.encode(3, .enumCaseId).encode(b)
-//        case .retracted(let b): try encoder.encode(4, .enumCaseId).encode(b)
-//        case .finalityTimeout(let b): try encoder.encode(5, .enumCaseId).encode(b)
-//        case .finalized(let b): try encoder.encode(6, .enumCaseId).encode(b)
-//        case .usurped(let b): try encoder.encode(7, .enumCaseId).encode(b)
-//        case .dropped: try encoder.encode(8, .enumCaseId)
-//        case .invalid: try encoder.encode(9, .enumCaseId)
-//        }
-//    }
-//}
-//
-//extension TransactionStatus: ScaleDynamicCodable {}
-
 private enum CKeyMarker: Equatable {}
 
 private extension CodableComplexKey where T == CKeyMarker {

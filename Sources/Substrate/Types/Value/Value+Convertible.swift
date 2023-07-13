@@ -1,5 +1,5 @@
 //
-//  ValueConvertible.swift
+//  Value+Convertible.swift
 //  
 //
 //  Created by Yehor Popovych on 17.01.2023.
@@ -7,73 +7,6 @@
 
 import Foundation
 import ScaleCodec
-
-//public protocol ValueInitializable {
-//    init<C>(value: Value<C>) throws
-//}
-
-public protocol ValueRepresentable {
-    func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id>
-}
-
-public protocol VoidValueRepresentable {
-    func asValue() -> Value<Void>
-}
-
-//public typealias ValueConvertible = ValueInitializable & ValueRepresentable
-
-//public protocol ValueArrayInitializable {
-//    init<C>(values: [Value<C>]) throws
-//}
-
-//public protocol ValueArrayRepresentable {
-//    func asValueArray(runtime: any Runtime, id: @escaping RuntimeType.LazyId) throws -> Value<RuntimeType.Id>
-//}
-//
-//public protocol ValueMapInitializable {
-//    init<C>(values: [String: Value<C>]) throws
-//}
-//
-//public protocol ValueMapRepresentable {
-//    func asValueMap() throws -> [String: Value<Void>]
-//}
-
-//public extension ValueArrayInitializable {
-//    init<C>(value: Value<C>) throws {
-//        switch value.value {
-//        case .sequence(let values): try self.init(values: values)
-//        default:
-//            throw ValueInitializableError.wrongValueType(got: value.value,
-//                                                         for: String(describing: Self.self))
-//        }
-//    }
-//}
-//
-//public extension ValueArrayRepresentable {
-//    func asValue() throws -> Value<Void> { try .sequence(asValueArray()) }
-//}
-//
-//public extension ValueMapInitializable {
-//    init<C>(value: Value<C>) throws {
-//        switch value.value {
-//        case .map(let fields): try self.init(values: fields)
-//        default:
-//            throw ValueInitializableError.wrongValueType(got: value.value,
-//                                                         for: String(describing: Self.self))
-//        }
-//    }
-//}
-//
-//public extension ValueMapRepresentable {
-//    func asValue() throws -> Value<Void> { try .map(asValueMap()) }
-//}
-
-//public enum ValueInitializableError<C>: Error {
-//    case wrongValueType(got: Value<C>.Def, for: String)
-//    case wrongValuesCount(in: Value<C>.Def, expected: Int, for: String)
-//    case unknownVariant(name: String, in: Value<C>.Def, for: String)
-//    case integerOverflow(got: Int512, min: Int512, max: Int512)
-//}
 
 public enum ValueRepresentableError: Error {
     case typeNotFound(RuntimeType.Id)
@@ -86,27 +19,6 @@ public enum ValueRepresentableError: Error {
 }
 
 public extension FixedWidthInteger {
-//    init<C>(value: Value<C>) throws {
-//        switch value.value {
-//        case .primitive(.u256(let uint)):
-//            guard uint <= Self.max else {
-//                throw ValueInitializableError<C>.integerOverflow(got: Int512(uint),
-//                                                                 min: Int512(Self.min),
-//                                                                 max: Int512(Self.max))
-//            }
-//            self.init(uint)
-//        case .primitive(.i256(let int)):
-//            guard int <= Self.max && int >= Self.min else {
-//                throw ValueInitializableError<C>.integerOverflow(got: Int512(int),
-//                                                                 min: Int512(Self.min),
-//                                                                 max: Int512(Self.max))
-//            }
-//            self.init(int)
-//        default:
-//            throw ValueInitializableError<C>.wrongValueType(got: value.value,
-//                                                            for: String(describing: Self.self))
-//        }
-//    }
     func asValue() -> Value<Void> {
         Self.isSigned ?  .i256(Int256(self)) : .u256(UInt256(self))
     }
@@ -134,12 +46,6 @@ extension Int32: ValueRepresentable, VoidValueRepresentable {}
 extension Int64: ValueRepresentable, VoidValueRepresentable {}
 extension Int: ValueRepresentable, VoidValueRepresentable {}
 
-//extension Value: ValueInitializable where C == Void {
-//    public init<C2>(value: Value<C2>) throws {
-//        self = value.mapContext(with: { _ in })
-//    }
-//}
-
 extension Value: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { mapContext{_ in} }
     
@@ -155,14 +61,6 @@ extension Value: ValueRepresentable, VoidValueRepresentable {
 }
 
 extension Bool: ValueRepresentable, VoidValueRepresentable {
-//    public init<C>(value: Value<C>) throws {
-//        guard let bool = value.bool else {
-//            throw ValueInitializableError.wrongValueType(got: value.value,
-//                                                         for: "Bool")
-//        }
-//        self = bool
-//    }
-//
     public func asValue() -> Value<Void> { .bool(self) }
     
     public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
@@ -177,13 +75,6 @@ extension Bool: ValueRepresentable, VoidValueRepresentable {
 }
 
 extension String: ValueRepresentable, VoidValueRepresentable {
-//    public init<C>(value: Value<C>) throws {
-//        guard let string = value.string else {
-//            throw ValueInitializableError.wrongValueType(got: value.value,
-//                                                         for: "String")
-//        }
-//        self = string
-//    }
     public func asValue() -> Value<Void> { .string(self) }
     
     public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
@@ -198,13 +89,6 @@ extension String: ValueRepresentable, VoidValueRepresentable {
 }
 
 extension Data: ValueRepresentable, VoidValueRepresentable {
-//    public init<C>(value: Value<C>) throws {
-//        guard let data = value.bytes else {
-//            throw ValueInitializableError.wrongValueType(got: value.value,
-//                                                         for: "Data")
-//        }
-//        self = data
-//    }
     public func asValue() -> Value<Void> { .bytes(self) }
     
     public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
@@ -223,13 +107,6 @@ extension Data: ValueRepresentable, VoidValueRepresentable {
 }
 
 extension Character: ValueRepresentable, VoidValueRepresentable {
-//    public init<C>(value: Value<C>) throws {
-//        guard let char = value.char else {
-//            throw ValueInitializableError.wrongValueType(got: value.value,
-//                                                         for: "Character")
-//        }
-//        self = char
-//    }
     public func asValue() -> Value<Void> { .char(self) }
     
     public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {

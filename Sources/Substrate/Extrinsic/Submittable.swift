@@ -65,7 +65,8 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TSignedExtra> {
         let params = try await fetchParameters(account: account, overrides: overrides)
         let payload = try await api.runtime.extrinsicManager.payload(unsigned: extrinsic, params: params)
-        let signature = try R.RC.TSignature(fake: account.algorithm, runtime: api.runtime)
+        let signature = try api.runtime.create(fakeSignature: R.RC.TSignature.self,
+                                               algorithm: account.algorithm)
         let signed = try api.runtime.extrinsicManager.signed(payload: payload,
                                                              address: account.address(in: api),
                                                              signature: signature)
@@ -119,8 +120,10 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     public func sign(signer: any Signer,
                      overrides: R.RC.TExtrinsicManager.TSigningParams? = nil
     ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TSignedExtra> {
-        let account = try await signer.account(type: .account,
-                                               algos: R.RC.TSignature.algorithms(runtime: api.runtime)).get()
+        let account = try await signer.account(
+            type: .account,
+            algos: api.runtime.algorithms(signature: R.RC.TSignature.self)
+        ).get()
         return try await sign(signer: signer, account: account, overrides: overrides)
     }
     

@@ -8,18 +8,48 @@
 import Foundation
 import ScaleCodec
 
-public protocol Signature: RuntimeCodable, ValueRepresentable {
+public protocol Signature: RuntimeDynamicCodable, ValueRepresentable {
     var raw: Data { get }
     var algorithm: CryptoTypeId { get }
     
+    init(raw: Data, algorithm: CryptoTypeId,
+         runtime: any Runtime, id: @escaping RuntimeType.LazyId) throws
+    static func algorithms(runtime: any Runtime,
+                           id: @escaping RuntimeType.LazyId) throws -> [CryptoTypeId]
+}
+
+public extension Signature {
+    @inlinable
+    init(fake algorithm: CryptoTypeId, runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    {
+        let sig = Data(repeating: 1, count: algorithm.signatureBytesCount)
+        try self.init(raw: sig, algorithm: algorithm, runtime: runtime, id: id)
+    }
+    
+    var description: String {
+        "\(algorithm)(\(raw.hex()))"
+    }
+}
+
+public protocol StaticSignature: Signature, RuntimeCodable {
     init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws
     static func algorithms(runtime: any Runtime) throws -> [CryptoTypeId]
 }
 
-public extension Signature {
-    init(fake algorithm: CryptoTypeId, runtime: any Runtime) throws {
-        let sig = Data(repeating: 1, count: algorithm.signatureBytesCount)
-        try self.init(raw: sig, algorithm: algorithm, runtime: runtime)
+public extension StaticSignature {
+    @inlinable
+    init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    {
+        try self.init(raw: raw, algorithm: algorithm, runtime: runtime)
+    }
+    
+    @inlinable
+    static func algorithms(runtime: any Runtime,
+                           id: @escaping RuntimeType.LazyId) throws -> [CryptoTypeId]
+    {
+        try Self.algorithms(runtime: runtime)
     }
     
     func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
@@ -49,7 +79,7 @@ public extension CryptoTypeId {
     }
 }
 
-public struct EcdsaSignature: FixedDataCodable, Signature, VoidValueRepresentable,
+public struct EcdsaSignature: FixedDataCodable, StaticSignature, VoidValueRepresentable,
                               Hashable, Equatable, CustomStringConvertible
 {
     public let signature: Data
@@ -81,7 +111,7 @@ public struct EcdsaSignature: FixedDataCodable, Signature, VoidValueRepresentabl
     public static let fixedBytesCount: Int = CryptoTypeId.ecdsa.signatureBytesCount
 }
 
-public struct Ed25519Signature: FixedDataCodable, Signature, VoidValueRepresentable,
+public struct Ed25519Signature: FixedDataCodable, StaticSignature, VoidValueRepresentable,
                                 Hashable, Equatable, CustomStringConvertible
 {
     public let signature: Data
@@ -113,7 +143,7 @@ public struct Ed25519Signature: FixedDataCodable, Signature, VoidValueRepresenta
     public static let fixedBytesCount: Int = CryptoTypeId.ed25519.signatureBytesCount
 }
 
-public struct Sr25519Signature: FixedDataCodable, Signature, VoidValueRepresentable,
+public struct Sr25519Signature: FixedDataCodable, StaticSignature, VoidValueRepresentable,
                                 Hashable, Equatable, CustomStringConvertible
 {
     public let signature: Data
@@ -151,7 +181,7 @@ public enum MultiSignature: Hashable, Equatable, CustomStringConvertible {
     case ecdsa(EcdsaSignature)
 }
 
-extension MultiSignature: Signature {
+extension MultiSignature: StaticSignature {
     public init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime) throws {
         switch algorithm {
         case .ecdsa:
@@ -239,10 +269,3 @@ extension MultiSignature: ScaleCodec.Codable {
 }
 
 extension MultiSignature: RuntimeCodable, RuntimeDynamicCodable {}
-
-public extension Signature {
-    var description: String {
-        "\(algorithm)(\(raw.hex()))"
-    }
-}
-

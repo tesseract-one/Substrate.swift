@@ -98,7 +98,7 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
         var inner = runtime.encoder()
         try inner.encode(Self.version | 0b1000_0000)
         try runtime.encode(address: extrinsic.extra.address, in: &inner)
-        try extrinsic.extra.signature.encode(in: &inner, runtime: runtime)
+        try runtime.encode(signature: extrinsic.extra.signature, in: &inner)
         try extensions.encode(extra: extrinsic.extra.extra, in: &inner)
         try runtime.encode(call: extrinsic.call, in: &inner)
         try encoder.encode(inner.output)
@@ -117,7 +117,7 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
         }
         if isSigned {
             let address = try runtime.decode(address: RC.TAddress.self, from: &decoder)
-            let signature = try RC.TSignature(from: &decoder, runtime: runtime)
+            let signature = try runtime.decode(signature: RC.TSignature.self, from: &decoder)
             let extra = try extensions.extra(from: &decoder)
             return Extrinsic(call: try runtime.decode(call: C.self, from: &decoder),
                              extra: .right(ExtrinsicV4Extra(address: address, signature: signature, extra: extra)))

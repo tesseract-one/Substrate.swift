@@ -67,6 +67,21 @@ public extension Runtime {
     }
     
     @inlinable
+    func create<S: Signature>(signature: S.Type, raw: Data, algorithm: CryptoTypeId) throws -> S {
+        try S(raw: raw, algorithm: algorithm, runtime: self) { try $0.types.signature.id }
+    }
+    
+    @inlinable
+    func create<S: Signature>(fakeSignature: S.Type, algorithm: CryptoTypeId) throws -> S {
+        try S(fake: algorithm, runtime: self) { try $0.types.signature.id }
+    }
+    
+    @inlinable
+    func algorithms<S: Signature>(signature: S.Type) throws -> [CryptoTypeId] {
+        try S.algorithms(runtime: self) { try $0.types.signature.id }
+    }
+    
+    @inlinable
     func decode<A: AccountId, D: ScaleCodec.Decoder>(
         account: A.Type, from decoder: inout D
     ) throws -> A {
@@ -92,6 +107,20 @@ public extension Runtime {
         address: A, in encoder: inout E
     ) throws {
         try address.encode(in: &encoder, runtime: self) { try $0.types.address.id }
+    }
+    
+    @inlinable
+    func decode<S: Signature, D: ScaleCodec.Decoder>(
+        signature: S.Type, from decoder: inout D
+    ) throws -> S {
+        try decode(from: &decoder) { try $0.types.signature.id }
+    }
+    
+    @inlinable
+    func encode<S: Signature, E: ScaleCodec.Encoder>(
+        signature: S, in encoder: inout E
+    ) throws {
+        try signature.encode(in: &encoder, runtime: self) { try $0.types.signature.id }
     }
     
     @inlinable

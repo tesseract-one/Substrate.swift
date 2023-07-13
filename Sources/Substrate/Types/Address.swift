@@ -108,19 +108,19 @@ extension MultiAddress: ValueRepresentable {
     }
 }
 
-//extension MultiAddress: VoidValueRepresentable where
-//    Id: VoidValueRepresentable, Index: VoidValueRepresentable
-//{
-//    public func asValue() -> Value<Void> {
-//        switch self {
-//        case .id(let id): return .variant(name: "Id", values: [id.asValue()])
-//        case .index(let index): return .variant(name: "Index", values: [index.asValue()])
-//        case .address20(let data): return .variant(name: "Address20", values: [data.asValue()])
-//        case .raw(let data): return .variant(name: "Raw", values: [data.asValue()])
-//        case .address32(let data): return .variant(name: "Address32", values: [data.asValue()])
-//        }
-//    }
-//}
+extension MultiAddress: VoidValueRepresentable where
+    Id: VoidValueRepresentable, Index: VoidValueRepresentable
+{
+    public func asValue() -> Value<Void> {
+        switch self {
+        case .id(let id): return .variant(name: "Id", values: [id.asValue()])
+        case .index(let index): return .variant(name: "Index", values: [index.asValue()])
+        case .address20(let data): return .variant(name: "Address20", values: [data.asValue()])
+        case .raw(let data): return .variant(name: "Raw", values: [data.asValue()])
+        case .address32(let data): return .variant(name: "Address32", values: [data.asValue()])
+        }
+    }
+}
 
 extension MultiAddress: StaticAddress {
     public typealias TAccountId = Id

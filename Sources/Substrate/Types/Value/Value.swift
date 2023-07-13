@@ -361,3 +361,11 @@ extension Value.Primitive: CustomStringConvertible {
         }
     }
 }
+
+public protocol ValueRepresentable {
+    func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id>
+}
+
+public protocol VoidValueRepresentable {
+    func asValue() -> Value<Void>
+}
