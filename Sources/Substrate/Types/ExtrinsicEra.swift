@@ -215,13 +215,13 @@ extension ExtrinsicEra: ValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard case .variant(variants: let variants) = info.definition else {
+        guard case .variant(variants: let vars) = info.definition.flatten(metadata: runtime.metadata) else {
             throw ValueRepresentableError.wrongType(got: info, for: "ExtrinsicEra")
         }
-        guard variants.count == UInt8.max else {
+        guard vars.count == Int(UInt8.max) + 1 else {
             throw ValueRepresentableError.wrongType(got: info, for: "ExtrinsicEra")
         }
-        let bodyType = variants[2].fields.first!.type
+        let bodyType = vars[2].fields.first!.type
         switch self {
         case .immortal: return .variant(name: "Immortal", values: [], type)
         case .mortal(period: _, phase: _):

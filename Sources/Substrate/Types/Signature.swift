@@ -197,10 +197,10 @@ extension MultiSignature: ValueRepresentable {
             throw ValueRepresentableError.typeNotFound(type)
         }
         let selfvars = Set(Self.supportedCryptoTypes.map{$0.signatureName})
-        guard case .variant(variants: let variants) = info.definition else {
+        guard case .variant(variants: let variants) = info.definition.flatten(metadata: runtime.metadata) else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
         }
-        guard selfvars.elementsEqual(variants.map{$0.name}) else {
+        guard selfvars == Set(variants.map{$0.name}) else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
         }
         let sig = self.signature

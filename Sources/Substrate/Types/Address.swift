@@ -62,10 +62,10 @@ extension MultiAddress: ValueRepresentable {
             throw ValueRepresentableError.typeNotFound(type)
         }
         let selfvars: Set<String> = ["Id", "Index", "Address20", "Raw", "Address32"]
-        guard case .variant(variants: let variants) = info.definition else {
+        guard case .variant(variants: let variants) = info.definition.flatten(metadata: runtime.metadata) else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
         }
-        guard selfvars.elementsEqual(variants.map{$0.name}) else {
+        guard selfvars == Set(variants.map{$0.name}) else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
         }
         switch self {

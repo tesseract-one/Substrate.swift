@@ -270,7 +270,7 @@ public struct DynamicCheckMortalitySignedExtension: DynamicExtrinsicExtension {
             throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
                                                          parameter: "blockHash")
         }
-        return try hash.asValue().mapContext { id }
+        return try hash.asValue(runtime: api.runtime, type: id)
     }
 }
 
