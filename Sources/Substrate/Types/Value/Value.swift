@@ -131,6 +131,17 @@ public extension Value {
     func mapContext<NC>(with mapper: @escaping (C) throws -> NC) rethrows -> Value<NC> {
         try Value<NC>(value: value.mapContext(with: mapper), context: mapper(context))
     }
+    
+    func flatten(runtime: any Runtime) -> Self {
+        switch self.value {
+        case .sequence(let vals):
+            if vals.count == 1 {
+                return vals[0].flatten(runtime: runtime)
+            }
+            return self
+        default: return self
+        }
+    }
 }
 
 public extension Value {

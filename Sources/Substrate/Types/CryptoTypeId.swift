@@ -21,6 +21,12 @@ public enum CryptoTypeId: String, Hashable, Equatable, CustomStringConvertible {
         case .sr25519: return "Sr25519"
         }
     }
+    
+    public static let byName: [String: CryptoTypeId] = [
+        CryptoTypeId.ecdsa.signatureName.lowercased(): .ecdsa,
+        CryptoTypeId.ed25519.signatureName.lowercased(): .ed25519,
+        CryptoTypeId.sr25519.signatureName.lowercased(): .sr25519
+    ]
 }
 
 public enum CryptoError: Error {
