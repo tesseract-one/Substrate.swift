@@ -29,7 +29,7 @@ final class SubstrateTests: XCTestCase {
     }()
     
     func testInitialization() {
-        runAsyncTest(withTimeout: 3000) {
+        runAsyncTest(withTimeout: 30) {
             let _ = try await Api(rpc: self.httpClient, config: .dynamic)
         }
     }
@@ -40,6 +40,14 @@ final class SubstrateTests: XCTestCase {
             let entry = try substrate.query.dynamic(name: "Events", pallet: "System")
             let value = try await entry.value()
             XCTAssertNotNil(value)
+        }
+    }
+    
+    func testStorageIteration() {
+        runAsyncTest(withTimeout: 30) {
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            let entry = try substrate.query.dynamic(name: "AuthoredBlocks", pallet: "ImOnline")
+            for try await _ in entry.entries().prefix(10) {}
         }
     }
     

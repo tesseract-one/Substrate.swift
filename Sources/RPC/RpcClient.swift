@@ -222,16 +222,19 @@ extension RpcClient: Client {
         }
     }
     
-    public func storage<K: StorageKey>(changes keys: [K],
-                                       at hash: C.THasher.THash?,
-                                       runtime: ExtendedRuntime<C>) async throws -> [(K, K.TValue?)] {
+    public func storage<K: StorageKey>(
+        changes keys: [K], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
+    ) async throws -> [(block: C.THasher.THash, changes: [(K, K.TValue?)])] {
         let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
-        return try await storage(changes: Array(keys.keys), hash: hash).changes.map { (khash, val) in
-            let key = keys[khash]!
-            return try (key, val.map { val in
-                var decoder = runtime.decoder(with: val)
-                return try key.decode(valueFrom: &decoder, runtime: runtime)
-            })
+        return try await storage(changes: Array(keys.keys), hash: hash).map { chSet in
+            let changes = try chSet.changes.map { (khash, val) in
+                let key = keys[khash]!
+                return try (key, val.map { val in
+                    var decoder = runtime.decoder(with: val)
+                    return try key.decode(valueFrom: &decoder, runtime: runtime)
+                })
+            }
+            return (block: chSet.block, changes: changes)
         }
     }
     
@@ -243,16 +246,19 @@ extension RpcClient: Client {
         return size?.value ?? 0
     }
     
-    public func storage(anychanges keys: [any StorageKey],
-                        at hash: C.THasher.THash?,
-                        runtime: ExtendedRuntime<C>) async throws -> [(any StorageKey, Any?)] {
+    public func storage(
+        anychanges keys: [any StorageKey], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
+    ) async throws -> [(block: C.THasher.THash, changes: [(any StorageKey, Any?)])] {
         let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
-        return try await storage(changes: Array(keys.keys), hash: hash).changes.map { (khash, val) in
-            let key = keys[khash]!
-            return try (key, val.map { val in
-                var decoder = runtime.decoder(with: val)
-                return try key.decode(valueFrom: &decoder, runtime: runtime)
-            })
+        return try await storage(changes: Array(keys.keys), hash: hash).map { chSet in
+            let changes = try chSet.changes.map { (khash, val) in
+                let key = keys[khash]!
+                return try (key, val.map { val in
+                    var decoder = runtime.decoder(with: val)
+                    return try key.decode(valueFrom: &decoder, runtime: runtime)
+                })
+            }
+            return (block: chSet.block, changes: changes)
         }
     }
     
@@ -286,7 +292,7 @@ extension RpcClient: Client {
     }
     
     private func storage(changes keys: [Data],
-                         hash: C.THasher.THash?) async throws -> C.TStorageChangeSet {
+                         hash: C.THasher.THash?) async throws -> [C.TStorageChangeSet] {
         try await call(method: "state_queryStorageAt", params: Params(keys, hash))
     }
 }
@@ -384,19 +390,5 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
            params: keys,
            unsubscribe: "state_unsubscribeStorage"
        )
-    }
-}
-
-private extension RpcClient {
-    struct DryRunResult<DE: ApiError, TVE: ApiError>: ContextDecodable {
-        
-        
-        typealias DecodingContext = (runtime: Runtime,
-                                     deId: RuntimeType.LazyId,
-                                     tveId: RuntimeType.LazyId)
-        
-        init(from decoder: Swift.Decoder, context: DecodingContext) throws {
-            
-        }
     }
 }

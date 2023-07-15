@@ -28,7 +28,7 @@ public protocol Config {
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
     associatedtype TSystemProperties: SystemProperties
     associatedtype TRuntimeVersion: RuntimeVersion
-    associatedtype TStorageChangeSet: SomeStorageChangeSet
+    associatedtype TStorageChangeSet: SomeStorageChangeSet<TBlock.THeader.THasher.THash>
     associatedtype TExtrinsicManager: ExtrinsicManager<Self>
     
     // Metadata Info Providers

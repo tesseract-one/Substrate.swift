@@ -54,17 +54,17 @@ public protocol Client<C> {
                                         at hash: C.THasher.THash?,
                                         runtime: ExtendedRuntime<C>) async throws -> [I.TKey]
     
-    func storage<K: StorageKey>(changes keys: [K],
-                                at hash: C.THasher.THash?,
-                                runtime: ExtendedRuntime<C>) async throws -> [(K, K.TValue?)]
+    func storage<K: StorageKey>(
+        changes keys: [K], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
+    ) async throws -> [(block: C.THasher.THash, changes: [(K, K.TValue?)])]
     
     func storage<K: StorageKey>(size key: K,
                                 at hash: C.THasher.THash?,
                                 runtime: ExtendedRuntime<C>) async throws -> UInt64
     
-    func storage(anychanges keys: [any StorageKey],
-                 at hash: C.THasher.THash?,
-                 runtime: ExtendedRuntime<C>) async throws -> [(any StorageKey, Any?)]
+    func storage(
+        anychanges keys: [any StorageKey], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
+    ) async throws -> [(block: C.THasher.THash, changes: [(any StorageKey, Any?)])]
 }
 
 public protocol SubscribableClient<C>: Client {
