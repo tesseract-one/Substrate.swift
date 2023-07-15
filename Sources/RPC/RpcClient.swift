@@ -224,8 +224,8 @@ extension RpcClient: Client {
     
     public func storage<K: StorageKey>(
         changes keys: [K], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
-    ) async throws -> [(block: C.THasher.THash, changes: [(K, K.TValue?)])] {
-        let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
+    ) async throws -> [(block: C.THasher.THash, changes: [(key: K, value: K.TValue?)])] {
+        let keys = Dictionary(uniqueKeysWithValues: try keys.map {try ($0.hash, $0)})
         return try await storage(changes: Array(keys.keys), hash: hash).map { chSet in
             let changes = try chSet.changes.map { (khash, val) in
                 let key = keys[khash]!
@@ -248,8 +248,8 @@ extension RpcClient: Client {
     
     public func storage(
         anychanges keys: [any StorageKey], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
-    ) async throws -> [(block: C.THasher.THash, changes: [(any StorageKey, Any?)])] {
-        let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
+    ) async throws -> [(block: C.THasher.THash, changes: [(key: any StorageKey, value: Any?)])] {
+        let keys = Dictionary(uniqueKeysWithValues: try keys.map {try ($0.hash, $0)})
         return try await storage(changes: Array(keys.keys), hash: hash).map { chSet in
             let changes = try chSet.changes.map { (khash, val) in
                 let key = keys[khash]!
@@ -351,7 +351,7 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
         storage keys: [K],
         runtime: ExtendedRuntime<C>
     ) async throws -> AsyncThrowingStream<(K, K.TValue?), Error> {
-        let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
+        let keys = Dictionary(uniqueKeysWithValues: try keys.map {try ($0.hash, $0)})
         return try await subscribe(storage: Array(keys.keys), runtime: runtime).flatMap { changes in
             try changes.changes.map { (khash, val) in
                 let key = keys[khash]!
@@ -368,7 +368,7 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
         anystorage keys: [any StorageKey],
         runtime: ExtendedRuntime<C>
     ) async throws -> AsyncThrowingStream<(any StorageKey, Any?), Error> {
-        let keys = Dictionary(uniqueKeysWithValues: keys.map {($0.hash, $0)})
+        let keys = Dictionary(uniqueKeysWithValues: try keys.map {try ($0.hash, $0)})
         return try await subscribe(storage: Array(keys.keys), runtime: runtime).flatMap { changes in
             try changes.changes.map { (khash, val) in
                 let key = keys[khash]!

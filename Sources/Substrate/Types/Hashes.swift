@@ -8,9 +8,15 @@
 import Foundation
 import ScaleCodec
 
-public protocol Hash: Swift.Codable, ValueRepresentable, VoidValueRepresentable, Equatable {
+public protocol Hash: Swift.Codable, ValueRepresentable, VoidValueRepresentable,
+                      Equatable, CustomStringConvertible
+{
     var data: Data { get }
     init(_ data: Data) throws
+}
+
+public extension Hash {
+    var description: String { data.hex() }
 }
 
 public protocol StaticHash: Hash, FixedDataCodable {}

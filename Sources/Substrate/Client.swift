@@ -56,7 +56,7 @@ public protocol Client<C> {
     
     func storage<K: StorageKey>(
         changes keys: [K], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
-    ) async throws -> [(block: C.THasher.THash, changes: [(K, K.TValue?)])]
+    ) async throws -> [(block: C.THasher.THash, changes: [(key: K, value: K.TValue?)])]
     
     func storage<K: StorageKey>(size key: K,
                                 at hash: C.THasher.THash?,
@@ -64,7 +64,7 @@ public protocol Client<C> {
     
     func storage(
         anychanges keys: [any StorageKey], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
-    ) async throws -> [(block: C.THasher.THash, changes: [(any StorageKey, Any?)])]
+    ) async throws -> [(block: C.THasher.THash, changes: [(key: any StorageKey, value: Any?)])]
 }
 
 public protocol SubscribableClient<C>: Client {

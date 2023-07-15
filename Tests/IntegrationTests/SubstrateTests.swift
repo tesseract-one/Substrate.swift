@@ -46,8 +46,14 @@ final class SubstrateTests: XCTestCase {
     func testStorageIteration() {
         runAsyncTest(withTimeout: 30) {
             let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
-            let entry = try substrate.query.dynamic(name: "AuthoredBlocks", pallet: "ImOnline")
-            for try await _ in entry.entries().prefix(10) {}
+            let activeEra = try await substrate.query.dynamic(name: "ActiveEra", pallet: "Staking").value()!
+            let eraIndex = activeEra.map!["index"]!
+            let entry = try substrate.query.dynamic(name: "ErasStakers", pallet: "Staking")
+            var found = false
+            for try await _ in try entry.filter(eraIndex).entries().prefix(2) {
+                found = true
+            }
+            XCTAssert(found)
         }
     }
     

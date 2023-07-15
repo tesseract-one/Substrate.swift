@@ -129,9 +129,8 @@ public extension StorageEntry {
                     let changes = try await api.client.storage(changes: new,
                                                                at: atHash,
                                                                runtime: api.runtime)
-                    
                     let filtered = changes.flatMap { chSet in
-                        chSet.changes.compactMap { $0.1 != nil ? ($0.0, $0.1!) : nil }
+                        chSet.changes.compactMap { $0.value != nil ? ($0.key, $0.value!) : nil }
                     }
                     if filtered.count > 0 {
                         buffer.append(contentsOf: filtered)

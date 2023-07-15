@@ -56,8 +56,12 @@ public struct AnyRuntimeVersion: RuntimeVersion {
                                       debugDescription: "transactionVersion is not UInt32")
             )
         }
-        specVersion = UInt32(spVersion)
-        transactionVersion = UInt32(txVersion)
-        other = dict
+        self.init(specVersion: UInt32(spVersion), transactionVersion: UInt32(txVersion), other: dict)
+    }
+    
+    public init(specVersion: UInt32, transactionVersion: UInt32, other: [String: SerializableValue]) {
+        self.specVersion = specVersion
+        self.transactionVersion = transactionVersion
+        self.other = other
     }
 }

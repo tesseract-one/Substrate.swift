@@ -11,7 +11,7 @@ import ScaleCodec
 
 final class DynamicTypesLookupTests: XCTestCase {
     func testMetadataV14() throws {
-        try metadataTest(data: Resources.inst.metadadav15())
+        try metadataTest(data: Resources.inst.metadadav14())
     }
     
     func testMetadataV15() throws {

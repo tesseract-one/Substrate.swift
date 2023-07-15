@@ -16,7 +16,7 @@ public protocol StorageKey<TValue> {
     var pallet: String { get }
     var name: String { get }
     
-    var hash: Data { get }
+    var hash: Data { get throws }
     
     init(base: TBaseParams, params: TParams, runtime: any Runtime) throws
     
@@ -39,7 +39,7 @@ public protocol StorageKeyIterator<TKey> {
     associatedtype TParam
     associatedtype TKey: StorageKey
     
-    var hash: Data { get }
+    var hash: Data { get throws }
     
     func decode<D: ScaleCodec.Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey
 }
@@ -64,7 +64,7 @@ public protocol StaticStorageKey<TValue>: StorageKey, RuntimeDecodable where TBa
     
     init(_ params: TParams, runtime: any Runtime) throws
     init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws
-    var pathHash: Data { get }
+    var pathHash: Data { get throws }
     
     static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: any Runtime) throws -> TValue
 }
@@ -82,7 +82,7 @@ public extension StaticStorageKey {
         try self.init(decodingPath: &decoder, runtime: runtime)
     }
     
-    var hash: Data { self.prefix + self.pathHash }
+    var hash: Data { get throws { try self.prefix + self.pathHash } }
     
     init(base: Void, params: TParams, runtime: any Runtime) throws {
         try self.init(params, runtime: runtime)

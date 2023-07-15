@@ -23,7 +23,7 @@ public protocol DynamicStorageKeyIterator: IterableStorageKeyIterator where
     init(name: String, pallet: String, params: [ValueRepresentable], runtime: any Runtime) throws
 }
 
-public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
+public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, CustomStringConvertible {
     public typealias TParams = [ValueRepresentable]
     public typealias TBaseParams = (name: String, pallet: String)
     public typealias TValue = Val
@@ -82,11 +82,18 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
         guard ownPrefix == gotPrefix else {
             throw StorageKeyCodingError.badPrefix(has: gotPrefix, expected: ownPrefix)
         }
+        var skippable = decoder.skippable()
         let components: [Component] = try keys.map { (hash, tId) in
             let raw: Data = try decoder.decode(.fixed(UInt(hash.hasher.hashPartByteLength)))
-            return hash.hasher.isConcat
-                ? try .full(runtime.decodeValue(from: &decoder, id: tId.id).removingContext(), raw)
-                : .hash(raw)
+            try skippable.skip(count: raw.count)
+            if hash.hasher.isConcat {
+                let lengthBefore = decoder.length
+                let value = try runtime.decodeValue(from: &decoder, id: tId.id).removingContext()
+                let valData = try skippable.read(count: lengthBefore - decoder.length) // read encoded value
+                return .full(value, raw + valData)
+            } else {
+                return .hash(raw)
+            }
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
     }
@@ -115,10 +122,14 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
     }
+    
+    public var description: String {
+        "<\(pallet).\(name)>\(path)"
+    }
 }
 
 public extension AnyStorageKey {
-    enum Component {
+    enum Component: CustomStringConvertible {
         case hash(Data)
         case full(ValueRepresentable, Data)
         
@@ -135,11 +146,18 @@ public extension AnyStorageKey {
             case .hash(let hash): return hash
             }
         }
+        
+        public var description: String {
+            switch self {
+            case .full(let val, let hash): return "(hash: \(hash.hex()), value: \(val))"
+            case .hash(let hash): return hash.hex()
+            }
+        }
     }
 }
 
 public extension AnyStorageKey {
-    struct Iterator: DynamicStorageKeyIterator {
+    struct Iterator: DynamicStorageKeyIterator, CustomStringConvertible {
         public typealias TParam = ValueRepresentable
         public typealias TKey = AnyStorageKey<Val>
         public typealias TIterator = Self
@@ -194,6 +212,10 @@ public extension AnyStorageKey {
         public func decode<D: Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey {
             try TKey(from: &decoder, base: (name, pallet), runtime: runtime)
         }
+        
+        public var description: String {
+            "I<\(pallet).\(name)>\(path)"
+        }
     }
 }
 
@@ -221,6 +243,10 @@ public extension AnyStorageKey.Iterator {
         
         public func decode<D: Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey {
             try TKey(from: &decoder, base: (name, pallet), runtime: runtime)
+        }
+        
+        public var description: String {
+            "I<\(pallet).\(name)>[]"
         }
     }
 }

@@ -48,7 +48,11 @@ public struct AnySystemProperties: SystemProperties {
                                       debugDescription: "Bad SS58.AddressFormat value \(ss58Raw)")
             )
         }
-        ss58Format = format
-        other = dict
+        self.init(ss58Format: format, other: dict)
+    }
+    
+    public init(ss58Format: SS58.AddressFormat, other: [String: SerializableValue]) {
+        self.ss58Format = ss58Format
+        self.other = other
     }
 }
