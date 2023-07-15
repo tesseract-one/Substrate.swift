@@ -81,6 +81,34 @@ final class SubstrateTests: XCTestCase {
         }
     }
     
+    func testQueryPaymentInfo() {
+        runAsyncTest(withTimeout: 20) {
+            let from = self.env.kpAlice //self.env.randomKeyPair()
+            let toKp = self.env.randomKeyPair(exclude: [from])
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            let to = try toKp.address(in: substrate)
+            let call = AnyCall(name: "transfer_allow_death",
+                               pallet: "Balances",
+                               params: ["dest": to, "value": 15483812856])
+            let tx = try await substrate.tx.new(call)
+            let _ = try await tx.paymentInfo(account: from.pubKey)
+        }
+    }
+    
+    func testQueryFeeDetails() {
+        runAsyncTest(withTimeout: 20) {
+            let from = self.env.kpAlice //self.env.randomKeyPair()
+            let toKp = self.env.randomKeyPair(exclude: [from])
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            let to = try toKp.address(in: substrate)
+            let call = AnyCall(name: "transfer_allow_death",
+                               pallet: "Balances",
+                               params: ["dest": to, "value": 15483812856])
+            let tx = try await substrate.tx.new(call)
+            let _ = try await tx.feeDetails(account: from.pubKey)
+        }
+    }
+    
     #if !os(Linux) && !os(Windows)
     func testTransferAndWatchTx() {
         runAsyncTest(withTimeout: 300) {
