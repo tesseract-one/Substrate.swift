@@ -155,6 +155,12 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
                                                              signature: signature)
         return Submittable<_, _, _>(api: api, extinsic: signed)
     }
+    
+    public func serialize() throws -> Data {
+        var encoder = api.runtime.encoder()
+        try api.runtime.extrinsicManager.encode(unsigned: extrinsic, in: &encoder)
+        return encoder.output
+    }
 }
 
 extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra, R.CL: SubscribableClient {
@@ -207,6 +213,12 @@ extension Submittable where E == R.RC.TExtrinsicManager.TSignedExtra {
     public func send() async throws -> R.RC.TBlock.THeader.THasher.THash {
         try await api.client.submit(extrinsic: extrinsic,
                                     runtime: api.runtime)
+    }
+    
+    public func serialize() throws -> Data {
+        var encoder = api.runtime.encoder()
+        try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        return encoder.output
     }
 }
 
