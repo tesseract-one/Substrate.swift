@@ -17,7 +17,8 @@ final class SubstrateTests: XCTestCase {
     lazy var env = Environment()
     
     lazy var wsClient = {
-        let cl = JsonRpcClient(.ws(url: URL(string: "wss://westend-rpc.polkadot.io")!))
+        let cl = JsonRpcClient(.ws(url: URL(string: "wss://westend-rpc.polkadot.io")!,
+                                   maximumMessageSize: 16*1024*1024))
         cl.debug = self.debug
         return cl
     }()
