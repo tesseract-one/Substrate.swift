@@ -54,7 +54,7 @@ public extension ConstantsApiRegistry {
         guard let ct = rootApi.runtime.resolve(constant: name, pallet: pallet) else {
             throw ConstantsApiError.constantNotFound(name: name, pallet: pallet)
         }
-        return try rootApi.runtime.decode(from: ct.value, id: ct.type.id)
+        return try rootApi.runtime.decode(from: ct.value) { _ in ct.type.id }
     }
     
     @inlinable
