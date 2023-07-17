@@ -20,6 +20,7 @@ var package = Package(
     dependencies: [
         .package(url: "https://github.com/tesseract-one/swift-scale-codec.git", .upToNextMinor(from: "0.3.0")),
         .package(url: "https://github.com/tesseract-one/ContextCodable.swift.git", .upToNextMinor(from: "0.1.0")),
+        .package(url: "https://github.com/tesseract-one/Tuples.swift.git", branch: "main"),
         .package(url: "https://github.com/tesseract-one/Blake2.swift.git", .upToNextMinor(from: "0.1.2")),
         .package(url: "https://github.com/tesseract-one/UncommonCrypto.swift.git", .upToNextMinor(from: "0.1.3")),
         .package(url: "https://github.com/tesseract-one/Sr25519.swift.git", .upToNextMinor(from: "0.1.3")),
@@ -37,6 +38,7 @@ var package = Package(
                 .product(name: "ScaleCodec", package: "swift-scale-codec"),
                 .product(name: "ContextCodable", package: "ContextCodable.swift"),
                 .product(name: "Blake2", package: "Blake2.swift"),
+                .product(name: "Tuples", package: "Tuples.swift"),
                 "xxHash-Swift"
             ]),
         .target(

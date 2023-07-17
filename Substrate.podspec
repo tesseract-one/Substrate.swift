@@ -50,6 +50,7 @@ Pod::Spec.new do |s|
     
     ss.dependency 'Blake2', '~> 0.1.0'
     ss.dependency 'ScaleCodec', '~> 0.3.0'
+    ss.dependency 'Tuples', '~> 0.1.0'
     ss.dependency 'ContextCodable.swift', '~> 0.1.0'
     ss.dependency 'xxHash-Swift', '~> 1.1.0'
     ss.dependency 'Serializable.swift', '~> 0.2.0'
