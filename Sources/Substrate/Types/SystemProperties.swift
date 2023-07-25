@@ -6,9 +6,10 @@
 //
 
 import Foundation
+import ContextCodable
 import Serializable
 
-public protocol SystemProperties: Decodable {
+public protocol SystemProperties: ContextDecodable where DecodingContext == (any Metadata) {
     var ss58Format: SS58.AddressFormat { get }
 }
 
@@ -18,7 +19,7 @@ public struct AnySystemProperties: SystemProperties {
     /// Other properties
     public let other: [String: SerializableValue]
     
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder, context: any Metadata) throws {
         let serializable = try SerializableValue(from: decoder)
         guard var dict = serializable.object else {
             throw DecodingError.typeMismatch(

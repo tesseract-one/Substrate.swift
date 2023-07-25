@@ -33,6 +33,7 @@ public protocol Config {
     
     // Metadata Info Providers
     func blockType(metadata: any Metadata) throws -> RuntimeType.Info
+    func hashType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info
     func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info
@@ -64,8 +65,12 @@ public extension Config {
     func decoder(data: Data) -> ScaleCodec.Decoder { ScaleCodec.decoder(from: data) }
 }
 
-// Static Hasher can be returned by instance
 public extension Config where THasher: StaticHasher {
+    // Static hasher creates Hash without type lookup
+    func hashType(metadata: any Metadata) throws -> RuntimeType.Info {
+        throw RuntimeType.IdNeverCalledError()
+    }
+    // Static Hasher can be returned by singleton instance
     func hasher(metadata: Metadata) throws -> THasher { THasher.instance }
 }
 

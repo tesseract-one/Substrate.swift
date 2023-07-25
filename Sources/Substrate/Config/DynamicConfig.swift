@@ -118,7 +118,7 @@ public extension DynamicConfig {
     @inlinable
     func customCoders() throws -> [RuntimeCustomDynamicCoder] { runtimeCustomCoders }
     
-    func hasher(metadata: Metadata) throws -> AnyFixedHasher {
+    func hashType(metadata: any Metadata) throws -> RuntimeType.Info {
         var header: RuntimeType.Info? = nil
         if let block = try? blockType(metadata: metadata) {
             let headerType = block.type.parameters.first{ $0.name.lowercased() == "header" }?.type
@@ -133,8 +133,16 @@ public extension DynamicConfig {
             header = type
         }
         let hashType = header!.type.parameters.first { $0.name.lowercased() == "hash" }?.type
-        guard let hashType = hashType, let hashName = metadata.resolve(type: hashType)?.path.last else {
+        guard let hashType = hashType, let hashInfo = metadata.resolve(type: hashType) else {
             throw Error.hashTypeNotFound(header: header!)
+        }
+        return RuntimeType.Info(id: hashType, type: hashInfo)
+    }
+    
+    func hasher(metadata: Metadata) throws -> AnyFixedHasher {
+        let hType = try hashType(metadata: metadata)
+        guard let hashName = hType.type.path.last else {
+            throw Error.hashTypeNotFound(header: hType)
         }
         guard let hasher = AnyFixedHasher(name: hashName) else {
             throw Error.unknownHashName(hashName)

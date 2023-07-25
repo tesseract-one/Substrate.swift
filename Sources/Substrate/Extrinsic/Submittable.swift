@@ -226,7 +226,7 @@ extension Submittable where E == R.RC.TExtrinsicManager.TSignedExtra, R.CL: Subs
     public func sendAndWatch() async throws -> ExtrinsicProgress<R> {
         var encoder = api.runtime.encoder()
         try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
-        let hash = api.runtime.typedHasher.hash(data: encoder.output)
+        let hash = try api.runtime.hash(data: encoder.output)
         let stream = try await api.client.submitAndWatch(extrinsic: extrinsic,
                                                          runtime: api.runtime)
         return ExtrinsicProgress(api: api, hash: hash, stream: stream)

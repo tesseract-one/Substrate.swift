@@ -208,7 +208,7 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
-        .bytes(api.runtime.genesisHash.data, id)
+        try api.runtime.genesisHash.raw.asValue(runtime: api.runtime, type: id)
     }
 }
 

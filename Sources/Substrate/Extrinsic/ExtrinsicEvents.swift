@@ -34,7 +34,7 @@ public struct ExtrinsicEvents<H: Hash, BE: SomeBlockEvents, Failure: SomeExtrins
         where R: RootApi, H == R.RC.THasher.THash, BE == R.RC.TBlockEvents
     {
         let block = try await api.client.block(at: blockHash, runtime: api.runtime)
-        guard let idx = block?.block.extrinsics.firstIndex(where: { $0.hash().data == extrinsicHash.data }) else {
+        guard let idx = block?.block.extrinsics.firstIndex(where: { $0.hash().raw == extrinsicHash.raw }) else {
             throw Error.extrinsicNotFound(extrinsicHash)
         }
         let events = try await api.client.events(at: blockHash, runtime: api.runtime) ?? .default

@@ -6,9 +6,10 @@
 //
 
 import Foundation
+import ContextCodable
 import Serializable
 
-public protocol RuntimeVersion: Decodable {
+public protocol RuntimeVersion: ContextDecodable where DecodingContext == (any Metadata) {
     var specVersion: UInt32 { get }
     var transactionVersion: UInt32 { get }
 }
@@ -18,7 +19,7 @@ public struct AnyRuntimeVersion: RuntimeVersion {
     public let transactionVersion: UInt32
     public let other: [String: SerializableValue]
     
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder, context: any Metadata) throws {
         let serializable = try SerializableValue(from: decoder)
         guard var dict = serializable.object else {
             throw DecodingError.typeMismatch(

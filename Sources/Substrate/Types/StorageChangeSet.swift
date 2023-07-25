@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol SomeStorageChangeSet<THash>: Decodable {
+public protocol SomeStorageChangeSet<THash>: RuntimeSwiftDecodable {
     associatedtype THash: Hash
     var block: THash { get }
     var changes: [(key: Data, value: Data?)] { get }
@@ -23,9 +23,10 @@ public struct StorageChangeSet<H: Hash>: SomeStorageChangeSet {
         case changes
     }
     
-    public init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder, runtime: any Runtime) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let block = try container.decode(H.self, forKey: .block)
+        let hashContext = H.DecodingContext(metadata: runtime.metadata) { try runtime.types.hash.id }
+        let block = try container.decode(H.self, forKey: .block, context: hashContext)
         var changesContainer = try container.nestedUnkeyedContainer(forKey: .changes)
         var changes: [(key: Data, value: Data?)] = []
         if let count = changesContainer.count {

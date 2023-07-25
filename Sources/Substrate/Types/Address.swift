@@ -6,8 +6,6 @@
 //
 
 import Foundation
-
-import Foundation
 import ScaleCodec
 
 public protocol Address<TAccountId>: RuntimeDynamicCodable, ValueRepresentable {

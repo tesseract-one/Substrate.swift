@@ -30,52 +30,56 @@ public extension StaticHasher {
 public protocol FixedHasher: Hasher {
     associatedtype THash: Hash
     
-    func hash(data: Data) -> THash
+    func hash(data: Data, runtime: any Runtime) throws -> THash
     
     var bitWidth: Int { get }
 }
 
-extension FixedHasher {
-    public var isConcat: Bool { return false }
-    public var hashPartByteLength: Int { return bitWidth / 8 }
-    
-    @inlinable
-    public func hash(data: Data) -> THash {
-        return try! THash(hash(data: data))
-    }
+public extension FixedHasher {
+    @inlinable var isConcat: Bool { return false }
+    @inlinable var hashPartByteLength: Int { return bitWidth / 8 }
 }
 
 public protocol StaticFixedHasher: FixedHasher, StaticHasher where THash: StaticHash {
+    func hash(data: Data) -> THash
     static var bitWidth: Int { get }
 }
 
-extension StaticFixedHasher {
-    public var bitWidth: Int { Self.bitWidth }
+public extension StaticFixedHasher {
+    @inlinable var bitWidth: Int { Self.bitWidth }
+    
+    @inlinable func hash(data: Data) -> Data {
+        hash(data: data).raw
+    }
+    
+    @inlinable func hash(data: Data, runtime: any Runtime) throws -> THash {
+        hash(data: data)
+    }
 }
 
 public protocol ConcatHasher: Hasher {
     var hashPartBitWidth: Int { get }
 }
 
-extension ConcatHasher {
-    public var isConcat: Bool { return true }
-    public var hashPartByteLength: Int { return hashPartBitWidth / 8 }
+public extension ConcatHasher {
+    @inlinable var isConcat: Bool { return true }
+    @inlinable var hashPartByteLength: Int { return hashPartBitWidth / 8 }
 }
 
 public protocol StaticConcatHasher: ConcatHasher, StaticHasher {
     static var hashPartBitWidth: Int { get }
 }
 
-extension StaticConcatHasher {
-    public var hashPartBitWidth: Int { Self.hashPartBitWidth }
+public extension StaticConcatHasher {
+    @inlinable var hashPartBitWidth: Int { Self.hashPartBitWidth }
 }
 
 public struct HBlake2b128: StaticFixedHasher {
     public typealias THash = Hash128
     
     @inlinable
-    public func hash(data: Data) -> Data {
-        return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
+    public func hash(data: Data) -> THash {
+        try! Hash128(raw: Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data))
     }
     
     public static let name = "Blake2_128"
@@ -86,7 +90,7 @@ public struct HBlake2b128: StaticFixedHasher {
 public struct HBlake2b128Concat: StaticConcatHasher {
     @inlinable
     public func hash(data: Data) -> Data {
-        return try! Blake2.hash(.b2b, size: Self.hashPartBitWidth / 8, data: data) + data
+        try! Blake2.hash(.b2b, size: Self.hashPartBitWidth / 8, data: data) + data
     }
     
     public static let name = "Blake2_128Concat"
@@ -98,8 +102,8 @@ public struct HBlake2b256: StaticFixedHasher {
     public typealias THash = Hash256
     
     @inlinable
-    public func hash(data: Data) -> Data {
-        return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
+    public func hash(data: Data) -> THash {
+        try! Hash256(raw: Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data))
     }
     
     public static let name = "Blake2_256"
@@ -111,8 +115,8 @@ public struct HBlake2b512: StaticFixedHasher {
     public typealias THash = Hash512
     
     @inlinable
-    public func hash(data: Data) -> Data {
-        return try! Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data)
+    public func hash(data: Data) -> THash {
+        try! Hash512(raw: Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data))
     }
     
     public static let name = "Blake2_512"
@@ -122,7 +126,7 @@ public struct HBlake2b512: StaticFixedHasher {
 
 public struct HXX64Concat: StaticConcatHasher {
     public func hash(data: Data) -> Data {
-        return xxHash(data: data, bitWidth: Self.hashPartBitWidth) + data
+        xxHash(data: data, bitWidth: Self.hashPartBitWidth) + data
     }
     
     public static let name = "Twox64Concat"
@@ -133,8 +137,8 @@ public struct HXX64Concat: StaticConcatHasher {
 public struct HXX128: StaticFixedHasher {
     public typealias THash = Hash128
     
-    public func hash(data: Data) -> Data {
-        return xxHash(data: data, bitWidth: Self.bitWidth)
+    public func hash(data: Data) -> THash {
+        try! Hash128(raw: xxHash(data: data, bitWidth: Self.bitWidth))
     }
     
     public static let name = "Twox128"
@@ -145,8 +149,8 @@ public struct HXX128: StaticFixedHasher {
 public struct HXX256: StaticFixedHasher {
     public typealias THash = Hash256
     
-    public func hash(data: Data) -> Data {
-        return xxHash(data: data, bitWidth: Self.bitWidth)
+    public func hash(data: Data) -> THash {
+        try! Hash256(raw: xxHash(data: data, bitWidth: Self.bitWidth))
     }
     
     public static let name = "Twox256"
@@ -208,6 +212,10 @@ public struct AnyFixedHasher: FixedHasher {
     
     public init(type: HashType) {
         self.hasher = type.hasher
+    }
+    
+    public func hash(data: Data, runtime: any Runtime) throws -> THash {
+        try runtime.create(hash: THash.self, raw: hasher.hash(data: data))
     }
     
     @inlinable

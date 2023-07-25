@@ -18,7 +18,7 @@ final class StorageKeysTests: XCTestCase {
         return try ExtendedRuntime(config: try DynamicConfig(),
                                    metadata: metadata,
                                    metadataHash: nil,
-                                   genesisHash: try AnyHash(Data()),
+                                   genesisHash: AnyHash(unchecked: Data()),
                                    version: AnyRuntimeVersion(specVersion: 0,
                                                               transactionVersion: 4,
                                                               other: [:]),

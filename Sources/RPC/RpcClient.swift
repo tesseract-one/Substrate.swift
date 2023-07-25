@@ -86,8 +86,10 @@ extension RpcClient: Client {
     }
     
     @inlinable
-    public func runtimeVersion(at hash: C.THasher.THash?, config: C) async throws -> C.TRuntimeVersion {
-        try await call(method: "state_getRuntimeVersion", params: Params(hash))
+    public func runtimeVersion(
+        at hash: C.THasher.THash?, metadata: any Metadata, config: C
+    ) async throws -> C.TRuntimeVersion {
+        return try await call(method: "state_getRuntimeVersion", params: Params(hash), context: metadata)
     }
     
     @inlinable
@@ -101,15 +103,16 @@ extension RpcClient: Client {
     }
     
     @inlinable
-    public func systemProperties(config: C) async throws -> C.TSystemProperties {
-        try await call(method: "system_properties", params: Params())
+    public func systemProperties(metadata: any Metadata, config: C) async throws -> C.TSystemProperties {
+        try await call(method: "system_properties", params: Params(), context: metadata)
     }
     
     @inlinable
     public func block(
-        hash index: C.TBlock.THeader.TNumber?, config: C
+        hash index: C.TBlock.THeader.TNumber?, metadata: any Metadata, config: C
     ) async throws -> C.TBlock.THeader.THasher.THash? {
-        try await call(method: "chain_getBlockHash", params: Params(index.map(UIntHex.init)))
+        try await call(method: "chain_getBlockHash", params: Params(index.map(UIntHex.init)),
+                       context: (metadata, { try config.hashType(metadata: metadata).id }))
     }
     
     @inlinable
@@ -196,7 +199,8 @@ extension RpcClient: Client {
     ) async throws -> C.THasher.THash {
         var encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
-        return try await call(method: "author_submitExtrinsic", params: Params(encoder.output))
+        return try await call(method: "author_submitExtrinsic", params: Params(encoder.output),
+                              context: (runtime.metadata, { try runtime.types.hash.id }))
     }
     
     public func storage<K: StorageKey>(value key: K,
@@ -226,7 +230,7 @@ extension RpcClient: Client {
         changes keys: [K], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
     ) async throws -> [(block: C.THasher.THash, changes: [(key: K, value: K.TValue?)])] {
         let keys = Dictionary(uniqueKeysWithValues: try keys.map {try ($0.hash, $0)})
-        return try await storage(changes: Array(keys.keys), hash: hash).map { chSet in
+        return try await storage(changes: Array(keys.keys), hash: hash, runtime: runtime).map { chSet in
             let changes = try chSet.changes.map { (khash, val) in
                 let key = keys[khash]!
                 return try (key, val.map { val in
@@ -250,7 +254,7 @@ extension RpcClient: Client {
         anychanges keys: [any StorageKey], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
     ) async throws -> [(block: C.THasher.THash, changes: [(key: any StorageKey, value: Any?)])] {
         let keys = Dictionary(uniqueKeysWithValues: try keys.map {try ($0.hash, $0)})
-        return try await storage(changes: Array(keys.keys), hash: hash).map { chSet in
+        return try await storage(changes: Array(keys.keys), hash: hash, runtime: runtime).map { chSet in
             let changes = try chSet.changes.map { (khash, val) in
                 let key = keys[khash]!
                 return try (key, val.map { val in
@@ -285,15 +289,17 @@ extension RpcClient: Client {
     }
     
     public func metadataFromRpc(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
-        let data: Data = try await call(method: "state_getMetadata", params: Params(hash))
+        let data: Data = try await call(method: "state_getMetadata", params: Params(hash?.raw))
         var decoder = config.decoder(data: data)
         let versioned = try decoder.decode(VersionedMetadata.self)
         return try versioned.metadata.asMetadata()
     }
     
     private func storage(changes keys: [Data],
-                         hash: C.THasher.THash?) async throws -> [C.TStorageChangeSet] {
-        try await call(method: "state_queryStorageAt", params: Params(keys, hash))
+                         hash: C.THasher.THash?,
+                         runtime: ExtendedRuntime<C>) async throws -> [C.TStorageChangeSet] {
+        try await call(method: "state_queryStorageAt", params: Params(keys, hash),
+                       context: .init(runtime: runtime))
     }
 }
 
@@ -344,7 +350,8 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
         return try await subscribe(method: "author_submitAndWatchExtrinsic",
                                    params: Params(encoder.output),
-                                   unsubscribe: "author_unwatchExtrinsic")
+                                   unsubscribe: "author_unwatchExtrinsic",
+                                   context: .init(runtime: runtime))
     }
     
     public func subscribe<K: StorageKey>(
@@ -388,7 +395,8 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
         try await subscribe(
            method: "state_subscribeStorage",
            params: keys,
-           unsubscribe: "state_unsubscribeStorage"
+           unsubscribe: "state_unsubscribeStorage",
+           context: .init(runtime: runtime)
        )
     }
 }

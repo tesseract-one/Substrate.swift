@@ -125,7 +125,7 @@ public struct AccountId32: StaticAccountId, Hashable, Equatable {
         case .ed25519, .sr25519:
             try self.init(raw: pub.raw, runtime: runtime)
         case .ecdsa:
-            let hash = HBlake2b256.instance.hash(data: pub.raw)
+            let hash: Data = HBlake2b256.instance.hash(data: pub.raw)
             try self.init(checked: hash, runtime: runtime)
         }
     }

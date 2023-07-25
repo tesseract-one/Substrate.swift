@@ -69,7 +69,7 @@ extension EcdsaKeyPair: KeyPair {
     }
     
     public func sign(message: Data) -> any Signature {
-        let hash = HBlake2b256.instance.hash(data: message)
+        let hash: Data = HBlake2b256.instance.hash(data: message)
         let signature = try! Self._context.sign(hash: Array(hash), privKey: self._private)
         let raw = try! Data(Self._context.serialize(signature: signature))
         return try! EcdsaSignature(raw: raw)
@@ -82,7 +82,7 @@ extension EcdsaKeyPair: KeyPair {
         guard let sig = try? Self._context.signature(from: Array(signature.raw)) else {
             return false
         }
-        let hash = HBlake2b256.instance.hash(data: message)
+        let hash: Data = HBlake2b256.instance.hash(data: message)
         return Self._context.verify(signature: sig, hash: Array(hash), pubKey: self._public)
     }
     
@@ -97,7 +97,7 @@ extension EcdsaKeyPair: KeyDerivable {
             try encoder.encode("Secp256k1HDKD")
             try encoder.encode(Data(secret), .fixed(UInt(Secp256k1Context.privKeySize)))
             try encoder.encode(cmp.bytes, .fixed(UInt(PathComponent.size)))
-            let hash = HBlake2b256.instance.hash(data: encoder.output)
+            let hash: Data = HBlake2b256.instance.hash(data: encoder.output)
             return Array(hash.prefix(Secp256k1Context.privKeySize))
         }
         
@@ -129,7 +129,7 @@ extension EcdsaPublicKey {
         guard let pub = try? EcdsaKeyPair._context.publicKey(from: Array(self.raw)) else {
             return false
         }
-        let hash =  HBlake2b256.instance.hash(data: message)
+        let hash: Data = HBlake2b256.instance.hash(data: message)
         return EcdsaKeyPair._context.verify(signature: sig, hash: Array(hash), pubKey: pub)
     }
 }
