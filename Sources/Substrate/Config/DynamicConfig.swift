@@ -36,6 +36,7 @@ public struct DynamicConfig: Config {
     public enum Error: Swift.Error {
         case typeNotFound(name: String, selector: NSRegularExpression)
         case hashTypeNotFound(header: RuntimeType.Info)
+        case badHeaderType(header: RuntimeType.Info)
         case eventTypeNotFound(record: RuntimeType.Info)
         case extrinsicInfoNotFound
         case unknownHashName(String)
@@ -118,31 +119,36 @@ public extension DynamicConfig {
     @inlinable
     func customCoders() throws -> [RuntimeCustomDynamicCoder] { runtimeCustomCoders }
     
-    func hashType(metadata: any Metadata) throws -> RuntimeType.Info {
-        var header: RuntimeType.Info? = nil
+    func headerType(metadata: any Metadata) throws -> RuntimeType.Info {
         if let block = try? blockType(metadata: metadata) {
             let headerType = block.type.parameters.first{ $0.name.lowercased() == "header" }?.type
             if let id = headerType, let type = metadata.resolve(type: id) {
-                header = RuntimeType.Info(id: id, type: type)
+                return RuntimeType.Info(id: id, type: type)
             }
         }
-        if header == nil {
-            guard let type = metadata.search(type: { headerSelector.matches($0) }) else {
-                throw Error.typeNotFound(name: "Header", selector: headerSelector)
-            }
-            header = type
+        guard let type = metadata.search(type: { headerSelector.matches($0) }) else {
+            throw Error.typeNotFound(name: "Header", selector: headerSelector)
         }
-        let hashType = header!.type.parameters.first { $0.name.lowercased() == "hash" }?.type
+        return type
+    }
+    
+    func hashType(metadata: any Metadata) throws -> RuntimeType.Info {
+        let header = try headerType(metadata: metadata)
+        guard case .composite(let fields) = header.type.definition else {
+            throw Error.badHeaderType(header: header)
+        }
+        let hashType = fields.first { $0.typeName?.lowercased().contains("hash") ?? false }?.type
         guard let hashType = hashType, let hashInfo = metadata.resolve(type: hashType) else {
-            throw Error.hashTypeNotFound(header: header!)
+            throw Error.hashTypeNotFound(header: header)
         }
         return RuntimeType.Info(id: hashType, type: hashInfo)
     }
     
     func hasher(metadata: Metadata) throws -> AnyFixedHasher {
-        let hType = try hashType(metadata: metadata)
-        guard let hashName = hType.type.path.last else {
-            throw Error.hashTypeNotFound(header: hType)
+        let header = try headerType(metadata: metadata)
+        let hashType = header.type.parameters.first { $0.name.lowercased() == "hash" }?.type
+        guard let hashType = hashType, let hashName = metadata.resolve(type: hashType)?.path.last else {
+            throw Error.hashTypeNotFound(header: header)
         }
         guard let hasher = AnyFixedHasher(name: hashName) else {
             throw Error.unknownHashName(hashName)
