@@ -22,7 +22,9 @@ public protocol Runtime: AnyObject {
     func resolve(type path: [String]) -> RuntimeType.Info?
     func resolve(palletName index: UInt8) -> String?
     func resolve(palletIndex name: String) -> UInt8?
-        
+    
+    func custom(coder type: RuntimeType.Id) -> RuntimeCustomDynamicCoder?
+    
     // Calls
     func resolve(callName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(callIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?

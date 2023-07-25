@@ -142,6 +142,13 @@ public extension Value {
         default: return self
         }
     }
+    
+    subscript(_ key: String) -> Value<C>? { map?[key] }
+    
+    subscript(_ index: Int) -> Value<C>? {
+        guard let seq = sequence else { return nil }
+        return seq.indices.contains(index) ? seq[index] : nil
+    }
 }
 
 public extension Value {

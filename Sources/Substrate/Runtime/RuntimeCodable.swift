@@ -217,3 +217,37 @@ public extension Runtime {
         return encoder.output
     }
 }
+
+public protocol RuntimeCustomDynamicCoder {
+    func checkType(id: RuntimeType.Id, runtime: any Runtime) throws -> Bool
+    func decode<D: ScaleCodec.Decoder>(
+        from decoder: inout D, as id: RuntimeType.Id, runtime: any Runtime
+    ) throws -> Value<RuntimeType.Id>
+    func encode<C, E: ScaleCodec.Encoder>(
+        value: Value<C>, in encoder: inout E, as id: RuntimeType.Id, runtime: any Runtime
+    ) throws
+    func decode(from container: inout ValueDecodingContainer,
+                as id: RuntimeType.Id, runtime: any Runtime) throws -> Value<RuntimeType.Id>
+}
+
+public extension RuntimeCustomDynamicCoder {
+    @inlinable
+    func decode<D: ScaleCodec.Decoder>(
+        from decoder: inout D, as id: RuntimeType.Id, runtime: any Runtime
+    ) throws -> Value<RuntimeType.Id> {
+        try Value(from: &decoder, as: id, runtime: runtime, custom: false)
+    }
+    
+    @inlinable
+    func encode<C, E: ScaleCodec.Encoder>(
+        value: Value<C>, in encoder: inout E, as id: RuntimeType.Id, runtime: any Runtime
+    ) throws {
+        try value.encode(in: &encoder, as: id, runtime: runtime, custom: false)
+    }
+
+    @inlinable
+    func decode(from container: inout ValueDecodingContainer,
+                as id: RuntimeType.Id, runtime: any Runtime) throws -> Value<RuntimeType.Id> {
+        try Value(from: &container, as: id, runtime: runtime, custom: false)
+    }
+}
