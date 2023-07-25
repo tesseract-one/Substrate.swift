@@ -42,6 +42,7 @@ public struct DynamicConfig: Config {
     }
     
     public let extrinsicExtensions: [DynamicExtrinsicExtension]
+    public let runtimeCustomCoders: [RuntimeCustomDynamicCoder]
     public let blockSelector: NSRegularExpression
     public let headerSelector: NSRegularExpression
     public let accountSelector: NSRegularExpression
@@ -52,6 +53,7 @@ public struct DynamicConfig: Config {
     public let eventRecordSelector: NSRegularExpression
     
     public init(extrinsicExtensions: [DynamicExtrinsicExtension] = Self.allExtensions,
+                customCoders: [RuntimeCustomDynamicCoder] = Self.customCoders,
                 blockSelector: String = "^.*Block$",
                 headerSelector: String = "^.*Header$",
                 accountSelector: String = "^.*AccountId[0-9]*$",
@@ -62,6 +64,7 @@ public struct DynamicConfig: Config {
                 eventRecordSelector: String = "^.*EventRecord$") throws
     {
         self.extrinsicExtensions = extrinsicExtensions
+        self.runtimeCustomCoders = customCoders
         self.blockSelector = try NSRegularExpression(pattern: blockSelector)
         self.accountSelector = try NSRegularExpression(pattern: accountSelector)
         self.headerSelector = try NSRegularExpression(pattern: headerSelector)
@@ -95,17 +98,15 @@ public extension DynamicConfig {
     }
     
     func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
-//        AnyRuntimeCall(api: "TransactionPaymentApi",
-//                       method: "query_info",
-//                       params: [extrinsic, extrinsic.count])
-        TransactionInfoCall(method: "query_info", extrinsic: extrinsic)
+        AnyRuntimeCall(api: "TransactionPaymentApi",
+                       method: "query_info",
+                       params: [extrinsic, extrinsic.count])
     }
     
     func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
-//        AnyRuntimeCall(api: "TransactionPaymentApi",
-//                       method: "query_fee_details",
-//                       params: [extrinsic, extrinsic.count])
-        TransactionInfoCall(method: "query_fee_details", extrinsic: extrinsic)
+        AnyRuntimeCall(api: "TransactionPaymentApi",
+                       method: "query_fee_details",
+                       params: [extrinsic, extrinsic.count])
     }
     
     func extrinsicManager() throws -> TExtrinsicManager {
@@ -113,6 +114,9 @@ public extension DynamicConfig {
                                                              version: TExtrinsicManager.version)
         return TExtrinsicManager(extensions: provider)
     }
+    
+    @inlinable
+    func customCoders() throws -> [RuntimeCustomDynamicCoder] { runtimeCustomCoders }
     
     func hasher(metadata: Metadata) throws -> AnyFixedHasher {
         var header: RuntimeType.Info? = nil
@@ -148,6 +152,10 @@ public extension DynamicConfig {
         DynamicCheckWeightExtension(),
         DynamicChargeTransactionPaymentExtension(),
         DynamicPrevalidateAttestsExtension()
+    ]
+    
+    static let customCoders: [RuntimeCustomDynamicCoder] = [
+        ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")
     ]
 }
 
@@ -275,35 +283,4 @@ public extension ConfigRegistry where C == DynamicConfig {
     }
     
     @inlinable static var dynamic: Self { try! dynamic() }
-}
-
-// This is workaround for bad QueryInfo calls metadata
-// Should be removed when fixed: https://github.com/paritytech/substrate/issues/14584
-public extension DynamicConfig {
-    struct TransactionInfoCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
-        public typealias TReturn = Return
-        
-        public var api: String { "TransactionPaymentApi" }
-        public let method: String
-        public let extrinsic: Data
-        
-        public init(method: String, extrinsic: Data) {
-            self.method = method
-            self.extrinsic = extrinsic
-        }
-        
-        public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
-            try encoder.encode(extrinsic, .fixed(UInt(extrinsic.count)))
-            try encoder.encode(UInt32(extrinsic.count))
-        }
-        
-        public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> Return {
-            return try Return(from: &decoder, runtime: runtime) { runtime in
-                guard let call = runtime.resolve(runtimeCall: method, api: api) else {
-                    throw RuntimeCallCodingError.callNotFound(method: method, api: api)
-                }
-                return call.result.id
-            }
-        }
-    }
 }

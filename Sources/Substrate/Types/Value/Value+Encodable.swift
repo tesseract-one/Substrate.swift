@@ -56,10 +56,23 @@ extension Value {
 }
 
 extension Value: RuntimeDynamicEncodable {
+    @inlinable
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
                                               as type: RuntimeType.Id,
                                               runtime: Runtime) throws
     {
+        try self.encode(in: &encoder, as: type, runtime: runtime, custom: true)
+    }
+    
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
+                                              as type: RuntimeType.Id,
+                                              runtime: Runtime,
+                                              custom: Bool) throws
+    {
+        if custom, let coder = runtime.custom(coder: type) {
+            try coder.encode(value: self, in: &encoder, as: type, runtime: runtime)
+            return
+        }
         guard let typeInfo = runtime.resolve(type: type) else {
             throw EncodingError.typeNotFound(type)
         }

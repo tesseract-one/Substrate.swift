@@ -19,10 +19,23 @@ extension Value {
 }
 
 extension Value: RuntimeDynamicDecodable where C == RuntimeType.Id {
+    @inlinable
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
                                        `as` type: RuntimeType.Id,
                                        runtime: Runtime) throws
     {
+        try self.init(from: &decoder, as: type, runtime: runtime, custom: true)
+    }
+    
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
+                                       `as` type: RuntimeType.Id,
+                                       runtime: Runtime,
+                                       custom: Bool) throws
+    {
+        if custom, let coder = runtime.custom(coder: type) {
+            self = try coder.decode(from: &decoder, as: type, runtime: runtime)
+            return
+        }
         guard let typeInfo = runtime.resolve(type: type) else {
             throw DecodingError.typeNotFound(type)
         }

@@ -17,6 +17,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     public let metadataHash: RC.THasher.THash?
     public let types: any RuntimeTypes
     public let isBatchSupported: Bool
+    public let customCoders: [RuntimeCustomDynamicCoder]
     
     public private(set) var extrinsicManager: RC.TExtrinsicManager
     
@@ -38,6 +39,11 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     
     @inlinable
     public func decoder(with data: Data) -> ScaleCodec.Decoder { config.decoder(data: data) }
+    
+    @inlinable
+    public func custom(coder type: RuntimeType.Id) -> RuntimeCustomDynamicCoder? {
+        try? customCoders.first { try $0.checkType(id: type, runtime: self) }
+    }
     
     @inlinable
     public func queryInfoCall<C: Call>(
@@ -69,6 +75,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         self.genesisHash = genesisHash
         self.version = version
         self.properties = properties
+        self.customCoders = try config.customCoders()
         self.typedHasher = try config.hasher(metadata: metadata)
         self.extrinsicManager = try config.extrinsicManager()
         self.types = LazyRuntimeTypes(config: config, metadata: metadata)

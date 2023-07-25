@@ -14,15 +14,21 @@ extension Value: ContextDecodable where C == RuntimeType.Id {}
 extension Value: RuntimeDynamicSwiftDecodable where C == RuntimeType.Id {
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
+    @inlinable
     public init(from decoder: Swift.Decoder, as type: RuntimeType.Id, runtime: Runtime) throws {
         var value = ValueDecodingContainer(decoder)
-        try self.init(from: &value, as: type, runtime: runtime)
+        try self.init(from: &value, as: type, runtime: runtime, custom: true)
     }
     
     public init(from container: inout ValueDecodingContainer,
                 `as` type: RuntimeType.Id,
-                runtime: Runtime) throws
+                runtime: Runtime,
+                custom: Bool) throws
     {
+        if custom, let coder = runtime.custom(coder: type) {
+            self = try coder.decode(from: &container, as: type, runtime: runtime)
+            return
+        }
         guard let typeInfo = runtime.resolve(type: type) else {
             throw DecodingError.typeNotFound(type)
         }
@@ -167,13 +173,13 @@ private extension Value where C == RuntimeType.Id {
             var map: [String: Value<C>] = Dictionary(minimumCapacity: fields.count)
             for field in fields {
                 try value.next(key: field.name!.camelCased(with: "_"))
-                map[field.name!] = try Value(from: &value, as: field.type, runtime: runtime)
+                map[field.name!] = try Value(from: &value, as: field.type, runtime: runtime, custom: true)
             }
             return Value(value: .map(map), context: type)
         } else { // Sequence
             var value = try from.nestedUnkeyedContainer()
             let seq = try fields.map {
-                try Value(from: &value, as: $0.type, runtime: runtime)
+                try Value(from: &value, as: $0.type, runtime: runtime, custom: true)
             }
             return Value(value: .sequence(seq), context: type)
         }
@@ -203,7 +209,7 @@ private extension Value where C == RuntimeType.Id {
                 values.reserveCapacity(count)
             }
             while try !value.isAtEnd() {
-                values.append(try Value(from: &value, as: valueType, runtime: runtime))
+                values.append(try Value(from: &value, as: valueType, runtime: runtime, custom: true))
             }
             return Value(value: .sequence(values), context: type)
         }
@@ -218,7 +224,7 @@ private extension Value where C == RuntimeType.Id {
             if try from.decodeNil() {
                 return Value(value: .variant(.sequence(name: "None", values: [])), context: type)
             }
-            let some = try Value(from: &from, as: someType, runtime: runtime)
+            let some = try Value(from: &from, as: someType, runtime: runtime, custom: true)
             return Value(value: .variant(.sequence(name: "Some", values: [some])), context: type)
         }
         if let data = try? from.decode(Data.self) { // SCALE serialized
@@ -289,7 +295,7 @@ private extension Value where C == RuntimeType.Id {
             var values = Array<Self>()
             values.reserveCapacity(Int(count))
             while try !value.isAtEnd() {
-                values.append(try Value(from: &value, as: valueType, runtime: runtime))
+                values.append(try Value(from: &value, as: valueType, runtime: runtime, custom: true))
             }
             guard values.count == count else {
                 throw try from.newError("Wrong array size: \(values.count), expected: \(count)")
@@ -307,7 +313,7 @@ private extension Value where C == RuntimeType.Id {
             return try runtime.decodeValue(from: data, id: type)
         } else {
             var container = try from.nestedUnkeyedContainer()
-            let seq = try fields.map { try Value(from: &container, as: $0, runtime: runtime) }
+            let seq = try fields.map { try Value(from: &container, as: $0, runtime: runtime, custom: true) }
             return Value(value: .sequence(seq), context: type)
         }
     }

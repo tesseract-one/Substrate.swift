@@ -50,6 +50,7 @@ public protocol Config {
     func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]>
     func metadataAtVersionCall(version: UInt32) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>>
     func extrinsicManager() throws -> TExtrinsicManager
+    func customCoders() throws -> [RuntimeCustomDynamicCoder]
     // If you want your own Scale Codec coders
     func encoder() -> ScaleCodec.Encoder
     func decoder(data: Data) -> ScaleCodec.Decoder
