@@ -24,6 +24,7 @@ public protocol RuntimeTypes {
     var account: RuntimeType.Info { get throws }
     var address: RuntimeType.Info { get throws }
     var signature: RuntimeType.Info { get throws }
+    var hash: RuntimeType.Info { get throws }
     var call: RuntimeType.Info { get throws }
     var event: RuntimeType.Info { get throws }
     var extrinsicExtra: RuntimeType.Info { get throws }
@@ -64,6 +65,11 @@ public extension Runtime {
     @inlinable
     func create<A: Address>(address: A.Type, account: A.TAccountId) throws -> A {
         try A(accountId: account, runtime: self) { try $0.types.account.id }
+    }
+    
+    @inlinable
+    func create<H: Hash>(hash: H.Type, raw: Data) throws -> H {
+        try H(raw: raw, runtime: self) { try $0.types.hash.id }
     }
     
     @inlinable
@@ -135,5 +141,10 @@ public extension Runtime {
         call: C, in encoder: inout E
     ) throws {
         try call.encode(in: &encoder, runtime: self) { try $0.types.call.id }
+    }
+    
+    @inlinable
+    func hash<H: Hash>(type: H.Type, data: Data) throws -> H {
+        try create(hash: type, raw: hasher.hash(data: data))
     }
 }

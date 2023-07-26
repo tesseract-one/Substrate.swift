@@ -7,118 +7,168 @@
 
 import Foundation
 import ScaleCodec
+import ContextCodable
 
-public protocol Hash: Swift.Codable, ValueRepresentable, VoidValueRepresentable,
+public protocol Hash: ContextDecodable, Swift.Encodable,
+                      ValueRepresentable, VoidValueRepresentable,
                       Equatable, CustomStringConvertible
+    where DecodingContext == (metadata: any Metadata, id: () throws -> RuntimeType.Id)
 {
-    var data: Data { get }
-    init(_ data: Data) throws
+    var raw: Data { get }
+    
+    init(raw: Data,
+         metadata: any Metadata,
+         id: @escaping () throws -> RuntimeType.Id) throws
 }
 
 public extension Hash {
-    var description: String { data.hex() }
-}
-
-public protocol StaticHash: Hash, FixedDataCodable {}
-
-extension Hash {
-    public init(from decoder: Swift.Decoder) throws {
-        let container = try decoder.singleValueContainer()
-        let data = try container.decode(Data.self)
-        try self.init(data)
+    var description: String { raw.hex() }
+    
+    @inlinable
+    init(raw: Data,
+         runtime: any Runtime,
+         id: @escaping RuntimeType.LazyId) throws
+    {
+        try self.init(raw: raw, metadata: runtime.metadata) { try id(runtime) }
     }
     
-    public func encode(to encoder: Swift.Encoder) throws {
+    func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
-        try container.encode(data)
+        try container.encode(raw)
     }
     
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
         guard let count = info.asBytes(metadata: runtime.metadata) else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
-        guard count == 0 || data.count == count else {
-            throw ValueRepresentableError.wrongValuesCount(in: info, expected: data.count,
+        guard count == 0 || raw.count == count else {
+            throw ValueRepresentableError.wrongValuesCount(in: info, expected: raw.count,
                                                            for: String(describing: Self.self))
         }
-        return .bytes(data, type)
+        return .bytes(raw, type)
     }
      
-     public func asValue() -> Value<Void> {
-         .bytes(data)
+    func asValue() -> Value<Void> {
+         .bytes(raw)
      }
 }
 
-extension StaticHash {
-    public init(decoding data: Data) throws {
-        try self.init(data)
+public protocol StaticHash: Hash, FixedDataCodable, Swift.Decodable {
+    init(raw: Data) throws
+}
+
+public extension StaticHash {
+    @inlinable
+    init(raw: Data,
+         metadata: any Metadata,
+         id: @escaping () throws -> RuntimeType.Id) throws
+    {
+        try self.init(raw: raw)
     }
     
-    public func serialize() -> Data {
-        self.data
+    init(from decoder: Swift.Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let data = try container.decode(Data.self)
+        try self.init(raw: data)
     }
+    
+    @inlinable
+    init(decoding data: Data) throws {
+       try self.init(raw: data)
+    }
+    
+    @inlinable
+    init(from decoder: Swift.Decoder, context: DecodingContext) throws {
+        try self.init(from: decoder)
+    }
+    
+    @inlinable
+    func serialize() -> Data { raw }
 }
 
 public struct Hash128: StaticHash {
-    public let data: Data
+    public let raw: Data
     
-    public init(_ data: Data) throws {
-        guard data.count == Self.fixedBytesCount else {
-            throw SizeMismatchError(size: data.count, expected: Self.fixedBytesCount)
+    public init(raw: Data) throws {
+        guard raw.count == Self.fixedBytesCount else {
+            throw SizeMismatchError(size: raw.count, expected: Self.fixedBytesCount)
         }
-        self.data = data
+        self.raw = raw
     }
     
     public static var fixedBytesCount: Int = 16
 }
 
 public struct Hash160: StaticHash {
-    public let data: Data
+    public let raw: Data
     
-    public init(_ data: Data) throws {
-        guard data.count == Self.fixedBytesCount else {
-            throw SizeMismatchError(size: data.count, expected: Self.fixedBytesCount)
+    public init(raw: Data) throws {
+        guard raw.count == Self.fixedBytesCount else {
+            throw SizeMismatchError(size: raw.count, expected: Self.fixedBytesCount)
         }
-        self.data = data
+        self.raw = raw
     }
     
     public static var fixedBytesCount: Int = 20
 }
 
 public struct Hash256: StaticHash {
-    public let data: Data
+    public let raw: Data
     
-    public init(_ data: Data) throws {
-        guard data.count == Self.fixedBytesCount else {
-            throw SizeMismatchError(size: data.count, expected: Self.fixedBytesCount)
+    public init(raw: Data) throws {
+        guard raw.count == Self.fixedBytesCount else {
+            throw SizeMismatchError(size: raw.count, expected: Self.fixedBytesCount)
         }
-        self.data = data
+        self.raw = raw
     }
     
     public static var fixedBytesCount: Int = 32
 }
 
 public struct Hash512: StaticHash {
-    public let data: Data
+    public let raw: Data
     
-    public init(_ data: Data) throws {
-        guard data.count == Self.fixedBytesCount else {
-            throw SizeMismatchError(size: data.count, expected: Self.fixedBytesCount)
+    public init(raw: Data) throws {
+        guard raw.count == Self.fixedBytesCount else {
+            throw SizeMismatchError(size: raw.count, expected: Self.fixedBytesCount)
         }
-        self.data = data
+        self.raw = raw
     }
     
     public static var fixedBytesCount: Int = 64
 }
 
 public struct AnyHash: Hash {
-    public let data: Data
+    public let raw: Data
     
-    public init(_ data: Data) throws {
-        self.data = data
+    public init(unchecked raw: Data) {
+        self.raw = raw
+    }
+    
+    public init(raw: Data,
+                metadata: any Metadata,
+                id: @escaping () throws -> RuntimeType.Id) throws
+    {
+        let type = try id()
+        guard let info = metadata.resolve(type: type) else {
+            throw ValueRepresentableError.typeNotFound(type)
+        }
+        guard let count = info.asBytes(metadata: metadata) else {
+            throw ValueRepresentableError.wrongType(got: info, for: "AnyHash")
+        }
+        guard count == 0 || count == raw.count else {
+            throw SizeMismatchError(size: raw.count, expected: Int(count))
+        }
+        self.raw = raw
+    }
+    
+    public init(from decoder: Swift.Decoder, context: DecodingContext) throws {
+        let container = try decoder.singleValueContainer()
+        let data = try container.decode(Data.self)
+        try self.init(raw: data, metadata: context.metadata, id: context.id)
     }
 }
 

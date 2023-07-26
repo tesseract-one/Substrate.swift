@@ -156,7 +156,7 @@ public extension AnyBlock {
         public var hash: THasher.THash {
             let value = Value<RuntimeType.Id>(value: .map(fields), context: type)
             let data = try! _runtime.encode(value: value, as: type)
-            return try! THasher.THash(_runtime.hasher.hash(data: data))
+            return try! _runtime.hash(type: THasher.THash.self, data: data)
         }
         
         public init(from decoder: Swift.Decoder, `as` type: RuntimeType.Id, runtime: any Runtime) throws {

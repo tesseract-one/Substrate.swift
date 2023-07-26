@@ -24,6 +24,10 @@ public protocol RootApi<RC>: AnyObject {
     var tx: ExtrinsicApiRegistry<Self> { get }
 }
 
+public extension RootApi {
+    @inlinable var hash: RC.THasher.THash? { runtime.metadataHash }
+}
+
 public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     public typealias RC = RC
     public typealias CL = CL
@@ -64,10 +68,10 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     public convenience init(client: CL, config: RC, signer: Signer? = nil,
                             at hash: RC.THasher.THash? = nil) async throws {
         // Obtain initial data
-        async let runtimeVersion = await client.runtimeVersion(at: hash, config: config)
-        async let properties = await client.systemProperties(config: config)
-        async let genesisHash = await client.block(hash: 0, config: config)!
-        async let metadata = await client.metadata(at: hash, config: config)
+        let metadata = try await client.metadata(at: hash, config: config)
+        async let runtimeVersion = await client.runtimeVersion(at: hash, metadata: metadata, config: config)
+        async let properties = await client.systemProperties(metadata: metadata, config: config)
+        async let genesisHash = await client.block(hash: 0, metadata: metadata, config: config)!
         let runtime = try await ExtendedRuntime(config: config,
                                                 metadata: metadata,
                                                 metadataHash: hash,
@@ -80,5 +84,9 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     public convenience init(client: CL, config: ConfigRegistry<RC>, signer: Signer? = nil,
                             at hash: RC.THasher.THash? = nil) async throws {
         try await self.init(client: client, config: config.config, signer: signer, at: hash)
+    }
+    
+    public func fork(at hash: RC.THasher.THash?) async throws -> Api<RC, CL> {
+        try await Api(client: client, config: runtime.config, signer: signer, at: hash)
     }
 }

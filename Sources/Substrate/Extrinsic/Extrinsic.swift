@@ -158,7 +158,7 @@ public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic {
     }
     
     public func hash() -> TManager.RC.THasher.THash {
-        try! TManager.RC.THasher.THash(runtime.hasher.hash(data: data))
+        try! runtime.hash(type: TManager.RC.THasher.THash.self, data: data)
     }
     
     public func decode<C: Call & RuntimeDynamicDecodable>() throws -> AnyExtrinsic<C, TManager> {

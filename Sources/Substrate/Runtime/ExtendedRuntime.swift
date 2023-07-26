@@ -121,6 +121,11 @@ public extension ExtendedRuntime {
     func address(pub: any PublicKey) throws -> RC.TAddress {
         try pub.address(runtime: self)
     }
+    
+    @inlinable
+    func hash(data: Data) throws -> RC.THasher.THash {
+        try typedHasher.hash(data: data, runtime: self)
+    }
 }
 
 public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
@@ -130,6 +135,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         var extrinsic: Result<(call: RuntimeType.Info, addr: RuntimeType.Info,
                                signature: RuntimeType.Info, extra: RuntimeType.Info), Error>?
         var event: Result<RuntimeType.Info, Error>?
+        var hash: Result<RuntimeType.Info, Error>?
         var dispatchInfo: Result<RuntimeType.Info, Error>?
         var dispatchError: Result<RuntimeType.Info, Error>?
         var feeDetails: Result<RuntimeType.Info, Error>?
@@ -214,6 +220,15 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
+    public var hash: RuntimeType.Info { get throws {
+        try _state.sync { state in
+            if let res = state.hash { return try res.get() }
+            state.hash = Result {
+                try self._config.hashType(metadata: self._metadata)
+            }
+            return try state.hash!.get()
+        }
+    }}
     
     private var _extrinsic: (call: RuntimeType.Info, addr: RuntimeType.Info,
                              signature: RuntimeType.Info, extra: RuntimeType.Info)

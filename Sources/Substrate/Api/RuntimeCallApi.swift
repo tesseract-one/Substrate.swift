@@ -59,6 +59,8 @@ public extension RuntimeCallApiRegistry {
     
     func execute<C: RuntimeCall>(call: C,
                                  at hash: R.RC.THasher.THash? = nil) async throws -> C.TReturn {
-        try await rootApi.client.execute(call: call, at: hash, runtime: rootApi.runtime)
+        try await rootApi.client.execute(call: call,
+                                         at: hash ?? rootApi.hash,
+                                         runtime: rootApi.runtime)
     }
 }

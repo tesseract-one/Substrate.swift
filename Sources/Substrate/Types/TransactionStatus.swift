@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeTransactionStatus<BlockHash>: Swift.Decodable {
+public protocol SomeTransactionStatus<BlockHash>: RuntimeSwiftDecodable {
     associatedtype BlockHash: Hash
     
     var isFinalized: Bool { get }
@@ -62,8 +62,8 @@ extension TransactionStatus: SomeTransactionStatus {
     }
 }
 
-extension TransactionStatus: Swift.Codable {
-    public init(from decoder: Swift.Decoder) throws {
+extension TransactionStatus: RuntimeSwiftCodable, Swift.Encodable {
+    public init(from decoder: Swift.Decoder, runtime: any Runtime) throws {
         let container1 = try decoder.singleValueContainer()
         if let simple = try? container1.decode(String.self) {
             switch simple {
@@ -82,19 +82,21 @@ extension TransactionStatus: Swift.Codable {
                 throw Swift.DecodingError.dataCorruptedError(in: container1,
                                                              debugDescription: "Empty case object")
             }
+            let hashContext = BlockHash.DecodingContext(metadata: runtime.metadata) { try runtime.types.hash.id }
             switch key {
             case .broadcast:
                 self = try .broadcast(container2.decode([String].self, forKey: key))
             case .inBlock:
-                self = try .inBlock(container2.decode(BlockHash.self, forKey: key))
+                self = try .inBlock(container2.decode(BlockHash.self, forKey: key, context: hashContext))
             case .retracted:
-                self = try .retracted(container2.decode(BlockHash.self, forKey: key))
+                self = try .retracted(container2.decode(BlockHash.self, forKey: key, context: hashContext))
             case .finalityTimeout:
-                self = try .finalityTimeout(container2.decode(BlockHash.self, forKey: key))
+                self = try .finalityTimeout(container2.decode(BlockHash.self, forKey: key, context: hashContext))
             case .finalized:
-                self = try .finalized(container2.decode(BlockHash.self, forKey: key))
+                self = try .finalized(container2.decode(BlockHash.self, forKey: key, context: hashContext))
             case .usurped:
-                self = try .usurped(container2.decode(H.self, forKey: key))
+                let hashContext2 = H.DecodingContext(metadata: runtime.metadata) { try runtime.types.hash.id }
+                self = try .usurped(container2.decode(H.self, forKey: key, context: hashContext2))
             default:
                 throw Swift.DecodingError.dataCorruptedError(forKey: key, in: container2,
                                                              debugDescription: "Unknow enum case")

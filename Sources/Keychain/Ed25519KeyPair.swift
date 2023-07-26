@@ -104,7 +104,7 @@ extension Ed25519KeyPair: KeyDerivable {
             try encoder.encode("Ed25519HDKD")
             try encoder.encode(_keyPair.privateRaw, .fixed(UInt(EDKeyPair.secretSize)))
             try encoder.encode(cmp.bytes, .fixed(UInt(PathComponent.size)))
-            let hash = HBlake2b256.instance.hash(data: encoder.output)
+            let hash: Data = HBlake2b256.instance.hash(data: encoder.output)
             let seed = try Self.convertError { try EDSeed(raw: hash) }
             return EDKeyPair(seed: seed)
         }

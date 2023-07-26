@@ -80,7 +80,10 @@ extension EventRecord: RuntimeDecodable {
         self.header = (name: info.name, pallet: info.pallet)
         self.data = info.data
         self.topics = try Array(from: &decoder) { decoder in
-            try H(decoder.decode(.fixed(UInt(runtime.hasher.hashPartByteLength))))
+            try runtime.create(
+                hash: H.self,
+                raw: decoder.decode(.fixed(UInt(runtime.hasher.hashPartByteLength)))
+            )
         }
     }
 }

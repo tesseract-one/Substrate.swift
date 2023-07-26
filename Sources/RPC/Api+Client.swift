@@ -25,3 +25,35 @@ public extension Api {
         try await self.init(client: systemClient, config: config, signer: signer, at: hash)
     }
 }
+
+public extension Api where CL == RpcClient<RC, JsonRpcCallableClient> {
+    func fork<C: Config>(config: C) async throws -> Api<C, RpcClient<C, JsonRpcCallableClient>>
+        where C.THasher.THash == RC.THasher.THash
+    {
+        let client = RpcClient<C, JsonRpcCallableClient>(client: self.client.client)
+        return try await Api<_, _>(client: client, config: config, signer: signer, at: hash)
+    }
+    
+    func fork<C: Config>(
+        at hash: C.THasher.THash?, config: C
+    ) async throws -> Api<C, RpcClient<C, JsonRpcCallableClient>> {
+        let client = RpcClient<C, JsonRpcCallableClient>(client: self.client.client)
+        return try await Api<_, _>(client: client, config: config, signer: signer, at: hash)
+    }
+}
+
+public extension Api where CL == RpcClient<RC, JsonRpcSubscribableClient> {
+    func fork<C: Config>(config: C) async throws -> Api<C, RpcClient<C, JsonRpcSubscribableClient>>
+        where C.THasher.THash == RC.THasher.THash
+    {
+        let client = RpcClient<C, _>(client: self.client.client)
+        return try await Api<_, _>(client: client, config: config, signer: signer, at: hash)
+    }
+    
+    func fork<C: Config>(
+        at hash: C.THasher.THash?, config: C
+    ) async throws -> Api<C, RpcClient<C, JsonRpcSubscribableClient>> {
+        let client = RpcClient<C, _>(client: self.client.client)
+        return try await Api<_, _>(client: client, config: config, signer: signer, at: hash)
+    }
+}
