@@ -25,28 +25,28 @@ public struct StorageEntry<R: RootApi, Key: StorageKey> {
         key: Key,
         at hash: R.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> UInt64 {
-        try await api.client.storage(size: key, at: hash, runtime: api.runtime)
+        try await api.client.storage(size: key, at: hash ?? api.hash, runtime: api.runtime)
     }
     
     public func size(
         _ params: Key.TParams,
         at hash: R.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> UInt64 {
-        try await size(key: key(params), at: hash)
+        try await size(key: key(params), at: hash ?? api.hash)
     }
     
     public func value(
         key: Key,
         at hash: R.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> Key.TValue? {
-        try await api.client.storage(value: key, at: hash, runtime: api.runtime)
+        try await api.client.storage(value: key, at: hash ?? api.hash, runtime: api.runtime)
     }
     
     public func value(
         _ params: Key.TParams,
         at hash: R.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> Key.TValue? {
-        try await value(key: key(params), at: hash)
+        try await value(key: key(params), at: hash ?? api.hash)
     }
     
     public func defaultValue() throws -> Key.TValue {
@@ -57,7 +57,7 @@ public struct StorageEntry<R: RootApi, Key: StorageKey> {
         key: Key,
         at hash: R.RC.TBlock.THeader.THasher.THash? = nil
     ) async throws -> Key.TValue {
-        if let value = try await value(key: key, at: hash) {
+        if let value = try await value(key: key, at: hash ?? api.hash) {
             return value
         }
         return try defaultValue()
@@ -87,7 +87,7 @@ public extension StorageEntry {
             var buffer: [Iter.TKey] = []
             buffer.reserveCapacity(page)
             var lastKey: Iter.TKey? = nil
-            var atHash: R.RC.TBlock.THeader.THasher.THash? = hash
+            var atHash: R.RC.TBlock.THeader.THasher.THash? = hash ?? api.hash
             return AsyncThrowingStream<Iter.TKey, Error> {
                 if atHash == nil {
                     atHash = try await api.client.block(hash: nil, runtime: api.runtime)!
@@ -111,7 +111,7 @@ public extension StorageEntry {
             var buffer: [(Iter.TKey, Iter.TKey.TValue)] = []
             buffer.reserveCapacity(page)
             var lastKey: Iter.TKey? = nil
-            var atHash: R.RC.TBlock.THeader.THasher.THash? = hash
+            var atHash: R.RC.TBlock.THeader.THasher.THash? = hash ?? api.hash
             return AsyncThrowingStream<(Iter.TKey, Iter.TKey.TValue), Error> {
                 if atHash == nil {
                     atHash = try await api.client.block(hash: nil, runtime: api.runtime)!
@@ -149,13 +149,13 @@ public extension StorageEntry where Key: IterableStorageKey {
     func entries(
         page: Int = 20, at hash: R.RC.TBlock.THeader.THasher.THash? = nil
     ) -> AsyncThrowingStream<(Key, Key.TValue), Error> {
-        Iterator(api: api, iterator: iterator).entries(page: page, at: hash)
+        Iterator(api: api, iterator: iterator).entries(page: page, at: hash ?? api.hash)
     }
     
     func keys(
         page: Int = 20, at hash: R.RC.TBlock.THeader.THasher.THash? = nil
     ) -> AsyncThrowingStream<Key, Error> {
-        Iterator(api: api, iterator: iterator).keys(page: page, at: hash)
+        Iterator(api: api, iterator: iterator).keys(page: page, at: hash ?? api.hash)
     }
 }
 
@@ -172,21 +172,21 @@ public extension StorageEntry where Key: DynamicStorageKey {
     func size(at hash: R.RC.TBlock.THeader.THasher.THash? = nil) async throws -> UInt64 {
         try await size(
             key: Key(base: (params.name, params.pallet), params: [], runtime: api.runtime),
-            at: hash
+            at: hash ?? api.hash
         )
     }
     
     func value(at hash: R.RC.TBlock.THeader.THasher.THash? = nil) async throws -> Key.TValue? {
         try await value(
             key: Key(base: (params.name, params.pallet), params: [], runtime: api.runtime),
-            at: hash
+            at: hash ?? api.hash
         )
     }
     
     func valueOrDefault(at hash: R.RC.TBlock.THeader.THasher.THash? = nil) async throws -> Key.TValue {
         try await valueOrDefault(
             key: Key(base: (params.name, params.pallet), params: [], runtime: api.runtime),
-            at: hash
+            at: hash ?? api.hash
         )
     }
     
@@ -201,15 +201,15 @@ public extension StorageEntry where Key: DynamicStorageKey {
 
 public extension StorageEntry where Key.TParams == Void {
     func size(at hash: R.RC.TBlock.THeader.THasher.THash? = nil) async throws -> UInt64 {
-        try await size(key: Key(base: params, params: (), runtime: api.runtime), at: hash)
+        try await size(key: Key(base: params, params: (), runtime: api.runtime), at: hash ?? api.hash)
     }
     
     func value(at hash: R.RC.TBlock.THeader.THasher.THash? = nil) async throws -> Key.TValue? {
-        try await value(key: Key(base: params, params: (), runtime: api.runtime), at: hash)
+        try await value(key: Key(base: params, params: (), runtime: api.runtime), at: hash ?? api.hash)
     }
     
     func valueOrDefault(at hash: R.RC.TBlock.THeader.THasher.THash? = nil) async throws -> Key.TValue {
-        try await valueOrDefault(key: Key(base: params, params: (), runtime: api.runtime), at: hash)
+        try await valueOrDefault(key: Key(base: params, params: (), runtime: api.runtime), at: hash ?? api.hash)
     }
 }
 

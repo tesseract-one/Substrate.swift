@@ -24,6 +24,10 @@ public protocol RootApi<RC>: AnyObject {
     var tx: ExtrinsicApiRegistry<Self> { get }
 }
 
+public extension RootApi {
+    @inlinable var hash: RC.THasher.THash? { runtime.metadataHash }
+}
+
 public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     public typealias RC = RC
     public typealias CL = CL
@@ -80,5 +84,9 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     public convenience init(client: CL, config: ConfigRegistry<RC>, signer: Signer? = nil,
                             at hash: RC.THasher.THash? = nil) async throws {
         try await self.init(client: client, config: config.config, signer: signer, at: hash)
+    }
+    
+    public func fork(at hash: RC.THasher.THash?) async throws -> Api<RC, CL> {
+        try await Api(client: client, config: runtime.config, signer: signer, at: hash)
     }
 }
