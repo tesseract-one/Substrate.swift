@@ -78,7 +78,7 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     ) async throws -> R.RC.TExtrinsicManager.TSigningParams {
         var params = try await api.runtime.extrinsicManager.params(unsigned: self.extrinsic,
                                                                    overrides: overrides)
-        if var nonce = params as? AnyNonceSigningParameter, !nonce.hasNonce {
+        if var nonce = params as? any AnyNonceSigningParameter, !nonce.hasNonce {
             guard let account = account else {
                 throw SubmittableError.accountAndNonceAreNil
             }
@@ -88,7 +88,7 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
             try nonce.setNonce(nextIndex)
             params = nonce as! R.RC.TExtrinsicManager.TSigningParams
         }
-        if var era = params as? AnyEraSigningParameter {
+        if var era = params as? any AnyEraSigningParameter {
             if !era.hasEra {
                 try era.setEra(R.RC.TExtrinsicEra.immortal)
             }
@@ -99,7 +99,7 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
             }
             params = era as! R.RC.TExtrinsicManager.TSigningParams
         }
-        if var tip = params as? AnyPaymentSigningParameter {
+        if var tip = params as? any AnyPaymentSigningParameter {
             if !tip.hasTip {
                 try tip.setTip(R.RC.TExtrinsicPayment.default)
             }

@@ -57,7 +57,7 @@ public class ExtrinsicV4Manager<RC: Config, SE: SignedExtensionsProvider<RC>>: E
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
         overrides: TSigningParams?
     ) async throws -> TSigningParams {
-        try await extensions.params(merged: overrides)
+        try await extensions.params(overrides: overrides)
     }
     
     public func payload<C: Call>(

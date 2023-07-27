@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeExtrinsicEra: ValueRepresentable, Default {
+public protocol SomeExtrinsicEra: RuntimeDynamicCodable, ValueRepresentable, Default {
     var isImmortal: Bool { get }
     
     func blockHash<R: RootApi>(api: R) async throws -> R.RC.TBlock.THeader.THasher.THash

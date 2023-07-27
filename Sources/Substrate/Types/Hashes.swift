@@ -56,7 +56,7 @@ public extension Hash {
      }
 }
 
-public protocol StaticHash: Hash, FixedDataCodable, Swift.Decodable {
+public protocol StaticHash: Hash, FixedDataCodable, RuntimeCodable, Swift.Decodable {
     init(raw: Data) throws
 }
 

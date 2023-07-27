@@ -18,7 +18,7 @@ var package = Package(
             targets: ["SubstrateRPC"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/tesseract-one/swift-scale-codec.git", .upToNextMinor(from: "0.3.0")),
+        .package(url: "https://github.com/tesseract-one/swift-scale-codec.git", branch: "tuples"),
         .package(url: "https://github.com/tesseract-one/ContextCodable.swift.git", .upToNextMinor(from: "0.1.0")),
         .package(url: "https://github.com/tesseract-one/Tuples.swift.git", branch: "main"),
         .package(url: "https://github.com/tesseract-one/Blake2.swift.git", .upToNextMinor(from: "0.1.2")),
@@ -28,7 +28,7 @@ var package = Package(
         .package(url: "https://github.com/tesseract-one/Bip39.swift.git", .upToNextMinor(from: "0.1.1")),
         .package(url: "https://github.com/daisuke-t-jp/xxHash-Swift.git", .upToNextMinor(from: "1.1.1")),
         .package(url: "https://github.com/tesseract-one/Serializable.swift.git", .upToNextMinor(from: "0.2.3")),
-        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", .upToNextMinor(from: "0.2.1")),
+        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", branch: "tuples"),
     ],
     targets: [
         .target(

@@ -8,12 +8,23 @@
 import Foundation
 import ScaleCodec
 
-public struct AnySigningParams<RT: Config> {
+public struct AnySigningParams<RT: Config>: ExtraSigningParameters {
     private var params: [String: Any]
     
     public init() {
         self.params = [:]
     }
+    
+    public func override(overrides: Self?) throws -> Self {
+        guard let overrides = overrides else { return self }
+        var params = self
+        for (key, val) in overrides.params {
+            params[key] = val
+        }
+        return params
+    }
+    
+    public static var `default`: Self { Self() }
     
     public subscript(key: String) -> Any? {
         get { params[key] }
@@ -118,8 +129,8 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
         self.version = version
     }
     
-    public func params(merged params: TSigningParams?) async throws -> TSigningParams {
-        params ?? AnySigningParams()
+    public func params(overrides params: TSigningParams?) async throws -> TSigningParams {
+        try .default.override(overrides: params)
     }
     
     public func defaultParams() async throws -> TSigningParams { AnySigningParams() }
@@ -208,7 +219,7 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
-        try api.runtime.genesisHash.raw.asValue(runtime: api.runtime, type: id)
+        try api.runtime.genesisHash.asValue(runtime: api.runtime, type: id)
     }
 }
 

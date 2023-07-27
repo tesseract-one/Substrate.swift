@@ -14,7 +14,7 @@ public protocol SignedExtensionsProvider<RC> {
     associatedtype TAdditionalSigned
     associatedtype TSigningParams
     
-    func params(merged params: TSigningParams?) async throws -> TSigningParams
+    func params(overrides params: TSigningParams?) async throws -> TSigningParams
     func extra(params: TSigningParams) async throws -> TExtra
     func additionalSigned(params: TSigningParams) async throws -> TAdditionalSigned
     
@@ -26,7 +26,11 @@ public protocol SignedExtensionsProvider<RC> {
     mutating func setRootApi<R: RootApi<RC>>(api: R) throws
 }
 
-public protocol AnyNonceSigningParameter {
+public protocol ExtraSigningParameters: Default {
+    func override(overrides: Self?) throws -> Self
+}
+
+public protocol AnyNonceSigningParameter: ExtraSigningParameters {
     var hasNonce: Bool { get }
     func getNonce<N: UnsignedInteger>() throws -> N?
     mutating func setNonce<N: UnsignedInteger>(_ nonce: N?) throws
@@ -55,7 +59,7 @@ public extension NonceSigningParameter {
     }
 }
 
-public protocol AnyEraSigningParameter {
+public protocol AnyEraSigningParameter: ExtraSigningParameters {
     var hasEra: Bool { get }
     var hasBlockHash: Bool { get }
     func getEra<E: SomeExtrinsicEra>() throws -> E?
@@ -106,7 +110,7 @@ public extension EraSigningParameter {
     }
 }
 
-public protocol AnyPaymentSigningParameter {
+public protocol AnyPaymentSigningParameter: ExtraSigningParameters {
     var hasTip: Bool { get }
     func getTip<T: ValueRepresentable & Default>() throws -> T?
     mutating func setTip<T: ValueRepresentable & Default>(_ tip: T?) throws
@@ -154,4 +158,5 @@ public struct ExtrinsicExtensionId: Equatable, Hashable, RawRepresentable {
     public static let checkWeight = Self("CheckWeight")
     public static let chargeTransactionPayment = Self("ChargeTransactionPayment")
     public static let prevalidateAttests = Self("PrevalidateAttests")
+    public static let undefined = Self("UNDEFINED")
 }

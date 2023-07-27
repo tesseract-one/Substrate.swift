@@ -32,7 +32,7 @@ extension Nothing: Swift.Decodable, RuntimeSwiftDecodable, RuntimeDynamicSwiftDe
     }
 }
 
-extension Nothing: ScaleCodec.Codable, RuntimeDecodable {
+extension Nothing: ScaleCodec.Codable, RuntimeCodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {}
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {}
 }
