@@ -30,3 +30,8 @@ extension Tuple1: RuntimeEncodable where T1: RuntimeEncodable {}
 
 extension Tuple2: RuntimeDecodable where T1: RuntimeDecodable, T2: RuntimeDecodable {}
 extension Tuple2: RuntimeEncodable where T1: RuntimeEncodable, T2: RuntimeEncodable {}
+
+extension Tuple3: RuntimeDecodable where
+    T1: RuntimeDecodable, T2: RuntimeDecodable, T3: RuntimeDecodable {}
+extension Tuple3: RuntimeEncodable where
+    T1: RuntimeEncodable, T2: RuntimeEncodable, T3: RuntimeEncodable {}

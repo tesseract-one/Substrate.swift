@@ -91,7 +91,7 @@ public typealias SigningPayload<C: Call, M: ExtrinsicManager> = ExtrinsicSignPay
 public protocol ExtrinsicManager<RC> {
     associatedtype RC: Config
     associatedtype TUnsignedParams
-    associatedtype TSigningParams
+    associatedtype TSigningParams: ExtraSigningParameters
     associatedtype TUnsignedExtra: ExtrinsicExtra
     associatedtype TSigningExtra
     associatedtype TSignedExtra: ExtrinsicExtra
@@ -104,7 +104,7 @@ public protocol ExtrinsicManager<RC> {
     
     func params<C: Call>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        overrides: TSigningParams?
+        partial params: TSigningParams.TPartial
     ) async throws -> TSigningParams
     
     func payload<C: Call>(

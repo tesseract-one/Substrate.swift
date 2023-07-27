@@ -157,15 +157,15 @@ public extension DynamicConfig {
     }
     
     static let allExtensions: [DynamicExtrinsicExtension] = [
-        DynamicCheckSpecVersionExtension(),
-        DynamicCheckTxVersionExtension(),
-        DynamicCheckGenesisExtension(),
-        DynamicCheckNonZeroSenderExtension(),
-        DynamicCheckNonceExtension(),
-        DynamicCheckMortalitySignedExtension(),
-        DynamicCheckWeightExtension(),
-        DynamicChargeTransactionPaymentExtension(),
-        DynamicPrevalidateAttestsExtension()
+        DynamicCheckSpecVersionExtension<Self>(),
+        DynamicCheckTxVersionExtension<Self>(),
+        DynamicCheckGenesisExtension<Self>(),
+        DynamicCheckNonZeroSenderExtension<Self>(),
+        DynamicCheckNonceExtension<Self>(),
+        DynamicCheckMortalitySignedExtension<Self>(),
+        DynamicCheckWeightExtension<Self>(),
+        DynamicChargeTransactionPaymentExtension<Self>(),
+        DynamicPrevalidateAttestsExtension<Self>()
     ]
     
     static let customCoders: [RuntimeCustomDynamicCoder] = [
