@@ -110,7 +110,9 @@ public extension StaticStorageKey {
 }
 
 public extension StaticStorageKey where TValue: RuntimeDecodable {
-    static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: Runtime) throws -> TValue {
+    static func decode<D: ScaleCodec.Decoder>(
+        valueFrom decoder: inout D, runtime: Runtime
+    ) throws -> TValue {
         try TValue(from: &decoder, runtime: runtime)
     }
 }

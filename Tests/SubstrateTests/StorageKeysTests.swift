@@ -47,4 +47,17 @@ final class StorageKeysTests: XCTestCase {
             XCTAssertEqual(key.hash.hex(), hex)
         }
     }
+    
+    
+    struct TupleKey1: TupleStorageKey {
+        typealias TPath = Tuple1<ConcatKH<String, HIdentity>>
+        typealias TParams = TPath.TKeys.STuple
+        typealias TValue = UInt32
+        
+        static var pallet: String = "System"
+        static var name: String = "Events"
+        
+        let path: TPath
+        init(path: TPath) { self.path = path }
+    }
 }

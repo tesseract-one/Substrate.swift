@@ -1,37 +1,74 @@
 //
-//  Tuples+StorageKey.swift
+//  TupleStorageKey.swift
 //  
 //
-//  Created by Yehor Popovych on 27/07/2023.
+//  Created by Yehor Popovych on 28/07/2023.
 //
 
 import Foundation
-import ScaleCodec
 import Tuples
+import ScaleCodec
 
 public protocol TupleStorageKeyHasherPair {
     associatedtype THasher: StaticHasher
     associatedtype TKey: RuntimeEncodable
+    associatedtype TDecodedKey
     
     init(key: TKey, hash: Data)
     init(key: TKey, runtime: any Runtime) throws
     init<D: ScaleCodec.Decoder>(pairFrom decoder: inout D, runtime: any Runtime) throws
     
     var hash: Data { get }
+    var decoded: TDecodedKey { get }
 }
 
 public protocol TupleStorageKeyPath: LinkedTuple
     where First: TupleStorageKeyHasherPair, Last: TupleStorageKeyHasherPair
 {
-    associatedtype TKeys: LinkedTuple where TKeys.First == First.TKey, TKeys.Last == Last.TKey
+    associatedtype TKeys: LinkedTuple where
+        TKeys.First == First.TKey, TKeys.Last == Last.TKey
+    associatedtype TDecodedKeys: LinkedTuple where
+        TDecodedKeys.First == First.TDecodedKey, TDecodedKeys.Last == Last.TDecodedKey
+    associatedtype THashes: LinkedTuple & OneTypeTuple<Data> where
+        THashes.First == Data, THashes.Last == Data
     
     init(keys: TKeys, runtime: any Runtime) throws
     init<D: ScaleCodec.Decoder>(pairsFrom decoder: inout D, runtime: any Runtime) throws
+    
+    var keys: TDecodedKeys { get }
+    var hashes: THashes { get }
     
     var hash: Data { get }
 }
 
 public protocol TupleStorageNKeyPath: TupleStorageKeyPath where DroppedFirst: TupleStorageKeyPath {}
+
+public protocol TupleStorageKeyBase<TPath, TValue>: StaticStorageKey
+    where TParams == TPath.TKeys.STuple
+{
+    associatedtype TPath: TupleStorageKeyPath
+    var path: TPath { get }
+    var keys: TPath.TDecodedKeys.STuple { get }
+    var hashes: TPath.THashes.STuple { get }
+    init(path: TPath)
+}
+
+public extension TupleStorageKeyBase {
+    var keys: TPath.TDecodedKeys.STuple { path.keys.tuple }
+    var hashes: TPath.THashes.STuple { path.hashes.tuple }
+    var pathHash: Data { get throws { path.hash }}
+    
+    init(_ params: TParams, runtime: any Runtime) throws {
+        try self.init(path: TPath(keys: TPath.TKeys(params), runtime: runtime))
+    }
+    
+    init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws {
+        try self.init(path: TPath(pairsFrom: &decoder, runtime: runtime))
+    }
+}
+
+public protocol TupleStorageKey<TPath, TValue>: TupleStorageKeyBase, IterableStorageKey
+    where TIterator == TupleStorageKeyIterator<Self> {}
 
 public extension TupleStorageKeyHasherPair {
     init(key: TKey, runtime: any Runtime) throws {
@@ -41,51 +78,14 @@ public extension TupleStorageKeyHasherPair {
     }
 }
 
-public protocol TupleStorageKeyBase<TPath, TValue>: StaticStorageKey {
-    associatedtype TPath: TupleStorageKeyPath
-}
-
-public protocol TupleStorageKey<TPath, TValue>: TupleStorageKeyBase, IterableStorageKey
-    where TIterator == TupleStorageKeyIterator<Self> {}
-
-public extension SomeTuple1 where
-    Self: TupleStorageKeyPath, TKeys: SomeTuple1, TKeys.T1 == T1.TKey
-{
-    var hash: Data { first.hash }
-    
-    init(keys: TKeys, runtime: any Runtime) throws {
-        try self.init(T1(key: keys.first, runtime: runtime))
-    }
-    
-    init<D: ScaleCodec.Decoder>(pairsFrom decoder: inout D, runtime: any Runtime) throws {
-        try self.init(T1(pairFrom: &decoder, runtime: runtime))
-    }
-}
-
-public extension LinkedTuple
-    where Self: TupleStorageNKeyPath,
-          DroppedFirst.TKeys == TKeys.DroppedFirst,
-          First.TKey == TKeys.First
-{
-    var hash: Data { first.hash + dropFirst.hash }
-    
-    init(keys: TKeys, runtime: any Runtime) throws {
-        let first = try First(key: keys.first, runtime: runtime)
-        try self.init(first: first, last: DroppedFirst(keys: keys.dropFirst, runtime: runtime))
-    }
-    
-    init<D: ScaleCodec.Decoder>(pairsFrom decoder: inout D, runtime: any Runtime) throws {
-        let first = try First(pairFrom: &decoder, runtime: runtime)
-        try self.init(first: first, last: DroppedFirst(pairsFrom: &decoder, runtime: runtime))
-    }
-}
-
-public struct FixedKH<K: RuntimeCodable, H: StaticFixedHasher>: TupleStorageKeyHasherPair {
+public struct FixedKH<K: RuntimeEncodable, H: StaticFixedHasher>: TupleStorageKeyHasherPair {
     public typealias THasher = H
     public typealias TKey = K
+    public typealias TDecodedKey = Void
     
     public let hash: Data
     public let key: K?
+    public var decoded: Void { () }
     
     public init(key: TKey, hash: Data) {
         self.key = key
@@ -101,9 +101,11 @@ public struct FixedKH<K: RuntimeCodable, H: StaticFixedHasher>: TupleStorageKeyH
 public struct ConcatKH<K: RuntimeCodable, H: StaticConcatHasher>: TupleStorageKeyHasherPair {
     public typealias THasher = H
     public typealias TKey = K
+    public typealias TDecodedKey = K
     
     public let hash: Data
     public let key: K
+    public var decoded: K { key }
     
     public init(key: TKey, hash: Data) {
         self.key = key
@@ -166,14 +168,4 @@ extension TupleStorageKeyIterator.SubIterator: IterableStorageKeyIterator
     public func next(param: TIterator.TParam, runtime: Runtime) throws -> TIterator {
         try TIterator(prev: self, key: Path.DroppedFirst.First(key: param, runtime: runtime))
     }
-}
-
-extension Tuple1: TupleStorageKeyPath where T1: TupleStorageKeyHasherPair {
-    public typealias TKeys = Tuple1<T1.TKey>
-}
-
-extension Tuple2: TupleStorageNKeyPath, TupleStorageKeyPath where
-    T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair
-{
-    public typealias TKeys = Tuple2<T1.TKey, T2.TKey>
 }
