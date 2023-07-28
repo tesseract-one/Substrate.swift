@@ -41,9 +41,12 @@ public extension TupleStorageKeyHasherPair {
     }
 }
 
-public protocol TupleStorageKey<TPath, TValue>: StaticStorageKey {
+public protocol TupleStorageKeyBase<TPath, TValue>: StaticStorageKey {
     associatedtype TPath: TupleStorageKeyPath
 }
+
+public protocol TupleStorageKey<TPath, TValue>: TupleStorageKeyBase, IterableStorageKey
+    where TIterator == TupleStorageKeyIterator<Self> {}
 
 public extension SomeTuple1 where
     Self: TupleStorageKeyPath, TKeys: SomeTuple1, TKeys.T1 == T1.TKey
@@ -117,8 +120,8 @@ public struct ConcatKH<K: RuntimeCodable, H: StaticConcatHasher>: TupleStorageKe
     }
 }
 
-public struct TupleStorageKeyRootIterator<Key: TupleStorageKey> {
-    public struct Iterator<Prev: StorageKeyIterator, Path: TupleStorageKeyPath> {
+public struct TupleStorageKeyIterator<Key: TupleStorageKeyBase> {
+    public struct SubIterator<Prev: StorageKeyIterator, Path: TupleStorageKeyPath> {
         public let previous: Prev
         public let key: Path.First
         
@@ -131,34 +134,34 @@ public struct TupleStorageKeyRootIterator<Key: TupleStorageKey> {
     public init() {}
 }
 
-extension TupleStorageKeyRootIterator: StorageKeyRootIterator {
+extension TupleStorageKeyIterator: StorageKeyRootIterator {
     public typealias TParam = Void
     public typealias TKey = Key
     public init(base: Void) { self.init() }
 }
 
-extension TupleStorageKeyRootIterator: IterableStorageKeyIterator
+extension TupleStorageKeyIterator: IterableStorageKeyIterator
     where Key.TPath: TupleStorageNKeyPath
 {
-    public typealias TIterator = Iterator<Self, Key.TPath>
+    public typealias TIterator = SubIterator<Self, Key.TPath>
     
     public func next(param: TIterator.TParam, runtime: Runtime) throws -> TIterator {
         try TIterator(prev: self, key: Key.TPath.First(key: param, runtime: runtime))
     }
 }
 
-extension TupleStorageKeyRootIterator.Iterator: StorageKeyIterator {
+extension TupleStorageKeyIterator.SubIterator: StorageKeyIterator {
     public typealias TParam = Path.TKeys.First
     public typealias TKey = Key
     
     public var hash: Data { get throws { try previous.hash + key.hash } }
 }
 
-extension TupleStorageKeyRootIterator.Iterator: IterableStorageKeyIterator
+extension TupleStorageKeyIterator.SubIterator: IterableStorageKeyIterator
     where Path: TupleStorageNKeyPath
 {
     public typealias TIterator =
-        TupleStorageKeyRootIterator.Iterator<Self, Path.DroppedFirst>
+        TupleStorageKeyIterator.SubIterator<Self, Path.DroppedFirst>
     
     public func next(param: TIterator.TParam, runtime: Runtime) throws -> TIterator {
         try TIterator(prev: self, key: Path.DroppedFirst.First(key: param, runtime: runtime))
