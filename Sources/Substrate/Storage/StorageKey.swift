@@ -116,7 +116,8 @@ public extension StaticStorageKey where TValue: RuntimeDecodable {
 }
 
 public extension StorageKeyRootIterator where TKey: StaticStorageKey {
-    init() { self.init(base: ()) }
+    @inlinable init() { self.init(base: ()) }
+    @inlinable var hash: Data { TKey.prefix }
 }
 
 public extension StorageKeyIterator where TKey: StaticStorageKey {
