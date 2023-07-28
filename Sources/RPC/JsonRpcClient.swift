@@ -84,7 +84,7 @@ public class JsonRpcSubscribableClient:
 {
     public enum Error: Swift.Error {
         case codec(CodecError)
-        case request(RequestError<[AnyEncodable], SerializableValue>)
+        case request(RequestError<Any, SerializableValue>)
         case unknown(subscription: String)
         case unsubscribeFailed
         case disconnected
@@ -99,7 +99,7 @@ public class JsonRpcSubscribableClient:
             switch error {
             case let err as Self: return err
             case let err as ServiceError: return .from(service: err)
-            case let err as RequestError<[AnyEncodable], SerializableValue>: return .request(err)
+            case let err as TypeErasedRequestError: return .request(err.anyError)
             case let err as CodecError: return .codec(err)
             default: fatalError("Unknown type of error: \(error)")
             }
@@ -147,6 +147,7 @@ public class JsonRpcSubscribableClient:
                 delegate: JsonRpcClientDelegate?)
     {
         self.subscriptions = Subscriptions()
+        self.delegate = delegate
         super.init(client: client)
         client.delegate = self
     }
@@ -263,6 +264,7 @@ public class JsonRpcSubscribableClient:
     }
     
     private func onError(_ error: Error) {
+        if debug { print("JsonRpcClient Global Error: \(error)") }
         self.delegate?.rpcClientSubscriptionError(client: self, error: error)
     }
     
@@ -302,8 +304,26 @@ public func JsonRpcClient<Factory: ServiceFactory>(
 public func JsonRpcClient<Factory: ServiceFactory>(
     _ cfp: ServiceFactoryProvider<Factory>, queue: DispatchQueue = .global(),
     encoder: ContentEncoder = JSONEncoder.substrate,
-    decoder: ContentDecoder = JSONDecoder.substrate
+    decoder: ContentDecoder = JSONDecoder.substrate,
+    delegate: JsonRpcClientDelegate? = nil
 ) -> JsonRpcSubscribableClient where Factory.Connection: PersistentConnection, Factory.Delegate == AnyObject {
     JsonRpcSubscribableClient(client: JsonRpc(cfp, queue: queue, encoder: encoder, decoder: decoder),
-                              delegate: nil)
+                              delegate: delegate)
+}
+
+protocol TypeErasedRequestError: Error {
+    var anyError: RequestError<Any, SerializableValue> { get }
+}
+
+extension RequestError: TypeErasedRequestError where Error == SerializableValue {
+    var anyError: RequestError<Any, SerializableValue> {
+        switch self {
+        case .empty: return .empty
+        case .service(error: let err): return .service(error: err)
+        case .custom(description: let desc, cause: let cause):
+            return .custom(description: desc, cause: cause)
+        case .reply(method: let m, params: let p, error: let err):
+            return .reply(method: m, params: p, error: err)
+        }
+    }
 }

@@ -317,7 +317,7 @@ extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
         context: Params.EncodingContext
     ) async throws -> AsyncThrowingStream<Event, Error> {
         try await client.subscribe(method: method, params: params,
-                                   unsubscribe: method, context: context)
+                                   unsubscribe: umethod, context: context)
     }
     
     @inlinable
@@ -326,7 +326,7 @@ extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
         context: Event.DecodingContext
     ) async throws -> AsyncThrowingStream<Event, Error> {
         try await client.subscribe(method: method, params: params,
-                                   unsubscribe: method, context: context)
+                                   unsubscribe: umethod, context: context)
     }
     
     @inlinable
@@ -336,7 +336,7 @@ extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
         decoding dcontext: Event.DecodingContext
     ) async throws -> AsyncThrowingStream<Event, Error> {
         try await client.subscribe(method: method, params: params,
-                                   unsubscribe: method, encoding: econtext,
+                                   unsubscribe: umethod, encoding: econtext,
                                    decoding: dcontext)
     }
 }
