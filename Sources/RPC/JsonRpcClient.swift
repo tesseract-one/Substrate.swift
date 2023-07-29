@@ -264,7 +264,7 @@ public class JsonRpcSubscribableClient:
     }
     
     private func onError(_ error: Error) {
-        if debug { print("JsonRpcClient Global Error: \(error)") }
+        if debug { print("JsonRpcClient \(self) Global Error: \(error)") }
         self.delegate?.rpcClientSubscriptionError(client: self, error: error)
     }
     
@@ -293,6 +293,15 @@ extension JsonRpcSubscribableClient.RpcSubscriptionFull: ContextDecodable where 
     }
 }
 
+public class ErrorLoggerJsonRpcClientDelegate: JsonRpcClientDelegate {
+    public init() {}
+    public func rpcClientSubscriptionError(
+        client: JsonRpcSubscribableClient, error: JsonRpcSubscribableClient.Error
+    ) {
+        print("JsonRpcClient \(client) Global Error: \(error)")
+    }
+}
+
 public func JsonRpcClient<Factory: ServiceFactory>(
     _ cfp: ServiceFactoryProvider<Factory>, queue: DispatchQueue = .global(),
     encoder: ContentEncoder = JSONEncoder.substrate,
@@ -305,7 +314,7 @@ public func JsonRpcClient<Factory: ServiceFactory>(
     _ cfp: ServiceFactoryProvider<Factory>, queue: DispatchQueue = .global(),
     encoder: ContentEncoder = JSONEncoder.substrate,
     decoder: ContentDecoder = JSONDecoder.substrate,
-    delegate: JsonRpcClientDelegate? = nil
+    delegate: JsonRpcClientDelegate? = ErrorLoggerJsonRpcClientDelegate()
 ) -> JsonRpcSubscribableClient where Factory.Connection: PersistentConnection, Factory.Delegate == AnyObject {
     JsonRpcSubscribableClient(client: JsonRpc(cfp, queue: queue, encoder: encoder, decoder: decoder),
                               delegate: delegate)
