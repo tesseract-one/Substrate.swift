@@ -96,3 +96,288 @@ where
         Tuple3<T1.TAdditionalSigned, T2.TAdditionalSigned, T3.TAdditionalSigned>
     public typealias TExtra = Tuple3<T1.TExtra, T2.TExtra, T3.TExtra>
 }
+
+extension Tuple4: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple4<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                T3.TAdditionalSigned, T4.TAdditionalSigned>
+    public typealias TExtra = Tuple4<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra>
+}
+
+extension Tuple5: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple5<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                T5.TAdditionalSigned>
+    public typealias TExtra = Tuple5<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra>
+}
+
+extension Tuple6: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple6<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                T5.TAdditionalSigned, T6.TAdditionalSigned>
+    public typealias TExtra = Tuple6<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                     T6.TExtra>
+}
+
+extension Tuple7: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams,
+    T6.TConfig == T7.TConfig, T6.TParams == T7.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple7<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                T5.TAdditionalSigned, T6.TAdditionalSigned,
+                                                T7.TAdditionalSigned>
+    public typealias TExtra = Tuple7<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                     T6.TExtra, T7.TExtra>
+}
+
+extension Tuple8: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams,
+    T6.TConfig == T7.TConfig, T6.TParams == T7.TParams,
+    T7.TConfig == T8.TConfig, T7.TParams == T8.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple8<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                T5.TAdditionalSigned, T6.TAdditionalSigned,
+                                                T7.TAdditionalSigned, T8.TAdditionalSigned>
+    public typealias TExtra = Tuple8<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                     T6.TExtra, T7.TExtra, T8.TExtra>
+}
+
+extension Tuple9: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams,
+    T6.TConfig == T7.TConfig, T6.TParams == T7.TParams,
+    T7.TConfig == T8.TConfig, T7.TParams == T8.TParams,
+    T8.TConfig == T9.TConfig, T8.TParams == T9.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple9<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                T5.TAdditionalSigned, T6.TAdditionalSigned,
+                                                T7.TAdditionalSigned, T8.TAdditionalSigned,
+                                                T9.TAdditionalSigned>
+    public typealias TExtra = Tuple9<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                     T6.TExtra, T7.TExtra, T8.TExtra, T9.TExtra>
+}
+
+extension Tuple10: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams,
+    T6.TConfig == T7.TConfig, T6.TParams == T7.TParams,
+    T7.TConfig == T8.TConfig, T7.TParams == T8.TParams,
+    T8.TConfig == T9.TConfig, T8.TParams == T9.TParams,
+    T9.TConfig == T10.TConfig, T9.TParams == T10.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple10<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                 T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                 T5.TAdditionalSigned, T6.TAdditionalSigned,
+                                                 T7.TAdditionalSigned, T8.TAdditionalSigned,
+                                                 T9.TAdditionalSigned, T10.TAdditionalSigned>
+    public typealias TExtra = Tuple10<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                      T6.TExtra, T7.TExtra, T8.TExtra, T9.TExtra, T10.TExtra>
+}
+
+extension Tuple11: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams,
+    T6.TConfig == T7.TConfig, T6.TParams == T7.TParams,
+    T7.TConfig == T8.TConfig, T7.TParams == T8.TParams,
+    T8.TConfig == T9.TConfig, T8.TParams == T9.TParams,
+    T9.TConfig == T10.TConfig, T9.TParams == T10.TParams,
+    T10.TConfig == T11.TConfig, T10.TParams == T11.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple11<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                 T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                 T5.TAdditionalSigned, T6.TAdditionalSigned,
+                                                 T7.TAdditionalSigned, T8.TAdditionalSigned,
+                                                 T9.TAdditionalSigned, T10.TAdditionalSigned,
+                                                 T11.TAdditionalSigned>
+    public typealias TExtra = Tuple11<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                      T6.TExtra, T7.TExtra, T8.TExtra, T9.TExtra, T10.TExtra,
+                                      T11.TExtra>
+}
+
+extension Tuple12: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams,
+    T6.TConfig == T7.TConfig, T6.TParams == T7.TParams,
+    T7.TConfig == T8.TConfig, T7.TParams == T8.TParams,
+    T8.TConfig == T9.TConfig, T8.TParams == T9.TParams,
+    T9.TConfig == T10.TConfig, T9.TParams == T10.TParams,
+    T10.TConfig == T11.TConfig, T10.TParams == T11.TParams,
+    T11.TConfig == T12.TConfig, T11.TParams == T12.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple12<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                 T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                 T5.TAdditionalSigned, T6.TAdditionalSigned,
+                                                 T7.TAdditionalSigned, T8.TAdditionalSigned,
+                                                 T9.TAdditionalSigned, T10.TAdditionalSigned,
+                                                 T11.TAdditionalSigned, T12.TAdditionalSigned>
+    public typealias TExtra = Tuple12<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                      T6.TExtra, T7.TExtra, T8.TExtra, T9.TExtra, T10.TExtra,
+                                      T11.TExtra, T12.TExtra>
+}
+
+extension Tuple13: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams,
+    T6.TConfig == T7.TConfig, T6.TParams == T7.TParams,
+    T7.TConfig == T8.TConfig, T7.TParams == T8.TParams,
+    T8.TConfig == T9.TConfig, T8.TParams == T9.TParams,
+    T9.TConfig == T10.TConfig, T9.TParams == T10.TParams,
+    T10.TConfig == T11.TConfig, T10.TParams == T11.TParams,
+    T11.TConfig == T12.TConfig, T11.TParams == T12.TParams,
+    T12.TConfig == T13.TConfig, T12.TParams == T13.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple13<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                 T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                 T5.TAdditionalSigned, T6.TAdditionalSigned,
+                                                 T7.TAdditionalSigned, T8.TAdditionalSigned,
+                                                 T9.TAdditionalSigned, T10.TAdditionalSigned,
+                                                 T11.TAdditionalSigned, T12.TAdditionalSigned,
+                                                 T13.TAdditionalSigned>
+    public typealias TExtra = Tuple13<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                      T6.TExtra, T7.TExtra, T8.TExtra, T9.TExtra, T10.TExtra,
+                                      T11.TExtra, T12.TExtra, T13.TExtra>
+}
+
+extension Tuple14: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams,
+    T6.TConfig == T7.TConfig, T6.TParams == T7.TParams,
+    T7.TConfig == T8.TConfig, T7.TParams == T8.TParams,
+    T8.TConfig == T9.TConfig, T8.TParams == T9.TParams,
+    T9.TConfig == T10.TConfig, T9.TParams == T10.TParams,
+    T10.TConfig == T11.TConfig, T10.TParams == T11.TParams,
+    T11.TConfig == T12.TConfig, T11.TParams == T12.TParams,
+    T12.TConfig == T13.TConfig, T12.TParams == T13.TParams,
+    T13.TConfig == T14.TConfig, T13.TParams == T14.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple14<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                 T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                 T5.TAdditionalSigned, T6.TAdditionalSigned,
+                                                 T7.TAdditionalSigned, T8.TAdditionalSigned,
+                                                 T9.TAdditionalSigned, T10.TAdditionalSigned,
+                                                 T11.TAdditionalSigned, T12.TAdditionalSigned,
+                                                 T13.TAdditionalSigned, T14.TAdditionalSigned>
+    public typealias TExtra = Tuple14<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                      T6.TExtra, T7.TExtra, T8.TExtra, T9.TExtra, T10.TExtra,
+                                      T11.TExtra, T12.TExtra, T13.TExtra, T14.TExtra>
+}
+
+extension Tuple15: StaticExtrinsicExtensions, StaticExtrinsicExtensionBase
+where
+    DroppedLast: StaticExtrinsicExtensions, Last: StaticExtrinsicExtension,
+    T1.TConfig == T2.TConfig, T1.TParams == T2.TParams,
+    T2.TConfig == T3.TConfig, T2.TParams == T3.TParams,
+    T3.TConfig == T4.TConfig, T3.TParams == T4.TParams,
+    T4.TConfig == T5.TConfig, T4.TParams == T5.TParams,
+    T5.TConfig == T6.TConfig, T5.TParams == T6.TParams,
+    T6.TConfig == T7.TConfig, T6.TParams == T7.TParams,
+    T7.TConfig == T8.TConfig, T7.TParams == T8.TParams,
+    T8.TConfig == T9.TConfig, T8.TParams == T9.TParams,
+    T9.TConfig == T10.TConfig, T9.TParams == T10.TParams,
+    T10.TConfig == T11.TConfig, T10.TParams == T11.TParams,
+    T11.TConfig == T12.TConfig, T11.TParams == T12.TParams,
+    T12.TConfig == T13.TConfig, T12.TParams == T13.TParams,
+    T13.TConfig == T14.TConfig, T13.TParams == T14.TParams,
+    T14.TConfig == T15.TConfig, T14.TParams == T15.TParams
+{
+    public typealias TConfig = T1.TConfig
+    public typealias TParams = T1.TParams
+    public typealias TAdditionalSigned = Tuple15<T1.TAdditionalSigned, T2.TAdditionalSigned,
+                                                 T3.TAdditionalSigned, T4.TAdditionalSigned,
+                                                 T5.TAdditionalSigned, T6.TAdditionalSigned,
+                                                 T7.TAdditionalSigned, T8.TAdditionalSigned,
+                                                 T9.TAdditionalSigned, T10.TAdditionalSigned,
+                                                 T11.TAdditionalSigned, T12.TAdditionalSigned,
+                                                 T13.TAdditionalSigned, T14.TAdditionalSigned,
+                                                 T15.TAdditionalSigned>
+    public typealias TExtra = Tuple15<T1.TExtra, T2.TExtra, T3.TExtra, T4.TExtra, T5.TExtra,
+                                      T6.TExtra, T7.TExtra, T8.TExtra, T9.TExtra, T10.TExtra,
+                                      T11.TExtra, T12.TExtra, T13.TExtra, T14.TExtra, T15.TExtra>
+}
