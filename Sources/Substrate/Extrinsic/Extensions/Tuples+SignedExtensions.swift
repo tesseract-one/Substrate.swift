@@ -33,9 +33,9 @@ public extension SomeTuple1 where
     }
 }
 
-public extension LinkedTuple where
+public extension ListTuple where
     Self: StaticExtrinsicExtensions, DroppedLast: StaticExtrinsicExtensions,
-    Last: StaticExtrinsicExtension, TExtra: LinkedTuple, TAdditionalSigned: LinkedTuple,
+    Last: StaticExtrinsicExtension, TExtra: ListTuple, TAdditionalSigned: ListTuple,
     DroppedLast.TParams == TParams, Last.TParams == TParams,
     DroppedLast.TConfig == TConfig, Last.TConfig == TConfig,
     TExtra.DroppedLast == DroppedLast.TExtra, TExtra.Last == Last.TExtra,

@@ -26,7 +26,7 @@ public extension SomeTuple1 where
     }
 }
 
-public extension LinkedTuple
+public extension ListTuple
     where Self: TupleStorageNKeyPath,
           DroppedFirst.TKeys == TKeys.DroppedFirst,
           DroppedFirst.THashes == THashes.DroppedFirst,

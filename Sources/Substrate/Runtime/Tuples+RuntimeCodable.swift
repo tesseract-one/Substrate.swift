@@ -10,7 +10,7 @@ import ScaleCodec
 
 extension Tuple0: RuntimeCodable, RuntimeDynamicCodable {}
 
-public extension LinkedTuple where DroppedLast: RuntimeDecodable, Last: RuntimeDecodable {
+public extension ListTuple where DroppedLast: RuntimeDecodable, Last: RuntimeDecodable {
     init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         let prefix = try DroppedLast(from: &decoder, runtime: runtime)
         let last = try Last(from: &decoder, runtime: runtime)
@@ -18,7 +18,7 @@ public extension LinkedTuple where DroppedLast: RuntimeDecodable, Last: RuntimeD
     }
 }
 
-public extension LinkedTuple where DroppedLast: RuntimeEncodable, Last: RuntimeEncodable {
+public extension ListTuple where DroppedLast: RuntimeEncodable, Last: RuntimeEncodable {
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
         try dropLast.encode(in: &encoder, runtime: runtime)
         try last.encode(in: &encoder, runtime: runtime)
