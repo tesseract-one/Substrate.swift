@@ -22,14 +22,14 @@ public protocol TupleStorageKeyHasherPair {
     var decoded: TDecodedKey { get }
 }
 
-public protocol TupleStorageKeyPath: LinkedTuple
+public protocol TupleStorageKeyPath: ListTuple
     where First: TupleStorageKeyHasherPair, Last: TupleStorageKeyHasherPair
 {
-    associatedtype TKeys: LinkedTuple where
+    associatedtype TKeys: ListTuple where
         TKeys.First == First.TKey, TKeys.Last == Last.TKey
-    associatedtype TDecodedKeys: LinkedTuple where
+    associatedtype TDecodedKeys: ListTuple where
         TDecodedKeys.First == First.TDecodedKey, TDecodedKeys.Last == Last.TDecodedKey
-    associatedtype THashes: LinkedTuple & OneTypeTuple<Data> where
+    associatedtype THashes: ListTuple & OneTypeTuple<Data> where
         THashes.First == Data, THashes.Last == Data
     
     init(keys: TKeys, runtime: any Runtime) throws
