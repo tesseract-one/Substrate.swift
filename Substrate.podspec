@@ -6,6 +6,7 @@ Pod::Spec.new do |s|
   s.license          = { :type => 'Apache 2.0', :file => 'LICENSE' }
   s.author           = { 'Tesseract Systems, Inc.' => 'info@tesseract.one' }
   s.source           = { :git => 'https://github.com/tesseract-one/Substrate.swift.git', :tag => s.version.to_s }
+  
   s.module_name      = 'Substrate'
   s.swift_version    = '5.7'
 
@@ -40,7 +41,7 @@ Pod::Spec.new do |s|
     ss.source_files = 'Sources/Substrate/**/*.swift'
     
     ss.dependency 'Blake2', '~> 0.1.0'
-    ss.dependency 'ScaleCodec', '~> 0.3.0'
+    ss.dependency 'ScaleCodec', '~> 0.3.1'
     ss.dependency 'Tuples', '~> 0.1.0'
     ss.dependency 'ContextCodable.swift', '~> 0.1.0'
     ss.dependency 'xxHash-Swift', '~> 1.1.0'
