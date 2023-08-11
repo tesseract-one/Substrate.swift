@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import ScaleCodec
 import Serializable
 
 public struct DynamicConfig: Config {

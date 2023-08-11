@@ -5,7 +5,7 @@ import PackageDescription
 
 var package = Package(
     name: "Substrate",
-    platforms: [.macOS(.v10_15), .iOS(.v13), .tvOS(.v13), .watchOS(.v6), .macCatalyst(.v13)],
+    platforms: [.macOS(.v11), .iOS(.v14), .tvOS(.v14), .watchOS(.v7), .macCatalyst(.v14)],
     products: [
         .library(
             name: "Substrate",
@@ -18,6 +18,7 @@ var package = Package(
             targets: ["SubstrateRPC"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/ypopovych/Numberick.git", branch: "main"),
         .package(url: "https://github.com/tesseract-one/ScaleCodec.swift.git", branch: "tuples"),
         .package(url: "https://github.com/tesseract-one/ContextCodable.swift.git", .upToNextMinor(from: "0.1.0")),
         .package(url: "https://github.com/tesseract-one/Tuples.swift.git", .upToNextMinor(from: "0.1.0")),
@@ -28,7 +29,7 @@ var package = Package(
         .package(url: "https://github.com/tesseract-one/Bip39.swift.git", .upToNextMinor(from: "0.1.1")),
         .package(url: "https://github.com/daisuke-t-jp/xxHash-Swift.git", .upToNextMinor(from: "1.1.1")),
         .package(url: "https://github.com/tesseract-one/Serializable.swift.git", .upToNextMinor(from: "0.2.3")),
-        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", branch: "tuples"),
+        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", .upToNextMinor(from: "0.2.2")),
     ],
     targets: [
         .target(
@@ -39,7 +40,7 @@ var package = Package(
                 .product(name: "ContextCodable", package: "ContextCodable.swift"),
                 .product(name: "Blake2", package: "Blake2.swift"),
                 .product(name: "Tuples", package: "Tuples.swift"),
-                "xxHash-Swift"
+                "Numberick", "xxHash-Swift"
             ]),
         .target(
             name: "SubstrateKeychain",

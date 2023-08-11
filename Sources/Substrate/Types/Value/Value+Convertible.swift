@@ -7,6 +7,7 @@
 
 import Foundation
 import ScaleCodec
+import Numberick
 
 public enum ValueRepresentableError: Error {
     case typeNotFound(RuntimeType.Id)
@@ -39,7 +40,7 @@ extension UInt16: ValueRepresentable, VoidValueRepresentable {}
 extension UInt32: ValueRepresentable, VoidValueRepresentable {}
 extension UInt64: ValueRepresentable, VoidValueRepresentable {}
 extension UInt: ValueRepresentable, VoidValueRepresentable {}
-extension DoubleWidth: ValueRepresentable, VoidValueRepresentable {}
+extension NBKDoubleWidth: ValueRepresentable, VoidValueRepresentable {}
 extension Int8: ValueRepresentable, VoidValueRepresentable {}
 extension Int16: ValueRepresentable, VoidValueRepresentable {}
 extension Int32: ValueRepresentable, VoidValueRepresentable {}

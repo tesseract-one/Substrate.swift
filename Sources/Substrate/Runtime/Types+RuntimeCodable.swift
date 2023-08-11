@@ -7,6 +7,7 @@
 
 import Foundation
 import ScaleCodec
+import Numberick
 
 extension Bool: RuntimeCodable {}
 extension Data: RuntimeCodable {}
@@ -20,7 +21,7 @@ extension UInt32: RuntimeCodable {}
 extension UInt64: RuntimeCodable {}
 extension String: RuntimeCodable {}
 extension Compact: RuntimeCodable {}
-extension DoubleWidth: RuntimeCodable {}
+extension NBKDoubleWidth: RuntimeCodable {}
 
 extension CaseIterable where Self: Equatable & ScaleCodec.Encodable, Self.AllCases.Index == Int {
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {

@@ -7,6 +7,7 @@
 
 import Foundation
 import ScaleCodec
+import Numberick
 
 public struct TrimmedHex: Swift.Codable {
     public struct InitError: Error {
@@ -35,6 +36,16 @@ public struct TrimmedHex: Swift.Codable {
         self.init(data: data)
     }
     
+    public var string: String {
+        guard !data.isEmpty else { return "0x0" }
+        var hex = data.hex(prefix: false)
+        if (hex[hex.startIndex] == "0") {
+            hex.remove(at: hex.startIndex)
+        }
+        hex.insert(contentsOf: "0x", at: hex.startIndex)
+        return hex
+    }
+    
     public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         let string = try container.decode(String.self)
@@ -48,16 +59,7 @@ public struct TrimmedHex: Swift.Codable {
     
     public func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
-        guard !data.isEmpty else {
-            try container.encode("0x0")
-            return
-        }
-        var hex = data.hex(prefix: false)
-        if (hex[hex.startIndex] == "0") {
-            hex.remove(at: hex.startIndex)
-        }
-        hex.insert(contentsOf: "0x", at: hex.startIndex)
-        try container.encode(hex)
+        try container.encode(string)
     }
 }
 
@@ -134,7 +136,7 @@ extension HexOrNumber: Swift.Encodable where T: Swift.Encodable & DataSerializab
 
 public extension JSONEncoder {
     @inlinable
-    static var maxSafeInteger: UInt64 { 2^53 - 1 }
+    static var maxSafeInteger: UInt64 { (1 << 53) - 1 }
 }
 
 extension Compact: Swift.Decodable where T.UI: DataInitalizable & Swift.Decodable {
@@ -150,7 +152,7 @@ extension Compact: Swift.Encodable where T.UI: DataSerializable & Swift.Encodabl
     }
 }
 
-extension DoubleWidth: Swift.Codable where Base: UnsignedInteger {
+extension NBKDoubleWidth: Swift.Codable where Self: UnsignedInteger {
     public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let value = try? container.decode(UInt64.self) {

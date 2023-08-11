@@ -7,6 +7,7 @@
 
 import Foundation
 import ScaleCodec
+import Numberick
 
 public protocol Default {
     static var `default`: Self { get }
@@ -32,4 +33,4 @@ extension Int8: Default {}
 extension Int16: Default {}
 extension Int32: Default {}
 extension Int64: Default {}
-extension DoubleWidth: Default {}
+extension NBKDoubleWidth: Default {}

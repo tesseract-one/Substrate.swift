@@ -10,12 +10,12 @@ Pod::Spec.new do |s|
   s.source           = { :git => 'https://github.com/tesseract-one/Substrate.swift.git', :tag => s.version.to_s }
 
   test_platforms = {
-    :ios => '13.0',
-    :osx => '10.15',
-    :tvos => '13.0'
+    :ios => '14.0',
+    :osx => '11.0',
+    :tvos => '14.0'
   }
 
-  s.platforms = test_platforms # test_platforms.merge({ :watchos => '6.0' }) # xxHash doesn't support watchOS
+  s.platforms = test_platforms # test_platforms.merge({ :watchos => '7.0' }) # xxHash doesn't support watchOS
   
   s.swift_version = '5.7'
   
@@ -54,6 +54,7 @@ Pod::Spec.new do |s|
     ss.dependency 'ContextCodable.swift', '~> 0.1.0'
     ss.dependency 'xxHash-Swift', '~> 1.1.0'
     ss.dependency 'Serializable.swift', '~> 0.2.0'
+    ss.dependency 'Numberick', '~> 0.8.0'
     
     ss.test_spec 'SubstrateTests' do |test_spec|
       test_spec.platforms = test_platforms

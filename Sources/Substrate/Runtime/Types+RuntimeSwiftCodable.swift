@@ -7,9 +7,9 @@
 
 import Foundation
 import struct ScaleCodec.Compact
-import struct ScaleCodec.DoubleWidth
 import protocol ScaleCodec.DataInitalizable
 import protocol ScaleCodec.DataSerializable
+import struct Numberick.NBKDoubleWidth
 import ContextCodable
 
 extension Bool: RuntimeSwiftCodable {}
@@ -28,8 +28,8 @@ extension Compact: ContextEncodable where T.UI: DataSerializable & Encodable {}
 extension Compact: ContextDecodable where T.UI: DataInitalizable & Decodable {}
 extension Compact: RuntimeSwiftDecodable where T.UI: DataInitalizable & Decodable {}
 extension Compact: RuntimeSwiftEncodable where T.UI: DataSerializable & Encodable {}
-extension DoubleWidth: ContextCodable where Base: UnsignedInteger {}
-extension DoubleWidth: RuntimeSwiftCodable where Base: UnsignedInteger {}
+extension NBKDoubleWidth: ContextCodable where Self: UnsignedInteger {}
+extension NBKDoubleWidth: RuntimeSwiftCodable where Self: UnsignedInteger {}
 
 extension Optional: ContextEncodable where Wrapped: RuntimeSwiftEncodable {}
 extension Optional: RuntimeSwiftEncodable where Wrapped: RuntimeSwiftEncodable {
