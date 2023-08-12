@@ -31,8 +31,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     
     public let typedHasher: RC.THasher
     
-    @inlinable
-    public var addressFormat: SS58.AddressFormat { properties.ss58Format }
+    public let addressFormat: SS58.AddressFormat
     
     @inlinable
     public func encoder() -> ScaleCodec.Encoder { config.encoder() }
@@ -75,6 +74,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         self.genesisHash = genesisHash
         self.version = version
         self.properties = properties
+        self.addressFormat = properties.ss58Format ?? .default
         self.customCoders = try config.customCoders()
         self.typedHasher = try config.hasher(metadata: metadata)
         self.extrinsicManager = try config.extrinsicManager()

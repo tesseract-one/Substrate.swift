@@ -53,6 +53,11 @@ Pod::Spec.new do |s|
       ts.source_files = 'Tests/SubstrateTests/**/*.swift'
       ts.resource = 'Tests/SubstrateTests/Resources'
     end
+    
+    ss.test_spec 'IntegrationTests' do |ts|
+      ts.platforms = base_platforms
+      ts.source_files = 'Tests/IntegrationTests/**/*.swift'
+    end
   end
 
   s.default_subspecs = 'Substrate', 'RPC'

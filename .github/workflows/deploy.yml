@@ -26,11 +26,9 @@ jobs:
           VERSION: ${{ github.event.release.tag_name }}
         run: |
           sed -i '' "s|[[:blank:]]*s\.version[[:blank:]].*|s.version = '${VERSION}'|g" Substrate.podspec
-          ./node-template --dev &
-          echo $! > _node.pid
-          pod trunk push --allow-warnings
-          kill -9 $(cat _node.pid)
-          rm -f _node.pid
-      - name: Cleanup
-        if: always()
-        run: '[ -f "_node.pid"] && kill -0 $(cat _node.pid)'
+          ./run_with_node.sh './node-template' 'pod trunk push --allow-warnings' 'pod_push_node_log.txt'
+      - name: Upload node log
+        uses: actions/upload-artifact@v3
+        with:
+          name: pod_push_node_log.txt
+          path: pod_push_node_log.txt

@@ -8,7 +8,7 @@
 import Foundation
 
 public struct SS58 {
-    public struct AddressFormat: RawRepresentable, Hashable, Codable {
+    public struct AddressFormat: RawRepresentable, Hashable, Codable, Default {
         public typealias RawValue = UInt16
         
         public let id: UInt16
@@ -24,6 +24,8 @@ public struct SS58 {
         fileprivate init(id: UInt16) {
             self.id = id
         }
+        
+        @inlinable public static var `default`: SS58.AddressFormat { .substrate }
         
         /// Polkadot Relay-chain, standard account (*25519).
         public static let polkadot = Self(id: 0)

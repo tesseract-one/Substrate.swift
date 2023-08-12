@@ -13,18 +13,18 @@ import SubstrateRPC
 #endif
 
 final class SubstrateTests: XCTestCase {
-    let debug = false
+    let debug = true
     lazy var env = Environment()
     
     lazy var wsClient = {
-        let cl = JsonRpcClient(.ws(url: URL(string: "wss://westend-rpc.polkadot.io")!,
+        let cl = JsonRpcClient(.ws(url: env.wsUrl,
                                    maximumMessageSize: 16*1024*1024))
         cl.debug = self.debug
         return cl
     }()
     
     lazy var httpClient = {
-        let cl = JsonRpcClient(.http(url: URL(string: "https://westend-rpc.polkadot.io")!))
+        let cl = JsonRpcClient(.http(url: env.httpUrl))
         cl.debug = self.debug
         return cl
     }()

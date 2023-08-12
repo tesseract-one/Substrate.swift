@@ -19,24 +19,21 @@ jobs:
       - name: Unpack Substrate Node
         run: tar -xvzf *.tar.gz
       - name: Build and Test SPM
-        run: |
-          ./node-template --dev &
-          echo $! > _node.pid
-          swift test
-          kill -9 $(cat _node.pid)
-          rm -f _node.pid
+        run: ./run_with_node.sh './node-template' 'swift test' 'swift_test_node_log.txt'
+      - name: Upload node log
+        uses: actions/upload-artifact@v3
+        with:
+          name: swift_test_node_log.txt
+          path: swift_test_node_log.txt
       - name: Update Cocoa Pods repo
         run: pod repo update
       - name: Build and Test CocoaPods
-        run: | 
-          ./node-template --dev &
-          echo $! > _node.pid
-          pod lib lint --allow-warnings --fail-fast
-          kill -9 $(cat _node.pid)
-          rm -f _node.pid
-      - name: Cleanup
-        if: always()
-        run: '[ -f "_node.pid"] && kill -0 $(cat _node.pid)'
+        run: ./run_with_node.sh './node-template' 'pod lib lint --allow-warnings --fail-fast' 'pod_lint_node_log.txt'
+      - name: Upload node log
+        uses: actions/upload-artifact@v3
+        with:
+          name: pod_lint_node_log.txt
+          path: pod_lint_node_log.txt
   linux:
     runs-on: ubuntu-latest
     container:
@@ -54,12 +51,9 @@ jobs:
       - name: Unpack Substrate Node
         run: tar -xvzf *.tar.gz
       - name: Build and Test
-        run: |
-          ./node-template --dev &
-          echo $! > _node.pid
-          swift test
-          kill -9 $(cat _node.pid)
-          rm -f _node.pid
-      - name: Cleanup
-        if: always()
-        run: '[ -f "_node.pid"] && kill -0 $(cat _node.pid)'
+        run: ./run_with_node.sh './node-template' 'swift test' 'linux_swift_test_node_log.txt'
+      - name: Upload node log
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux_swift_test_node_log.txt
+          path: linux_swift_test_node_log.txt
