@@ -43,7 +43,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install packages
-        run: apt-get update && sudo apt-get install -y netcat
+        run: apt-get update && apt-get install -y netcat
       - name: Download Substrate Node
         uses: dsaltares/fetch-gh-release-asset@1.1.1
         with:
