@@ -69,8 +69,8 @@ final class SubstrateTests: XCTestCase {
     
     func testTransferTx() {
         runAsyncTest(withTimeout: 20) {
-            let from = self.env.kpAlice //self.env.randomKeyPair()
-            let toKp = self.env.randomKeyPair(exclude: [from])
+            let from = self.env.fundedKeyPairs.someElement()!
+            let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
             let to = try toKp.address(in: substrate)
             let call = AnyCall(name: "transfer_allow_death",
@@ -83,8 +83,8 @@ final class SubstrateTests: XCTestCase {
     
     func testQueryPaymentInfo() {
         runAsyncTest(withTimeout: 20) {
-            let from = self.env.kpAlice //self.env.randomKeyPair()
-            let toKp = self.env.randomKeyPair(exclude: [from])
+            let from = self.env.fundedKeyPairs.someElement()!
+            let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
             let to = try toKp.address(in: substrate)
             let call = AnyCall(name: "transfer_allow_death",
@@ -97,8 +97,8 @@ final class SubstrateTests: XCTestCase {
     
     func testQueryFeeDetails() {
         runAsyncTest(withTimeout: 20) {
-            let from = self.env.kpAlice //self.env.randomKeyPair()
-            let toKp = self.env.randomKeyPair(exclude: [from])
+            let from = self.env.fundedKeyPairs.someElement()!
+            let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
             let to = try toKp.address(in: substrate)
             let call = AnyCall(name: "transfer_allow_death",
@@ -112,8 +112,8 @@ final class SubstrateTests: XCTestCase {
     #if !os(Linux) && !os(Windows)
     func testTransferAndWatchTx() {
         runAsyncTest(withTimeout: 300) {
-            let from = self.env.kpAlice //self.env.randomKeyPair()
-            let toKp = self.env.randomKeyPair(exclude: [from])
+            let from = self.env.fundedKeyPairs.someElement()!
+            let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.wsClient, config: .dynamic)
             let to = try toKp.address(in: substrate)
             let call = AnyCall(name: "transfer_allow_death",
@@ -130,9 +130,9 @@ final class SubstrateTests: XCTestCase {
     
     func testTransferAndWatchBatchTx() {
         runAsyncTest(withTimeout: 300) {
-            let from = self.env.kpAlice //self.env.randomKeyPair()
-            let toKp1 = self.env.randomKeyPair(exclude: [from])
-            let toKp2 = self.env.randomKeyPair(exclude: [from, toKp1])
+            let from = self.env.fundedKeyPairs.someElement()!
+            let toKp1 = self.env.keyPairs.someElement(without: [from])!
+            let toKp2 = self.env.keyPairs.someElement(without: [from, toKp1])!
             let substrate = try await Api(rpc: self.wsClient, config: .dynamic)
             let to1 = try toKp1.address(in: substrate)
             let to2 = try toKp2.address(in: substrate)

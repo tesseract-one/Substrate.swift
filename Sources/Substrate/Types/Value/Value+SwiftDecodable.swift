@@ -333,16 +333,16 @@ private extension Value where C == RuntimeType.Id {
         case .str: return Value(value: .primitive(.string(try from.decode(String.self))), context: type)
         case .u8, .u16, .u32, .u64:
             let value = try from.decode(HexOrNumber<UInt64>.self)
-            return Value(value: .primitive(.u256(UInt256(value.value))), context: type)
+            return Value(value: .primitive(.uint(UInt256(value.value))), context: type)
         case .u128, .u256:
             if let value = try? from.decode(UInt64.self) {
-                return Value(value: .primitive(.u256(UInt256(value))), context: type)
+                return Value(value: .primitive(.uint(UInt256(value))), context: type)
             } else {
-                return Value(value: .primitive(.u256(try from.decode(UIntHex<UInt256>.self).value)),
+                return Value(value: .primitive(.uint(try from.decode(UIntHex<UInt256>.self).value)),
                              context: type)
             }
         case .i8, .i16, .i32, .i64, .i128, .i256:
-            return Value(value: .primitive(.i256(Int256(try from.decode(Int64.self)))),
+            return Value(value: .primitive(.int(Int256(try from.decode(Int64.self)))),
                          context: type)
         }
     }

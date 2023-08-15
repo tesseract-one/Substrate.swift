@@ -150,39 +150,39 @@ private extension Value where C == RuntimeType.Id {
         case .char: return Value(value: .primitive(.char(try decoder.decode())), context: type)
         case .str: return Value(value: .primitive(.string(try decoder.decode())), context: type)
         case .u8:
-            return Value(value: .primitive(.u256(UInt256(try decoder.decode(UInt8.self)))),
+            return Value(value: .primitive(.uint(UInt256(try decoder.decode(UInt8.self)))),
                          context: type)
         case .u16:
-            return Value(value: .primitive(.u256(UInt256(try decoder.decode(UInt16.self)))),
+            return Value(value: .primitive(.uint(UInt256(try decoder.decode(UInt16.self)))),
                          context: type)
         case .u32:
-            return Value(value: .primitive(.u256(UInt256(try decoder.decode(UInt32.self)))),
+            return Value(value: .primitive(.uint(UInt256(try decoder.decode(UInt32.self)))),
                          context: type)
         case .u64:
-            return Value(value: .primitive(.u256(UInt256(try decoder.decode(UInt64.self)))),
+            return Value(value: .primitive(.uint(UInt256(try decoder.decode(UInt64.self)))),
                          context: type)
         case .u128:
-            return Value(value: .primitive(.u256(UInt256(try decoder.decode(UInt128.self)))),
+            return Value(value: .primitive(.uint(UInt256(try decoder.decode(UInt128.self)))),
                          context: type)
         case .u256:
-            return Value(value: .primitive(.u256(try decoder.decode())), context: type)
+            return Value(value: .primitive(.uint(try decoder.decode())), context: type)
         case .i8:
-            return Value(value: .primitive(.i256(Int256(try decoder.decode(Int8.self)))),
+            return Value(value: .primitive(.int(Int256(try decoder.decode(Int8.self)))),
                          context: type)
         case .i16:
-            return Value(value: .primitive(.i256(Int256(try decoder.decode(Int16.self)))),
+            return Value(value: .primitive(.int(Int256(try decoder.decode(Int16.self)))),
                          context: type)
         case .i32:
-            return Value(value: .primitive(.i256(Int256(try decoder.decode(Int32.self)))),
+            return Value(value: .primitive(.int(Int256(try decoder.decode(Int32.self)))),
                          context: type)
         case .i64:
-            return Value(value: .primitive(.i256(Int256(try decoder.decode(Int64.self)))),
+            return Value(value: .primitive(.int(Int256(try decoder.decode(Int64.self)))),
                          context: type)
         case .i128:
-            return Value(value: .primitive(.i256(Int256(try decoder.decode(Int128.self)))),
+            return Value(value: .primitive(.int(Int256(try decoder.decode(Int128.self)))),
                          context: type)
         case .i256:
-            return Value(value: .primitive(.i256(try decoder.decode())), context: type)
+            return Value(value: .primitive(.int(try decoder.decode())), context: type)
         }
     }
     
@@ -200,26 +200,26 @@ private extension Value where C == RuntimeType.Id {
                 switch prim {
                 case .u8:
                     value = try Value(
-                        value: .primitive(.u256(UInt256(decoder.decode(UInt8.self, .compact)))),
+                        value: .primitive(.uint(UInt256(decoder.decode(UInt8.self, .compact)))),
                         context: type)
                 case .u16:
                     value = try Value(
-                        value: .primitive(.u256(UInt256(decoder.decode(UInt16.self, .compact)))),
+                        value: .primitive(.uint(UInt256(decoder.decode(UInt16.self, .compact)))),
                         context: type)
                 case .u32:
                     value = try Value(
-                        value: .primitive(.u256(UInt256(decoder.decode(UInt32.self, .compact)))),
+                        value: .primitive(.uint(UInt256(decoder.decode(UInt32.self, .compact)))),
                         context: type)
                 case .u64:
                     value = try Value(
-                        value: .primitive(.u256(UInt256(decoder.decode(UInt64.self, .compact)))),
+                        value: .primitive(.uint(UInt256(decoder.decode(UInt64.self, .compact)))),
                         context: type)
                 case .u128:
                     value = try Value(
-                        value: .primitive(.u256(UInt256(decoder.decode(UInt128.self, .compact)))),
+                        value: .primitive(.uint(UInt256(decoder.decode(UInt128.self, .compact)))),
                         context: type)
                 case .u256:
-                    value = try Value(value: .primitive(.u256(decoder.decode(.compact))),
+                    value = try Value(value: .primitive(.uint(decoder.decode(.compact))),
                                       context: type)
                 default: throw DecodingError.cannotCompactDecode(innerTypeId)
                 }

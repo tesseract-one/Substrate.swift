@@ -29,10 +29,10 @@ public struct Value<C> {
         case char(Character)
         /// A string.
         case string(String)
-        /// An unsigned 256 bit number.
-        case u256(UInt256)
-        /// A signed 256 bit number
-        case i256(Int256)
+        /// An unsigned integer.
+        case uint(UInt256)
+        /// A signed integer
+        case int(Int256)
         /// Bytes (u8 array or AccountId etc.)
         case bytes(Data)
     }
@@ -97,18 +97,18 @@ public extension Value {
         }
     }
     
-    var u256: UInt256? {
+    var uint: UInt256? {
         switch value {
-        case .primitive(.u256(let u)): return u
-        case .primitive(.i256(let i)): return UInt256(exactly: i)
+        case .primitive(.uint(let u)): return u
+        case .primitive(.int(let i)): return UInt256(exactly: i)
         default: return nil
         }
     }
     
-    var i256: Int256? {
+    var int: Int256? {
         switch value {
-        case .primitive(.i256(let i)): return i
-        case .primitive(.u256(let u)): return Int256(exactly: u)
+        case .primitive(.int(let i)): return i
+        case .primitive(.uint(let u)): return Int256(exactly: u)
         default: return nil
         }
     }
@@ -117,7 +117,7 @@ public extension Value {
         switch value {
         case .primitive(.bytes(let b)): return b
         case .sequence(let vals):
-            let arr = vals.compactMap { $0.u256.flatMap { UInt8(exactly: $0) } }
+            let arr = vals.compactMap { $0.uint.flatMap { UInt8(exactly: $0) } }
             guard arr.count == vals.count else { return nil }
             return Data(arr)
         default: return nil
@@ -198,12 +198,12 @@ public extension Value {
         Self(value: .primitive(.string(val)), context: context)
     }
     
-    static func u256(_ val: UInt256, _ context: C) -> Self {
-        Self(value: .primitive(.u256(val)), context: context)
+    static func uint(_ val: UInt256, _ context: C) -> Self {
+        Self(value: .primitive(.uint(val)), context: context)
     }
     
-    static func i256(_ val: Int256, _ context: C) -> Self {
-        Self(value: .primitive(.i256(val)), context: context)
+    static func int(_ val: Int256, _ context: C) -> Self {
+        Self(value: .primitive(.int(val)), context: context)
     }
     
     static func bytes(_ val: Data, _ context: C) -> Self {
@@ -255,8 +255,8 @@ public extension Value where C == Void {
     static func bool(_ val: Bool) -> Self { .bool(val, ()) }
     static func char(_ val: Character) -> Self { .char(val, ()) }
     static func string(_ val: String) -> Self { .string(val, ()) }
-    static func u256(_ val: UInt256) -> Self { .u256(val, ()) }
-    static func i256(_ val: Int256) -> Self { .i256(val, ()) }
+    static func uint(_ val: UInt256) -> Self { .uint(val, ()) }
+    static func int(_ val: Int256) -> Self { .int(val, ()) }
     static func bytes(_ val: Data) -> Self { .bytes(val, ()) }
     static func bytes<S: Sequence>(array val: S) -> Self where S.Element == UInt8 {
         .bytes(array: val, ())
@@ -286,8 +286,8 @@ extension Value.Primitive {
         case .bool(let v): return .bool(v)
         case .char(let v): return .char(v)
         case .string(let v): return .string(v)
-        case .u256(let v): return .u256(v)
-        case .i256(let v): return .i256(v)
+        case .uint(let v): return .uint(v)
+        case .int(let v): return .int(v)
         case .bytes(let v): return .bytes(v)
         }
     }
@@ -374,8 +374,8 @@ extension Value.Primitive: CustomStringConvertible {
         case .bytes(let data): return data.hex()
         case .char(let char): return String(char)
         case .string(let str): return str
-        case .i256(let int): return String(int)
-        case .u256(let uint): return String(uint)
+        case .int(let int): return int.description
+        case .uint(let uint): return uint.description
         }
     }
 }

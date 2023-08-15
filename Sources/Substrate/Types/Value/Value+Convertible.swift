@@ -21,7 +21,7 @@ public enum ValueRepresentableError: Error {
 
 public extension FixedWidthInteger {
     func asValue() -> Value<Void> {
-        Self.isSigned ?  .i256(Int256(self)) : .u256(UInt256(self))
+        Self.isSigned ?  .int(Int256(self)) : .uint(UInt256(self))
     }
     
     func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
@@ -31,7 +31,7 @@ public extension FixedWidthInteger {
         guard let primitive = info.asPrimitive(metadata: runtime.metadata), primitive.isAnyInt else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
-        return Self.isSigned ?  .i256(Int256(self), type) : .u256(UInt256(self), type)
+        return Self.isSigned ?  .int(Int256(self), type) : .uint(UInt256(self), type)
     }
 }
 

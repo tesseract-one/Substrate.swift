@@ -46,7 +46,7 @@ extension CheckSpecVersionExtension: DynamicExtrinsicExtension where P == AnySig
     public func additionalSigned<R: RootApi>(
         api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
-        .u256(UInt256(api.runtime.version.specVersion), id)
+        .uint(UInt256(api.runtime.version.specVersion), id)
     }
 }
 
@@ -92,7 +92,7 @@ extension CheckTxVersionExtension: DynamicExtrinsicExtension where P == AnySigni
     public func additionalSigned<R: RootApi>(
         api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
-        .u256(UInt256(api.runtime.version.transactionVersion), id)
+        .uint(UInt256(api.runtime.version.transactionVersion), id)
     }
 }
 
@@ -254,7 +254,7 @@ extension CheckNonceExtension: DynamicExtrinsicExtension where P == AnySigningPa
     public func extra<R: RootApi>(
         api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
-        .u256(UInt256(params.nonce), id)
+        .uint(UInt256(params.nonce), id)
     }
     
     public func additionalSigned<R: RootApi>(

@@ -168,7 +168,7 @@ public extension AnyBlock {
                 throw try container.newError("Header is not a map: \(value)")
             }
             self.fields = map
-            guard let number = fields["number"]?.u256 else {
+            guard let number = fields["number"]?.uint else {
                 throw try container.newError("Header doesn't have number: \(value)")
             }
             guard let converted = TNumber(exactly: number) else {

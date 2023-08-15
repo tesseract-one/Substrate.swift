@@ -328,12 +328,12 @@ private extension Value {
         primitive: Primitive, id: RuntimeType.Id, _ type: INT.Type
     ) throws -> INT {
         switch primitive {
-        case .i256(let int):
+        case .int(let int):
             guard let val = INT(exactly: int) else {
                 throw EncodingError.wrongShape(actual: self, expected: id)
             }
             return val
-        case .u256(let int):
+        case .uint(let int):
             guard let val = INT(exactly: int) else {
                 throw EncodingError.wrongShape(actual: self, expected: id)
             }
