@@ -281,7 +281,7 @@ extension BitSequence: ValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard info.isBitSequence(metadata: runtime.metadata) else {
+        guard info.isBitSequence(runtime) else {
             throw ValueRepresentableError.wrongType(got: info, for: "BitSequence")
         }
         return .bits(self, type)

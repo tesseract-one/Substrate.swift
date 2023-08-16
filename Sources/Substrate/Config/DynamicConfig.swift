@@ -28,7 +28,7 @@ public struct DynamicConfig: Config {
     public typealias TDispatchError = AnyDispatchError
     public typealias TTransactionValidityError = AnyTransactionValidityError
     public typealias TExtrinsicFailureEvent = AnyExtrinsicFailureEvent
-    public typealias TBlockEvents = BlockEvents<EventRecord<THasher.THash>>
+    public typealias TBlockEvents = AnyBlockEvents<AnyEventRecord>
     public typealias TRuntimeVersion = AnyRuntimeVersion
     public typealias TStorageChangeSet = StorageChangeSet<THasher.THash>
     
@@ -36,7 +36,6 @@ public struct DynamicConfig: Config {
         case typeNotFound(name: String, selector: NSRegularExpression)
         case hashTypeNotFound(header: RuntimeType.Info)
         case badHeaderType(header: RuntimeType.Info)
-        case eventTypeNotFound(record: RuntimeType.Info)
         case extrinsicInfoNotFound
         case unknownHashName(String)
     }
@@ -50,7 +49,6 @@ public struct DynamicConfig: Config {
     public let dispatchErrorSelector: NSRegularExpression
     public let transactionValidityErrorSelector: NSRegularExpression
     public let feeDetailsSelector: NSRegularExpression
-    public let eventRecordSelector: NSRegularExpression
     
     public init(extrinsicExtensions: [DynamicExtrinsicExtension] = Self.allExtensions,
                 customCoders: [RuntimeCustomDynamicCoder] = Self.customCoders,
@@ -60,8 +58,7 @@ public struct DynamicConfig: Config {
                 dispatchInfoSelector: String = "^.*DispatchInfo$",
                 dispatchErrorSelector: String = "^.*DispatchError$",
                 transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
-                feeDetailsSelector: String = "^.*FeeDetails$",
-                eventRecordSelector: String = "^.*EventRecord$") throws
+                feeDetailsSelector: String = "^.*FeeDetails$") throws
     {
         self.extrinsicExtensions = extrinsicExtensions
         self.runtimeCustomCoders = customCoders
@@ -74,7 +71,6 @@ public struct DynamicConfig: Config {
             pattern: transactionValidityErrorSelector
         )
         self.feeDetailsSelector = try NSRegularExpression(pattern: feeDetailsSelector)
-        self.eventRecordSelector = try NSRegularExpression(pattern: eventRecordSelector)
     }
 }
 
@@ -85,30 +81,36 @@ extension DynamicConfig: BatchSupportedConfig {
 
 // Object getters and properties
 public extension DynamicConfig {
+    @inlinable
     func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
         AnyStorageKey(name: "Events", pallet: "System", path: [])
     }
     
+    @inlinable
     func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]> {
         MetadataVersionsRuntimeCall()
     }
     
+    @inlinable
     func metadataAtVersionCall(version: UInt32) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>> {
         MetadataAtVersionRuntimeCall(version: version)
     }
     
+    @inlinable
     func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
         AnyRuntimeCall(api: "TransactionPaymentApi",
                        method: "query_info",
                        params: [extrinsic, extrinsic.count])
     }
     
+    @inlinable
     func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
         AnyRuntimeCall(api: "TransactionPaymentApi",
                        method: "query_fee_details",
                        params: [extrinsic, extrinsic.count])
     }
     
+    @inlinable
     func extrinsicManager() throws -> TExtrinsicManager {
         let provider = DynamicSignedExtensionsProvider<Self>(extensions: extrinsicExtensions,
                                                              version: TExtrinsicManager.version)
@@ -258,19 +260,6 @@ public extension DynamicConfig {
         }
         return type
     }
-    
-    func eventType(metadata: Metadata) throws -> RuntimeType.Info {
-        guard let record = metadata.search(type: {eventRecordSelector.matches($0)}) else {
-            throw Error.typeNotFound(name: "EventRecord", selector: eventRecordSelector)
-        }
-        let eventNames = ["e", "ev", "event", "t::event"]
-        guard let field = record.type.parameters.first(where: {
-            eventNames.contains($0.name.lowercased())
-        })?.type else {
-            throw Error.eventTypeNotFound(record: record)
-        }
-        return RuntimeType.Info(id: field, type: metadata.resolve(type: field)!)
-    }
 }
 
 // ConfigRegistry helpers
@@ -283,14 +272,13 @@ public extension ConfigRegistry where C == DynamicConfig {
                         dispatchInfoSelector: String = "^.*DispatchInfo$",
                         dispatchErrorSelector: String = "^.*DispatchError$",
                         transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
-                        feeDetailsSelector: String = "^.*FeeDetails$",
-                        eventRecordSelector: String = "^.*EventRecord$") throws -> Self {
+                        feeDetailsSelector: String = "^.*FeeDetails$") throws -> Self {
         let config = try DynamicConfig(
             extrinsicExtensions: extrinsicExtensions, blockSelector: blockSelector,
             headerSelector: headerSelector, accountSelector: accountSelector,
             dispatchInfoSelector: dispatchInfoSelector, dispatchErrorSelector: dispatchErrorSelector,
             transactionValidityErrorSelector: transactionValidityErrorSelector,
-            feeDetailsSelector: feeDetailsSelector, eventRecordSelector: eventRecordSelector
+            feeDetailsSelector: feeDetailsSelector
         )
         return Self(config: config)
     }

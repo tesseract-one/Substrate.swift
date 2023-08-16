@@ -44,7 +44,7 @@ public extension AnyBatchCallCommon {
         try encoder.encode(info.pallet, .enumCaseId)
         try encoder.encode(info.index, .enumCaseId)
         try calls.encode(in: &encoder) { call, enc in
-            try call.encode(in: &enc, runtime: runtime) { _ in type }
+            try runtime.encode(value: call, in: &enc) { _ in type }
         }
     }
 }

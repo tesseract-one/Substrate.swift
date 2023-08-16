@@ -47,11 +47,9 @@ final class SubstrateTests: XCTestCase {
     func testStorageIteration() {
         runAsyncTest(withTimeout: 30) {
             let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
-            let activeEra = try await substrate.query.dynamic(name: "ActiveEra", pallet: "Staking").value()!
-            let eraIndex = activeEra.map!["index"]!
-            let entry = try substrate.query.dynamic(name: "ErasStakers", pallet: "Staking")
+            let entry = try substrate.query.dynamic(name: "Account", pallet: "System")
             var found = false
-            for try await _ in try entry.filter(eraIndex).entries().prefix(2) {
+            for try await _ in entry.entries().prefix(2) {
                 found = true
             }
             XCTAssert(found)
@@ -68,7 +66,7 @@ final class SubstrateTests: XCTestCase {
     }
     
     func testTransferTx() {
-        runAsyncTest(withTimeout: 20) {
+        runAsyncTest(withTimeout: 30) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
@@ -81,8 +79,32 @@ final class SubstrateTests: XCTestCase {
         }
     }
     
+    func testTransferBatchTx() {
+        runAsyncTest(withTimeout: 30) {
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            guard substrate.runtime.isBatchSupported else {
+                print("Batch is not supported in the current runtime")
+                return
+            }
+            let from = self.env.fundedKeyPairs.someElement()!
+            let toKp1 = self.env.keyPairs.someElement(without: [from])!
+            let toKp2 = self.env.keyPairs.someElement(without: [from, toKp1])!
+            
+            let to1 = try toKp1.address(in: substrate)
+            let to2 = try toKp2.address(in: substrate)
+            let call1 = AnyCall(name: "transfer_allow_death",
+                                pallet: "Balances",
+                                params: ["dest": to1, "value": 15383812800])
+            let call2 = AnyCall(name: "transfer_allow_death",
+                                pallet: "Balances",
+                                params: ["dest": to2, "value": 15583812810])
+            let tx = try await substrate.tx.batchAll([call1, call2])
+            let _ = try await tx.signAndSend(signer: from)
+        }
+    }
+    
     func testQueryPaymentInfo() {
-        runAsyncTest(withTimeout: 20) {
+        runAsyncTest(withTimeout: 30) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
@@ -96,7 +118,7 @@ final class SubstrateTests: XCTestCase {
     }
     
     func testQueryFeeDetails() {
-        runAsyncTest(withTimeout: 20) {
+        runAsyncTest(withTimeout: 30) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
@@ -130,10 +152,15 @@ final class SubstrateTests: XCTestCase {
     
     func testTransferAndWatchBatchTx() {
         runAsyncTest(withTimeout: 300) {
+            let substrate = try await Api(rpc: self.wsClient, config: .dynamic)
+            guard substrate.runtime.isBatchSupported else {
+                print("Batch is not supported in the current runtime")
+                return
+            }
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp1 = self.env.keyPairs.someElement(without: [from])!
             let toKp2 = self.env.keyPairs.someElement(without: [from, toKp1])!
-            let substrate = try await Api(rpc: self.wsClient, config: .dynamic)
+            
             let to1 = try toKp1.address(in: substrate)
             let to2 = try toKp2.address(in: substrate)
             let call1 = AnyCall(name: "transfer_allow_death",

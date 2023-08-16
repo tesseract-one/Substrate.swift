@@ -16,7 +16,7 @@ public protocol StorageKey<TValue> {
     var pallet: String { get }
     var name: String { get }
     
-    var hash: Data { get throws }
+    var hash: Data { get }
     
     init(base: TBaseParams, params: TParams, runtime: any Runtime) throws
     
@@ -39,7 +39,7 @@ public protocol StorageKeyIterator<TKey> {
     associatedtype TParam
     associatedtype TKey: StorageKey
     
-    var hash: Data { get throws }
+    var hash: Data { get }
     
     func decode<D: ScaleCodec.Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey
 }
@@ -64,7 +64,7 @@ public protocol StaticStorageKey<TValue>: StorageKey, RuntimeDecodable where TBa
     
     init(_ params: TParams, runtime: any Runtime) throws
     init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws
-    var pathHash: Data { get throws }
+    var pathHash: Data { get }
     
     static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: any Runtime) throws -> TValue
 }
@@ -82,7 +82,7 @@ public extension StaticStorageKey {
         try self.init(decodingPath: &decoder, runtime: runtime)
     }
     
-    var hash: Data { get throws { try self.prefix + self.pathHash } }
+    var hash: Data { self.prefix + self.pathHash }
     
     init(base: Void, params: TParams, runtime: any Runtime) throws {
         try self.init(params, runtime: runtime)
@@ -119,7 +119,8 @@ public extension StaticStorageKey where TValue: RuntimeDecodable {
 
 public extension StorageKeyRootIterator where TKey: StaticStorageKey {
     @inlinable init() { self.init(base: ()) }
-    @inlinable var hash: Data { TKey.prefix }
+    @inlinable var hash: Data { Self.hash }
+    @inlinable static var hash: Data { TKey.prefix }
 }
 
 public extension StorageKeyIterator where TKey: StaticStorageKey {
@@ -133,3 +134,4 @@ public enum StorageKeyCodingError: Error {
     case badCountOfPathComponents(has: Int, expected: Int)
     case badPrefix(has: Data, expected: Data)
 }
+

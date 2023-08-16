@@ -457,45 +457,45 @@ public extension RuntimeType.Definition {
 
 public extension RuntimeType {
     @inlinable
-    func asPrimitive(metadata: any Metadata) -> RuntimeType.Primitive? {
+    func asPrimitive(_ metadata: any Metadata) -> RuntimeType.Primitive? {
         definition.asPrimitive(metadata: metadata)
     }
     
     @inlinable
-    func asBytes(metadata: any Metadata) -> UInt32? {
+    func asBytes(_ metadata: any Metadata) -> UInt32? {
         definition.asBytes(metadata: metadata)
     }
     
     @inlinable
-    func isEmpty(metadata: any Metadata) -> Bool {
+    func isEmpty(_ metadata: any Metadata) -> Bool {
         definition.isEmpty(metadata: metadata)
     }
     
+    
     @inlinable
-    func asOptional(metadata: any Metadata) -> RuntimeType.Field? {
+    func asOptional(_ metadata: any Metadata) -> RuntimeType.Field? {
         definition.asOptional(metadata: metadata)
     }
     
+    
     @inlinable
-    func isBitSequence(metadata: any Metadata) -> Bool {
+    func isBitSequence(_ metadata: any Metadata) -> Bool {
         definition.isBitSequence(metadata: metadata)
     }
     
     @inlinable
-    func asResult(metadata: any Metadata) -> (ok: RuntimeType.Field, err: RuntimeType.Field)? {
+    func asResult(_ metadata: any Metadata) -> (ok: RuntimeType.Field, err: RuntimeType.Field)? {
         definition.asResult(metadata: metadata)
     }
     
-    func flatten(metadata: any Metadata) -> Self {
+    func flatten(_ metadata: any Metadata) -> Self {
         switch self.definition {
         case .composite(fields: let fields):
             guard fields.count == 1 else { return self }
-            return metadata.resolve(type: fields[0].type)!
-                .flatten(metadata: metadata)
+            return metadata.resolve(type: fields[0].type)!.flatten(metadata)
         case .tuple(components: let types):
             guard types.count == 1 else { return self }
-            return metadata.resolve(type: types[0])!
-                .flatten(metadata: metadata)
+            return metadata.resolve(type: types[0])!.flatten(metadata)
         default: return self
         }
     }

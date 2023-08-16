@@ -40,7 +40,6 @@ public protocol Config {
     func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info
     func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info
     // Both can be safely removed after removing metadata v14 (v15 has them)
-    func eventType(metadata: any Metadata) throws -> RuntimeType.Info
     func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
                                                            signature: RuntimeType.Info, extra: RuntimeType.Info)
     // Object Builders

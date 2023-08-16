@@ -134,7 +134,6 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         var account: Result<RuntimeType.Info, Error>?
         var extrinsic: Result<(call: RuntimeType.Info, addr: RuntimeType.Info,
                                signature: RuntimeType.Info, extra: RuntimeType.Info), Error>?
-        var event: Result<RuntimeType.Info, Error>?
         var hash: Result<RuntimeType.Info, Error>?
         var dispatchInfo: Result<RuntimeType.Info, Error>?
         var dispatchError: Result<RuntimeType.Info, Error>?
@@ -205,18 +204,6 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
                 try self._config.transactionValidityErrorType(metadata: self._metadata)
             }
             return try state.transactionValidityError!.get()
-        }
-    }}
-    
-    public var event: RuntimeType.Info { get throws {
-        try _state.sync { state in
-            if let res = state.event { return try res.get() }
-            if let event = _metadata.enums?.eventType {
-                state.event = .success(event)
-            } else {
-                state.event = Result { try _config.eventType(metadata: _metadata) }
-            }
-            return try state.event!.get()
         }
     }}
     

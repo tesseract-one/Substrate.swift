@@ -26,7 +26,6 @@ public protocol RuntimeTypes {
     var signature: RuntimeType.Info { get throws }
     var hash: RuntimeType.Info { get throws }
     var call: RuntimeType.Info { get throws }
-    var event: RuntimeType.Info { get throws }
     var extrinsicExtra: RuntimeType.Info { get throws }
     var dispatchInfo: RuntimeType.Info { get throws }
     var dispatchError: RuntimeType.Info { get throws }
@@ -35,18 +34,6 @@ public protocol RuntimeTypes {
 }
 
 public extension Runtime {
-    @inlinable
-    func decode<E: Event>(event: E.Type, from data: Data) throws -> E {
-        try decode(from: data) { try $0.types.event.id }
-    }
-    
-    @inlinable
-    func decode<E: Event, D: ScaleCodec.Decoder>(
-        event: E.Type, from decoder: inout D
-    ) throws -> E {
-        try decode(from: &decoder) { try $0.types.event.id }
-    }
-    
     @inlinable
     func create<A: AccountId>(account: A.Type, pub: any PublicKey) throws -> A {
         try A(pub: pub, runtime: self) { try $0.types.account.id }
@@ -98,7 +85,7 @@ public extension Runtime {
     func encode<A: AccountId, E: ScaleCodec.Encoder>(
         account: A, in encoder: inout E
     ) throws {
-        try account.encode(in: &encoder, runtime: self) { try $0.types.account.id }
+        try encode(value: account, in: &encoder) { try $0.types.account.id }
     }
     
     @inlinable
@@ -112,7 +99,7 @@ public extension Runtime {
     func encode<A: Address, E: ScaleCodec.Encoder>(
         address: A, in encoder: inout E
     ) throws {
-        try address.encode(in: &encoder, runtime: self) { try $0.types.address.id }
+        try encode(value: address, in: &encoder) { try $0.types.address.id }
     }
     
     @inlinable
@@ -126,7 +113,7 @@ public extension Runtime {
     func encode<S: Signature, E: ScaleCodec.Encoder>(
         signature: S, in encoder: inout E
     ) throws {
-        try signature.encode(in: &encoder, runtime: self) { try $0.types.signature.id }
+        try encode(value: signature, in: &encoder) { try $0.types.signature.id }
     }
     
     @inlinable
@@ -140,11 +127,47 @@ public extension Runtime {
     func encode<C: Call, E: ScaleCodec.Encoder>(
         call: C, in encoder: inout E
     ) throws {
-        try call.encode(in: &encoder, runtime: self) { try $0.types.call.id }
+        try encode(value: call, in: &encoder) { try $0.types.call.id }
     }
     
     @inlinable
     func hash<H: Hash>(type: H.Type, data: Data) throws -> H {
         try create(hash: type, raw: hasher.hash(data: data))
+    }
+}
+
+public extension RuntimeType {
+    @inlinable
+    func asPrimitive(_ runtime: any Runtime) -> RuntimeType.Primitive? {
+        definition.asPrimitive(metadata: runtime.metadata)
+    }
+    
+    @inlinable
+    func asBytes(_ runtime: any Runtime) -> UInt32? {
+        definition.asBytes(metadata: runtime.metadata)
+    }
+    
+    @inlinable
+    func isEmpty(_ runtime: any Runtime) -> Bool {
+        definition.isEmpty(metadata: runtime.metadata)
+    }
+    
+    @inlinable
+    func asOptional(_ runtime: any Runtime) -> RuntimeType.Field? {
+        definition.asOptional(metadata: runtime.metadata)
+    }
+    
+    @inlinable
+    func isBitSequence(_ runtime: any Runtime) -> Bool {
+        definition.isBitSequence(metadata: runtime.metadata)
+    }
+    
+    @inlinable
+    func asResult(_ runtime: any Runtime) -> (ok: RuntimeType.Field, err: RuntimeType.Field)? {
+        definition.asResult(metadata: runtime.metadata)
+    }
+    
+    func flatten(_ runtime: any Runtime) -> Self {
+        flatten(runtime.metadata)
     }
 }

@@ -41,7 +41,7 @@ public extension Hash {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let count = info.asBytes(metadata: runtime.metadata) else {
+        guard let count = info.asBytes(runtime) else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         guard count == 0 || raw.count == count else {
@@ -156,7 +156,7 @@ public struct AnyHash: Hash {
         guard let info = metadata.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let count = info.asBytes(metadata: metadata) else {
+        guard let count = info.asBytes(metadata) else {
             throw ValueRepresentableError.wrongType(got: info, for: "AnyHash")
         }
         guard count == 0 || count == raw.count else {

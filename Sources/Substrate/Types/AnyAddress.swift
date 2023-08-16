@@ -20,7 +20,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         guard let info = runtime.resolve(type: type) else {
             throw Value<RuntimeType.Id>.DecodingError.typeNotFound(type)
         }
-        switch info.flatten(metadata: runtime.metadata).definition {
+        switch info.flatten(runtime).definition {
         case .variant(variants: let vars):
             let idVar = try Self.findIdVariant(in: vars, type: info)
             if try decoder.peek() == idVar.index {
@@ -65,7 +65,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        switch info.flatten(metadata: runtime.metadata).definition {
+        switch info.flatten(runtime).definition {
         case .variant(variants: let vars):
             switch self {
             case .id(let id):

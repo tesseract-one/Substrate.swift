@@ -66,36 +66,6 @@ public protocol RuntimeDynamicDecodable {
 
 public typealias RuntimeDynamicCodable = RuntimeDynamicDecodable & RuntimeDynamicEncodable
 
-public extension RuntimeDynamicEncodable {
-    @inlinable
-    func encode<E: ScaleCodec.Encoder>(
-        in encoder: inout E, runtime: Runtime,
-        id: @escaping RuntimeType.LazyId
-    ) throws {
-        switch self {
-        case let sself as ScaleCodec.Encodable: try sself.encode(in: &encoder)
-        case let sself as RuntimeEncodable: try sself.encode(in: &encoder, runtime: runtime)
-        default: try self.encode(in: &encoder, as: id(runtime), runtime: runtime)
-        }
-    }
-}
-
-public extension RuntimeDynamicDecodable {
-    @inlinable
-    init<D: ScaleCodec.Decoder>(
-        from decoder: inout D, runtime: Runtime,
-        id: @escaping RuntimeType.LazyId
-    ) throws {
-        switch Self.self {
-        case let sself as ScaleCodec.Decodable.Type:
-            self = try sself.init(from: &decoder) as! Self
-        case let sself as RuntimeDecodable.Type:
-            self = try sself.init(from: &decoder, runtime: runtime) as! Self
-        default: try self.init(from: &decoder, as: id(runtime), runtime: runtime)
-        }
-    }
-}
-
 public extension Runtime {
     @inlinable
     func decode<T: RuntimeDecodable, D: ScaleCodec.Decoder>(from decoder: inout D, type: T.Type) throws -> T {
@@ -133,7 +103,14 @@ public extension Runtime {
         from decoder: inout D, type: T.Type,
         where id: @escaping RuntimeType.LazyId
     ) throws -> T {
-        try T(from: &decoder, runtime: self, id: id)
+        switch type {
+        case let type as ScaleCodec.Decodable.Type:
+            return try type.init(from: &decoder) as! T
+        case let type as RuntimeDecodable.Type:
+            return try decode(from: &decoder, type: type) as! T
+        default:
+            return try decode(from: &decoder, type: type, id: id(self))
+        }
     }
     
     @inlinable
@@ -193,9 +170,32 @@ public extension Runtime {
     }
     
     @inlinable
+    func encode<T: RuntimeEncodable, E: ScaleCodec.Encoder>(value: T, in encoder: inout E) throws {
+        try value.encode(in: &encoder, runtime: self)
+    }
+    
+    @inlinable
+    func encode<T: RuntimeDynamicEncodable, E: ScaleCodec.Encoder>(
+        value: T, in encoder: inout E, `as` id: RuntimeType.Id
+    ) throws {
+        try value.encode(in: &encoder, as: id, runtime: self)
+    }
+    
+    @inlinable
+    func encode<T: RuntimeDynamicEncodable, E: ScaleCodec.Encoder>(
+        value: T, in encoder: inout E, where id: @escaping RuntimeType.LazyId
+    ) throws {
+        switch value {
+        case let val as ScaleCodec.Encodable: try val.encode(in: &encoder)
+        case let val as RuntimeEncodable: try encode(value: val, in: &encoder)
+        default: try encode(value: value, in: &encoder, as: id(self))
+        }
+    }
+    
+    @inlinable
     func encode<T: RuntimeEncodable>(value: T) throws -> Data {
         var encoder = encoder()
-        try value.encode(in: &encoder, runtime: self)
+        try encode(value: value, in: &encoder)
         return encoder.output
     }
     
@@ -204,7 +204,7 @@ public extension Runtime {
         value: T, `as` id: RuntimeType.Id
     ) throws -> Data {
         var encoder = encoder()
-        try value.encode(in: &encoder, as: id, runtime: self)
+        try encode(value: value, in: &encoder, as: id)
         return encoder.output
     }
     
@@ -213,7 +213,7 @@ public extension Runtime {
         value: T, where id: @escaping RuntimeType.LazyId
     ) throws -> Data {
         var encoder = encoder()
-        try value.encode(in: &encoder, runtime: self, id: id)
+        try encode(value: value, in: &encoder, where: id)
         return encoder.output
     }
 }
@@ -250,4 +250,12 @@ public extension RuntimeCustomDynamicCoder {
                 as id: RuntimeType.Id, runtime: any Runtime) throws -> Value<RuntimeType.Id> {
         try Value(from: &container, as: id, runtime: runtime, custom: false)
     }
+}
+
+public enum RuntimeDynamicCodableError: Error {
+    case typeNotFound(RuntimeType.Id)
+    case wrongType(got: RuntimeType, for: String)
+    case wrongValuesCount(in: RuntimeType, expected: Int, for: String)
+    case variantNotFound(name: String, in: RuntimeType)
+    case badDecodedValue(value: Any, forType: RuntimeType.Id)
 }

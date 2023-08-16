@@ -107,7 +107,7 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
     }
     
     public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> Return {
-        return try Return(from: &decoder, runtime: runtime) { runtime in
+        return try runtime.decode(from: &decoder) { runtime in
             guard let call = runtime.resolve(runtimeCall: method, api: api) else {
                 throw RuntimeCallCodingError.callNotFound(method: method, api: api)
             }
@@ -130,7 +130,7 @@ public struct MetadataVersionsRuntimeCall: StaticCodableRuntimeCall {
     public static let method = "metadata_versions"
     public static let api = "Metadata"
     
-    init() {}
+    public init() {}
     public func encodeParams<E>(in encoder: inout E) throws where E : ScaleCodec.Encoder {}
 }
 

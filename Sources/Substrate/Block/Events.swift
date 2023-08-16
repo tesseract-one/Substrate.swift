@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeBlockEvents: RuntimeDecodable, RuntimeDynamicDecodable, Default {
+public protocol SomeBlockEvents: RuntimeDynamicDecodable, Default {
     associatedtype ER: SomeEventRecord
     var events: [ER] { get }
     func events(extrinsic index: UInt32) -> [ER]
@@ -152,7 +152,7 @@ public extension SomeBlockEvents {
     }
 }
 
-public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringConvertible {
+public struct AnyBlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringConvertible {
     public typealias ER = ER
     
     public let events: [ER]
@@ -161,9 +161,22 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringCon
         self.events = events
     }
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws {
-        let events = try Array<ER>(from: &decoder, runtime: runtime)
-        self.init(events: events)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
+                                       as type: RuntimeType.Id,
+                                       runtime: Runtime) throws
+    {
+        guard let typeInfo = runtime.resolve(type: type)?.flatten(runtime) else {
+            throw RuntimeDynamicCodableError.typeNotFound(type)
+        }
+        switch typeInfo.definition {
+        case .sequence(of: let recordId):
+            let events = try Array<ER>(from: &decoder) { decoder in
+                try runtime.decode(from: &decoder) { _ in recordId }
+            }
+            self.init(events: events)
+        default:
+            throw RuntimeDynamicCodableError.wrongType(got: typeInfo, for: "Array<EventRecord>")
+        }
     }
     
     public func events(extrinsic index: UInt32) -> [ER] {
@@ -174,5 +187,5 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringCon
         events.description
     }
     
-    public static var `default`: BlockEvents<ER> { Self(events: []) }
+    public static var `default`: Self { Self(events: []) }
 }

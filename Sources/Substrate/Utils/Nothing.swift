@@ -42,7 +42,7 @@ extension Nothing: ValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard info.isEmpty(metadata: runtime.metadata) else {
+        guard info.isEmpty(runtime) else {
             throw ValueRepresentableError.wrongType(got: info, for: "Nothing")
         }
         return .nil(type)

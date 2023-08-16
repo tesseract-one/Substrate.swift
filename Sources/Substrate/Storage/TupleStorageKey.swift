@@ -56,7 +56,7 @@ public protocol TupleStorageKeyBase<TPath, TValue>: StaticStorageKey
 public extension TupleStorageKeyBase {
     var keys: TPath.TDecodedKeys.STuple { path.keys.tuple }
     var hashes: TPath.THashes.STuple { path.hashes.tuple }
-    var pathHash: Data { get throws { path.hash }}
+    var pathHash: Data { path.hash }
     
     init(_ params: TParams, runtime: any Runtime) throws {
         try self.init(path: TPath(keys: TPath.TKeys(params), runtime: runtime))
@@ -78,7 +78,7 @@ public extension TupleStorageKeyHasherPair {
     }
 }
 
-public struct FixedKH<K: RuntimeEncodable, H: StaticFixedHasher>: TupleStorageKeyHasherPair {
+public struct FKH<K: RuntimeEncodable, H: StaticFixedHasher>: TupleStorageKeyHasherPair {
     public typealias THasher = H
     public typealias TKey = K
     public typealias TDecodedKey = Void
@@ -97,8 +97,9 @@ public struct FixedKH<K: RuntimeEncodable, H: StaticFixedHasher>: TupleStorageKe
         self.hash = try decoder.decode(.fixed(UInt(H.bitWidth / 8)))
     }
 }
+extension FKH: Equatable where K: Equatable, H: Equatable {}
 
-public struct ConcatKH<K: RuntimeCodable, H: StaticConcatHasher>: TupleStorageKeyHasherPair {
+public struct CKH<K: RuntimeCodable, H: StaticConcatHasher>: TupleStorageKeyHasherPair {
     public typealias THasher = H
     public typealias TKey = K
     public typealias TDecodedKey = K
@@ -121,6 +122,7 @@ public struct ConcatKH<K: RuntimeCodable, H: StaticConcatHasher>: TupleStorageKe
         self.hash = hash + keyData
     }
 }
+extension CKH: Equatable where K: Equatable, H: Equatable {}
 
 public struct TupleStorageKeyIterator<Key: TupleStorageKeyBase> {
     public struct SubIterator<Prev: StorageKeyIterator, Path: TupleStorageKeyPath> {
@@ -156,7 +158,7 @@ extension TupleStorageKeyIterator.SubIterator: StorageKeyIterator {
     public typealias TParam = Path.TKeys.First
     public typealias TKey = Key
     
-    public var hash: Data { get throws { try previous.hash + key.hash } }
+    public var hash: Data { previous.hash + key.hash }
 }
 
 extension TupleStorageKeyIterator.SubIterator: IterableStorageKeyIterator

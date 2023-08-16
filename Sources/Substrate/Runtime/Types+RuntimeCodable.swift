@@ -9,19 +9,19 @@ import Foundation
 import ScaleCodec
 import Numberick
 
-extension Bool: RuntimeCodable {}
-extension Data: RuntimeCodable {}
-extension Int8: RuntimeCodable {}
-extension Int16: RuntimeCodable {}
-extension Int32: RuntimeCodable {}
-extension Int64: RuntimeCodable {}
-extension UInt8: RuntimeCodable {}
-extension UInt16: RuntimeCodable {}
-extension UInt32: RuntimeCodable {}
-extension UInt64: RuntimeCodable {}
-extension String: RuntimeCodable {}
-extension Compact: RuntimeCodable {}
-extension NBKDoubleWidth: RuntimeCodable {}
+extension Bool: RuntimeCodable, RuntimeDynamicCodable {}
+extension Data: RuntimeCodable, RuntimeDynamicCodable {}
+extension Int8: RuntimeCodable, RuntimeDynamicCodable {}
+extension Int16: RuntimeCodable, RuntimeDynamicCodable {}
+extension Int32: RuntimeCodable, RuntimeDynamicCodable {}
+extension Int64: RuntimeCodable, RuntimeDynamicCodable {}
+extension UInt8: RuntimeCodable, RuntimeDynamicCodable {}
+extension UInt16: RuntimeCodable, RuntimeDynamicCodable {}
+extension UInt32: RuntimeCodable, RuntimeDynamicCodable {}
+extension UInt64: RuntimeCodable, RuntimeDynamicCodable {}
+extension String: RuntimeCodable, RuntimeDynamicCodable {}
+extension Compact: RuntimeCodable, RuntimeDynamicCodable {}
+extension NBKDoubleWidth: RuntimeCodable, RuntimeDynamicCodable {}
 
 extension CaseIterable where Self: Equatable & ScaleCodec.Encodable, Self.AllCases.Index == Int {
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {

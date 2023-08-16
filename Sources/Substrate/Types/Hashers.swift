@@ -74,7 +74,7 @@ public extension StaticConcatHasher {
     @inlinable var hashPartBitWidth: Int { Self.hashPartBitWidth }
 }
 
-public struct HBlake2b128: StaticFixedHasher {
+public struct HBlake2b128: StaticFixedHasher, Equatable {
     public typealias THash = Hash128
     
     @inlinable
@@ -87,7 +87,7 @@ public struct HBlake2b128: StaticFixedHasher {
     public static let instance = Self()
 }
 
-public struct HBlake2b128Concat: StaticConcatHasher {
+public struct HBlake2b128Concat: StaticConcatHasher, Equatable {
     @inlinable
     public func hash(data: Data) -> Data {
         try! Blake2.hash(.b2b, size: Self.hashPartBitWidth / 8, data: data) + data
@@ -98,7 +98,7 @@ public struct HBlake2b128Concat: StaticConcatHasher {
     public static let instance = Self()
 }
 
-public struct HBlake2b256: StaticFixedHasher {
+public struct HBlake2b256: StaticFixedHasher, Equatable {
     public typealias THash = Hash256
     
     @inlinable
@@ -111,7 +111,7 @@ public struct HBlake2b256: StaticFixedHasher {
     public static let instance = Self()
 }
 
-public struct HBlake2b512: StaticFixedHasher {
+public struct HBlake2b512: StaticFixedHasher, Equatable {
     public typealias THash = Hash512
     
     @inlinable
@@ -124,7 +124,7 @@ public struct HBlake2b512: StaticFixedHasher {
     public static let instance = Self()
 }
 
-public struct HXX64Concat: StaticConcatHasher {
+public struct HXX64Concat: StaticConcatHasher, Equatable {
     public func hash(data: Data) -> Data {
         xxHash(data: data, bitWidth: Self.hashPartBitWidth) + data
     }
@@ -134,7 +134,7 @@ public struct HXX64Concat: StaticConcatHasher {
     public static let instance = Self()
 }
 
-public struct HXX128: StaticFixedHasher {
+public struct HXX128: StaticFixedHasher, Equatable {
     public typealias THash = Hash128
     
     public func hash(data: Data) -> THash {
@@ -146,7 +146,7 @@ public struct HXX128: StaticFixedHasher {
     public static let instance = Self()
 }
 
-public struct HXX256: StaticFixedHasher {
+public struct HXX256: StaticFixedHasher, Equatable {
     public typealias THash = Hash256
     
     public func hash(data: Data) -> THash {
@@ -158,7 +158,7 @@ public struct HXX256: StaticFixedHasher {
     public static let instance = Self()
 }
 
-public struct HIdentity: StaticConcatHasher {
+public struct HIdentity: StaticConcatHasher, Equatable {
     @inlinable
     public func hash(data: Data) -> Data {
         return data
@@ -169,8 +169,8 @@ public struct HIdentity: StaticConcatHasher {
     public static let instance = Self()
 }
 
-public struct AnyFixedHasher: FixedHasher {
-    public enum HashType {
+public struct AnyFixedHasher: FixedHasher, Equatable {
+    public enum HashType: Equatable, Hashable {
         case blake2b128
         case blake2b256
         case blake2b512
@@ -226,6 +226,10 @@ public struct AnyFixedHasher: FixedHasher {
     public var bitWidth: Int { hasher.hashPartByteLength * 8 }
     @inlinable
     public func hash(data: Data) -> Data { hasher.hash(data: data) }
+    
+    public static func == (lhs: AnyFixedHasher, rhs: AnyFixedHasher) -> Bool {
+        lhs.name == rhs.name
+    }
 }
 
 private func xxHash(data: Data, bitWidth: Int) -> Data {

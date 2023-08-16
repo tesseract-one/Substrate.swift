@@ -32,6 +32,5 @@ final class DynamicTypesLookupTests: XCTestCase {
         let _ = try config.dispatchInfoType(metadata: metadata)
         let _ = try config.dispatchErrorType(metadata: metadata)
         let _ = try config.extrinsicTypes(metadata: metadata)
-        let _ = try config.eventType(metadata: metadata)
     }
 }

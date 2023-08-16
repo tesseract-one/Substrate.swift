@@ -56,7 +56,7 @@ public extension StaticSignature {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let count = info.asBytes(metadata: runtime.metadata) else {
+        guard let count = info.asBytes(runtime) else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         let bytes = raw

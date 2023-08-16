@@ -28,7 +28,7 @@ public extension FixedWidthInteger {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let primitive = info.asPrimitive(metadata: runtime.metadata), primitive.isAnyInt else {
+        guard let primitive = info.asPrimitive(runtime), primitive.isAnyInt else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         return Self.isSigned ?  .int(Int256(self), type) : .uint(UInt256(self), type)
@@ -68,7 +68,7 @@ extension Bool: ValueRepresentable, VoidValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let primitive = info.asPrimitive(metadata: runtime.metadata), primitive.isBool else {
+        guard let primitive = info.asPrimitive(runtime), primitive.isBool else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         return .bool(self, type)
@@ -82,7 +82,7 @@ extension String: ValueRepresentable, VoidValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let primitive = info.asPrimitive(metadata: runtime.metadata), primitive.isString else {
+        guard let primitive = info.asPrimitive(runtime), primitive.isString else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         return .string(self, type)
@@ -96,7 +96,7 @@ extension Data: ValueRepresentable, VoidValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let count = info.asBytes(metadata: runtime.metadata) else {
+        guard let count = info.asBytes(runtime) else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         guard count == 0 || self.count == count else {
@@ -114,7 +114,7 @@ extension Character: ValueRepresentable, VoidValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let primitive = info.asPrimitive(metadata: runtime.metadata), primitive.isChar else {
+        guard let primitive = info.asPrimitive(runtime), primitive.isChar else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         return .char(self, type)
@@ -126,7 +126,7 @@ public extension Collection where Element == ValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        let flat = info.flatten(metadata: runtime.metadata)
+        let flat = info.flatten(runtime)
         switch flat.definition {
         case .array(count: let count, of: let eType):
             guard count == self.count else {
@@ -177,7 +177,7 @@ extension Dictionary: ValueRepresentable where Key == String, Value == ValueRepr
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        let flat = info.flatten(metadata: runtime.metadata)
+        let flat = info.flatten(runtime)
         switch flat.definition {
         case .composite(fields: let fields):
             let types = try fields.map { field in
@@ -264,7 +264,7 @@ extension Optional: ValueRepresentable where Wrapped == ValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let field = info.asOptional(metadata: runtime.metadata) else {
+        guard let field = info.asOptional(runtime) else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         switch self {
@@ -290,7 +290,7 @@ extension Either: ValueRepresentable where Left == ValueRepresentable, Right == 
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let result = info.asResult(metadata: runtime.metadata) else {
+        guard let result = info.asResult(runtime) else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         switch self {
