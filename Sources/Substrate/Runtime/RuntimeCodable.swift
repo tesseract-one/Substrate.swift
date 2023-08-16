@@ -68,13 +68,13 @@ public typealias RuntimeDynamicCodable = RuntimeDynamicDecodable & RuntimeDynami
 
 public extension Runtime {
     @inlinable
-    func decode<T: RuntimeDecodable, D: ScaleCodec.Decoder>(from decoder: inout D, type: T.Type) throws -> T {
+    func decode<T: RuntimeDecodable, D: ScaleCodec.Decoder>(from decoder: inout D, _ type: T.Type) throws -> T {
         try T(from: &decoder, runtime: self)
     }
     
     @inlinable
     func decode<T: RuntimeDecodable, D: ScaleCodec.Decoder>(from decoder: inout D) throws -> T {
-        try decode(from: &decoder, type: T.self)
+        try decode(from: &decoder, T.self)
     }
     
     @inlinable
@@ -107,7 +107,7 @@ public extension Runtime {
         case let type as ScaleCodec.Decodable.Type:
             return try type.init(from: &decoder) as! T
         case let type as RuntimeDecodable.Type:
-            return try decode(from: &decoder, type: type) as! T
+            return try decode(from: &decoder, type) as! T
         default:
             return try decode(from: &decoder, type: type, id: id(self))
         }
@@ -124,7 +124,7 @@ public extension Runtime {
     @inlinable
     func decode<T: RuntimeDecodable>(from data: Data, _ type: T.Type) throws -> T {
         var decoder = decoder(with: data)
-        return try decode(from: &decoder, type: type)
+        return try decode(from: &decoder, type)
     }
     
     @inlinable

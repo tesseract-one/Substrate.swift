@@ -22,57 +22,59 @@ public extension PlainStorageKey {
     var pathHash: Data { Data() }
 }
 
-public protocol MapStorageKey: StaticStorageKey, IterableStorageKey where
-    TParams == TKeyHasher.TKey, TIterator == MapStorageKeyIterator<Self>
+public protocol MapStorageKey<TKH>: StaticStorageKey, IterableStorageKey where
+    TParams == TKH.TKey, TIterator == MapStorageKeyIterator<Self>
 {
-    associatedtype TKeyHasher: TupleStorageKeyHasherPair
-    var keyHasherPair: TKeyHasher { get }
-    init(pair: TKeyHasher)
+    associatedtype TKH: TupleStorageKeyHasherPair
+    var khPair: TKH { get }
+    init(khPair: TKH)
 }
 
 public extension MapStorageKey {
-    var key: TKeyHasher.TDecodedKey { keyHasherPair.decoded }
-    var pathHash: Data { keyHasherPair.hash }
+    var key: TKH.TDecodedKey { khPair.decoded }
+    var keys: (TKH.TDecodedKey) { khPair.decoded }
+    var pathHash: Data { khPair.hash }
     
     init(_ params: TParams, runtime: any Runtime) throws {
-        let kh = try TKeyHasher(key: params, runtime: runtime)
-        self.init(pair: kh)
+        let kh = try TKH(key: params, runtime: runtime)
+        self.init(khPair: kh)
     }
     
     init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws {
-        let kh = try TKeyHasher(pairFrom: &decoder, runtime: runtime)
-        self.init(pair: kh)
+        let kh = try TKH(pairFrom: &decoder, runtime: runtime)
+        self.init(khPair: kh)
     }
 }
 
-public protocol DoubleMapStorageKey: StaticStorageKey, IterableStorageKey where
-    TParams == (TKeyHasher1.TKey, TKeyHasher2.TKey), TIterator == MapStorageKeyIterator<Self>
+public protocol DoubleMapStorageKey<TKH1, TKH2>: StaticStorageKey, IterableStorageKey where
+    TParams == (TKH1.TKey, TKH2.TKey), TIterator == MapStorageKeyIterator<Self>
 {
-    associatedtype TKeyHasher1: TupleStorageKeyHasherPair
-    associatedtype TKeyHasher2: TupleStorageKeyHasherPair
+    associatedtype TKH1: TupleStorageKeyHasherPair
+    associatedtype TKH2: TupleStorageKeyHasherPair
     
-    var keyHasherPair1: TKeyHasher1 { get }
-    var keyHasherPair2: TKeyHasher1 { get }
-    
-    init(pair1: TKeyHasher1, pair2: TKeyHasher2)
+    var khPair1: TKH1 { get }
+    var khPair2: TKH2 { get }
+
+    init(khPair1: TKH1, khPair2: TKH2)
 }
 
 public extension DoubleMapStorageKey {
-    var key1: TKeyHasher1.TDecodedKey { keyHasherPair1.decoded }
-    var key2: TKeyHasher1.TDecodedKey { keyHasherPair2.decoded }
+    var key1: TKH1.TDecodedKey { khPair1.decoded }
+    var key2: TKH2.TDecodedKey { khPair2.decoded }
+    var keys: (TKH1.TDecodedKey, TKH2.TDecodedKey) { (khPair1.decoded, khPair2.decoded) }
     
-    var pathHash: Data { keyHasherPair1.hash + keyHasherPair2.hash }
+    var pathHash: Data { khPair1.hash + khPair2.hash }
     
     init(_ params: TParams, runtime: any Runtime) throws {
-        let kh1 = try TKeyHasher1(key: params.0, runtime: runtime)
-        let kh2 = try TKeyHasher2(key: params.1, runtime: runtime)
-        self.init(pair1: kh1, pair2: kh2)
+        let kh1 = try TKH1(key: params.0, runtime: runtime)
+        let kh2 = try TKH2(key: params.1, runtime: runtime)
+        self.init(khPair1: kh1, khPair2: kh2)
     }
     
     init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws {
-        let kh1 = try TKeyHasher1(pairFrom: &decoder, runtime: runtime)
-        let kh2 = try TKeyHasher2(pairFrom: &decoder, runtime: runtime)
-        self.init(pair1: kh1, pair2: kh2)
+        let kh1 = try TKH1(pairFrom: &decoder, runtime: runtime)
+        let kh2 = try TKH2(pairFrom: &decoder, runtime: runtime)
+        self.init(khPair1: kh1, khPair2: kh2)
     }
 }
 
@@ -85,14 +87,14 @@ public struct MapStorageKeyIterator<K: StaticStorageKey & IterableStorageKey>: S
 extension MapStorageKeyIterator: IterableStorageKeyIterator where K: DoubleMapStorageKey {
     public struct DMIterator: StorageKeyIterator {
         public typealias TKey = K
-        public typealias TParam = K.TKeyHasher1.TKey
+        public typealias TParam = K.TKH1.TKey
         
-        public var hash: Data { MapStorageKeyIterator<K>.hash + keyHasherPair.hash }
+        public var hash: Data { MapStorageKeyIterator<K>.hash + khPair.hash }
         
-        public let keyHasherPair: K.TKeyHasher1
+        public let khPair: K.TKH1
         
         public init(key: TParam, runtime: any Runtime) throws {
-            keyHasherPair = try K.TKeyHasher1(key: key, runtime: runtime)
+            khPair = try K.TKH1(key: key, runtime: runtime)
         }
     }
     
