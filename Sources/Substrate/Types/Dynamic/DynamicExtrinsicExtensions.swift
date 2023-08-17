@@ -117,7 +117,7 @@ extension CheckNonceExtension: DynamicExtrinsicExtension where P == AnySigningPa
 
 public typealias DynamicCheckNonceExtension<C: Config> = CheckNonceExtension<C, AnySigningParams<C>>
 
-extension CheckMortalitySignedExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
+extension CheckMortalityExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
     public func params<R: RootApi>(
         api: R, partial params: AnySigningParams<R.RC>.TPartial
     ) async throws -> AnySigningParams<R.RC>.TPartial {
@@ -137,7 +137,7 @@ extension CheckMortalitySignedExtension: DynamicExtrinsicExtension where P == An
     }
 }
 
-public typealias DynamicCheckMortalitySignedExtension<C: Config> = CheckMortalitySignedExtension<C, AnySigningParams<C>>
+public typealias DynamicCheckMortalityExtension<C: Config> = CheckMortalityExtension<C, AnySigningParams<C>>
 
 extension CheckWeightExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
     public func params<R: RootApi>(
@@ -161,7 +161,7 @@ extension CheckWeightExtension: DynamicExtrinsicExtension where P == AnySigningP
 
 public typealias DynamicCheckWeightExtension<C: Config> = CheckWeightExtension<C, AnySigningParams<C>>
 
-extension ChargeTransactionPaymentExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
+extension ChargeTransactionPaymentExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {    
     public func params<R: RootApi>(
         api: R, partial params: AnySigningParams<R.RC>.TPartial
     ) async throws -> AnySigningParams<R.RC>.TPartial {
@@ -178,6 +178,17 @@ extension ChargeTransactionPaymentExtension: DynamicExtrinsicExtension where P =
         api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
         .nil(id)
+    }
+}
+
+public extension ChargeTransactionPaymentExtension {
+    static func tipType(runtime: any Runtime) -> RuntimeType.Info? {
+        guard let ext = runtime.metadata.extrinsic.extensions.first(where: {
+            $0.identifier == Self.identifier.rawValue }
+        ) else {
+            return nil
+        }
+        return ext.type
     }
 }
 

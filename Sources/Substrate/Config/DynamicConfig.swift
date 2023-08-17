@@ -22,13 +22,13 @@ public struct DynamicConfig: Config {
     public typealias TTransactionStatus = TransactionStatus<THasher.THash, THasher.THash>
     
     public typealias TExtrinsicEra = ExtrinsicEra
-    public typealias TExtrinsicPayment = UInt256
+    public typealias TExtrinsicPayment = Value<Void>
     public typealias TFeeDetails = Value<RuntimeType.Id>
     public typealias TDispatchInfo = Value<RuntimeType.Id>
     public typealias TDispatchError = AnyDispatchError
     public typealias TTransactionValidityError = AnyTransactionValidityError
     public typealias TExtrinsicFailureEvent = AnyExtrinsicFailureEvent
-    public typealias TBlockEvents = AnyBlockEvents<AnyEventRecord>
+    public typealias TBlockEvents = BlockEvents<AnyEventRecord>
     public typealias TRuntimeVersion = AnyRuntimeVersion
     public typealias TStorageChangeSet = StorageChangeSet<THasher.THash>
     
@@ -36,12 +36,15 @@ public struct DynamicConfig: Config {
         case typeNotFound(name: String, selector: NSRegularExpression)
         case hashTypeNotFound(header: RuntimeType.Info)
         case badHeaderType(header: RuntimeType.Info)
+        case paymentTypeNotFound
+        case cantProvideDefaultPayment(forType: RuntimeType.Info)
         case extrinsicInfoNotFound
         case unknownHashName(String)
     }
     
     public let extrinsicExtensions: [DynamicExtrinsicExtension]
     public let runtimeCustomCoders: [RuntimeCustomDynamicCoder]
+    public let payment: TExtrinsicPayment?
     public let blockSelector: NSRegularExpression
     public let headerSelector: NSRegularExpression
     public let accountSelector: NSRegularExpression
@@ -52,6 +55,7 @@ public struct DynamicConfig: Config {
     
     public init(extrinsicExtensions: [DynamicExtrinsicExtension] = Self.allExtensions,
                 customCoders: [RuntimeCustomDynamicCoder] = Self.customCoders,
+                defaultPayment: TExtrinsicPayment? = nil,
                 blockSelector: String = "^.*Block$",
                 headerSelector: String = "^.*Header$",
                 accountSelector: String = "^.*AccountId[0-9]*$",
@@ -62,6 +66,7 @@ public struct DynamicConfig: Config {
     {
         self.extrinsicExtensions = extrinsicExtensions
         self.runtimeCustomCoders = customCoders
+        self.payment = defaultPayment
         self.blockSelector = try NSRegularExpression(pattern: blockSelector)
         self.accountSelector = try NSRegularExpression(pattern: accountSelector)
         self.headerSelector = try NSRegularExpression(pattern: headerSelector)
@@ -129,13 +134,33 @@ public extension DynamicConfig {
         return hasher
     }
     
+    func defaultPayment(runtime: any Runtime) throws -> TExtrinsicPayment {
+        if let def = payment { return def }
+        guard let type = DynamicChargeTransactionPaymentExtension<Self>.tipType(runtime: runtime) else {
+            throw Error.paymentTypeNotFound
+        }
+        switch type.type.flatten(runtime).definition {
+        case .compact(of: _): return .uint(0)
+        case .primitive(is: let p):
+            switch p {
+            case .i8, .i16, .i32, .i64, .i128, .i256: return .int(0)
+            case .u8, .u16, .u32, .u64, .u128, .u256: return .uint(0)
+            case .bool: return .bool(false)
+            case .char: return .char(Character("\0"))
+            case .str: return .string("")
+            }
+        default: throw Error.cantProvideDefaultPayment(forType: type)
+        }
+        
+    }
+    
     static let allExtensions: [DynamicExtrinsicExtension] = [
         DynamicCheckSpecVersionExtension<Self>(),
         DynamicCheckTxVersionExtension<Self>(),
         DynamicCheckGenesisExtension<Self>(),
         DynamicCheckNonZeroSenderExtension<Self>(),
         DynamicCheckNonceExtension<Self>(),
-        DynamicCheckMortalitySignedExtension<Self>(),
+        DynamicCheckMortalityExtension<Self>(),
         DynamicCheckWeightExtension<Self>(),
         DynamicChargeTransactionPaymentExtension<Self>(),
         DynamicPrevalidateAttestsExtension<Self>()

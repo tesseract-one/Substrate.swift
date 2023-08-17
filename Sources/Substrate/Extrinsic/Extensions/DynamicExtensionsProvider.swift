@@ -8,9 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol DynamicExtrinsicExtension {
-    var identifier: ExtrinsicExtensionId { get }
-    
+public protocol DynamicExtrinsicExtension: ExtrinsicSignedExtension {
     func params<R: RootApi>(
         api: R, partial params: AnySigningParams<R.RC>.TPartial
     ) async throws -> AnySigningParams<R.RC>.TPartial

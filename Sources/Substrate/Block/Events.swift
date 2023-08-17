@@ -1,5 +1,5 @@
 //
-//  BlockEvents.swift
+//  Events.swift
 //  
 //
 //  Created by Yehor Popovych on 08/06/2023.

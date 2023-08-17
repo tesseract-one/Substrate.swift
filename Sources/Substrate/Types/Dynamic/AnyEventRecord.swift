@@ -8,22 +8,8 @@
 import Foundation
 import ScaleCodec
 
-public enum AnyEventPhase: Equatable, Hashable, CustomStringConvertible {
-    // Applying an extrinsic.
-    case applyExtrinsic(UInt32)
-    case other(name: String, fields: [String: Value<RuntimeType.Id>])
-    
-    public var description: String {
-        switch self {
-        case .applyExtrinsic(let index): return "apply #\(index)"
-        case .other(name: let name, fields: let fields):
-            return fields.count > 0 ? "\(name)\(fields)" : name
-        }
-    }
-}
-
 public struct AnyEventRecord: SomeEventRecord, CustomStringConvertible {
-    public let phase: AnyEventPhase
+    public let phase: Phase
     public let header: (name: String, pallet: String)
     public let data: Data
     public let fields: [String: Value<RuntimeType.Id>]
@@ -51,7 +37,23 @@ public struct AnyEventRecord: SomeEventRecord, CustomStringConvertible {
     }
 }
 
-extension AnyEventPhase: RuntimeDynamicDecodable {
+public extension AnyEventRecord {
+    enum Phase: Equatable, Hashable, CustomStringConvertible {
+        // Applying an extrinsic.
+        case applyExtrinsic(UInt32)
+        case other(name: String, fields: [String: Value<RuntimeType.Id>])
+        
+        public var description: String {
+            switch self {
+            case .applyExtrinsic(let index): return "apply #\(index)"
+            case .other(name: let name, fields: let fields):
+                return fields.count > 0 ? "\(name)\(fields)" : name
+            }
+        }
+    }
+}
+
+extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
                                        as type: RuntimeType.Id,
                                        runtime: Runtime) throws
@@ -112,7 +114,7 @@ extension AnyEventRecord: RuntimeDynamicDecodable {
         guard fields.first?.name != nil else {
             throw RuntimeDynamicCodableError.wrongType(got: typeInfo, for: "EventRecord")
         }
-        var phase: AnyEventPhase? = nil
+        var phase: Phase? = nil
         var event: (name: String, pallet: String, data: Data, type: RuntimeType.Id)? = nil
         var other: [String: Value<RuntimeType.Id>] = [:]
         for field in fields {

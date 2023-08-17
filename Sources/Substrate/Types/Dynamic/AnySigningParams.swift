@@ -25,15 +25,10 @@ public struct AnySigningParams<RT: Config>: ExtraSigningParameters {
     
     public typealias TPartial = Partial
     
-    private var params: Partial
+    public private(set) var partial: Partial
     
     public init(partial: Partial) throws {
-        self.params = partial
-    }
-    
-    public subscript(key: String) -> Any? {
-        get { params[key] }
-        set { params[key] = newValue }
+        self.partial = partial
     }
 }
 
@@ -48,21 +43,9 @@ extension AnySigningParams.Partial: NoncePartialSigningParameter {
         get { self["nonce"] as? TNonce }
         set { self["nonce"] = newValue }
     }
-    public func nonce(_ nonce: TNonce) -> Self {
-        var new = self
-        new.nonce = nonce
-        return new
-    }
-    public static func nonce(_ nonce: TNonce) -> Self {
-        var new = Self()
-        new.nonce = nonce
-        return new
-    }
 }
 
-extension AnySigningParams: NonceSigningParameters {
-    public var nonce: TPartial.TNonce { params.nonce! }
-}
+extension AnySigningParams: NonceSigningParameters {}
 
 extension AnySigningParams.Partial: EraPartialSigningParameter {
     public typealias TEra = RT.TExtrinsicEra
@@ -71,36 +54,13 @@ extension AnySigningParams.Partial: EraPartialSigningParameter {
         get { params["era"] as? TEra }
         set { params["era"] = newValue }
     }
-    public func era(_ era: TEra) -> Self {
-        var new = self
-        new.era = era
-        return new
-    }
-    public static func era(_ era: TEra) -> Self {
-        var new = Self()
-        new.era = era
-        return new
-    }
     public var blockHash: THash? {
         get { params["blockHash"] as? THash }
         set { params["blockHash"] = newValue }
     }
-    public func blockHash(_ hash: THash) -> Self {
-        var new = self
-        new.blockHash = hash
-        return new
-    }
-    public static func blockHash(_ hash: THash) -> Self {
-        var new = Self()
-        new.blockHash = hash
-        return new
-    }
 }
 
-extension AnySigningParams: EraSigningParameters {
-    public var era: RT.TExtrinsicEra { params.era! }
-    public var blockHash: RT.TBlock.THeader.THasher.THash { params.blockHash! }
-}
+extension AnySigningParams: EraSigningParameters {}
 
 extension AnySigningParams.Partial: PaymentPartialSigningParameter {
     public typealias TPayment = RT.TExtrinsicPayment
@@ -108,18 +68,6 @@ extension AnySigningParams.Partial: PaymentPartialSigningParameter {
         get { self["tip"] as? TPayment }
         set { self["tip"] = newValue }
     }
-    public func tip(_ tip: TPayment) -> Self {
-        var new = self
-        new.tip = tip
-        return new
-    }
-    public static func tip(_ tip: TPayment) -> Self {
-        var new = Self()
-        new.tip = tip
-        return new
-    }
 }
 
-extension AnySigningParams: PaymentSigningParameters {
-    public var tip: RT.TExtrinsicPayment { params.tip! }
-}
+extension AnySigningParams: PaymentSigningParameters {}

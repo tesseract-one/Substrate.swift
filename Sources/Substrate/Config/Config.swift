@@ -18,7 +18,7 @@ public protocol Config {
     associatedtype TChainBlock: SomeChainBlock<TBlock>
     
     associatedtype TExtrinsicEra: SomeExtrinsicEra
-    associatedtype TExtrinsicPayment: ValueRepresentable & Default
+    associatedtype TExtrinsicPayment: ValueRepresentable
     associatedtype TBlockEvents: SomeBlockEvents
     associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent
     associatedtype TDispatchError: CallError
@@ -44,6 +44,7 @@ public protocol Config {
                                                            signature: RuntimeType.Info, extra: RuntimeType.Info)
     // Object Builders
     func hasher(metadata: any Metadata) throws -> THasher
+    func defaultPayment(runtime: any Runtime) throws -> TExtrinsicPayment
     func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
     func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo>
     func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails>
@@ -175,5 +176,11 @@ public extension Config where TFeeDetails: RuntimeDecodable {
 public extension Config where TAccountId: StaticAccountId {
     func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info {
         throw RuntimeType.IdNeverCalledError()
+    }
+}
+
+public extension Config where TExtrinsicPayment: Default {
+    func defaultPayment(runtime: any Runtime) throws -> TExtrinsicPayment {
+        .default
     }
 }

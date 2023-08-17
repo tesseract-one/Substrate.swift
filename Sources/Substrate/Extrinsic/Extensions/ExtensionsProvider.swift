@@ -10,6 +10,7 @@ import ScaleCodec
 
 public protocol ExtraSigningParameters {
     associatedtype TPartial: Default
+    var partial: TPartial { get }
     init(partial: TPartial) throws
 }
 
@@ -29,6 +30,10 @@ public protocol SignedExtensionsProvider<RC> {
     func additionalSigned<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TAdditionalSigned
     
     mutating func setRootApi<R: RootApi<RC>>(api: R) throws
+}
+
+public protocol ExtrinsicSignedExtension {
+    var identifier: ExtrinsicExtensionId { get }
 }
 
 public struct ExtrinsicExtensionId: Equatable, Hashable, RawRepresentable {

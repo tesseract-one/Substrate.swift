@@ -1,5 +1,5 @@
 //
-//  AnyBlockEvents.swift
+//  BlockEvents.swift
 //  
 //
 //  Created by Yehor Popovych on 17/08/2023.
@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct AnyBlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringConvertible {
+public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringConvertible {
     public typealias ER = ER
     
     public let events: [ER]
@@ -44,4 +44,10 @@ public struct AnyBlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomString
     }
     
     public static var `default`: Self { Self(events: []) }
+}
+
+extension BlockEvents: RuntimeDecodable where ER: RuntimeDecodable {
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws  {
+        try self.init(events: runtime.decode(from: &decoder))
+    }
 }

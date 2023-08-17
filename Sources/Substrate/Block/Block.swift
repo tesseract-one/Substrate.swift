@@ -38,7 +38,7 @@ public protocol StaticBlock: SomeBlock, RuntimeSwiftDecodable where THeader: Run
 public extension StaticBlock {
     // Should never be called because of the static Header parsing
     static func headerType(runtime: any Runtime,
-                           block id: @escaping RuntimeType.LazyId) throws -> RuntimeType.Id {
+                           block id: RuntimeType.Id) throws -> RuntimeType.Id {
         try RuntimeType.IdNever(runtime)
     }
 }

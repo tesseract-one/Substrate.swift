@@ -20,8 +20,12 @@ public protocol StaticExtrinsicExtensionBase<TConfig, TParams> {
     func additionalSigned<R: RootApi<TConfig>>(api: R, params: TParams) async throws -> TAdditionalSigned
 }
 
-public protocol StaticExtrinsicExtension<TConfig, TParams>: StaticExtrinsicExtensionBase {
-    var identifier: ExtrinsicExtensionId { get }
+public protocol StaticExtrinsicExtension<TConfig, TParams>: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension {
+    static var identifier: ExtrinsicExtensionId { get }
+}
+
+public extension StaticExtrinsicExtension {
+    var identifier: ExtrinsicExtensionId { Self.identifier }
 }
 
 public protocol StaticExtrinsicExtensions<TConfig, TParams>: StaticExtrinsicExtensionBase {

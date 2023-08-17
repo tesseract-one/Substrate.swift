@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol AnyAccountPartialSigningParameter {
+public protocol AnyAccountPartialSigningParameter: Default {
     mutating func setAccount<A: AccountId>(_ account: A?) throws
 }
 
@@ -36,9 +36,25 @@ public extension NoncePartialSigningParameter {
         }
         self.account = account as! TAccountId?
     }
+    
+    func nonce(_ nonce: TNonce) -> Self {
+        var copy = self
+        copy.nonce = nonce
+        return copy
+    }
+    
+    static func nonce(_ nonce: TNonce) -> Self {
+        var val = Self.default
+        val.nonce = nonce
+        return val
+    }
 }
 
-public protocol EraPartialSigningParameter<TEra, THash> {
+public extension NonceSigningParameters {
+    var nonce: TPartial.TNonce { partial.nonce! }
+}
+
+public protocol EraPartialSigningParameter<TEra, THash>: Default {
     associatedtype TEra: SomeExtrinsicEra
     associatedtype THash: Hash
     
@@ -51,6 +67,32 @@ public protocol EraPartialSigningParameter<TEra, THash> {
     static func blockHash(_ hash: THash) -> Self
 }
 
+public extension EraPartialSigningParameter {
+    func era(_ era: TEra) -> Self {
+        var copy = self
+        copy.era = era
+        return copy
+    }
+    
+    static func era(_ era: TEra) -> Self {
+        var val = Self.default
+        val.era = era
+        return val
+    }
+    
+    func blockHash(_ hash: THash) -> Self {
+        var copy = self
+        copy.blockHash = hash
+        return copy
+    }
+    
+    static func blockHash(_ hash: THash) -> Self {
+        var val = Self.default
+        val.blockHash = hash
+        return val
+    }
+}
+
 public protocol EraSigningParameters: ExtraSigningParameters
     where TPartial: EraPartialSigningParameter
 {
@@ -58,16 +100,39 @@ public protocol EraSigningParameters: ExtraSigningParameters
     var blockHash: TPartial.THash { get }
 }
 
-public protocol PaymentPartialSigningParameter<TPayment> {
-    associatedtype TPayment: ValueRepresentable & Default
+public extension EraSigningParameters {
+    var era: TPartial.TEra { partial.era! }
+    var blockHash: TPartial.THash { partial.blockHash! }
+}
+
+public protocol PaymentPartialSigningParameter<TPayment>: Default {
+    associatedtype TPayment: ValueRepresentable
     
     var tip: TPayment? { get set }
     func tip(_ tip: TPayment) -> Self
     static func tip(_ tip: TPayment) -> Self
 }
 
+public extension PaymentPartialSigningParameter {
+    func tip(_ tip: TPayment) -> Self {
+        var copy = self
+        copy.tip = tip
+        return copy
+    }
+    
+    static func tip(_ tip: TPayment) -> Self {
+        var val = Self.default
+        val.tip = tip
+        return val
+    }
+}
+
 public protocol PaymentSigningParameters: ExtraSigningParameters
     where TPartial: PaymentPartialSigningParameter
 {
     var tip: TPartial.TPayment { get }
+}
+
+public extension PaymentSigningParameters {
+    var tip: TPartial.TPayment { partial.tip! }
 }
