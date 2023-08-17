@@ -129,6 +129,25 @@ public extension StorageKeyIterator where TKey: StaticStorageKey {
     }
 }
 
+public protocol DynamicStorageKey: IterableStorageKey where
+    TParams == [ValueRepresentable],
+    TBaseParams == (name: String, pallet: String),
+    TIterator: IterableStorageKeyIterator,
+    TIterator.TIterator: DynamicStorageKeyIterator {}
+
+public protocol DynamicStorageKeyIterator: IterableStorageKeyIterator where
+    TParam == ValueRepresentable,
+    TKey: DynamicStorageKey
+{
+    init(name: String, pallet: String, params: [ValueRepresentable], runtime: any Runtime) throws
+}
+
+public protocol SomeStorageChangeSet<THash>: RuntimeSwiftDecodable {
+    associatedtype THash: Hash
+    var block: THash { get }
+    var changes: [(key: Data, value: Data?)] { get }
+}
+
 public enum StorageKeyCodingError: Error {
     case storageNotFound(name: String, pallet: String)
     case badCountOfPathComponents(has: Int, expected: Int)

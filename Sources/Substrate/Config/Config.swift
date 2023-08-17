@@ -12,7 +12,7 @@ public protocol Config {
     associatedtype THasher: FixedHasher
     associatedtype TIndex: UnsignedInteger & DataConvertible & CompactCodable & Swift.Codable & RuntimeCodable
     associatedtype TAccountId: AccountId
-    associatedtype TAddress: Address where TAddress.TAccountId == TAccountId
+    associatedtype TAddress: Address<TAccountId>
     associatedtype TSignature: Signature
     associatedtype TBlock: SomeBlock where TBlock.THeader.THasher == THasher
     associatedtype TChainBlock: SomeChainBlock<TBlock>
@@ -21,8 +21,8 @@ public protocol Config {
     associatedtype TExtrinsicPayment: ValueRepresentable & Default
     associatedtype TBlockEvents: SomeBlockEvents
     associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent
-    associatedtype TDispatchError: ApiError
-    associatedtype TTransactionValidityError: ApiError
+    associatedtype TDispatchError: CallError
+    associatedtype TTransactionValidityError: CallError
     associatedtype TDispatchInfo: RuntimeDynamicDecodable
     associatedtype TFeeDetails: RuntimeDynamicDecodable
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
@@ -39,7 +39,7 @@ public protocol Config {
     func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info
     func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info
     func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info
-    // Both can be safely removed after removing metadata v14 (v15 has them)
+    // Сan be safely removed after removing metadata v14 (v15 has them)
     func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
                                                            signature: RuntimeType.Info, extra: RuntimeType.Info)
     // Object Builders
@@ -53,15 +53,78 @@ public protocol Config {
     func customCoders() throws -> [RuntimeCustomDynamicCoder]
     // If you want your own Scale Codec coders
     func encoder() -> ScaleCodec.Encoder
+    func encoder(reservedCapacity count: Int) -> ScaleCodec.Encoder
     func decoder(data: Data) -> ScaleCodec.Decoder
 }
 
-// Default Encoder and Decoder
+// Config that supports batches
+public protocol BatchSupportedConfig: Config {
+    associatedtype TBatchCall: SomeBatchCall
+    associatedtype TBatchAllCall: SomeBatchCall
+    
+    func isBatchSupported(metadata: any Metadata) -> Bool
+}
+
+// Default isBatchSupported implementation
+public extension BatchSupportedConfig {
+    func isBatchSupported(metadata: Metadata) -> Bool {
+        metadata.resolve(pallet: TBatchCall.pallet)?.callIndex(name: TBatchCall.name) != nil &&
+        metadata.resolve(pallet: TBatchAllCall.pallet)?.callIndex(name: TBatchAllCall.name) != nil
+    }
+}
+
+// Type for Config registrations. Provides better constructors for RootApi
+public struct ConfigRegistry<C: Config> {
+    public let config: C
+    @inlinable public init(config: C) { self.config = config }
+}
+
+// Default constructors
 public extension Config {
     @inlinable
     func encoder() -> ScaleCodec.Encoder { ScaleCodec.encoder() }
+    
+    @inlinable
+    func encoder(reservedCapacity count: Int) -> ScaleCodec.Encoder {
+        ScaleCodec.encoder(reservedCapacity: count)
+    }
+    
     @inlinable
     func decoder(data: Data) -> ScaleCodec.Decoder { ScaleCodec.decoder(from: data) }
+    
+    @inlinable
+    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
+        AnyStorageKey(name: "Events", pallet: "System", path: [])
+    }
+    
+    @inlinable
+    func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]> {
+        MetadataVersionsRuntimeCall()
+    }
+    
+    @inlinable
+    func metadataAtVersionCall(version: UInt32) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>> {
+        MetadataAtVersionRuntimeCall(version: version)
+    }
+    
+    @inlinable
+    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
+        AnyRuntimeCall(api: "TransactionPaymentApi",
+                       method: "query_info",
+                       params: [extrinsic, extrinsic.count])
+    }
+    
+    @inlinable
+    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
+        AnyRuntimeCall(api: "TransactionPaymentApi",
+                       method: "query_fee_details",
+                       params: [extrinsic, extrinsic.count])
+    }
+    
+    @inlinable
+    func customCoders() throws -> [RuntimeCustomDynamicCoder] {
+        [ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")]
+    }
 }
 
 public extension Config where THasher: StaticHasher {
@@ -80,22 +143,37 @@ public extension Config where TBlock: StaticBlock {
     }
 }
 
-public protocol BatchSupportedConfig: Config {
-    associatedtype TBatchCall: SomeBatchCall
-    associatedtype TBatchAllCall: SomeBatchCall
-    
-    func isBatchSupported(metadata: any Metadata) -> Bool
-}
-
-public extension BatchSupportedConfig {
-    func isBatchSupported(metadata: Metadata) -> Bool {
-        metadata.resolve(pallet: TBatchCall.pallet)?.callIndex(name: TBatchCall.name) != nil &&
-        metadata.resolve(pallet: TBatchAllCall.pallet)?.callIndex(name: TBatchAllCall.name) != nil
+// Static Transaction Validity Error doesn't need runtime type
+public extension Config where TTransactionValidityError: StaticCallError {
+    func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
+        throw RuntimeType.IdNeverCalledError()
     }
 }
 
-// Type for Config registrations. Provides better constructors for RootApi
-public struct ConfigRegistry<C: Config> {
-    public let config: C
-    @inlinable public init(config: C) { self.config = config }
+// Static Dispatch Error doesn't need runtime type
+public extension Config where TDispatchError: StaticCallError {
+    func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
+        throw RuntimeType.IdNeverCalledError()
+    }
+}
+
+// Static Dispatch Info doesn't need runtime type
+public extension Config where TDispatchInfo: RuntimeDecodable {
+    func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info {
+        throw RuntimeType.IdNeverCalledError()
+    }
+}
+
+// Static Fee Details doesn't need runtime type
+public extension Config where TFeeDetails: RuntimeDecodable {
+    func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info {
+        throw RuntimeType.IdNeverCalledError()
+    }
+}
+
+// Static Account doesn't need runtime type
+public extension Config where TAccountId: StaticAccountId {
+    func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info {
+        throw RuntimeType.IdNeverCalledError()
+    }
 }

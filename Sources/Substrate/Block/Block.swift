@@ -61,30 +61,3 @@ public extension StaticChainBlock {
         try self.init(from: decoder, runtime: context.runtime)
     }
 }
-
-public struct AnyChainBlock<B: SomeBlock, J: Swift.Decodable>: SomeChainBlock {
-    public let block: B
-    public let justifications: J
-    
-    enum CodingKeys: CodingKey {
-        case block
-        case justifications
-    }
-    
-    public init(from decoder: Swift.Decoder,
-                context: (runtime: Runtime, blockType: RuntimeType.LazyId)) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        block = try container.decode(
-            B.self, forKey: .block,
-            context: B.DecodingContext(runtime: context.runtime,
-                                       type: context.blockType)
-        )
-        justifications = try container.decode(J.self, forKey: .justifications)
-    }
-}
-
-public extension Array where Element: OpaqueExtrinsic {
-    func parsed() throws -> [AnyExtrinsic<AnyCall<RuntimeType.Id>, Element.TManager>] {
-        try map { try $0.decode() }
-    }
-}

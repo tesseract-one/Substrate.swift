@@ -170,9 +170,9 @@ extension RpcClient: Client {
             .flatMap { $0.result.map{_ in}.mapError{ .left($0) } }
     }
     
-    public func execute<CL: StaticCodableRuntimeCall>(call: CL,
-                                                      at hash: C.THasher.THash?,
-                                                      config: C) async throws -> CL.TReturn
+    public func execute<RT: ScaleCodec.Decodable>(call: any StaticCodableRuntimeCall<RT>,
+                                                  at hash: C.THasher.THash?,
+                                                  config: C) async throws -> RT
     {
         var encoder = config.encoder()
         try call.encodeParams(in: &encoder)
@@ -182,9 +182,9 @@ extension RpcClient: Client {
         return try call.decode(returnFrom: &decoder)
     }
     
-    public func execute<CL: RuntimeCall>(call: CL,
-                                         at hash: C.THasher.THash?,
-                                         runtime: ExtendedRuntime<C>) async throws -> CL.TReturn {
+    public func execute<RT>(call: any RuntimeCall<RT>,
+                            at hash: C.THasher.THash?,
+                            runtime: ExtendedRuntime<C>) async throws -> RT {
         var encoder = runtime.encoder()
         try call.encodeParams(in: &encoder, runtime: runtime)
         let data: Data = try await self.call(method: "state_call",
@@ -203,14 +203,24 @@ extension RpcClient: Client {
                               context: (runtime.metadata, { try runtime.types.hash.id }))
     }
     
-    public func storage<K: StorageKey>(value key: K,
-                                       at hash: C.THasher.THash?,
-                                       runtime: ExtendedRuntime<C>) async throws -> K.TValue? {
+    public func storage<V>(value key: any StorageKey<V>,
+                           at hash: C.THasher.THash?,
+                           runtime: ExtendedRuntime<C>) async throws -> V?
+    {
         let data: Data? = try await call(method: "state_getStorage", params: Params(key.hash, hash))
         return try data.map { data in
             var decoder = runtime.decoder(with: data)
             return try key.decode(valueFrom: &decoder, runtime: runtime)
         }
+    }
+    
+    public func storage(size key: any StorageKey,
+                        at hash: C.THasher.THash?,
+                        runtime: ExtendedRuntime<C>) async throws -> UInt64
+    {
+        let size: HexOrNumber<UInt64>? = try await call(method: "state_getStorageSize",
+                                                        params: Params(key.hash, hash))
+        return size?.value ?? 0
     }
     
     public func storage<I: StorageKeyIterator>(keys iter: I,
@@ -240,14 +250,6 @@ extension RpcClient: Client {
             }
             return (block: chSet.block, changes: changes)
         }
-    }
-    
-    public func storage<K: StorageKey>(size key: K,
-                                       at hash: C.THasher.THash?,
-                                       runtime: ExtendedRuntime<C>) async throws -> UInt64 {
-        let size: HexOrNumber<UInt64>? = try await call(method: "state_getStorageSize",
-                                                        params: Params(key.hash, hash))
-        return size?.value ?? 0
     }
     
     public func storage(

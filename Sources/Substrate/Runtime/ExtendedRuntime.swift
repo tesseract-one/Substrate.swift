@@ -7,6 +7,16 @@
 
 import Foundation
 import ScaleCodec
+import ContextCodable
+
+public protocol SystemProperties: ContextDecodable where DecodingContext == (any Metadata) {
+    var ss58Format: SS58.AddressFormat? { get }
+}
+
+public protocol RuntimeVersion: ContextDecodable where DecodingContext == (any Metadata) {
+    var specVersion: UInt32 { get }
+    var transactionVersion: UInt32 { get }
+}
 
 open class ExtendedRuntime<RC: Config>: Runtime {
     public let config: RC
@@ -35,6 +45,11 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     
     @inlinable
     public func encoder() -> ScaleCodec.Encoder { config.encoder() }
+    
+    @inlinable
+    public func encoder(reservedCapacity count: Int) -> ScaleCodec.Encoder {
+        config.encoder(reservedCapacity: count)
+    }
     
     @inlinable
     public func decoder(with data: Data) -> ScaleCodec.Decoder { config.decoder(data: data) }

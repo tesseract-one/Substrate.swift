@@ -16,7 +16,7 @@ public struct DynamicConfig: Config {
     public typealias TAddress =  AnyAddress<TAccountId>
     public typealias TSignature = AnySignature
     public typealias TBlock = AnyBlock<THasher, TIndex, BlockExtrinsic<TExtrinsicManager>>
-    public typealias TChainBlock = AnyChainBlock<TBlock, SerializableValue>
+    public typealias TChainBlock = AnyChainBlock<TBlock>
     
     public typealias TExtrinsicManager = ExtrinsicV4Manager<Self, DynamicSignedExtensionsProvider<Self>>
     public typealias TTransactionStatus = TransactionStatus<THasher.THash, THasher.THash>
@@ -75,41 +75,13 @@ public struct DynamicConfig: Config {
 }
 
 extension DynamicConfig: BatchSupportedConfig {
-    public typealias TBatchCall = AnyBatchCall
-    public typealias TBatchAllCall = AnyBatchAllCall
+    public typealias TBatchCall = BatchCall
+    public typealias TBatchAllCall = BatchAllCall
 }
 
 // Object getters and properties
 public extension DynamicConfig {
-    @inlinable
-    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
-        AnyStorageKey(name: "Events", pallet: "System", path: [])
-    }
-    
-    @inlinable
-    func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]> {
-        MetadataVersionsRuntimeCall()
-    }
-    
-    @inlinable
-    func metadataAtVersionCall(version: UInt32) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>> {
-        MetadataAtVersionRuntimeCall(version: version)
-    }
-    
-    @inlinable
-    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
-        AnyRuntimeCall(api: "TransactionPaymentApi",
-                       method: "query_info",
-                       params: [extrinsic, extrinsic.count])
-    }
-    
-    @inlinable
-    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
-        AnyRuntimeCall(api: "TransactionPaymentApi",
-                       method: "query_fee_details",
-                       params: [extrinsic, extrinsic.count])
-    }
-    
+
     @inlinable
     func extrinsicManager() throws -> TExtrinsicManager {
         let provider = DynamicSignedExtensionsProvider<Self>(extensions: extrinsicExtensions,

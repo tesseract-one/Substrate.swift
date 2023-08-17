@@ -16,6 +16,7 @@ public protocol Runtime: AnyObject {
     var types: RuntimeTypes { get }
     
     func encoder() -> any ScaleCodec.Encoder
+    func encoder(reservedCapacity: Int) -> any ScaleCodec.Encoder
     func decoder(with data: Data) -> any ScaleCodec.Decoder
     
     func resolve(type id: RuntimeType.Id) -> RuntimeType?

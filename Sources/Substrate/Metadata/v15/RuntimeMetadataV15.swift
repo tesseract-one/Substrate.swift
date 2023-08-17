@@ -48,8 +48,8 @@ public struct RuntimeMetadataV15: ScaleCodec.Codable, RuntimeMetadata {
     public let extrinsic: RuntimeExtrinsicMetadataV14
     public let runtimeType: RuntimeType.Id
     public let apis: [RuntimeRuntimeApiMetadataV15]
-//    public let outerEnums: RuntimeMetadataOuterEnumsV15
-//    public let custom: Dictionary<String, (RuntimeType.Id, Data)>
+    public let outerEnums: RuntimeMetadataOuterEnumsV15?
+    public let custom: Dictionary<String, (RuntimeType.Id, Data)>?
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
         types = try decoder.decode()
@@ -57,9 +57,13 @@ public struct RuntimeMetadataV15: ScaleCodec.Codable, RuntimeMetadata {
         extrinsic = try decoder.decode()
         runtimeType = try decoder.decode()
         apis = try decoder.decode()
-        
-        //outerEnums = try decoder.decode()
-        //custom = try Dictionary(from: decoder, lreader: { try $0.decode() }) { try ($0.decode(), $0.decode()) }
+        guard decoder.length > 0 else {
+            self.outerEnums = nil
+            self.custom = nil
+            return
+        }
+        outerEnums = try decoder.decode()
+        custom = try Dictionary(from: &decoder, lreader: { try $0.decode() }) { try ($0.decode(), $0.decode()) }
     }
     
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
@@ -68,11 +72,13 @@ public struct RuntimeMetadataV15: ScaleCodec.Codable, RuntimeMetadata {
         try encoder.encode(extrinsic)
         try encoder.encode(runtimeType)
         try encoder.encode(apis)
-//        try encoder.encode(outerEnums)
-//        try custom.encode(in: &encoder, lwriter: { try $1.encode(&$0) }) { tuple, encoder in
-//            try encoder.encode(tuple.0)
-//            try encoder.encode(tuple.1)
-//        }
+        if let enums = outerEnums, let custom = self.custom {
+            try encoder.encode(enums)
+            try custom.encode(in: &encoder, lwriter: { try $1.encode($0) }) { tuple, encoder in
+                try encoder.encode(tuple.0)
+                try encoder.encode(tuple.1)
+            }
+        }
     }
     
     public func asMetadata() throws -> Metadata {
