@@ -13,7 +13,7 @@ import SubstrateRPC
 #endif
 
 final class SubstrateTests: XCTestCase {
-    let debug = true
+    let debug = false
     lazy var env = Environment()
     
     lazy var wsClient = {

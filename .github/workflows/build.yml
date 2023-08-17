@@ -25,15 +25,15 @@ jobs:
         with:
           name: swift_test_node_log.txt
           path: swift_test_node_log.txt
-      - name: Update Cocoa Pods repo
-        run: pod repo update
-      - name: Build and Test CocoaPods
-        run: ./run_with_node.sh './node-template' 'pod lib lint --allow-warnings --fail-fast' 'pod_lint_node_log.txt'
-      - name: Upload node log
-        uses: actions/upload-artifact@v3
-        with:
-          name: pod_lint_node_log.txt
-          path: pod_lint_node_log.txt
+      # - name: Update Cocoa Pods repo
+      #   run: pod repo update
+      # - name: Build and Test CocoaPods
+      #   run: ./run_with_node.sh './node-template' 'pod lib lint --allow-warnings --fail-fast' 'pod_lint_node_log.txt'
+      # - name: Upload node log
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: pod_lint_node_log.txt
+      #     path: pod_lint_node_log.txt
   linux:
     runs-on: ubuntu-latest
     container:

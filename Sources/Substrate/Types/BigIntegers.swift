@@ -7,7 +7,7 @@
 
 import Foundation
 import ScaleCodec
-import struct Numberick.NBKDoubleWidth
+@_exported import struct Numberick.NBKDoubleWidth
 
 @_exported import typealias Numberick.Int128
 @_exported import typealias Numberick.Int256
