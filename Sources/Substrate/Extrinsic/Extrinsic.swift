@@ -93,6 +93,6 @@ public enum ExtrinsicCodingError: Error {
     case badExtras(expected: [String], got: [ExtrinsicExtensionId])
     case parameterNotFound(extension: ExtrinsicExtensionId, parameter: String)
     case typeMismatch(expected: Any.Type, got: Any.Type)
-    case unknownExtension(identifier: String)
+    case unknownExtension(identifier: ExtrinsicExtensionId)
     case unsupportedSubstrate(reason: String)
 }

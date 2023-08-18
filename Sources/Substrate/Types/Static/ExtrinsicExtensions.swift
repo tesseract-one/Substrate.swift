@@ -59,19 +59,16 @@ public struct CheckTxVersionExtension<C: Config, P: ExtraSigningParameters>: Sta
 }
 
 /// Check genesis hash
-public struct CheckGenesisExtension<C: Config, P: ExtraSigningParameters>: ExtrinsicSignedExtension {
-    public var identifier: ExtrinsicExtensionId { Self.identifier }
-    public static var identifier: ExtrinsicExtensionId { .checkGenesis }
-    public init() {}
-}
-
-extension CheckGenesisExtension: StaticExtrinsicExtension, StaticExtrinsicExtensionBase
-    where C.THasher: StaticFixedHasher
+public struct CheckGenesisExtension<C: Config,
+                                    P: ExtraSigningParameters>: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension
 {
     public typealias TConfig = C
     public typealias TParams = P
     public typealias TExtra = Nothing
     public typealias TAdditionalSigned = C.THasher.THash
+    
+    public var identifier: ExtrinsicExtensionId { Self.identifier }
+    public static var identifier: ExtrinsicExtensionId { .checkGenesis }
     
     public init() {}
     
@@ -92,6 +89,7 @@ extension CheckGenesisExtension: StaticExtrinsicExtension, StaticExtrinsicExtens
     }
 }
 
+extension CheckGenesisExtension: StaticExtrinsicExtension where C.THasher: StaticFixedHasher {}
 
 public struct CheckNonZeroSenderExtension<C: Config, P: ExtraSigningParameters>: StaticExtrinsicExtension {
     public typealias TConfig = C
@@ -121,17 +119,23 @@ public struct CheckNonZeroSenderExtension<C: Config, P: ExtraSigningParameters>:
 }
 
 /// Nonce check and increment to give replay protection for transactions.
-public struct CheckNonceExtension<C: Config, P: NonceSigningParameters>: ExtrinsicSignedExtension {
+public struct CheckNonceExtension<C: Config,
+                                  P: NonceSigningParameters>: StaticExtrinsicExtension
+    where P.TPartial.TNonce == C.TIndex, P.TPartial.TAccountId == C.TAccountId
+{
+    public typealias TConfig = C
+    public typealias TParams = P
+    public typealias TExtra = P.TPartial.TNonce
+    public typealias TAdditionalSigned = Nothing
+    
     public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .checkNonce }
     
     public init() {}
     
-    func params<R: RootApi, PR: NonceSigningParameters>(
-        api: R, partial params: PR.TPartial, ptype: PR.Type
-    ) async throws -> PR.TPartial where
-        PR.TPartial.TNonce == R.RC.TIndex, PR.TPartial.TAccountId == R.RC.TAccountId
-    {
+    public func params<R: RootApi<C>>(
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial {
         guard params.nonce == nil else { return params }
         guard let account = params.account else {
             throw ExtrinsicCodingError.parameterNotFound(extension: Self.identifier,
@@ -142,21 +146,6 @@ public struct CheckNonceExtension<C: Config, P: NonceSigningParameters>: Extrins
                                                               runtime: api.runtime)
         params.nonce = nextIndex
         return params
-    }
-}
-
-extension CheckNonceExtension: StaticExtrinsicExtension, StaticExtrinsicExtensionBase
-    where P.TPartial.TNonce == C.TIndex, P.TPartial.TAccountId == C.TAccountId
-{
-    public typealias TConfig = C
-    public typealias TParams = P
-    public typealias TExtra = P.TPartial.TNonce
-    public typealias TAdditionalSigned = Nothing
-    
-    public func params<R: RootApi<C>>(
-        api: R, partial params: TParams.TPartial
-    ) async throws -> TParams.TPartial {
-        try await self.params(api: api, partial: params, ptype: TParams.self)
     }
 
     public func extra<R: RootApi<C>>(api: R, params: TParams) async throws -> TExtra {
@@ -170,19 +159,24 @@ extension CheckNonceExtension: StaticExtrinsicExtension, StaticExtrinsicExtensio
     }
 }
 
-
 /// Check for transaction mortality.
-public struct CheckMortalityExtension<C: Config, P: EraSigningParameters>: ExtrinsicSignedExtension {
+public struct CheckMortalityExtension<C: Config,
+                                      P: EraSigningParameters>: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension
+    where P.TPartial.TEra == C.TExtrinsicEra, P.TPartial.THash == C.THasher.THash
+{
+    public typealias TConfig = C
+    public typealias TParams = P
+    public typealias TExtra = P.TPartial.TEra
+    public typealias TAdditionalSigned = P.TPartial.THash
+    
     public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .checkMortality }
     
     public init() {}
     
-    func params<R: RootApi, PR: EraSigningParameters>(
-        api: R, partial params: PR.TPartial, ptype: PR.Type
-    ) async throws -> PR.TPartial where
-        R.RC.THasher.THash == PR.TPartial.THash
-    {
+    public func params<R: RootApi<C>>(
+        api: R, partial params: TParams.TPartial
+    ) async throws -> P.TPartial {
         var params = params
         if params.era == nil {
             params.era = .immortal
@@ -191,24 +185,6 @@ public struct CheckMortalityExtension<C: Config, P: EraSigningParameters>: Extri
             params.blockHash = try await params.era!.blockHash(api: api)
         }
         return params
-    }
-}
-
-extension CheckMortalityExtension: StaticExtrinsicExtension, StaticExtrinsicExtensionBase
-    where P.TPartial.TEra == C.TExtrinsicEra, P.TPartial.THash == C.THasher.THash,
-          C.THasher: StaticFixedHasher, C.TExtrinsicEra: RuntimeCodable
-{
-    public typealias TConfig = C
-    public typealias TParams = P
-    public typealias TExtra = P.TPartial.TEra
-    public typealias TAdditionalSigned = P.TPartial.THash
-    
-    public init() {}
-    
-    public func params<R: RootApi<C>>(
-        api: R, partial params: TParams.TPartial
-    ) async throws -> P.TPartial {
-        try await self.params(api: api, partial: params, ptype: TParams.self)
     }
 
     public func extra<R: RootApi<C>>(api: R, params: TParams) async throws -> TExtra {
@@ -221,6 +197,9 @@ extension CheckMortalityExtension: StaticExtrinsicExtension, StaticExtrinsicExte
         params.blockHash
     }
 }
+
+extension CheckMortalityExtension: StaticExtrinsicExtension
+    where C.THasher: StaticFixedHasher, C.TExtrinsicEra: RuntimeCodable {}
 
 /// Resource limit check.
 public struct CheckWeightExtension<C: Config, P: ExtraSigningParameters>: StaticExtrinsicExtension {
@@ -252,34 +231,28 @@ public struct CheckWeightExtension<C: Config, P: ExtraSigningParameters>: Static
 
 /// Require the transactor pay for themselves and maybe include a tip to gain additional priority
 /// in the queue.
-public struct ChargeTransactionPaymentExtension<C: Config, P: PaymentSigningParameters>: ExtrinsicSignedExtension {
-    public var identifier: ExtrinsicExtensionId { Self.identifier }
-    public static var identifier: ExtrinsicExtensionId { .chargeTransactionPayment }
-    
-    public init() {}
-    
-    func params<R: RootApi, PR: PaymentSigningParameters>(
-        api: R, partial params: PR.TPartial, ptype: PR.Type
-    ) async throws -> PR.TPartial where PR.TPartial.TPayment == R.RC.TExtrinsicPayment {
-        var params = params
-        if params.tip == nil {
-            params.tip = try api.runtime.config.defaultPayment(runtime: api.runtime)
-        }
-        return params
-    }
-}
-extension ChargeTransactionPaymentExtension: StaticExtrinsicExtension, StaticExtrinsicExtensionBase
-    where P.TPartial.TPayment == C.TExtrinsicPayment, C.TExtrinsicPayment: RuntimeCodable
+public struct ChargeTransactionPaymentExtension<C: Config,
+                                                P: PaymentSigningParameters>: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension
+    where P.TPartial.TPayment == C.TExtrinsicPayment
 {
     public typealias TConfig = C
     public typealias TParams = P
     public typealias TExtra = P.TPartial.TPayment
     public typealias TAdditionalSigned = Nothing
     
+    public var identifier: ExtrinsicExtensionId { Self.identifier }
+    public static var identifier: ExtrinsicExtensionId { .chargeTransactionPayment }
+    
+    public init() {}
+    
     public func params<R: RootApi<C>>(
         api: R, partial params: TParams.TPartial
     ) async throws -> TParams.TPartial {
-        try await self.params(api: api, partial: params, ptype: TParams.self)
+        var params = params
+        if params.tip == nil {
+            params.tip = try api.runtime.config.defaultPayment(runtime: api.runtime)
+        }
+        return params
     }
     
     public func extra<R: RootApi<C>>(api: R, params: TParams) async throws -> TExtra {
@@ -292,6 +265,9 @@ extension ChargeTransactionPaymentExtension: StaticExtrinsicExtension, StaticExt
         .nothing
     }
 }
+
+extension ChargeTransactionPaymentExtension: StaticExtrinsicExtension
+    where C.TExtrinsicPayment: RuntimeCodable {}
 
 public struct PrevalidateAttestsExtension<C: Config, P: ExtraSigningParameters>: StaticExtrinsicExtension {
     public typealias TConfig = C

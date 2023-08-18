@@ -12,15 +12,17 @@ import ScaleCodec
 public protocol StaticExtrinsicExtensionBase<TConfig, TParams> {
     associatedtype TConfig: Config
     associatedtype TParams: ExtraSigningParameters
-    associatedtype TExtra: RuntimeCodable
-    associatedtype TAdditionalSigned: RuntimeCodable
+    associatedtype TExtra
+    associatedtype TAdditionalSigned
     
     func params<R: RootApi<TConfig>>(api: R, partial params: TParams.TPartial) async throws -> TParams.TPartial
     func extra<R: RootApi<TConfig>>(api: R, params: TParams) async throws -> TExtra
     func additionalSigned<R: RootApi<TConfig>>(api: R, params: TParams) async throws -> TAdditionalSigned
 }
 
-public protocol StaticExtrinsicExtension<TConfig, TParams>: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension {
+public protocol StaticExtrinsicExtension<TConfig, TParams>: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension
+    where TExtra: RuntimeCodable, TAdditionalSigned: RuntimeCodable
+{
     static var identifier: ExtrinsicExtensionId { get }
 }
 
@@ -28,7 +30,9 @@ public extension StaticExtrinsicExtension {
     var identifier: ExtrinsicExtensionId { Self.identifier }
 }
 
-public protocol StaticExtrinsicExtensions<TConfig, TParams>: StaticExtrinsicExtensionBase {
+public protocol StaticExtrinsicExtensions<TConfig, TParams>: StaticExtrinsicExtensionBase
+    where TExtra: RuntimeCodable, TAdditionalSigned: RuntimeCodable
+{
     var identifiers: [ExtrinsicExtensionId] { get }
 }
 

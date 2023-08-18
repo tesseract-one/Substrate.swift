@@ -6,186 +6,45 @@
 //
 
 import Foundation
+import Tuples
 
-extension CheckSpecVersionExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
-    public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
-        params
-    }
-    
-    public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-    
-    public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .uint(UInt256(api.runtime.version.specVersion), id)
-    }
-}
+extension CheckSpecVersionExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {}
 
 public typealias DynamicCheckSpecVersionExtension<C: Config> = CheckSpecVersionExtension<C, AnySigningParams<C>>
 
-extension CheckTxVersionExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
-    public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
-        params
-    }
-    
-    public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-    
-    public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .uint(UInt256(api.runtime.version.transactionVersion), id)
-    }
-}
+extension CheckTxVersionExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {}
 
 public typealias DynamicCheckTxVersionExtension<C: Config> = CheckTxVersionExtension<C, AnySigningParams<C>>
 
-extension CheckGenesisExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
-    public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
-        params
-    }
-    
-    public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-    
-    public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        try api.runtime.genesisHash.asValue(runtime: api.runtime, type: id)
-    }
-}
+extension CheckGenesisExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {}
 
 public typealias DynamicCheckGenesisExtension<C: Config> = CheckGenesisExtension<C, AnySigningParams<C>>
 
-extension CheckNonZeroSenderExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
-    public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
-        params
-    }
-    
-    public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-    
-    public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-}
+extension CheckNonZeroSenderExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {}
 
 public typealias DynamicCheckNonZeroSenderExtension<C: Config> = CheckNonZeroSenderExtension<C, AnySigningParams<C>>
 
-extension CheckNonceExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
-    public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
-        try await self.params(api: api, partial: params, ptype: AnySigningParams<R.RC>.self)
-    }
-    
-    public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .uint(UInt256(params.nonce), id)
-    }
-    
-    public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-}
+extension CheckNonceExtension: DynamicExtrinsicExtension
+    where P == AnySigningParams<C>, P.TPartial.TNonce: ValueRepresentable,
+          P.TPartial.TAccountId: ValueRepresentable  {}
 
 public typealias DynamicCheckNonceExtension<C: Config> = CheckNonceExtension<C, AnySigningParams<C>>
 
-extension CheckMortalityExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
-    public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
-        try await self.params(api: api, partial: params, ptype: AnySigningParams<R.RC>.self)
-    }
-    
-    public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        return try params.era.asValue(runtime: api.runtime, type: id)
-    }
-    
-    public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        return try params.blockHash.asValue(runtime: api.runtime, type: id)
-    }
-}
+extension CheckMortalityExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {}
 
 public typealias DynamicCheckMortalityExtension<C: Config> = CheckMortalityExtension<C, AnySigningParams<C>>
 
-extension CheckWeightExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {
-    public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
-        params
-    }
-    
-    public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-    
-    public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-}
+extension CheckWeightExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {}
 
 public typealias DynamicCheckWeightExtension<C: Config> = CheckWeightExtension<C, AnySigningParams<C>>
 
-extension ChargeTransactionPaymentExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {    
-    public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
-        try await self.params(api: api, partial: params, ptype: AnySigningParams<R.RC>.self)
-    }
-    
-    public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        return try params.tip.asValue(runtime: api.runtime, type: id)
-    }
-    
-    public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-}
+extension ChargeTransactionPaymentExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {}
 
 public extension ChargeTransactionPaymentExtension {
     static func tipType(runtime: any Runtime) -> RuntimeType.Info? {
         guard let ext = runtime.metadata.extrinsic.extensions.first(where: {
-            $0.identifier == Self.identifier.rawValue }
-        ) else {
+            $0.identifier == Self.identifier.rawValue
+        }) else {
             return nil
         }
         return ext.type
@@ -195,25 +54,19 @@ public extension ChargeTransactionPaymentExtension {
 public typealias DynamicChargeTransactionPaymentExtension<C: Config> =
     ChargeTransactionPaymentExtension<C, AnySigningParams<C>>
 
-extension PrevalidateAttestsExtension: DynamicExtrinsicExtension where P == AnySigningParams<TConfig> {
-    public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
-        params
-    }
-    
-    public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-    
-    public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id> {
-        .nil(id)
-    }
-}
+extension PrevalidateAttestsExtension: DynamicExtrinsicExtension where P == AnySigningParams<C> {}
 
 public typealias DynamicPrevalidateAttestsExtension<C: Config> =
     PrevalidateAttestsExtension<C, AnySigningParams<C>>
+
+public typealias AllDynamicExtensions<C: Config> = Tuple9<
+    DynamicCheckSpecVersionExtension<C>,
+    DynamicCheckTxVersionExtension<C>,
+    DynamicCheckGenesisExtension<C>,
+    DynamicCheckNonZeroSenderExtension<C>,
+    DynamicCheckNonceExtension<C>,
+    DynamicCheckMortalityExtension<C>,
+    DynamicCheckWeightExtension<C>,
+    DynamicChargeTransactionPaymentExtension<C>,
+    DynamicPrevalidateAttestsExtension<C>
+>

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Tuples
 import Serializable
 
 public struct DynamicConfig: Config {
@@ -18,7 +19,10 @@ public struct DynamicConfig: Config {
     public typealias TBlock = AnyBlock<THasher, TIndex, BlockExtrinsic<TExtrinsicManager>>
     public typealias TChainBlock = AnyChainBlock<TBlock>
     
-    public typealias TExtrinsicManager = ExtrinsicV4Manager<Self, DynamicSignedExtensionsProvider<Self>>
+    public typealias TExtrinsicManager = ExtrinsicV4Manager<
+        Self, DynamicSignedExtensionsProvider<AllDynamicExtensions<Self>>
+    >
+    
     public typealias TTransactionStatus = TransactionStatus<THasher.THash, THasher.THash>
     
     public typealias TExtrinsicEra = ExtrinsicEra
@@ -42,7 +46,6 @@ public struct DynamicConfig: Config {
         case unknownHashName(String)
     }
     
-    public let extrinsicExtensions: [DynamicExtrinsicExtension]
     public let runtimeCustomCoders: [RuntimeCustomDynamicCoder]
     public let payment: TExtrinsicPayment?
     public let blockSelector: NSRegularExpression
@@ -53,8 +56,7 @@ public struct DynamicConfig: Config {
     public let transactionValidityErrorSelector: NSRegularExpression
     public let feeDetailsSelector: NSRegularExpression
     
-    public init(extrinsicExtensions: [DynamicExtrinsicExtension] = Self.allExtensions,
-                customCoders: [RuntimeCustomDynamicCoder] = Self.customCoders,
+    public init(customCoders: [RuntimeCustomDynamicCoder] = Self.customCoders,
                 defaultPayment: TExtrinsicPayment? = nil,
                 blockSelector: String = "^.*Block$",
                 headerSelector: String = "^.*Header$",
@@ -64,7 +66,6 @@ public struct DynamicConfig: Config {
                 transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
                 feeDetailsSelector: String = "^.*FeeDetails$") throws
     {
-        self.extrinsicExtensions = extrinsicExtensions
         self.runtimeCustomCoders = customCoders
         self.payment = defaultPayment
         self.blockSelector = try NSRegularExpression(pattern: blockSelector)
@@ -84,12 +85,19 @@ extension DynamicConfig: BatchSupportedConfig {
     public typealias TBatchAllCall = BatchAllCall
 }
 
+
+public struct DynamicAndExtensions
+
+
 // Object getters and properties
 public extension DynamicConfig {
     @inlinable
     func extrinsicManager() throws -> TExtrinsicManager {
-        let provider = DynamicSignedExtensionsProvider<Self>(extensions: extrinsicExtensions,
-                                                             version: TExtrinsicManager.version)
+        let extensions = AllDynamicExtensions<Self>(
+            .init(), .init(), .init(), .init(), .init(), .init(), .init(), .init(), .init()
+        )
+        let provider = DynamicSignedExtensionsProvider(extensions: extensions,
+                                                       version: TExtrinsicManager.version)
         return TExtrinsicManager(extensions: provider)
     }
     
@@ -171,18 +179,6 @@ public extension DynamicConfig {
         }
     }
     
-    static let allExtensions: [DynamicExtrinsicExtension] = [
-        DynamicCheckSpecVersionExtension<Self>(),
-        DynamicCheckTxVersionExtension<Self>(),
-        DynamicCheckGenesisExtension<Self>(),
-        DynamicCheckNonZeroSenderExtension<Self>(),
-        DynamicCheckNonceExtension<Self>(),
-        DynamicCheckMortalityExtension<Self>(),
-        DynamicCheckWeightExtension<Self>(),
-        DynamicChargeTransactionPaymentExtension<Self>(),
-        DynamicPrevalidateAttestsExtension<Self>()
-    ]
-    
     static let customCoders: [RuntimeCustomDynamicCoder] = [
         ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")
     ]
@@ -244,7 +240,8 @@ public extension DynamicConfig {
 // ConfigRegistry helpers
 public extension ConfigRegistry where C == DynamicConfig {
     @inlinable
-    static func dynamic(extrinsicExtensions: [DynamicExtrinsicExtension] = DynamicConfig.allExtensions,
+    static func dynamic(customCoders: [RuntimeCustomDynamicCoder] = DynamicConfig.customCoders,
+                        defaultPayment: DynamicConfig.TExtrinsicPayment? = nil,
                         blockSelector: String = "^.*Block$",
                         headerSelector: String = "^.*Header$",
                         accountSelector: String = "^.*AccountId[0-9]*$",
@@ -253,8 +250,8 @@ public extension ConfigRegistry where C == DynamicConfig {
                         transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
                         feeDetailsSelector: String = "^.*FeeDetails$") throws -> Self {
         let config = try DynamicConfig(
-            extrinsicExtensions: extrinsicExtensions, blockSelector: blockSelector,
-            headerSelector: headerSelector, accountSelector: accountSelector,
+            customCoders: customCoders, defaultPayment: defaultPayment,
+            blockSelector: blockSelector, headerSelector: headerSelector, accountSelector: accountSelector,
             dispatchInfoSelector: dispatchInfoSelector, dispatchErrorSelector: dispatchErrorSelector,
             transactionValidityErrorSelector: transactionValidityErrorSelector,
             feeDetailsSelector: feeDetailsSelector

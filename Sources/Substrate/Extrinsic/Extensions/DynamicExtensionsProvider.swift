@@ -8,27 +8,50 @@
 import Foundation
 import ScaleCodec
 
-public protocol DynamicExtrinsicExtension: ExtrinsicSignedExtension {
-    func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial
+public protocol DynamicExtrinsicExtension<TConfig>: ExtrinsicSignedExtension {
+    associatedtype TConfig: Config
     
-    func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+    func params<R: RootApi<TConfig>>(
+        api: R, partial params: AnySigningParams<TConfig>.TPartial
+    ) async throws -> AnySigningParams<TConfig>.TPartial
+
+    func extra<R: RootApi<TConfig>>(
+        api: R, params: AnySigningParams<TConfig>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id>
-    
-    func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+
+    func additionalSigned<R: RootApi<TConfig>>(
+        api: R, params: AnySigningParams<TConfig>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id>
 }
 
-public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvider {
-    public typealias RC = RC
+public protocol DynamicExtrinsicExtensions<TConfig> {
+    associatedtype TConfig: Config
+    
+    var identifiers: [ExtrinsicExtensionId] { get }
+    
+    func params<R: RootApi<TConfig>>(
+        api: R, partial params: AnySigningParams<TConfig>.TPartial,
+        extensions: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
+    ) async throws -> AnySigningParams<TConfig>.TPartial
+    
+    func extra<R: RootApi<TConfig>>(
+        api: R, params: AnySigningParams<TConfig>,
+        extensions: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
+    ) async throws -> [ExtrinsicExtensionId: Value<RuntimeType.Id>]
+    
+    func additionalSigned<R: RootApi<TConfig>>(
+        api: R, params: AnySigningParams<TConfig>,
+        extensions: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
+    ) async throws -> [ExtrinsicExtensionId: Value<RuntimeType.Id>]
+}
+
+public class DynamicSignedExtensionsProvider<Ext: DynamicExtrinsicExtensions>: SignedExtensionsProvider {
+    public typealias RC = Ext.TConfig
     public typealias TExtra = Value<RuntimeType.Id>
     public typealias TAdditionalSigned = [Value<RuntimeType.Id>]
     public typealias TSigningParams = AnySigningParams<RC>
     
-    public let extensions: [String: DynamicExtrinsicExtension]
+    public let extensions: Ext
     public let version: UInt8
     
     private var _extraType: RuntimeType.Id!
@@ -38,8 +61,8 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
     private var _extra: ((TSigningParams) async throws -> TExtra)!
     private var _additionalSigned: ((TSigningParams) async throws -> TAdditionalSigned)!
     
-    public init(extensions: [DynamicExtrinsicExtension], version: UInt8) {
-        self.extensions = Dictionary(uniqueKeysWithValues: extensions.map { ($0.identifier.rawValue, $0) })
+    public init(extensions: Ext, version: UInt8) {
+        self.extensions = extensions
         self.version = version
     }
     
@@ -86,37 +109,59 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
                 got: api.runtime.metadata.extrinsic.version)
         }
         let extraType = try api.runtime.types.extrinsicExtra.id
-        let extensions = try api.runtime.metadata.extrinsic.extensions.map { info in
-            guard let ext = self.extensions[info.identifier] else {
-                throw  ExtrinsicCodingError.unknownExtension(identifier: info.identifier)
-            }
-            return (ext: ext, eId: info.type.id, aId: info.additionalSigned.id)
+        let allExtensions = extensions
+        let extrinsicExtensions = api.runtime.metadata.extrinsic.extensions.map {
+            (key: ExtrinsicExtensionId($0.identifier),
+             value: (extId: $0.type.id, addId: $0.additionalSigned.id))
         }
+        let unknown = Set(extrinsicExtensions.map{$0.key}).subtracting(allExtensions.identifiers)
+        guard unknown.count == 0 else {
+            throw ExtrinsicCodingError.unknownExtension(identifier: unknown.first!)
+        }
+        let extrinsicExtensionsMap = Dictionary(uniqueKeysWithValues: extrinsicExtensions)
         self._params = { [unowned api] params in
-            var params = params
-            for ext in extensions {
-                params = try await ext.ext.params(api: api, partial: params)
-            }
-            return params
+            try await allExtensions.params(api: api, partial: params,
+                                           extensions: extrinsicExtensionsMap)
         }
         self._extra = { [unowned api] params in
+            let extraMap = try await allExtensions.extra(api: api, params: params,
+                                                         extensions: extrinsicExtensionsMap)
             var extra: [Value<RuntimeType.Id>] = []
-            extra.reserveCapacity(extensions.count)
-            for ext in extensions {
-                try await extra.append(ext.ext.extra(api: api, params: params, id: ext.eId))
+            extra.reserveCapacity(extrinsicExtensions.count)
+            for ext in extrinsicExtensions {
+                extra.append(extraMap[ext.key]!)
             }
             return Value(value: .sequence(extra), context: extraType)
         }
         self._additionalSigned = { [unowned api] params in
-            var extra: [Value<RuntimeType.Id>] = []
-            extra.reserveCapacity(extensions.count)
-            for ext in extensions {
-                try await extra.append(ext.ext.additionalSigned(api: api, params: params, id: ext.aId))
+            let addMap = try await allExtensions.additionalSigned(api: api, params: params,
+                                                                  extensions: extrinsicExtensionsMap)
+            var additional: [Value<RuntimeType.Id>] = []
+            additional.reserveCapacity(extrinsicExtensions.count)
+            for ext in extrinsicExtensions {
+                additional.append(addMap[ext.key]!)
             }
-            return extra
+            return additional
         }
         self._extraType = extraType
-        self._additionalSignedTypes = extensions.map { $0.aId }
+        self._additionalSignedTypes = extrinsicExtensions.map { $0.value.addId }
         self._runtime = api.runtime
+    }
+}
+
+public extension DynamicExtrinsicExtension where
+    Self: StaticExtrinsicExtensionBase, TParams == AnySigningParams<TConfig>,
+    TExtra: ValueRepresentable, TAdditionalSigned: ValueRepresentable
+{
+    func extra<R: RootApi<TConfig>>(
+        api: R, params: AnySigningParams<TConfig>, id: RuntimeType.Id
+    ) async throws -> Value<RuntimeType.Id> {
+        try await extra(api: api, params: params).asValue(runtime: api.runtime, type: id)
+    }
+
+    func additionalSigned<R: RootApi<TConfig>>(
+        api: R, params: AnySigningParams<TConfig>, id: RuntimeType.Id
+    ) async throws -> Value<RuntimeType.Id> {
+        try await additionalSigned(api: api, params: params).asValue(runtime: api.runtime, type: id)
     }
 }
