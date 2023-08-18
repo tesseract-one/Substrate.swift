@@ -25,6 +25,26 @@ extension String: Default {
     public static var `default`: Self { "" }
 }
 
+extension Character: Default {
+    public static var `default`: Character { Character("\0") }
+}
+
+extension Compact: Default where T: Default {
+    public static var `default`: Compact<T> { Compact(.default) }
+}
+
+extension Data: Default {
+    public static var `default`: Data { Data() }
+}
+
+extension Array: Default {
+    public static var `default`: Self { Self() }
+}
+
+extension Dictionary: Default {
+    public static var `default`: Self { Self() }
+}
+
 extension UInt8: Default {}
 extension UInt16: Default {}
 extension UInt32: Default {}

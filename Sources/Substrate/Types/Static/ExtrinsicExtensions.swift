@@ -17,6 +17,8 @@ public struct CheckSpecVersionExtension<C: Config, P: ExtraSigningParameters>: S
     
     public static var identifier: ExtrinsicExtensionId { .checkSpecVersion }
     
+    public init() {}
+    
     public func params<R: RootApi<C>>(
         api: R, partial params: TParams.TPartial
     ) async throws -> TParams.TPartial { params }
@@ -39,6 +41,8 @@ public struct CheckTxVersionExtension<C: Config, P: ExtraSigningParameters>: Sta
     
     public static var identifier: ExtrinsicExtensionId { .checkTxVersion }
     
+    public init() {}
+    
     public func params<R: RootApi<C>>(
         api: R, partial params: TParams.TPartial
     ) async throws -> TParams.TPartial { params }
@@ -54,12 +58,11 @@ public struct CheckTxVersionExtension<C: Config, P: ExtraSigningParameters>: Sta
     }
 }
 
-
-
 /// Check genesis hash
 public struct CheckGenesisExtension<C: Config, P: ExtraSigningParameters>: ExtrinsicSignedExtension {
     public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .checkGenesis }
+    public init() {}
 }
 
 extension CheckGenesisExtension: StaticExtrinsicExtension, StaticExtrinsicExtensionBase
@@ -69,6 +72,8 @@ extension CheckGenesisExtension: StaticExtrinsicExtension, StaticExtrinsicExtens
     public typealias TParams = P
     public typealias TExtra = Nothing
     public typealias TAdditionalSigned = C.THasher.THash
+    
+    public init() {}
     
     public func params<R: RootApi<C>>(
         api: R, partial params: TParams.TPartial
@@ -96,6 +101,8 @@ public struct CheckNonZeroSenderExtension<C: Config, P: ExtraSigningParameters>:
     
     public static var identifier: ExtrinsicExtensionId { .checkNonZeroSender }
     
+    public init() {}
+    
     public func params<R: RootApi<C>>(
         api: R, partial params: TParams.TPartial
     ) async throws -> TParams.TPartial {
@@ -117,6 +124,8 @@ public struct CheckNonZeroSenderExtension<C: Config, P: ExtraSigningParameters>:
 public struct CheckNonceExtension<C: Config, P: NonceSigningParameters>: ExtrinsicSignedExtension {
     public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .checkNonce }
+    
+    public init() {}
     
     func params<R: RootApi, PR: NonceSigningParameters>(
         api: R, partial params: PR.TPartial, ptype: PR.Type
@@ -167,6 +176,8 @@ public struct CheckMortalityExtension<C: Config, P: EraSigningParameters>: Extri
     public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .checkMortality }
     
+    public init() {}
+    
     func params<R: RootApi, PR: EraSigningParameters>(
         api: R, partial params: PR.TPartial, ptype: PR.Type
     ) async throws -> PR.TPartial where
@@ -191,6 +202,8 @@ extension CheckMortalityExtension: StaticExtrinsicExtension, StaticExtrinsicExte
     public typealias TParams = P
     public typealias TExtra = P.TPartial.TEra
     public typealias TAdditionalSigned = P.TPartial.THash
+    
+    public init() {}
     
     public func params<R: RootApi<C>>(
         api: R, partial params: TParams.TPartial
@@ -218,6 +231,8 @@ public struct CheckWeightExtension<C: Config, P: ExtraSigningParameters>: Static
     
     public static var identifier: ExtrinsicExtensionId { .checkWeight }
     
+    public init() {}
+    
     public func params<R: RootApi<C>>(
         api: R, partial params: TParams.TPartial
     ) async throws -> TParams.TPartial {
@@ -240,6 +255,8 @@ public struct CheckWeightExtension<C: Config, P: ExtraSigningParameters>: Static
 public struct ChargeTransactionPaymentExtension<C: Config, P: PaymentSigningParameters>: ExtrinsicSignedExtension {
     public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .chargeTransactionPayment }
+    
+    public init() {}
     
     func params<R: RootApi, PR: PaymentSigningParameters>(
         api: R, partial params: PR.TPartial, ptype: PR.Type
@@ -283,6 +300,8 @@ public struct PrevalidateAttestsExtension<C: Config, P: ExtraSigningParameters>:
     public typealias TAdditionalSigned = Nothing
     
     public static var identifier: ExtrinsicExtensionId { .prevalidateAttests }
+    
+    public init() {}
     
     public func params<R: RootApi<C>>(
         api: R, partial params: TParams.TPartial

@@ -86,12 +86,30 @@ extension DynamicConfig: BatchSupportedConfig {
 
 // Object getters and properties
 public extension DynamicConfig {
-
     @inlinable
     func extrinsicManager() throws -> TExtrinsicManager {
         let provider = DynamicSignedExtensionsProvider<Self>(extensions: extrinsicExtensions,
                                                              version: TExtrinsicManager.version)
         return TExtrinsicManager(extensions: provider)
+    }
+    
+    @inlinable
+    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
+        AnyStorageKey(name: "Events", pallet: "System", path: [])
+    }
+    
+    @inlinable
+    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
+        AnyRuntimeCall(api: "TransactionPaymentApi",
+                       method: "query_info",
+                       params: [extrinsic, extrinsic.count])
+    }
+    
+    @inlinable
+    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
+        AnyRuntimeCall(api: "TransactionPaymentApi",
+                       method: "query_fee_details",
+                       params: [extrinsic, extrinsic.count])
     }
     
     @inlinable
@@ -140,18 +158,17 @@ public extension DynamicConfig {
             throw Error.paymentTypeNotFound
         }
         switch type.type.flatten(runtime).definition {
-        case .compact(of: _): return .uint(0)
+        case .compact(of: _): return .uint(.default)
         case .primitive(is: let p):
             switch p {
-            case .i8, .i16, .i32, .i64, .i128, .i256: return .int(0)
-            case .u8, .u16, .u32, .u64, .u128, .u256: return .uint(0)
-            case .bool: return .bool(false)
-            case .char: return .char(Character("\0"))
-            case .str: return .string("")
+            case .i8, .i16, .i32, .i64, .i128, .i256: return .int(.default)
+            case .u8, .u16, .u32, .u64, .u128, .u256: return .uint(.default)
+            case .bool: return .bool(.default)
+            case .char: return .char(.default)
+            case .str: return .string(.default)
             }
         default: throw Error.cantProvideDefaultPayment(forType: type)
         }
-        
     }
     
     static let allExtensions: [DynamicExtrinsicExtension] = [
@@ -178,41 +195,6 @@ public extension DynamicConfig {
             throw Error.typeNotFound(name: "Block", selector: blockSelector)
         }
         return type
-    }
-    
-    func extrinsicTypes(
-        metadata: Metadata
-    ) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
-                 signature: RuntimeType.Info, extra: RuntimeType.Info)
-    {
-        var addressTypeId: RuntimeType.Id? = nil
-        var sigTypeId: RuntimeType.Id? = nil
-        var extraTypeId: RuntimeType.Id? = nil
-        var callTypeId: RuntimeType.Id? = nil
-        for param in metadata.extrinsic.type.type.parameters {
-            switch param.name.lowercased() {
-            case "address": addressTypeId = param.type
-            case "signature": sigTypeId = param.type
-            case "extra": extraTypeId = param.type
-            case "call": callTypeId = param.type
-            default: continue
-            }
-        }
-        guard let addressTypeId = addressTypeId,
-              let sigTypeId = sigTypeId,
-              let extraTypeId = extraTypeId,
-              let callTypeId = callTypeId,
-              let addressType = metadata.resolve(type: addressTypeId),
-              let sigType = metadata.resolve(type: sigTypeId),
-              let extraType = metadata.resolve(type: extraTypeId),
-              let callType = metadata.resolve(type: callTypeId) else
-        {
-            throw Error.extrinsicInfoNotFound
-        }
-        return (call: RuntimeType.Info(id: callTypeId, type: callType),
-                addr: RuntimeType.Info(id: addressTypeId, type: addressType),
-                signature: RuntimeType.Info(id: sigTypeId, type: sigType),
-                extra: RuntimeType.Info(id: extraTypeId, type: extraType))
     }
     
     func accountType(metadata: any Metadata,

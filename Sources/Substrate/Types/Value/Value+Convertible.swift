@@ -107,6 +107,20 @@ extension Data: ValueRepresentable, VoidValueRepresentable {
     }
 }
 
+extension Compact: ValueRepresentable, VoidValueRepresentable {
+    public func asValue() -> Value<Void> { .uint(UInt256(value.uint)) }
+    
+    public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+        guard let info = runtime.resolve(type: type) else {
+            throw ValueRepresentableError.typeNotFound(type)
+        }
+        guard info.asCompact(runtime) != nil else {
+            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+        }
+        return .uint(UInt256(value.uint), type)
+    }
+}
+
 extension Character: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .char(self) }
     

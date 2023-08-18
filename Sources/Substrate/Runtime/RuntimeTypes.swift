@@ -139,32 +139,37 @@ public extension Runtime {
 public extension RuntimeType {
     @inlinable
     func asPrimitive(_ runtime: any Runtime) -> RuntimeType.Primitive? {
-        definition.asPrimitive(metadata: runtime.metadata)
+        asPrimitive(runtime.metadata)
     }
     
     @inlinable
     func asBytes(_ runtime: any Runtime) -> UInt32? {
-        definition.asBytes(metadata: runtime.metadata)
+        asBytes(runtime.metadata)
     }
     
     @inlinable
     func isEmpty(_ runtime: any Runtime) -> Bool {
-        definition.isEmpty(metadata: runtime.metadata)
+        isEmpty(runtime.metadata)
     }
     
     @inlinable
     func asOptional(_ runtime: any Runtime) -> RuntimeType.Field? {
-        definition.asOptional(metadata: runtime.metadata)
+        asOptional(runtime.metadata)
+    }
+    
+    @inlinable
+    func asCompact(_ runtime: any Runtime) -> Self? {
+        asCompact(runtime.metadata)
     }
     
     @inlinable
     func isBitSequence(_ runtime: any Runtime) -> Bool {
-        definition.isBitSequence(metadata: runtime.metadata)
+        isBitSequence(runtime.metadata)
     }
     
     @inlinable
     func asResult(_ runtime: any Runtime) -> (ok: RuntimeType.Field, err: RuntimeType.Field)? {
-        definition.asResult(metadata: runtime.metadata)
+        asResult(runtime.metadata)
     }
     
     func flatten(_ runtime: any Runtime) -> Self {

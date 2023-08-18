@@ -94,11 +94,6 @@ public extension Config {
     func decoder(data: Data) -> ScaleCodec.Decoder { ScaleCodec.decoder(from: data) }
     
     @inlinable
-    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
-        AnyStorageKey(name: "Events", pallet: "System", path: [])
-    }
-    
-    @inlinable
     func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]> {
         MetadataVersionsRuntimeCall()
     }
@@ -109,22 +104,44 @@ public extension Config {
     }
     
     @inlinable
-    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
-        AnyRuntimeCall(api: "TransactionPaymentApi",
-                       method: "query_info",
-                       params: [extrinsic, extrinsic.count])
-    }
-    
-    @inlinable
-    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
-        AnyRuntimeCall(api: "TransactionPaymentApi",
-                       method: "query_fee_details",
-                       params: [extrinsic, extrinsic.count])
-    }
-    
-    @inlinable
     func customCoders() throws -> [RuntimeCustomDynamicCoder] {
         [ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")]
+    }
+}
+
+// Сan be safely removed after removing metadata v14 (v15 has types inside)
+public extension Config {
+    func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
+                                                           signature: RuntimeType.Info, extra: RuntimeType.Info)
+    {
+        var addressTypeId: RuntimeType.Id? = nil
+        var sigTypeId: RuntimeType.Id? = nil
+        var extraTypeId: RuntimeType.Id? = nil
+        var callTypeId: RuntimeType.Id? = nil
+        for param in metadata.extrinsic.type.type.parameters {
+            switch param.name.lowercased() {
+            case "address": addressTypeId = param.type
+            case "signature": sigTypeId = param.type
+            case "extra": extraTypeId = param.type
+            case "call": callTypeId = param.type
+            default: continue
+            }
+        }
+        guard let addressTypeId = addressTypeId,
+              let sigTypeId = sigTypeId,
+              let extraTypeId = extraTypeId,
+              let callTypeId = callTypeId,
+              let addressType = metadata.resolve(type: addressTypeId),
+              let sigType = metadata.resolve(type: sigTypeId),
+              let extraType = metadata.resolve(type: extraTypeId),
+              let callType = metadata.resolve(type: callTypeId) else
+        {
+            throw ConfigTypeLookupError.extrinsicTypesNotFound
+        }
+        return (call: RuntimeType.Info(id: callTypeId, type: callType),
+                addr: RuntimeType.Info(id: addressTypeId, type: addressType),
+                signature: RuntimeType.Info(id: sigTypeId, type: sigType),
+                extra: RuntimeType.Info(id: extraTypeId, type: extraType))
     }
 }
 
@@ -183,4 +200,39 @@ public extension Config where TExtrinsicPayment: Default {
     func defaultPayment(runtime: any Runtime) throws -> TExtrinsicPayment {
         .default
     }
+}
+
+public extension Config where TBlockEvents: RuntimeDecodable {
+    @inlinable
+    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
+        EventsStorageKey<TBlockEvents>()
+    }
+}
+
+public extension Config where TDispatchInfo: RuntimeDecodable {
+    @inlinable
+    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
+        TransactionQueryInfoRuntimeCall(extrinsic: extrinsic)
+    }
+}
+
+public extension Config where TFeeDetails: RuntimeDecodable {
+    @inlinable
+    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
+        TransactionQueryFeeDetailsRuntimeCall(extrinsic: extrinsic)
+    }
+}
+
+public enum ConfigTypeLookupError: Error {
+    case paymentTypeNotFound
+    case accountTypeNotFound
+    case extrinsicTypesNotFound
+    
+    case typeNotFound(name: String, selector: NSRegularExpression)
+    case hashTypeNotFound
+    case badHeaderType(header: RuntimeType.Info)
+    
+    case cantProvideDefaultPayment(forType: RuntimeType.Info)
+    case extrinsicInfoNotFound
+    case unknownHashName(String)
 }

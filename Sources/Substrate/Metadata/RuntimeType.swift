@@ -414,6 +414,14 @@ public extension RuntimeType.Definition {
         }
     }
     
+    func asCompact(metadata: any Metadata) -> Self? {
+        switch flatten(metadata: metadata) {
+        case .compact(of: let id):
+            return metadata.resolve(type: id)?.definition.flatten(metadata: metadata)
+        default: return nil
+        }
+    }
+    
     func asOptional(metadata: any Metadata) -> RuntimeType.Field? {
         switch flatten(metadata: metadata) {
         case .variant(variants: let vars):
@@ -477,6 +485,13 @@ public extension RuntimeType {
         definition.asOptional(metadata: metadata)
     }
     
+    func asCompact(_ metadata: any Metadata) -> Self? {
+        switch flatten(metadata).definition {
+        case .compact(of: let id):
+            return metadata.resolve(type: id)?.flatten(metadata)
+        default: return nil
+        }
+    }
     
     @inlinable
     func isBitSequence(_ metadata: any Metadata) -> Bool {

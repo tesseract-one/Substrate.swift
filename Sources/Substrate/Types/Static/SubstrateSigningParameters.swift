@@ -19,6 +19,9 @@ public struct SubstrateSigningParameters<
     }
 }
 
+public typealias SubstrateSigningParametersFor<C: Config> =
+    SubstrateSigningParameters<C.TExtrinsicEra, C.THasher.THash, C.TAccountId, C.TIndex, C.TExtrinsicPayment>
+
 public extension SubstrateSigningParameters {
     struct Partial: EraPartialSigningParameter, NoncePartialSigningParameter, PaymentPartialSigningParameter {
         public typealias TEra = E
