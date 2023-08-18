@@ -85,10 +85,6 @@ extension DynamicConfig: BatchSupportedConfig {
     public typealias TBatchAllCall = BatchAllCall
 }
 
-
-public struct DynamicAndExtensions
-
-
 // Object getters and properties
 public extension DynamicConfig {
     @inlinable
