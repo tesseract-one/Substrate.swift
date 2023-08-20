@@ -60,14 +60,14 @@ public struct CheckTxVersionExtension<C: Config, P: ExtraSigningParameters>: Sta
 
 /// Check genesis hash
 public struct CheckGenesisExtension<C: Config,
-                                    P: ExtraSigningParameters>: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension
+                                    P: ExtraSigningParameters>: StaticExtrinsicExtension
+    where C.THasher: StaticFixedHasher
 {
     public typealias TConfig = C
     public typealias TParams = P
     public typealias TExtra = Nothing
     public typealias TAdditionalSigned = C.THasher.THash
     
-    public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .checkGenesis }
     
     public init() {}
@@ -88,8 +88,6 @@ public struct CheckGenesisExtension<C: Config,
         api.runtime.genesisHash
     }
 }
-
-extension CheckGenesisExtension: StaticExtrinsicExtension where C.THasher: StaticFixedHasher {}
 
 public struct CheckNonZeroSenderExtension<C: Config, P: ExtraSigningParameters>: StaticExtrinsicExtension {
     public typealias TConfig = C
@@ -128,7 +126,6 @@ public struct CheckNonceExtension<C: Config,
     public typealias TExtra = P.TPartial.TNonce
     public typealias TAdditionalSigned = Nothing
     
-    public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .checkNonce }
     
     public init() {}
@@ -161,15 +158,15 @@ public struct CheckNonceExtension<C: Config,
 
 /// Check for transaction mortality.
 public struct CheckMortalityExtension<C: Config,
-                                      P: EraSigningParameters>: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension
-    where P.TPartial.TEra == C.TExtrinsicEra, P.TPartial.THash == C.THasher.THash
+                                      P: EraSigningParameters>: StaticExtrinsicExtension
+    where P.TPartial.TEra == C.TExtrinsicEra, P.TPartial.THash == C.THasher.THash,
+          C.THasher: StaticFixedHasher, C.TExtrinsicEra: RuntimeCodable
 {
     public typealias TConfig = C
     public typealias TParams = P
     public typealias TExtra = P.TPartial.TEra
     public typealias TAdditionalSigned = P.TPartial.THash
     
-    public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .checkMortality }
     
     public init() {}
@@ -197,9 +194,6 @@ public struct CheckMortalityExtension<C: Config,
         params.blockHash
     }
 }
-
-extension CheckMortalityExtension: StaticExtrinsicExtension
-    where C.THasher: StaticFixedHasher, C.TExtrinsicEra: RuntimeCodable {}
 
 /// Resource limit check.
 public struct CheckWeightExtension<C: Config, P: ExtraSigningParameters>: StaticExtrinsicExtension {
@@ -232,15 +226,14 @@ public struct CheckWeightExtension<C: Config, P: ExtraSigningParameters>: Static
 /// Require the transactor pay for themselves and maybe include a tip to gain additional priority
 /// in the queue.
 public struct ChargeTransactionPaymentExtension<C: Config,
-                                                P: PaymentSigningParameters>: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension
-    where P.TPartial.TPayment == C.TExtrinsicPayment
+                                                P: PaymentSigningParameters>: StaticExtrinsicExtension
+    where P.TPartial.TPayment == C.TExtrinsicPayment, C.TExtrinsicPayment: RuntimeCodable
 {
     public typealias TConfig = C
     public typealias TParams = P
     public typealias TExtra = P.TPartial.TPayment
     public typealias TAdditionalSigned = Nothing
     
-    public var identifier: ExtrinsicExtensionId { Self.identifier }
     public static var identifier: ExtrinsicExtensionId { .chargeTransactionPayment }
     
     public init() {}
@@ -265,9 +258,6 @@ public struct ChargeTransactionPaymentExtension<C: Config,
         .nothing
     }
 }
-
-extension ChargeTransactionPaymentExtension: StaticExtrinsicExtension
-    where C.TExtrinsicPayment: RuntimeCodable {}
 
 public struct PrevalidateAttestsExtension<C: Config, P: ExtraSigningParameters>: StaticExtrinsicExtension {
     public typealias TConfig = C

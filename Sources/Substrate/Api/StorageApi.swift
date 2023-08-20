@@ -18,7 +18,7 @@ extension StorageApi {
     public static var id: String { String(describing: self) }
 }
 
-public class StorageApiRegistry<R: RootApi> {
+public class StorageApiRegistry<R: RootApi>: RootApiAware {
     private let _apis: Synced<[String: any StorageApi]>
 
     public weak var rootApi: R!

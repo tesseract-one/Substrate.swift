@@ -32,7 +32,7 @@ public enum SubmittableError: Swift.Error {
 
 extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     public init(api: R, call: C, params: R.RC.TExtrinsicManager.TUnsignedParams) async throws {
-        let ext = try await api.runtime.extrinsicManager.unsigned(call: call, params: params)
+        let ext = try await api.runtime.extrinsicManager.unsigned(call: call, params: params, for: api)
         self.init(api: api, extinsic: ext)
     }
     
@@ -64,12 +64,13 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
                          overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
     ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TSignedExtra> {
         let params = try await fetchParameters(account: account, partial: overrides ?? .default)
-        let payload = try await api.runtime.extrinsicManager.payload(unsigned: extrinsic, params: params)
+        let payload = try await api.runtime.extrinsicManager.payload(unsigned: extrinsic, params: params, for: api)
         let signature = try api.runtime.create(fakeSignature: R.RC.TSignature.self,
                                                algorithm: account.algorithm)
         let signed = try api.runtime.extrinsicManager.signed(payload: payload,
                                                              address: account.address(in: api),
-                                                             signature: signature)
+                                                             signature: signature,
+                                                             runtime: api.runtime)
         return Submittable<_, _, _>(api: api, extinsic: signed)
     }
     
@@ -83,7 +84,7 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
             partial = param as! R.RC.TExtrinsicManager.TSigningParams.TPartial
         }
         return try await api.runtime.extrinsicManager.params(unsigned: self.extrinsic,
-                                                             partial: partial)
+                                                             partial: partial, for: api)
     }
     
     public func sign(account: any PublicKey,
@@ -124,19 +125,22 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
                       overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
     ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TSignedExtra> {
         let params = try await fetchParameters(account: account, partial: overrides ?? .default)
-        let payload = try await api.runtime.extrinsicManager.payload(unsigned: extrinsic, params: params)
+        let payload = try await api.runtime.extrinsicManager.payload(unsigned: extrinsic,
+                                                                     params: params, for: api)
         let signature = try await signer.sign(payload: payload,
                                               with: account,
                                               runtime: api.runtime).get()
         let signed = try api.runtime.extrinsicManager.signed(payload: payload,
                                                              address: account.address(in: api),
-                                                             signature: signature)
+                                                             signature: signature,
+                                                             runtime: api.runtime)
         return Submittable<_, _, _>(api: api, extinsic: signed)
     }
     
     public func serialize() throws -> Data {
         var encoder = api.runtime.encoder()
-        try api.runtime.extrinsicManager.encode(unsigned: extrinsic, in: &encoder)
+        try api.runtime.extrinsicManager.encode(unsigned: extrinsic, in: &encoder,
+                                                runtime: api.runtime)
         return encoder.output
     }
 }
@@ -195,7 +199,8 @@ extension Submittable where E == R.RC.TExtrinsicManager.TSignedExtra {
     
     public func serialize() throws -> Data {
         var encoder = api.runtime.encoder()
-        try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder,
+                                                runtime: api.runtime)
         return encoder.output
     }
 }
@@ -203,7 +208,8 @@ extension Submittable where E == R.RC.TExtrinsicManager.TSignedExtra {
 extension Submittable where E == R.RC.TExtrinsicManager.TSignedExtra, R.CL: SubscribableClient {
     public func sendAndWatch() async throws -> ExtrinsicProgress<R> {
         var encoder = api.runtime.encoder()
-        try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder,
+                                                runtime: api.runtime)
         let hash = try api.runtime.hash(data: encoder.output)
         let stream = try await api.client.submitAndWatch(extrinsic: extrinsic,
                                                          runtime: api.runtime)

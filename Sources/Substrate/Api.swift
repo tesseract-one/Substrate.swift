@@ -28,6 +28,12 @@ public extension RootApi {
     @inlinable var hash: RC.THasher.THash? { runtime.metadataHash }
 }
 
+public protocol RootApiAware<RAPI> {
+    associatedtype RAPI: RootApi
+    var rootApi: RAPI! { get }
+    mutating func setRootApi(api: RAPI) throws
+}
+
 public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     public typealias RC = RC
     public typealias CL = CL
@@ -53,9 +59,6 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
         self.call = RuntimeCallApiRegistry()
         self.query = StorageApiRegistry()
         self.constants = ConstantsApiRegistry()
-        
-        // Init runtime
-        try runtime.setRootApi(api: self)
         
         // Init registries
         rpc.setRootApi(api: self)

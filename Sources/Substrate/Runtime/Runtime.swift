@@ -12,6 +12,7 @@ public protocol Runtime: AnyObject {
     var addressFormat: SS58.AddressFormat { get }
     var metadata: any Metadata { get }
     var hasher: any Hasher { get }
+    var extrinsicDecoder: any ExtrinsicDecoder { get }
     
     var types: RuntimeTypes { get }
     

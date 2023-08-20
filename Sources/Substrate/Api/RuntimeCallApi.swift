@@ -18,7 +18,7 @@ extension RuntimeCallApi {
     public static var id: String { String(describing: self) }
 }
 
-public class RuntimeCallApiRegistry<R: RootApi> {
+public class RuntimeCallApiRegistry<R: RootApi>: RootApiAware {
     private let _apis: Synced<[String: any RuntimeCallApi]>
     
     public weak var rootApi: R!

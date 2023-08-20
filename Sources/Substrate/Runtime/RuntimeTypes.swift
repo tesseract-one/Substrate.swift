@@ -134,6 +134,13 @@ public extension Runtime {
     func hash<H: Hash>(type: H.Type, data: Data) throws -> H {
         try create(hash: type, raw: hasher.hash(data: data))
     }
+    
+    @inlinable
+    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
+        extrinsic: Extrinsic<C, Extra>.Type, from decoder: inout D
+    ) throws -> Extrinsic<C, Extra> {
+        try extrinsicDecoder.decode(from: &decoder, runtime: self)
+    }
 }
 
 public extension RuntimeType {

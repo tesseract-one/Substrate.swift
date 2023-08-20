@@ -147,7 +147,7 @@ extension RpcClient: Client {
         runtime: ExtendedRuntime<C>
     ) async throws -> Result<Void, Either<C.TDispatchError, C.TTransactionValidityError>> {
         var encoder = runtime.encoder()
-        try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
         let dispatchErrorCtx = C.TDispatchError.DecodingContext(runtime: runtime) {
             try $0.types.dispatchError.id
         }
@@ -198,7 +198,7 @@ extension RpcClient: Client {
         runtime: ExtendedRuntime<C>
     ) async throws -> C.THasher.THash {
         var encoder = runtime.encoder()
-        try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
         return try await call(method: "author_submitExtrinsic", params: Params(encoder.output),
                               context: (runtime.metadata, { try runtime.types.hash.id }))
     }
@@ -349,7 +349,7 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
         runtime: ExtendedRuntime<C>
     ) async throws -> AsyncThrowingStream<C.TTransactionStatus, Error> {
         var encoder = runtime.encoder()
-        try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
         return try await subscribe(method: "author_submitAndWatchExtrinsic",
                                    params: Params(encoder.output),
                                    unsubscribe: "author_unwatchExtrinsic",

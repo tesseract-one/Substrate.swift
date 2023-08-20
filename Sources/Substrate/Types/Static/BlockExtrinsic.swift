@@ -9,7 +9,7 @@ import Foundation
 
 public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic {
     public typealias TManager = TManager
-    public typealias THash = TManager.RC.THasher.THash
+    public typealias THash = TManager.TConfig.THasher.THash
     public typealias TSignedExtra = TManager.TSignedExtra
     public typealias TUnsignedExtra = TManager.TUnsignedExtra
     
@@ -23,12 +23,12 @@ public struct BlockExtrinsic<TManager: ExtrinsicManager>: OpaqueExtrinsic {
     }
     
     public func hash() -> THash {
-        try! runtime.hash(type: TManager.RC.THasher.THash.self, data: data)
+        try! runtime.hash(type: THash.self, data: data)
     }
     
     public func decode<C: Call & RuntimeDynamicDecodable>() throws -> AnyExtrinsic<C, TManager> {
         var decoder = runtime.decoder(with: data)
-        return try TManager.get(from: runtime).decode(from: &decoder)
+        return try runtime.decode(extrinsic: AnyExtrinsic<C, TManager>.self, from: &decoder)
     }
     
     public static var version: UInt8 { TManager.version }

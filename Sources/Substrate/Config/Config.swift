@@ -16,6 +16,7 @@ public protocol Config {
     associatedtype TSignature: Signature
     associatedtype TBlock: SomeBlock where TBlock.THeader.THasher == THasher
     associatedtype TChainBlock: SomeChainBlock<TBlock>
+    associatedtype TSigningParams: ExtraSigningParameters
     
     associatedtype TExtrinsicEra: SomeExtrinsicEra
     associatedtype TExtrinsicPayment: ValueRepresentable

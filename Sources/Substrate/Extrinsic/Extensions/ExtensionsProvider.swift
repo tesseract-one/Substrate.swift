@@ -14,22 +14,28 @@ public protocol ExtraSigningParameters {
     init(partial: TPartial) throws
 }
 
-public protocol SignedExtensionsProvider<RC> {
-    associatedtype RC: Config
+public protocol SignedExtensionsProvider {
+    associatedtype TConfig: Config
     associatedtype TExtra
     associatedtype TAdditionalSigned
     associatedtype TSigningParams: ExtraSigningParameters
     
-    func params(partial params: TSigningParams.TPartial) async throws -> TSigningParams
-    func extra(params: TSigningParams) async throws -> TExtra
-    func additionalSigned(params: TSigningParams) async throws -> TAdditionalSigned
+    func params<R: RootApi<TConfig>>(partial params: TSigningParams.TPartial,
+                                     for api: R) async throws -> TSigningParams
     
-    func encode<E: ScaleCodec.Encoder>(extra: TExtra, in encoder: inout E) throws
-    func encode<E: ScaleCodec.Encoder>(additionalSigned: TAdditionalSigned, in encoder: inout E) throws
-    func extra<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TExtra
-    func additionalSigned<D: ScaleCodec.Decoder>(from decoder: inout D) throws -> TAdditionalSigned
+    func extra<R: RootApi<TConfig>>(params: TSigningParams, for api: R) async throws -> TExtra
     
-    mutating func setRootApi<R: RootApi<RC>>(api: R) throws
+    func additionalSigned<R: RootApi<TConfig>>(params: TSigningParams,
+                                               for api: R) async throws -> TAdditionalSigned
+    
+    func encode<E: ScaleCodec.Encoder>(extra: TExtra, in encoder: inout E,
+                                       runtime: any Runtime) throws
+    func encode<E: ScaleCodec.Encoder>(additionalSigned: TAdditionalSigned,
+                                       in encoder: inout E,
+                                       runtime: any Runtime) throws
+    func extra<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws -> TExtra
+    func additionalSigned<D: ScaleCodec.Decoder>(from decoder: inout D,
+                                                 runtime: any Runtime) throws -> TAdditionalSigned
 }
 
 public protocol ExtrinsicSignedExtension {
@@ -54,6 +60,5 @@ public struct ExtrinsicExtensionId: Equatable, Hashable, RawRepresentable {
     public static let checkWeight = Self("CheckWeight")
     public static let chargeTransactionPayment = Self("ChargeTransactionPayment")
     public static let prevalidateAttests = Self("PrevalidateAttests")
-    public static let undefined = Self("UNDEFINED")
 }
 

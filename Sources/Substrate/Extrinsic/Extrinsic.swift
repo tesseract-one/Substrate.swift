@@ -94,5 +94,4 @@ public enum ExtrinsicCodingError: Error {
     case parameterNotFound(extension: ExtrinsicExtensionId, parameter: String)
     case typeMismatch(expected: Any.Type, got: Any.Type)
     case unknownExtension(identifier: ExtrinsicExtensionId)
-    case unsupportedSubstrate(reason: String)
 }

@@ -18,7 +18,7 @@ extension ExtrinsicApi {
     public static var id: String { String(describing: self) }
 }
 
-public class ExtrinsicApiRegistry<R: RootApi> {
+public class ExtrinsicApiRegistry<R: RootApi>: RootApiAware {
     private let _apis: Synced<[String: any ExtrinsicApi]>
     
     public weak var rootApi: R!

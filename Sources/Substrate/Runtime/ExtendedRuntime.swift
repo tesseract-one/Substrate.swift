@@ -32,6 +32,9 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     public private(set) var extrinsicManager: RC.TExtrinsicManager
     
     @inlinable
+    public var extrinsicDecoder: ExtrinsicDecoder { extrinsicManager }
+    
+    @inlinable
     public var hasher: any Hasher { typedHasher }
     
     @inlinable
@@ -64,7 +67,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         extrinsic: Extrinsic<C, RC.TExtrinsicManager.TSignedExtra>
     ) throws -> any RuntimeCall<RC.TDispatchInfo> {
         var encoder = self.encoder()
-        try extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        try extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: self)
         return try config.queryInfoCall(extrinsic: encoder.output, runtime: self)
     }
     
@@ -73,7 +76,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         extrinsic: Extrinsic<C, RC.TExtrinsicManager.TSignedExtra>
     ) throws -> any RuntimeCall<RC.TFeeDetails> {
         var encoder = self.encoder()
-        try extrinsicManager.encode(signed: extrinsic, in: &encoder)
+        try extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: self)
         return try config.queryFeeDetailsCall(extrinsic: encoder.output, runtime: self)
     }
     
@@ -101,9 +104,9 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         }
     }
     
-    open func setRootApi<A: RootApi<RC>>(api: A) throws {
-        try self.extrinsicManager.setRootApi(api: api)
-    }
+//    open func setRootApi<A: RootApi<RC>>(api: A) throws {
+//        try self.extrinsicManager.setRootApi(api: api)
+//    }
 }
 
 public extension ExtendedRuntime {

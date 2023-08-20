@@ -13,61 +13,74 @@ public typealias SignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.
 public typealias UnsignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.TUnsignedExtra>
 public typealias SigningPayload<C: Call, M: ExtrinsicManager> = ExtrinsicSignPayload<C, M.TSigningExtra>
 
-public protocol ExtrinsicManager<RC> {
-    associatedtype RC: Config
+public protocol ExtrinsicDecoder {
+    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
+        from decoder: inout D, runtime: any Runtime
+    ) throws -> Extrinsic<C, Extra>
+    
+    var version: UInt8 { get }
+}
+
+public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder {
+    associatedtype TConfig: Config
     associatedtype TUnsignedParams
     associatedtype TSigningParams: ExtraSigningParameters
     associatedtype TUnsignedExtra: ExtrinsicExtra
     associatedtype TSigningExtra
     associatedtype TSignedExtra: ExtrinsicExtra
     
-    var version: UInt8 { get }
-    
-    func unsigned<C: Call>(call: C, params: TUnsignedParams) async throws -> Extrinsic<C, TUnsignedExtra>
+    func unsigned<C: Call, R: RootApi<TConfig>>(
+        call: C, params: TUnsignedParams, for api: R
+    ) async throws -> Extrinsic<C, TUnsignedExtra>
     func encode<C: Call, E: ScaleCodec.Encoder>(unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-                                                in encoder: inout E) throws
-    
-    func params<C: Call>(
+                                                in encoder: inout E,
+                                                runtime: any Runtime) throws
+
+    func params<C: Call, R: RootApi<TConfig>>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        partial params: TSigningParams.TPartial
+        partial params: TSigningParams.TPartial,
+        for api: R
     ) async throws -> TSigningParams
     
-    func payload<C: Call>(
+    func payload<C: Call, R: RootApi<TConfig>>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        params: TSigningParams
+        params: TSigningParams, for api: R
     ) async throws -> ExtrinsicSignPayload<C, TSigningExtra>
+    
     func encode<C: Call, E: ScaleCodec.Encoder>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
-                                                in encoder: inout E) throws
+                                                in encoder: inout E,
+                                                runtime: any Runtime) throws
     func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
-        payload decoder: inout D
+        payload decoder: inout D, runtime: any Runtime
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra>
     
     func signed<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
-                         address: RC.TAddress,
-                         signature: RC.TSignature) throws -> Extrinsic<C, TSignedExtra>
+                         address: TConfig.TAddress,
+                         signature: TConfig.TSignature,
+                         runtime: any Runtime) throws -> Extrinsic<C, TSignedExtra>
+    
     func encode<C: Call, E: ScaleCodec.Encoder>(signed extrinsic: Extrinsic<C, TSignedExtra>,
-                                                in encoder: inout E) throws
+                                                in encoder: inout E,
+                                                runtime: any Runtime) throws
     func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
-        from decoder: inout D
+        from decoder: inout D, runtime: any Runtime
     ) throws -> AnyExtrinsic<C, Self>
     
-    mutating func setRootApi<A: RootApi<RC>>(api: A) throws
-    
     static var version: UInt8 { get }
-    static func get(from runtime: any Runtime) throws -> Self
 }
 
 public extension ExtrinsicManager {
     var version: UInt8 { Self.version }
     
-    static func get(from runtime: any Runtime) throws -> Self where RC: Config {
-        guard let extended = runtime as? ExtendedRuntime<RC> else {
-            throw ExtrinsicCodingError.unsupportedSubstrate(reason: "Runtime is not ER or different config")
+    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
+        from decoder: inout D, runtime: any Runtime
+    ) throws -> Extrinsic<C, Extra> {
+        guard Extrinsic<C, Extra>.self == AnyExtrinsic<C, Self>.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: AnyExtrinsic<C, Self>.self,
+                                                    got: Extrinsic<C, Extra>.self)
         }
-        guard let manager = extended.extrinsicManager as? Self else {
-            throw ExtrinsicCodingError.unsupportedSubstrate(reason: "Different manager in runtime")
-        }
-        return manager
+        let decoded: AnyExtrinsic<C, Self> = try decode(from: &decoder, runtime: runtime)
+        return decoded as! Extrinsic<C, Extra>
     }
 }
 

@@ -18,7 +18,7 @@ extension RpcApi {
     public static var id: String { String(describing: self) }
 }
 
-public class RpcApiRegistry<R: RootApi> {
+public class RpcApiRegistry<R: RootApi>: RootApiAware {
     private let _apis: Synced<[String: any RpcApi]>
     
     public weak var rootApi: R!

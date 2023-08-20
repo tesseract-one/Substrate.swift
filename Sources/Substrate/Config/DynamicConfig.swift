@@ -16,12 +16,11 @@ public struct DynamicConfig: Config {
     public typealias TAccountId = AccountId32
     public typealias TAddress =  AnyAddress<TAccountId>
     public typealias TSignature = AnySignature
-    public typealias TBlock = AnyBlock<THasher, TIndex, BlockExtrinsic<TExtrinsicManager>>
+    public typealias TBlock = AnyBlock<THasher, TIndex, BlockExtrinsic<THasher.THash, TExtrinsicManager>>
     public typealias TChainBlock = AnyChainBlock<TBlock>
+    public typealias TSigningParams = AnySigningParams<Self>
     
-    public typealias TExtrinsicManager = ExtrinsicV4Manager<
-        Self, DynamicSignedExtensionsProvider<AllDynamicExtensions<Self>>
-    >
+    public typealias TExtrinsicManager = ExtrinsicV4Manager<DynamicSignedExtensionsProvider<Self>>
     
     public typealias TTransactionStatus = TransactionStatus<THasher.THash, THasher.THash>
     
@@ -46,6 +45,7 @@ public struct DynamicConfig: Config {
         case unknownHashName(String)
     }
     
+    public let extensions: [DynamicExtrinsicExtension]
     public let runtimeCustomCoders: [RuntimeCustomDynamicCoder]
     public let payment: TExtrinsicPayment?
     public let blockSelector: NSRegularExpression
@@ -56,7 +56,8 @@ public struct DynamicConfig: Config {
     public let transactionValidityErrorSelector: NSRegularExpression
     public let feeDetailsSelector: NSRegularExpression
     
-    public init(customCoders: [RuntimeCustomDynamicCoder] = Self.customCoders,
+    public init(signedExtensions: [DynamicExtrinsicExtension] = Self.allSignedExtensions,
+                customCoders: [RuntimeCustomDynamicCoder] = Self.customCoders,
                 defaultPayment: TExtrinsicPayment? = nil,
                 blockSelector: String = "^.*Block$",
                 headerSelector: String = "^.*Header$",
@@ -66,6 +67,7 @@ public struct DynamicConfig: Config {
                 transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
                 feeDetailsSelector: String = "^.*FeeDetails$") throws
     {
+        self.extensions = signedExtensions
         self.runtimeCustomCoders = customCoders
         self.payment = defaultPayment
         self.blockSelector = try NSRegularExpression(pattern: blockSelector)
@@ -89,11 +91,8 @@ extension DynamicConfig: BatchSupportedConfig {
 public extension DynamicConfig {
     @inlinable
     func extrinsicManager() throws -> TExtrinsicManager {
-        let extensions = AllDynamicExtensions<Self>(
-            .init(), .init(), .init(), .init(), .init(), .init(), .init(), .init(), .init()
-        )
-        let provider = DynamicSignedExtensionsProvider(extensions: extensions,
-                                                       version: TExtrinsicManager.version)
+        let provider = DynamicSignedExtensionsProvider<Self>(extensions: extensions,
+                                                             version: TExtrinsicManager.version)
         return TExtrinsicManager(extensions: provider)
     }
     
@@ -158,7 +157,7 @@ public extension DynamicConfig {
     
     func defaultPayment(runtime: any Runtime) throws -> TExtrinsicPayment {
         if let def = payment { return def }
-        guard let type = DynamicChargeTransactionPaymentExtension<Self>.tipType(runtime: runtime) else {
+        guard let type = DynamicChargeTransactionPaymentExtension.tipType(runtime: runtime) else {
             throw Error.paymentTypeNotFound
         }
         switch type.type.flatten(runtime).definition {
@@ -174,6 +173,18 @@ public extension DynamicConfig {
         default: throw Error.cantProvideDefaultPayment(forType: type)
         }
     }
+    
+    static let allSignedExtensions: [any DynamicExtrinsicExtension] = [
+        DynamicCheckSpecVersionExtension(),
+        DynamicCheckTxVersionExtension(),
+        DynamicCheckGenesisExtension(),
+        DynamicCheckNonZeroSenderExtension(),
+        DynamicCheckNonceExtension(),
+        DynamicCheckMortalityExtension(),
+        DynamicCheckWeightExtension(),
+        DynamicChargeTransactionPaymentExtension(),
+        DynamicPrevalidateAttestsExtension()
+    ]
     
     static let customCoders: [RuntimeCustomDynamicCoder] = [
         ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")
