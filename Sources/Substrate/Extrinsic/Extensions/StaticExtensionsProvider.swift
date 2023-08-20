@@ -11,15 +11,15 @@ import ScaleCodec
 
 public protocol StaticExtrinsicExtensionBase {
     associatedtype TConfig: Config
-    associatedtype TParams: ExtraSigningParameters
     associatedtype TExtra
     associatedtype TAdditionalSigned
     
-    func params<R: RootApi<TConfig>>(api: R,
-                                     partial params: TParams.TPartial) async throws -> TParams.TPartial
-    func extra<R: RootApi<TConfig>>(api: R, params: TParams) async throws -> TExtra
+    func params<R: RootApi<TConfig>>(
+        api: R, partial params: TConfig.TSigningParams.TPartial
+    ) async throws -> TConfig.TSigningParams.TPartial
+    func extra<R: RootApi<TConfig>>(api: R, params: TConfig.TSigningParams) async throws -> TExtra
     func additionalSigned<R: RootApi<TConfig>>(api: R,
-                                      params: TParams) async throws -> TAdditionalSigned
+                                      params: TConfig.TSigningParams) async throws -> TAdditionalSigned
 }
 
 public protocol StaticExtrinsicExtension: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension
@@ -32,7 +32,7 @@ public extension StaticExtrinsicExtension {
     var identifier: ExtrinsicExtensionId { Self.identifier }
 }
 
-public protocol StaticExtrinsicExtensions<TParams>: StaticExtrinsicExtensionBase
+public protocol StaticExtrinsicExtensions: StaticExtrinsicExtensionBase
     where TExtra: RuntimeCodable, TAdditionalSigned: RuntimeCodable
 {
     var identifiers: [ExtrinsicExtensionId] { get }
@@ -42,34 +42,28 @@ public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: Sig
     public typealias TConfig = Ext.TConfig
     public typealias TExtra = Ext.TExtra
     public typealias TAdditionalSigned = Ext.TAdditionalSigned
-    public typealias TSigningParams = Ext.TParams
     
     public let extensions: Ext
     public let version: UInt8
-    
-    private var _params: ((TSigningParams.TPartial) async throws -> TSigningParams.TPartial)!
-    private var _extra: ((TSigningParams) async throws -> TExtra)!
-    private var _addSigned: ((TSigningParams) async throws -> TAdditionalSigned)!
-    private weak var _runtime: (any Runtime)!
     
     public init(extensions: Ext, version: UInt8) {
         self.extensions = extensions
         self.version = version
     }
     
-    public func params<R: RootApi<TConfig>>(partial params: TSigningParams.TPartial,
-                                            for api: R) async throws -> TSigningParams
+    public func params<R: RootApi<TConfig>>(partial params: TConfig.TSigningParams.TPartial,
+                                            for api: R) async throws -> TConfig.TSigningParams
     {
-        try await TSigningParams(partial: extensions.params(api: api, partial: params))
+        try await TConfig.TSigningParams(partial: extensions.params(api: api, partial: params))
     }
     
-    public func extra<R: RootApi<TConfig>>(params: TSigningParams,
+    public func extra<R: RootApi<TConfig>>(params: TConfig.TSigningParams,
                                            for api: R) async throws -> TExtra
     {
         try await extensions.extra(api: api, params: params)
     }
     
-    public func additionalSigned<R: RootApi<TConfig>>(params: TSigningParams,
+    public func additionalSigned<R: RootApi<TConfig>>(params: TConfig.TSigningParams,
                                                       for api: R) async throws -> TAdditionalSigned
     {
         try await extensions.additionalSigned(api: api, params: params)

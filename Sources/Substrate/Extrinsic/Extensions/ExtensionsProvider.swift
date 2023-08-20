@@ -14,18 +14,18 @@ public protocol ExtraSigningParameters {
     init(partial: TPartial) throws
 }
 
-public protocol SignedExtensionsProvider {
+public protocol SignedExtensionsProvider where TConfig.TSigningParams: ExtraSigningParameters {
     associatedtype TConfig: Config
     associatedtype TExtra
     associatedtype TAdditionalSigned
-    associatedtype TSigningParams: ExtraSigningParameters
     
-    func params<R: RootApi<TConfig>>(partial params: TSigningParams.TPartial,
-                                     for api: R) async throws -> TSigningParams
+    func params<R: RootApi<TConfig>>(partial params: TConfig.TSigningParams.TPartial,
+                                     for api: R) async throws -> TConfig.TSigningParams
     
-    func extra<R: RootApi<TConfig>>(params: TSigningParams, for api: R) async throws -> TExtra
+    func extra<R: RootApi<TConfig>>(params: TConfig.TSigningParams,
+                                    for api: R) async throws -> TExtra
     
-    func additionalSigned<R: RootApi<TConfig>>(params: TSigningParams,
+    func additionalSigned<R: RootApi<TConfig>>(params: TConfig.TSigningParams,
                                                for api: R) async throws -> TAdditionalSigned
     
     func encode<E: ScaleCodec.Encoder>(extra: TExtra, in encoder: inout E,

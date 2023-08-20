@@ -38,7 +38,7 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     
     public func dryRun(account: any PublicKey,
                        at block: R.RC.TBlock.THeader.THasher.THash? = nil,
-                       overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+                       overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> Result<Void, Either<R.RC.TDispatchError, R.RC.TTransactionValidityError>> {
         let signed = try await fakeSign(account: account, overrides: overrides)
         return try await signed.dryRun(at: block)
@@ -46,7 +46,7 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     
     public func paymentInfo(account: any PublicKey,
                             at block: R.RC.TBlock.THeader.THasher.THash? = nil,
-                            overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+                            overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> R.RC.TDispatchInfo {
         let signed = try await fakeSign(account: account, overrides: overrides)
         return try await signed.paymentInfo(at: block)
@@ -54,14 +54,14 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     
     public func feeDetails(account: any PublicKey,
                            at block: R.RC.TBlock.THeader.THasher.THash? = nil,
-                           overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+                           overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> R.RC.TFeeDetails {
         let signed = try await fakeSign(account: account, overrides: overrides)
         return try await signed.feeDetails(at: block)
     }
     
     public func fakeSign(account: any PublicKey,
-                         overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+                         overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TSignedExtra> {
         let params = try await fetchParameters(account: account, partial: overrides ?? .default)
         let payload = try await api.runtime.extrinsicManager.payload(unsigned: extrinsic, params: params, for: api)
@@ -75,20 +75,20 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     }
     
     public func fetchParameters(
-        account: (any PublicKey)? = nil, partial: R.RC.TExtrinsicManager.TSigningParams.TPartial
-    ) async throws -> R.RC.TExtrinsicManager.TSigningParams {
+        account: (any PublicKey)? = nil, partial: R.RC.TSigningParams.TPartial
+    ) async throws -> R.RC.TSigningParams {
         var partial = partial
         if let account = account, var param = partial as? AnyAccountPartialSigningParameter {
             let accountId: R.RC.TAccountId = try account.account(runtime: api.runtime)
             try param.setAccount(accountId)
-            partial = param as! R.RC.TExtrinsicManager.TSigningParams.TPartial
+            partial = param as! R.RC.TSigningParams.TPartial
         }
         return try await api.runtime.extrinsicManager.params(unsigned: self.extrinsic,
                                                              partial: partial, for: api)
     }
     
     public func sign(account: any PublicKey,
-                     overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+                     overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TSignedExtra> {
         guard let signer = api.signer else {
             throw SubmittableError.signerIsNil
@@ -97,7 +97,7 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     }
     
     public func sign(signer: any Signer,
-                     overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+                     overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TSignedExtra> {
         let account = try await signer.account(
             type: .account,
@@ -108,21 +108,21 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
     
     public func signAndSend(
         account: any PublicKey,
-        overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+        overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> R.RC.TBlock.THeader.THasher.THash {
         return try await sign(account: account, overrides: overrides).send()
     }
     
     public func signAndSend(
         signer: any Signer,
-        overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+        overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> R.RC.TBlock.THeader.THasher.THash {
         return try await sign(signer: signer, overrides: overrides).send()
     }
     
     private func sign(signer: any Signer,
                       account: any PublicKey,
-                      overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+                      overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TSignedExtra> {
         let params = try await fetchParameters(account: account, partial: overrides ?? .default)
         let payload = try await api.runtime.extrinsicManager.payload(unsigned: extrinsic,
@@ -148,14 +148,14 @@ extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra {
 extension Submittable where E == R.RC.TExtrinsicManager.TUnsignedExtra, R.CL: SubscribableClient {
     public func signSendAndWatch(
         account: any PublicKey,
-        overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+        overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> ExtrinsicProgress<R> {
         return try await sign(account: account, overrides: overrides).sendAndWatch()
     }
     
     public func signSendAndWatch(
         signer: any Signer,
-        overrides: R.RC.TExtrinsicManager.TSigningParams.TPartial? = nil
+        overrides: R.RC.TSigningParams.TPartial? = nil
     ) async throws -> ExtrinsicProgress<R> {
         return try await sign(signer: signer, overrides: overrides).sendAndWatch()
     }

@@ -21,10 +21,9 @@ public protocol ExtrinsicDecoder {
     var version: UInt8 { get }
 }
 
-public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder {
+public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder where TConfig.TSigningParams: ExtraSigningParameters {
     associatedtype TConfig: Config
     associatedtype TUnsignedParams
-    associatedtype TSigningParams: ExtraSigningParameters
     associatedtype TUnsignedExtra: ExtrinsicExtra
     associatedtype TSigningExtra
     associatedtype TSignedExtra: ExtrinsicExtra
@@ -38,13 +37,13 @@ public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder {
 
     func params<C: Call, R: RootApi<TConfig>>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        partial params: TSigningParams.TPartial,
+        partial params: TConfig.TSigningParams.TPartial,
         for api: R
-    ) async throws -> TSigningParams
+    ) async throws -> TConfig.TSigningParams
     
     func payload<C: Call, R: RootApi<TConfig>>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        params: TSigningParams, for api: R
+        params: TConfig.TSigningParams, for api: R
     ) async throws -> ExtrinsicSignPayload<C, TSigningExtra>
     
     func encode<C: Call, E: ScaleCodec.Encoder>(payload: ExtrinsicSignPayload<C, TSigningExtra>,

@@ -31,7 +31,6 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
     public typealias TConfig = RC
     public typealias TExtra = Value<RuntimeType.Id>
     public typealias TAdditionalSigned = [Value<RuntimeType.Id>]
-    public typealias TSigningParams = RC.TSigningParams
     
     public let extensions: [ExtrinsicExtensionId: any DynamicExtrinsicExtension]
     public let version: UInt8
@@ -41,17 +40,17 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
         self.version = version
     }
     
-    public func params<R: RootApi<RC>>(partial params: TSigningParams.Partial,
-                                       for api: R) async throws -> TSigningParams
+    public func params<R: RootApi<RC>>(partial params: RC.TSigningParams.Partial,
+                                       for api: R) async throws -> RC.TSigningParams
     {
         var params = params
         for ext in try _activeExtensions(runtime: api.runtime) {
             params = try await ext.ext.params(api: api, partial: params)
         }
-        return try TSigningParams(partial: params)
+        return try RC.TSigningParams(partial: params)
     }
         
-    public func extra<R: RootApi<RC>>(params: TSigningParams, for api: R) async throws -> TExtra {
+    public func extra<R: RootApi<RC>>(params: RC.TSigningParams, for api: R) async throws -> TExtra {
         let extensions = try _activeExtensions(runtime: api.runtime)
         var extra: [Value<RuntimeType.Id>] = []
         extra.reserveCapacity(extensions.count)
@@ -61,8 +60,8 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
         return try Value(value: .sequence(extra), context: api.runtime.types.extrinsicExtra.id)
     }
     
-    public func additionalSigned<R: RootApi<RC>>(params: TSigningParams,
-                                             for api: R) async throws -> TAdditionalSigned
+    public func additionalSigned<R: RootApi<RC>>(params: RC.TSigningParams,
+                                                 for api: R) async throws -> TAdditionalSigned
     {
         let extensions = try _activeExtensions(runtime: api.runtime)
         var additional: [Value<RuntimeType.Id>] = []
