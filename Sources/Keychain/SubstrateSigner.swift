@@ -50,7 +50,7 @@ public extension KeyPair {
         }
         var encoder = runtime.encoder()
         do {
-            try runtime.extrinsicManager.encode(payload: payload, in: &encoder)
+            try runtime.extrinsicManager.encode(payload: payload, in: &encoder, runtime: runtime)
         } catch {
             return .failure(.badPayload(error: error.localizedDescription))
         }
