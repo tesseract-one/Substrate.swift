@@ -55,44 +55,44 @@ public extension ExtrinsicApiRegistry {
     func account() async throws -> any PublicKey {
         try await signer.account(
             type: .account,
-            algos: rootApi.runtime.algorithms(signature: R.RC.TSignature.self)
+            algos: rootApi.runtime.algorithms(signature: ST<R.RC>.Signature.self)
         ).get()
     }
     
     func new<C: Call>(
         call: C,
-        params: R.RC.TExtrinsicManager.TUnsignedParams
-    ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TUnsignedExtra> {
+        params: ST<R.RC>.ExtrinsicUnsignedParams
+    ) async throws -> Submittable<R, C, ST<R.RC>.ExtrinsicUnsignedExtra> {
         try await Submittable(api: rootApi, call: call, params: params)
     }
     
     func submit<C: Call>(
-        _ extrinsic: SignedExtrinsic<C, R.RC.TExtrinsicManager>
-    ) async throws -> R.RC.THasher.THash {
+        _ extrinsic: ST<R.RC>.SignedExtrinsic<C>
+    ) async throws -> ST<R.RC>.Hash {
         try await rootApi.client.submit(extrinsic: extrinsic, runtime: rootApi.runtime)
     }
 }
 
-public extension ExtrinsicApiRegistry where R.RC.TExtrinsicManager.TUnsignedParams == Void {
+public extension ExtrinsicApiRegistry where ST<R.RC>.ExtrinsicUnsignedParams == Void {
     func new<C: Call>(
         _ call: C
-    ) async throws -> Submittable<R, C, R.RC.TExtrinsicManager.TUnsignedExtra> {
+    ) async throws -> Submittable<R, C, ST<R.RC>.ExtrinsicUnsignedExtra> {
         try await Submittable(api: rootApi, call: call, params: ())
     }
 }
 
 public extension ExtrinsicApiRegistry where R.CL: SubscribableClient {
     func submitAndWatch<C: Call>(
-        _ extrinsic: SignedExtrinsic<C, R.RC.TExtrinsicManager>
-    ) async throws -> AsyncThrowingStream<R.RC.TTransactionStatus, Error> {
+        _ extrinsic: ST<R.RC>.SignedExtrinsic<C>
+    ) async throws -> AsyncThrowingStream<ST<R.RC>.TransactionStatus, Error> {
         try await rootApi.client.submitAndWatch(extrinsic: extrinsic, runtime: rootApi.runtime)
     }
 }
 
 public extension ExtrinsicApiRegistry where R.RC: BatchSupportedConfig {
     func batch(
-        calls: [any Call], params: R.RC.TExtrinsicManager.TUnsignedParams
-    ) async throws -> Submittable<R, R.RC.TBatchCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+        calls: [any Call], params: ST<R.RC>.ExtrinsicUnsignedParams
+    ) async throws -> Submittable<R, ST<R.RC>.BatchCall, ST<R.RC>.ExtrinsicUnsignedExtra> {
         guard rootApi.runtime.isBatchSupported else {
             throw SubmittableError.batchIsNotSupported
         }
@@ -103,58 +103,58 @@ public extension ExtrinsicApiRegistry where R.RC: BatchSupportedConfig {
     
     @inlinable
     func batch(
-        txs: [any CallHolder], params: R.RC.TExtrinsicManager.TUnsignedParams
-    ) async throws -> Submittable<R, R.RC.TBatchCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+        txs: [any CallHolder], params: ST<R.RC>.ExtrinsicUnsignedParams
+    ) async throws -> Submittable<R, ST<R.RC>.BatchCall,ST<R.RC>.ExtrinsicUnsignedExtra> {
         try await batch(calls: txs.map{$0.call}, params: params)
     }
     
     func batchAll(
-        calls: [any Call], params: R.RC.TExtrinsicManager.TUnsignedParams
-    ) async throws -> Submittable<R, R.RC.TBatchAllCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+        calls: [any Call], params: ST<R.RC>.ExtrinsicUnsignedParams
+    ) async throws -> Submittable<R, ST<R.RC>.BatchAllCall, ST<R.RC>.ExtrinsicUnsignedExtra> {
         guard rootApi.runtime.isBatchSupported else {
             throw SubmittableError.batchIsNotSupported
         }
         return try await Submittable(api: rootApi,
-                                     call: R.RC.TBatchAllCall(calls: calls),
+                                     call: ST<R.RC>.BatchAllCall(calls: calls),
                                      params: params)
     }
     
     @inlinable
     func batchAll(
-        txs: [any CallHolder], params: R.RC.TExtrinsicManager.TUnsignedParams
-    ) async throws -> Submittable<R, R.RC.TBatchAllCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+        txs: [any CallHolder], params:ST<R.RC>.ExtrinsicUnsignedParams
+    ) async throws -> Submittable<R, ST<R.RC>.BatchAllCall, ST<R.RC>.ExtrinsicUnsignedExtra> {
         try await batchAll(calls: txs.map{$0.call}, params: params)
     }
 }
 
 public extension ExtrinsicApiRegistry
-    where R.RC: BatchSupportedConfig, R.RC.TExtrinsicManager.TUnsignedParams == Void
+    where R.RC: BatchSupportedConfig, ST<R.RC>.ExtrinsicUnsignedParams == Void
 {
     @inlinable
     func batch(
         _ calls: [any Call]
-    ) async throws -> Submittable<R, R.RC.TBatchCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+    ) async throws -> Submittable<R, ST<R.RC>.BatchCall, ST<R.RC>.ExtrinsicUnsignedExtra> {
         try await batch(calls: calls, params: ())
     }
     
     @inlinable
     func batch(
         _ txs: [any CallHolder]
-    ) async throws -> Submittable<R, R.RC.TBatchCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+    ) async throws -> Submittable<R, ST<R.RC>.BatchCall, ST<R.RC>.ExtrinsicUnsignedExtra> {
         try await batch(txs: txs, params: ())
     }
     
     @inlinable
     func batchAll(
         _ calls: [any Call]
-    ) async throws -> Submittable<R, R.RC.TBatchAllCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+    ) async throws -> Submittable<R, ST<R.RC>.BatchAllCall, ST<R.RC>.ExtrinsicUnsignedExtra> {
         try await batchAll(calls: calls, params: ())
     }
     
     @inlinable
     func batchAll(
         _ txs: [any CallHolder]
-    ) async throws -> Submittable<R, R.RC.TBatchAllCall, R.RC.TExtrinsicManager.TUnsignedExtra> {
+    ) async throws -> Submittable<R, ST<R.RC>.BatchAllCall, ST<R.RC>.ExtrinsicUnsignedExtra> {
         try await batchAll(txs: txs, params: ())
     }
 }

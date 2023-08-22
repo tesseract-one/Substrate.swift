@@ -77,8 +77,10 @@ extension RpcClient: Client {
     }
     
     @inlinable
-    public func accountNextIndex(id: C.TAccountId, runtime: ExtendedRuntime<C>) async throws -> C.TIndex {
-        let context = RC.TAccountId.EncodingContext(runtime: runtime) {
+    public func accountNextIndex(
+        id: ST<C>.AccountId, runtime: ExtendedRuntime<C>
+    ) async throws -> ST<C>.Index {
+        let context = ST<C>.AccountId.EncodingContext(runtime: runtime) {
             try $0.types.account.id
         }
         return try await call(method: "system_accountNextIndex",
@@ -87,13 +89,13 @@ extension RpcClient: Client {
     
     @inlinable
     public func runtimeVersion(
-        at hash: C.THasher.THash?, metadata: any Metadata, config: C
-    ) async throws -> C.TRuntimeVersion {
+        at hash: ST<C>.Hash?, metadata: any Metadata, config: C
+    ) async throws -> ST<C>.RuntimeVersion {
         return try await call(method: "state_getRuntimeVersion", params: Params(hash), context: metadata)
     }
     
     @inlinable
-    public func metadata(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
+    public func metadata(at hash: ST<C>.Hash?, config: C) async throws -> Metadata {
         do {
             return try await metadataFromRuntimeApi(at: hash, config: config)
         } catch {
@@ -103,65 +105,67 @@ extension RpcClient: Client {
     }
     
     @inlinable
-    public func systemProperties(metadata: any Metadata, config: C) async throws -> C.TSystemProperties {
+    public func systemProperties(
+        metadata: any Metadata, config: C
+    ) async throws -> ST<C>.SystemProperties {
         try await call(method: "system_properties", params: Params(), context: metadata)
     }
     
     @inlinable
     public func block(
-        hash index: C.TBlock.THeader.TNumber?, metadata: any Metadata, config: C
-    ) async throws -> C.TBlock.THeader.THasher.THash? {
+        hash index: ST<C>.BlockNumber?, metadata: any Metadata, config: C
+    ) async throws ->ST<C>.Hash? {
         try await call(method: "chain_getBlockHash", params: Params(index.map(UIntHex.init)),
                        context: (metadata, { try config.hashType(metadata: metadata).id }))
     }
     
     @inlinable
     public func block(
-        at hash: C.TBlock.THeader.THasher.THash? = nil, runtime: ExtendedRuntime<C>
-    ) async throws -> C.TChainBlock? {
+        at hash: ST<C>.Hash? = nil, runtime: ExtendedRuntime<C>
+    ) async throws -> ST<C>.ChainBlock? {
         try await call(method: "chain_getBlock", params: Params(hash),
                        context: (runtime, { try $0.types.block.id }))
     }
     
     @inlinable
     public func block(
-        header hash: C.TBlock.THeader.THasher.THash?, runtime: ExtendedRuntime<C>
-    ) async throws -> C.TBlock.THeader? {
-        let context = C.TBlock.THeader.DecodingContext(runtime: runtime) {
-            try C.TBlock.headerType(runtime: $0, block: $0.types.block.id)
+        header hash: ST<C>.Hash?, runtime: ExtendedRuntime<C>
+    ) async throws -> ST<C>.BlockHeader? {
+        let context = ST<C>.BlockHeader.DecodingContext(runtime: runtime) {
+            try ST<C>.Block.headerType(runtime: $0, block: $0.types.block.id)
         }
         return try await call(method: "chain_getHeader", params: Params(hash),
                               context: context)
     }
     
     public func events(
-        at hash: C.THasher.THash?,
+        at hash: ST<C>.Hash?,
         runtime: ExtendedRuntime<C>
-    ) async throws -> C.TBlockEvents? {
+    ) async throws -> ST<C>.BlockEvents? {
         return try await self.storage(value: runtime.eventsStorageKey, at: hash, runtime: runtime)
     }
     
     public func dryRun<CL: Call>(
-        extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
-        at hash: C.TBlock.THeader.THasher.THash?,
+        extrinsic: ST<C>.SignedExtrinsic<CL>,
+        at hash: ST<C>.Hash?,
         runtime: ExtendedRuntime<C>
-    ) async throws -> Result<Void, Either<C.TDispatchError, C.TTransactionValidityError>> {
+    ) async throws -> Result<Void, Either<ST<C>.DispatchError, ST<C>.TransactionValidityError>> {
         var encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
-        let dispatchErrorCtx = C.TDispatchError.DecodingContext(runtime: runtime) {
+        let dispatchErrorCtx = ST<C>.DispatchError.DecodingContext(runtime: runtime) {
             try $0.types.dispatchError.id
         }
-        let transactionErrorCtx = C.TTransactionValidityError.DecodingContext(runtime: runtime) {
+        let transactionErrorCtx = ST<C>.TransactionValidityError.DecodingContext(runtime: runtime) {
             try $0.types.transactionValidityError.id
         }
         let nothingCtx = RuntimeSwiftCodableContext(runtime: runtime)
-        let context = Either<C.TTransactionValidityError, Either<C.TDispatchError, Nothing>>
+        let context = Either<ST<C>.TransactionValidityError, Either<ST<C>.DispatchError, Nothing>>
             .resultContext(
                 left: transactionErrorCtx,
-                right: Either<C.TDispatchError, Nothing>
+                right: Either<ST<C>.DispatchError, Nothing>
                     .resultContext(left: dispatchErrorCtx, right: nothingCtx)
             )
-        let result: Either<C.TTransactionValidityError, Either<C.TDispatchError, Nothing>> =
+        let result: Either<ST<C>.TransactionValidityError, Either<ST<C>.DispatchError, Nothing>> =
             try await call(method: "system_dryRun",
                            params: Params(encoder.output, hash),
                            context: context)
@@ -171,7 +175,7 @@ extension RpcClient: Client {
     }
     
     public func execute<RT: ScaleCodec.Decodable>(call: any StaticCodableRuntimeCall<RT>,
-                                                  at hash: C.THasher.THash?,
+                                                  at hash: ST<C>.Hash?,
                                                   config: C) async throws -> RT
     {
         var encoder = config.encoder()
@@ -183,7 +187,7 @@ extension RpcClient: Client {
     }
     
     public func execute<RT>(call: any RuntimeCall<RT>,
-                            at hash: C.THasher.THash?,
+                            at hash: ST<C>.Hash?,
                             runtime: ExtendedRuntime<C>) async throws -> RT {
         var encoder = runtime.encoder()
         try call.encodeParams(in: &encoder, runtime: runtime)
@@ -194,9 +198,9 @@ extension RpcClient: Client {
     }
     
     public func submit<CL: Call>(
-        extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
+        extrinsic: ST<C>.SignedExtrinsic<CL>,
         runtime: ExtendedRuntime<C>
-    ) async throws -> C.THasher.THash {
+    ) async throws -> ST<C>.Hash {
         var encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
         return try await call(method: "author_submitExtrinsic", params: Params(encoder.output),
@@ -204,7 +208,7 @@ extension RpcClient: Client {
     }
     
     public func storage<V>(value key: any StorageKey<V>,
-                           at hash: C.THasher.THash?,
+                           at hash: ST<C>.Hash?,
                            runtime: ExtendedRuntime<C>) async throws -> V?
     {
         let data: Data? = try await call(method: "state_getStorage", params: Params(key.hash, hash))
@@ -215,7 +219,7 @@ extension RpcClient: Client {
     }
     
     public func storage(size key: any StorageKey,
-                        at hash: C.THasher.THash?,
+                        at hash: ST<C>.Hash?,
                         runtime: ExtendedRuntime<C>) async throws -> UInt64
     {
         let size: HexOrNumber<UInt64>? = try await call(method: "state_getStorageSize",
@@ -226,7 +230,7 @@ extension RpcClient: Client {
     public func storage<I: StorageKeyIterator>(keys iter: I,
                                                count: Int,
                                                startKey: I.TKey?,
-                                               at hash: C.THasher.THash?,
+                                               at hash: ST<C>.Hash?,
                                                runtime: ExtendedRuntime<C>) async throws -> [I.TKey] {
         let keys: [Data] = try await call(method: "state_getKeysPaged",
                                           params: Params(iter.hash, count, startKey?.hash, hash))
@@ -237,8 +241,8 @@ extension RpcClient: Client {
     }
     
     public func storage<K: StorageKey>(
-        changes keys: [K], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
-    ) async throws -> [(block: C.THasher.THash, changes: [(key: K, value: K.TValue?)])] {
+        changes keys: [K], at hash: ST<C>.Hash?, runtime: ExtendedRuntime<C>
+    ) async throws -> [(block: ST<C>.Hash, changes: [(key: K, value: K.TValue?)])] {
         let keys = Dictionary(uniqueKeysWithValues: keys.map { ($0.hash, $0) })
         return try await storage(changes: Array(keys.keys), hash: hash, runtime: runtime).map { chSet in
             let changes = try chSet.changes.map { (khash, val) in
@@ -253,8 +257,8 @@ extension RpcClient: Client {
     }
     
     public func storage(
-        anychanges keys: [any StorageKey], at hash: C.THasher.THash?, runtime: ExtendedRuntime<C>
-    ) async throws -> [(block: C.THasher.THash, changes: [(key: any StorageKey, value: Any?)])] {
+        anychanges keys: [any StorageKey], at hash: ST<C>.Hash?, runtime: ExtendedRuntime<C>
+    ) async throws -> [(block: ST<C>.Hash, changes: [(key: any StorageKey, value: Any?)])] {
         let keys = Dictionary(uniqueKeysWithValues: keys.map { ($0.hash, $0) })
         return try await storage(changes: Array(keys.keys), hash: hash, runtime: runtime).map { chSet in
             let changes = try chSet.changes.map { (khash, val) in
@@ -268,7 +272,7 @@ extension RpcClient: Client {
         }
     }
     
-    public func metadataFromRuntimeApi(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
+    public func metadataFromRuntimeApi(at hash: ST<C>.Hash?, config: C) async throws -> Metadata {
         let versions = try await execute(call: config.metadataVersionsCall(),
                                          at: hash, config: config)
         let supported = VersionedNetworkMetadata.supportedVersions.intersection(versions)
@@ -290,7 +294,7 @@ extension RpcClient: Client {
         return try metadata.metadata(config: config)
     }
     
-    public func metadataFromRpc(at hash: C.THasher.THash?, config: C) async throws -> Metadata {
+    public func metadataFromRpc(at hash: ST<C>.Hash?, config: C) async throws -> Metadata {
         let data: Data = try await call(method: "state_getMetadata", params: Params(hash?.raw))
         var decoder = config.decoder(data: data)
         let versioned = try decoder.decode(VersionedNetworkMetadata.self)
@@ -298,8 +302,8 @@ extension RpcClient: Client {
     }
     
     private func storage(changes keys: [Data],
-                         hash: C.THasher.THash?,
-                         runtime: ExtendedRuntime<C>) async throws -> [C.TStorageChangeSet] {
+                         hash: ST<C>.Hash?,
+                         runtime: ExtendedRuntime<C>) async throws -> [ST<C>.StorageChangeSet] {
         try await call(method: "state_queryStorageAt", params: Params(keys, hash),
                        context: .init(runtime: runtime))
     }
@@ -345,9 +349,9 @@ extension RpcClient: RpcSubscribableClient where CL: RpcSubscribableClient {
 
 extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
     public func submitAndWatch<CL: Call>(
-        extrinsic: SignedExtrinsic<CL, C.TExtrinsicManager>,
+        extrinsic: ST<C>.SignedExtrinsic<CL>,
         runtime: ExtendedRuntime<C>
-    ) async throws -> AsyncThrowingStream<C.TTransactionStatus, Error> {
+    ) async throws -> AsyncThrowingStream<ST<C>.TransactionStatus, Error> {
         var encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
         return try await subscribe(method: "author_submitAndWatchExtrinsic",
@@ -393,7 +397,7 @@ extension RpcClient: SubscribableClient where CL: RpcSubscribableClient {
     private func subscribe(
         storage keys: [Data],
         runtime: ExtendedRuntime<C>
-    ) async throws -> AsyncThrowingStream<C.TStorageChangeSet, Error> {
+    ) async throws -> AsyncThrowingStream<ST<C>.StorageChangeSet, Error> {
         try await subscribe(
            method: "state_subscribeStorage",
            params: keys,

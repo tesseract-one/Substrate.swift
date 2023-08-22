@@ -80,8 +80,8 @@ public extension StorageApiRegistry {
     @inlinable
     func changes(
         keys: [any StorageKey],
-        at hash: R.RC.THasher.THash? = nil
-    ) async throws -> [(block: R.RC.THasher.THash, changes: [(key: any StorageKey, value: Any?)])] {
+        at hash: ST<R.RC>.Hash? = nil
+    ) async throws -> [(block: ST<R.RC>.Hash, changes: [(key: any StorageKey, value: Any?)])] {
         try await rootApi.client.storage(anychanges: keys,
                                          at: hash ?? rootApi.hash,
                                          runtime: rootApi.runtime)

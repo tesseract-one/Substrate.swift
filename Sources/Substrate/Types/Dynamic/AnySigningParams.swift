@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct AnySigningParams<RT: Config>: ExtraSigningParameters {
+public struct AnySigningParams<BC: BasicConfig>: ExtraSigningParameters {
     public struct Partial: Default {
         private var params: [String: Any]
         
@@ -33,8 +33,8 @@ public struct AnySigningParams<RT: Config>: ExtraSigningParameters {
 }
 
 extension AnySigningParams.Partial: NoncePartialSigningParameter {
-    public typealias TNonce = RT.TIndex
-    public typealias TAccountId = RT.TAccountId
+    public typealias TNonce = SBT<BC>.Index
+    public typealias TAccountId = SBT<BC>.AccountId
     public var account: TAccountId? {
         get { self["account"] as? TAccountId }
         set { self["account"] = newValue }
@@ -48,8 +48,8 @@ extension AnySigningParams.Partial: NoncePartialSigningParameter {
 extension AnySigningParams: NonceSigningParameters {}
 
 extension AnySigningParams.Partial: EraPartialSigningParameter {
-    public typealias TEra = RT.TExtrinsicEra
-    public typealias THash = RT.TBlock.THeader.THasher.THash
+    public typealias TEra = SBT<BC>.ExtrinsicEra
+    public typealias THash = SBT<BC>.Hash
     public var era: TEra? {
         get { params["era"] as? TEra }
         set { params["era"] = newValue }
@@ -63,7 +63,7 @@ extension AnySigningParams.Partial: EraPartialSigningParameter {
 extension AnySigningParams: EraSigningParameters {}
 
 extension AnySigningParams.Partial: PaymentPartialSigningParameter {
-    public typealias TPayment = RT.TExtrinsicPayment
+    public typealias TPayment = SBT<BC>.ExtrinsicPayment
     public var tip: TPayment? {
         get { self["tip"] as? TPayment }
         set { self["tip"] = newValue }

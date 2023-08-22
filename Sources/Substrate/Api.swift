@@ -25,7 +25,7 @@ public protocol RootApi<RC>: AnyObject {
 }
 
 public extension RootApi {
-    @inlinable var hash: RC.THasher.THash? { runtime.metadataHash }
+    @inlinable var hash: ST<RC>.Hash? { runtime.metadataHash }
 }
 
 public protocol RootApiAware<RAPI> {
@@ -72,7 +72,7 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     }
     
     public convenience init(client: CL, config: RC, signer: Signer? = nil,
-                            at hash: RC.THasher.THash? = nil) async throws {
+                            at hash: ST<RC>.Hash? = nil) async throws {
         // Obtain initial data
         let metadata = try await client.metadata(at: hash, config: config)
         async let runtimeVersion = await client.runtimeVersion(at: hash, metadata: metadata, config: config)
@@ -88,11 +88,11 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
     }
     
     public convenience init(client: CL, config: ConfigRegistry<RC>, signer: Signer? = nil,
-                            at hash: RC.THasher.THash? = nil) async throws {
+                            at hash: ST<RC>.Hash? = nil) async throws {
         try await self.init(client: client, config: config.config, signer: signer, at: hash)
     }
     
-    public func fork(at hash: RC.THasher.THash?) async throws -> Api<RC, CL> {
+    public func fork(at hash: ST<RC>.Hash?) async throws -> Api<RC, CL> {
         try await Api(client: client, config: runtime.config, signer: signer, at: hash)
     }
 }

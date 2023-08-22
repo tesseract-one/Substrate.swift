@@ -42,12 +42,12 @@ public extension PublicKey {
     }
     
     @inlinable
-    func account<A: RootApi>(in api: A) throws -> A.RC.TAccountId {
+    func account<A: RootApi>(in api: A) throws -> ST<A.RC>.AccountId {
         try api.runtime.account(pub: self)
     }
     
     @inlinable
-    func address<A: RootApi>(in api: A) throws -> A.RC.TAddress {
+    func address<A: RootApi>(in api: A) throws -> ST<A.RC>.Address {
         try api.runtime.address(pub: self)
     }
 }

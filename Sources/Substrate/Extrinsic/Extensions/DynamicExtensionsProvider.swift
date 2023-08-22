@@ -10,26 +10,27 @@ import ScaleCodec
 
 public protocol DynamicExtrinsicExtension: ExtrinsicSignedExtension {
     func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial
 
     func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id>
 
     func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id>
     
-    func validate<C: Config>(
+    func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError>
 }
 
-public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvider {
-    public typealias TConfig = RC
-    public typealias TParams = AnySigningParams<RC>
+public class DynamicSignedExtensionsProvider<BC>: SignedExtensionsProvider
+    where BC: BasicConfig, SBT<BC>.SigningParams == AnySigningParams<BC>
+{
+    public typealias TConfig = BC
     public typealias TExtra = Value<RuntimeType.Id>
     public typealias TAdditionalSigned = [Value<RuntimeType.Id>]
     
@@ -41,17 +42,19 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
         self.version = version
     }
     
-    public func params<R: RootApi<RC>>(partial params: TParams.Partial,
-                                       for api: R) async throws -> TParams
-    {
+    public func params<R: RootApi>(
+        partial params: SBT<TConfig>.SigningParamsPartial, for api: R
+    ) async throws -> SBT<TConfig>.SigningParams where SBC<R.RC> == TConfig {
         var params = params
         for ext in try _activeExtensions(runtime: api.runtime).get() {
             params = try await ext.ext.params(api: api, partial: params)
         }
-        return try TParams(partial: params)
+        return try SBT<TConfig>.SigningParams(partial: params)
     }
         
-    public func extra<R: RootApi<RC>>(params: TParams, for api: R) async throws -> TExtra {
+    public func extra<R: RootApi>(
+        params: SBT<TConfig>.SigningParams, for api: R
+    ) async throws -> TExtra where SBC<R.RC> == TConfig {
         let extensions = try _activeExtensions(runtime: api.runtime).get()
         var extra: [Value<RuntimeType.Id>] = []
         extra.reserveCapacity(extensions.count)
@@ -61,9 +64,9 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
         return try Value(value: .sequence(extra), context: api.runtime.types.extrinsicExtra.id)
     }
     
-    public func additionalSigned<R: RootApi<RC>>(params: TParams,
-                                                 for api: R) async throws -> TAdditionalSigned
-    {
+    public func additionalSigned<R: RootApi>(
+        params: SBT<TConfig>.SigningParams, for api: R
+    ) async throws -> TAdditionalSigned where SBC<R.RC> == TConfig {
         let extensions = try _activeExtensions(runtime: api.runtime).get()
         var additional: [Value<RuntimeType.Id>] = []
         additional.reserveCapacity(extensions.count)
@@ -113,7 +116,7 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
                 exts.reduce(.success(())) { p, ext in
                     p.flatMap {
                         ext.ext.validate(
-                            config: RC.self, runtime: runtime,
+                            config: BC.self, runtime: runtime,
                             extra: ext.extId, additionalSigned: ext.addId
                         ).mapError{.right($0)}
                     }

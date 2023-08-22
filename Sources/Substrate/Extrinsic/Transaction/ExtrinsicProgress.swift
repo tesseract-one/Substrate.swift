@@ -19,24 +19,24 @@ public protocol SomeTransactionStatus<BlockHash>: RuntimeSwiftDecodable {
 
 public struct ExtrinsicProgress<R: RootApi> {
     public enum Error: Swift.Error {
-        case transactionFailed(R.RC.TTransactionStatus)
+        case transactionFailed(ST<R.RC>.TransactionStatus)
     }
 
     private let api: R
-    private let hash: R.RC.THasher.THash
-    private let stream: AsyncThrowingStream<R.RC.TTransactionStatus, Swift.Error>
+    private let hash: ST<R.RC>.Hash
+    private let stream: AsyncThrowingStream<ST<R.RC>.TransactionStatus, Swift.Error>
     
     public init(api: R,
-                hash: R.RC.THasher.THash,
-                stream: AsyncThrowingStream<R.RC.TTransactionStatus, Swift.Error>) {
+                hash: ST<R.RC>.Hash,
+                stream: AsyncThrowingStream<ST<R.RC>.TransactionStatus, Swift.Error>) {
         self.api = api
         self.stream = stream
         self.hash = hash
     }
     
-    public var progress: AsyncThrowingStream<R.RC.TTransactionStatus, Swift.Error> { stream }
+    public var progress: AsyncThrowingStream<ST<R.RC>.TransactionStatus, Swift.Error> { stream }
     
-    public func waitForInBlockHash() async throws -> R.RC.TBlock.THeader.THasher.THash {
+    public func waitForInBlockHash() async throws -> ST<R.RC>.Hash {
         for try await status in stream {
             if status.isInBlock || status.isFinalized {
                 return status.blockHash!
@@ -47,7 +47,7 @@ public struct ExtrinsicProgress<R: RootApi> {
         fatalError("Should be unreachable!")
     }
     
-    public func waitForFinalizedHash() async throws -> R.RC.TBlock.THeader.THasher.THash {
+    public func waitForFinalizedHash() async throws -> ST<R.RC>.Hash {
         for try await status in stream {
             if status.isFinalized {
                 return status.blockHash!
@@ -58,12 +58,12 @@ public struct ExtrinsicProgress<R: RootApi> {
         fatalError("Should be unreachable!")
     }
     
-    public func waitForInBlock() async throws -> ExtrinsicEvents<R.RC.THasher.THash, R.RC.TBlockEvents, R.RC.TExtrinsicFailureEvent> {
+    public func waitForInBlock() async throws -> ExtrinsicEvents<ST<R.RC>.Hash, ST<R.RC>.BlockEvents, ST<R.RC>.ExtrinsicFailureEvent> {
         let hash = try await waitForInBlockHash()
         return try await ExtrinsicEvents(api: api, blockHash: hash, extrinsicHash: self.hash)
     }
     
-    public func waitForFinalized() async throws -> ExtrinsicEvents<R.RC.THasher.THash, R.RC.TBlockEvents, R.RC.TExtrinsicFailureEvent> {
+    public func waitForFinalized() async throws -> ExtrinsicEvents<ST<R.RC>.Hash, ST<R.RC>.BlockEvents, ST<R.RC>.ExtrinsicFailureEvent> {
         let hash = try await waitForFinalizedHash()
         return try await ExtrinsicEvents(api: api, blockHash: hash, extrinsicHash: self.hash)
     }

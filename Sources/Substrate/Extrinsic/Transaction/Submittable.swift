@@ -11,12 +11,6 @@ import ScaleCodec
 public struct Submittable<R: RootApi, C: Call, E: ExtrinsicExtra>: CallHolder {
     public typealias TCall = C
     
-    public typealias THash = R.RC.THasher.THash
-    public typealias TUnsignedParams = R.RC.TExtrinsicManager.TUnsignedParams
-    public typealias TSigningParams = R.RC.TExtrinsicManager.TSigningParams
-    public typealias TUnsignedExtra = R.RC.TExtrinsicManager.TUnsignedExtra
-    public typealias TSignedExtra = R.RC.TExtrinsicManager.TSignedExtra
-    
     public let extrinsic: Extrinsic<C, E>
     public let api: R
     @inlinable public var call: C { extrinsic.call }
@@ -36,42 +30,42 @@ public enum SubmittableError: Swift.Error {
     case batchIsNotSupported
 }
 
-extension Submittable where E == TUnsignedExtra {
-    public init(api: R, call: C, params: TUnsignedParams) async throws {
+extension Submittable where E == ST<R.RC>.ExtrinsicUnsignedExtra {
+    public init(api: R, call: C, params: ST<R.RC>.ExtrinsicUnsignedParams) async throws {
         let ext = try await api.runtime.extrinsicManager.unsigned(call: call, params: params, for: api)
         self.init(api: api, extinsic: ext)
     }
     
     public func dryRun(account: any PublicKey,
-                       at block: THash? = nil,
-                       overrides: TSigningParams.TPartial? = nil
-    ) async throws -> Result<Void, Either<R.RC.TDispatchError, R.RC.TTransactionValidityError>> {
+                       at block: ST<R.RC>.Hash? = nil,
+                       overrides: ST<R.RC>.SigningParamsPartial? = nil
+    ) async throws -> Result<Void, Either<ST<R.RC>.DispatchError, ST<R.RC>.TransactionValidityError>> {
         let signed = try await fakeSign(account: account, overrides: overrides)
         return try await signed.dryRun(at: block)
     }
     
     public func paymentInfo(account: any PublicKey,
-                            at block: THash? = nil,
-                            overrides: TSigningParams.TPartial? = nil
-    ) async throws -> R.RC.TDispatchInfo {
+                            at block: ST<R.RC>.Hash? = nil,
+                            overrides: ST<R.RC>.SigningParamsPartial? = nil
+    ) async throws -> ST<R.RC>.DispatchInfo {
         let signed = try await fakeSign(account: account, overrides: overrides)
         return try await signed.paymentInfo(at: block)
     }
     
     public func feeDetails(account: any PublicKey,
-                           at block: THash? = nil,
-                           overrides: TSigningParams.TPartial? = nil
-    ) async throws -> R.RC.TFeeDetails {
+                           at block: ST<R.RC>.Hash? = nil,
+                           overrides: ST<R.RC>.SigningParamsPartial? = nil
+    ) async throws -> ST<R.RC>.FeeDetails {
         let signed = try await fakeSign(account: account, overrides: overrides)
         return try await signed.feeDetails(at: block)
     }
     
     public func fakeSign(account: any PublicKey,
-                         overrides: TSigningParams.TPartial? = nil
-    ) async throws -> Submittable<R, C, TSignedExtra> {
+                         overrides: ST<R.RC>.SigningParamsPartial? = nil
+    ) async throws -> Submittable<R, C, ST<R.RC>.ExtrinsicSignedExtra> {
         let params = try await fetchParameters(account: account, partial: overrides ?? .default)
         let payload = try await api.runtime.extrinsicManager.payload(unsigned: extrinsic, params: params, for: api)
-        let signature = try api.runtime.create(fakeSignature: R.RC.TSignature.self,
+        let signature = try api.runtime.create(fakeSignature: ST<R.RC>.Signature.self,
                                                algorithm: account.algorithm)
         let signed = try api.runtime.extrinsicManager.signed(payload: payload,
                                                              address: account.address(in: api),
@@ -81,21 +75,21 @@ extension Submittable where E == TUnsignedExtra {
     }
     
     public func fetchParameters(
-        account: (any PublicKey)? = nil, partial: TSigningParams.TPartial
-    ) async throws -> TSigningParams {
+        account: (any PublicKey)? = nil, partial: ST<R.RC>.SigningParamsPartial
+    ) async throws -> ST<R.RC>.SigningParams {
         var partial = partial
         if let account = account, var param = partial as? AnyAccountPartialSigningParameter {
-            let accountId: R.RC.TAccountId = try account.account(runtime: api.runtime)
+            let accountId: ST<R.RC>.AccountId = try account.account(runtime: api.runtime)
             try param.setAccount(accountId)
-            partial = param as! TSigningParams.TPartial
+            partial = param as! ST<R.RC>.SigningParamsPartial
         }
         return try await api.runtime.extrinsicManager.params(unsigned: self.extrinsic,
                                                              partial: partial, for: api)
     }
     
     public func sign(account: any PublicKey,
-                     overrides: TSigningParams.TPartial? = nil
-    ) async throws -> Submittable<R, C, TSignedExtra> {
+                     overrides: ST<R.RC>.SigningParamsPartial? = nil
+    ) async throws -> Submittable<R, C, ST<R.RC>.ExtrinsicSignedExtra> {
         guard let signer = api.signer else {
             throw SubmittableError.signerIsNil
         }
@@ -103,33 +97,33 @@ extension Submittable where E == TUnsignedExtra {
     }
     
     public func sign(signer: any Signer,
-                     overrides: TSigningParams.TPartial? = nil
-    ) async throws -> Submittable<R, C, TSignedExtra> {
+                     overrides: ST<R.RC>.SigningParamsPartial? = nil
+    ) async throws -> Submittable<R, C, ST<R.RC>.ExtrinsicSignedExtra> {
         let account = try await signer.account(
             type: .account,
-            algos: api.runtime.algorithms(signature: R.RC.TSignature.self)
+            algos: api.runtime.algorithms(signature: ST<R.RC>.Signature.self)
         ).get()
         return try await sign(signer: signer, account: account, overrides: overrides)
     }
     
     public func signAndSend(
         account: any PublicKey,
-        overrides: TSigningParams.TPartial? = nil
-    ) async throws -> THash {
+        overrides: ST<R.RC>.SigningParamsPartial? = nil
+    ) async throws -> ST<R.RC>.Hash {
         return try await sign(account: account, overrides: overrides).send()
     }
     
     public func signAndSend(
         signer: any Signer,
-        overrides: TSigningParams.TPartial? = nil
-    ) async throws -> THash {
+        overrides: ST<R.RC>.SigningParamsPartial? = nil
+    ) async throws -> ST<R.RC>.Hash {
         return try await sign(signer: signer, overrides: overrides).send()
     }
     
     private func sign(signer: any Signer,
                       account: any PublicKey,
-                      overrides: TSigningParams.TPartial? = nil
-    ) async throws -> Submittable<R, C, TSignedExtra> {
+                      overrides: ST<R.RC>.SigningParamsPartial? = nil
+    ) async throws -> Submittable<R, C, ST<R.RC>.ExtrinsicSignedExtra> {
         let params = try await fetchParameters(account: account, partial: overrides ?? .default)
         let payload = try await api.runtime.extrinsicManager.payload(unsigned: extrinsic,
                                                                      params: params, for: api)
@@ -151,26 +145,26 @@ extension Submittable where E == TUnsignedExtra {
     }
 }
 
-extension Submittable where E == TUnsignedExtra, R.CL: SubscribableClient {
+extension Submittable where E == ST<R.RC>.ExtrinsicUnsignedExtra, R.CL: SubscribableClient {
     public func signSendAndWatch(
         account: any PublicKey,
-        overrides: TSigningParams.TPartial? = nil
+        overrides: ST<R.RC>.SigningParamsPartial? = nil
     ) async throws -> ExtrinsicProgress<R> {
         return try await sign(account: account, overrides: overrides).sendAndWatch()
     }
     
     public func signSendAndWatch(
         signer: any Signer,
-        overrides: TSigningParams.TPartial? = nil
+        overrides: ST<R.RC>.SigningParamsPartial? = nil
     ) async throws -> ExtrinsicProgress<R> {
         return try await sign(signer: signer, overrides: overrides).sendAndWatch()
     }
 }
 
-extension Submittable where E == TSignedExtra {
+extension Submittable where E == ST<R.RC>.ExtrinsicSignedExtra {
     public func dryRun(
-        at block: THash? = nil
-    ) async throws -> Result<Void, Either<R.RC.TDispatchError, R.RC.TTransactionValidityError>> {
+        at block: ST<R.RC>.Hash? = nil
+    ) async throws -> Result<Void, Either<ST<R.RC>.DispatchError, ST<R.RC>.TransactionValidityError>> {
         guard try await api.client.hasDryRun else {
             throw SubmittableError.dryRunIsNotSupported
         }
@@ -179,8 +173,8 @@ extension Submittable where E == TSignedExtra {
     }
     
     public func paymentInfo(
-        at block: THash? = nil
-    ) async throws -> R.RC.TDispatchInfo {
+        at block: ST<R.RC>.Hash? = nil
+    ) async throws -> ST<R.RC>.DispatchInfo {
         let call = try api.runtime.queryInfoCall(extrinsic: extrinsic)
         guard api.call.has(call: call) else {
             throw SubmittableError.queryInfoIsNotSupported
@@ -189,8 +183,8 @@ extension Submittable where E == TSignedExtra {
     }
     
     public func feeDetails(
-        at block: THash? = nil
-    ) async throws -> R.RC.TFeeDetails {
+        at block: ST<R.RC>.Hash? = nil
+    ) async throws -> ST<R.RC>.FeeDetails {
         let call = try api.runtime.queryFeeDetailsCall(extrinsic: extrinsic)
         guard api.call.has(call: call) else {
             throw SubmittableError.queryFeeDetailsIsNotSupported
@@ -198,7 +192,7 @@ extension Submittable where E == TSignedExtra {
         return try await api.client.execute(call: call, at: block, runtime: api.runtime)
     }
     
-    public func send() async throws -> THash {
+    public func send() async throws -> ST<R.RC>.Hash {
         try await api.client.submit(extrinsic: extrinsic,
                                     runtime: api.runtime)
     }
@@ -211,7 +205,7 @@ extension Submittable where E == TSignedExtra {
     }
 }
 
-extension Submittable where E == R.RC.TExtrinsicManager.TSignedExtra, R.CL: SubscribableClient {
+extension Submittable where E == ST<R.RC>.ExtrinsicSignedExtra, R.CL: SubscribableClient {
     public func sendAndWatch() async throws -> ExtrinsicProgress<R> {
         var encoder = api.runtime.encoder()
         try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder,

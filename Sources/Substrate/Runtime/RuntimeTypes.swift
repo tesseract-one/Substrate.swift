@@ -27,9 +27,9 @@ public protocol RuntimeTypes {
     var hash: RuntimeType.Info { get throws }
     var call: RuntimeType.Info { get throws }
     var extrinsicExtra: RuntimeType.Info { get throws }
-    var dispatchInfo: RuntimeType.Info { get throws }
+//    var dispatchInfo: RuntimeType.Info { get throws }
     var dispatchError: RuntimeType.Info { get throws }
-    var feeDetails: RuntimeType.Info { get throws }
+//    var feeDetails: RuntimeType.Info { get throws }
     var transactionValidityError: RuntimeType.Info { get throws }
 }
 

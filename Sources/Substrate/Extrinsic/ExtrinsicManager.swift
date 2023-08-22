@@ -8,11 +8,6 @@
 import Foundation
 import ScaleCodec
 
-public typealias AnyExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, Either<M.TUnsignedExtra, M.TSignedExtra>>
-public typealias SignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.TSignedExtra>
-public typealias UnsignedExtrinsic<C: Call, M: ExtrinsicManager> = Extrinsic<C, M.TUnsignedExtra>
-public typealias SigningPayload<C: Call, M: ExtrinsicManager> = ExtrinsicSignPayload<C, M.TSigningExtra>
-
 public protocol ExtrinsicDecoder {
     func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
         from decoder: inout D, runtime: any Runtime
@@ -22,49 +17,51 @@ public protocol ExtrinsicDecoder {
 }
 
 public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder {
-    associatedtype TConfig: Config
+    associatedtype TConfig: BasicConfig
     associatedtype TUnsignedParams
     associatedtype TUnsignedExtra: ExtrinsicExtra
-    associatedtype TSigningParams: ExtraSigningParameters
     associatedtype TSigningExtra
     associatedtype TSignedExtra: ExtrinsicExtra
     
-    func unsigned<C: Call, R: RootApi<TConfig>>(
+    func unsigned<C: Call, R: RootApi>(
         call: C, params: TUnsignedParams, for api: R
-    ) async throws -> Extrinsic<C, TUnsignedExtra>
+    ) async throws -> Extrinsic<C, TUnsignedExtra> where SBC<R.RC> == TConfig
+    
     func encode<C: Call, E: ScaleCodec.Encoder>(unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
                                                 in encoder: inout E,
                                                 runtime: any Runtime) throws
 
-    func params<C: Call, R: RootApi<TConfig>>(
+    func params<C: Call, R: RootApi>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        partial params: TSigningParams.TPartial,
+        partial params: SBT<TConfig>.SigningParamsPartial,
         for api: R
-    ) async throws -> TSigningParams
+    ) async throws -> SBT<TConfig>.SigningParams where SBC<R.RC> == TConfig
     
-    func payload<C: Call, R: RootApi<TConfig>>(
+    func payload<C: Call, R: RootApi>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        params: TSigningParams, for api: R
-    ) async throws -> ExtrinsicSignPayload<C, TSigningExtra>
+        params: SBT<TConfig>.SigningParams, for api: R
+    ) async throws -> ExtrinsicSignPayload<C, TSigningExtra> where SBC<R.RC> == TConfig
     
     func encode<C: Call, E: ScaleCodec.Encoder>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
                                                 in encoder: inout E,
                                                 runtime: any Runtime) throws
+    
     func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         payload decoder: inout D, runtime: any Runtime
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra>
     
     func signed<C: Call>(payload: ExtrinsicSignPayload<C, TSigningExtra>,
-                         address: TConfig.TAddress,
-                         signature: TConfig.TSignature,
+                         address: SBT<TConfig>.Address,
+                         signature: SBT<TConfig>.Signature,
                          runtime: any Runtime) throws -> Extrinsic<C, TSignedExtra>
     
     func encode<C: Call, E: ScaleCodec.Encoder>(signed extrinsic: Extrinsic<C, TSignedExtra>,
                                                 in encoder: inout E,
                                                 runtime: any Runtime) throws
+    
     func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         from decoder: inout D, runtime: any Runtime
-    ) throws -> AnyExtrinsic<C, Self>
+    ) throws -> AnyExtrinsic<C>
     
     func validate(runtime: any Runtime) throws
     
@@ -72,17 +69,18 @@ public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder {
 }
 
 public extension ExtrinsicManager {
+    typealias AnyExtrinsic<C: Call> = Extrinsic<C, Either<TUnsignedExtra, TSignedExtra>>
+    
     var version: UInt8 { Self.version }
     
     func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
         from decoder: inout D, runtime: any Runtime
     ) throws -> Extrinsic<C, Extra> {
-        guard Extrinsic<C, Extra>.self == AnyExtrinsic<C, Self>.self else {
-            throw ExtrinsicCodingError.typeMismatch(expected: AnyExtrinsic<C, Self>.self,
+        guard Extrinsic<C, Extra>.self == AnyExtrinsic<C>.self else {
+            throw ExtrinsicCodingError.typeMismatch(expected: AnyExtrinsic<C>.self,
                                                     got: Extrinsic<C, Extra>.self)
         }
-        let decoded: AnyExtrinsic<C, Self> = try decode(from: &decoder, runtime: runtime)
+        let decoded: AnyExtrinsic<C> = try decode(from: &decoder, runtime: runtime)
         return decoded as! Extrinsic<C, Extra>
     }
 }
-

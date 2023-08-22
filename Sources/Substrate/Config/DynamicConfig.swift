@@ -10,30 +10,32 @@ import Tuples
 import Serializable
 
 public struct DynamicConfig: Config {
-    public typealias THasher = AnyFixedHasher
-    public typealias TIndex = UInt256
-    public typealias TSystemProperties = AnySystemProperties
-    public typealias TAccountId = AccountId32
-    public typealias TAddress =  AnyAddress<TAccountId>
-    public typealias TSignature = AnySignature
-    public typealias TBlock = AnyBlock<THasher, TIndex, BlockExtrinsic<TExtrinsicManager>>
+    public struct Basic: BasicConfig {
+        public typealias THasher = AnyFixedHasher
+        public typealias TIndex = UInt256
+        public typealias TAccountId = AccountId32
+        public typealias TAddress =  AnyAddress<TAccountId>
+        public typealias TSignature = AnySignature
+        public typealias TSigningParams = AnySigningParams<Self>
+        public typealias TExtrinsicEra = ExtrinsicEra
+        public typealias TExtrinsicPayment = Value<Void>
+        public typealias TSystemProperties = AnySystemProperties
+        public typealias TRuntimeVersion = AnyRuntimeVersion<UInt32>
+        public typealias TFeeDetails = Value<RuntimeType.Id>
+        public typealias TDispatchInfo = Value<RuntimeType.Id>
+    }
+    
+    public typealias BC = Basic
+    
+    public typealias TBlock = AnyBlock<BC.THasher, BC.TIndex, BlockExtrinsic<TExtrinsicManager>>
     public typealias TChainBlock = AnyChainBlock<TBlock>
-    public typealias TSigningParams = AnySigningParams<Self>
-    
-    public typealias TExtrinsicManager = ExtrinsicV4Manager<DynamicSignedExtensionsProvider<Self>>
-    
-    public typealias TTransactionStatus = TransactionStatus<THasher.THash, THasher.THash>
-    
-    public typealias TExtrinsicEra = ExtrinsicEra
-    public typealias TExtrinsicPayment = Value<Void>
-    public typealias TFeeDetails = Value<RuntimeType.Id>
-    public typealias TDispatchInfo = Value<RuntimeType.Id>
+    public typealias TExtrinsicManager = ExtrinsicV4Manager<DynamicSignedExtensionsProvider<BC>>
+    public typealias TTransactionStatus = TransactionStatus<BC.THasher.THash, BC.THasher.THash>
     public typealias TDispatchError = AnyDispatchError
     public typealias TTransactionValidityError = AnyTransactionValidityError
     public typealias TExtrinsicFailureEvent = AnyExtrinsicFailureEvent
     public typealias TBlockEvents = BlockEvents<AnyEventRecord>
-    public typealias TRuntimeVersion = AnyRuntimeVersion<UInt32>
-    public typealias TStorageChangeSet = StorageChangeSet<THasher.THash>
+    public typealias TStorageChangeSet = StorageChangeSet<BC.THasher.THash>
     
     public enum Error: Swift.Error {
         case typeNotFound(name: String, selector: NSRegularExpression)
@@ -47,7 +49,7 @@ public struct DynamicConfig: Config {
     
     public let extensions: [DynamicExtrinsicExtension]
     public let runtimeCustomCoders: [RuntimeCustomDynamicCoder]
-    public let payment: TExtrinsicPayment?
+    public let payment: ST<Self>.ExtrinsicPayment?
     public let blockSelector: NSRegularExpression
     public let headerSelector: NSRegularExpression
     public let accountSelector: NSRegularExpression
@@ -58,7 +60,7 @@ public struct DynamicConfig: Config {
     
     public init(signedExtensions: [DynamicExtrinsicExtension] = Self.allSignedExtensions,
                 customCoders: [RuntimeCustomDynamicCoder] = Self.customCoders,
-                defaultPayment: TExtrinsicPayment? = nil,
+                defaultPayment: ST<Self>.ExtrinsicPayment? = nil,
                 blockSelector: String = "^.*Block$",
                 headerSelector: String = "^.*Header$",
                 accountSelector: String = "^.*AccountId[0-9]*$",
@@ -91,8 +93,8 @@ extension DynamicConfig: BatchSupportedConfig {
 public extension DynamicConfig {
     @inlinable
     func extrinsicManager() throws -> TExtrinsicManager {
-        let provider = DynamicSignedExtensionsProvider<Self>(extensions: extensions,
-                                                             version: TExtrinsicManager.version)
+        let provider = DynamicSignedExtensionsProvider<SBC<Self>>(extensions: extensions,
+                                                                  version: TExtrinsicManager.version)
         return TExtrinsicManager(extensions: provider)
     }
     
@@ -102,14 +104,16 @@ public extension DynamicConfig {
     }
     
     @inlinable
-    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
+    func queryInfoCall(extrinsic: Data,
+                       runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.DispatchInfo> {
         AnyRuntimeCall(api: "TransactionPaymentApi",
                        method: "query_info",
                        params: [extrinsic, extrinsic.count])
     }
     
     @inlinable
-    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
+    func queryFeeDetailsCall(extrinsic: Data,
+                             runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.FeeDetails> {
         AnyRuntimeCall(api: "TransactionPaymentApi",
                        method: "query_fee_details",
                        params: [extrinsic, extrinsic.count])
@@ -143,7 +147,7 @@ public extension DynamicConfig {
         return RuntimeType.Info(id: hashType, type: hashInfo)
     }
     
-    func hasher(metadata: Metadata) throws -> AnyFixedHasher {
+    func hasher(metadata: Metadata) throws -> ST<Self>.Hasher {
         let header = try headerType(metadata: metadata)
         let hashType = header.type.parameters.first { $0.name.lowercased() == "hash" }?.type
         guard let hashType = hashType, let hashName = metadata.resolve(type: hashType)?.path.last else {
@@ -155,7 +159,7 @@ public extension DynamicConfig {
         return hasher
     }
     
-    func defaultPayment(runtime: any Runtime) throws -> TExtrinsicPayment {
+    func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment {
         if let def = payment { return def }
         guard let type = DynamicChargeTransactionPaymentExtension.tipType(runtime: runtime) else {
             throw Error.paymentTypeNotFound
@@ -247,8 +251,8 @@ public extension DynamicConfig {
 // ConfigRegistry helpers
 public extension ConfigRegistry where C == DynamicConfig {
     @inlinable
-    static func dynamic(customCoders: [RuntimeCustomDynamicCoder] = DynamicConfig.customCoders,
-                        defaultPayment: DynamicConfig.TExtrinsicPayment? = nil,
+    static func dynamic(customCoders: [RuntimeCustomDynamicCoder] = C.customCoders,
+                        defaultPayment: ST<C>.ExtrinsicPayment? = nil,
                         blockSelector: String = "^.*Block$",
                         headerSelector: String = "^.*Header$",
                         accountSelector: String = "^.*AccountId[0-9]*$",

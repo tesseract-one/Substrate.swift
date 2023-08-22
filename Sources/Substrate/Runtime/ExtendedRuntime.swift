@@ -23,10 +23,10 @@ public protocol RuntimeVersion: ContextDecodable where DecodingContext == (any M
 open class ExtendedRuntime<RC: Config>: Runtime {
     public let config: RC
     public let metadata: any Metadata
-    public let genesisHash: RC.THasher.THash
-    public let version: RC.TRuntimeVersion
-    public let properties: RC.TSystemProperties
-    public let metadataHash: RC.THasher.THash?
+    public let genesisHash: ST<RC>.Hash
+    public let version: ST<RC>.RuntimeVersion
+    public let properties: ST<RC>.SystemProperties
+    public let metadataHash: ST<RC>.Hash?
     public let types: any RuntimeTypes
     public let isBatchSupported: Bool
     public let customCoders: [RuntimeCustomDynamicCoder]
@@ -44,7 +44,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         get throws { try config.eventsStorageKey(runtime: self) }
     }
     
-    public let typedHasher: RC.THasher
+    public let typedHasher: ST<RC>.Hasher
     
     public let addressFormat: SS58.AddressFormat
     
@@ -66,8 +66,8 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     
     @inlinable
     public func queryInfoCall<C: Call>(
-        extrinsic: Extrinsic<C, RC.TExtrinsicManager.TSignedExtra>
-    ) throws -> any RuntimeCall<RC.TDispatchInfo> {
+        extrinsic: Extrinsic<C, ST<RC>.ExtrinsicSignedExtra>
+    ) throws -> any RuntimeCall<ST<RC>.DispatchInfo> {
         var encoder = self.encoder()
         try extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: self)
         return try config.queryInfoCall(extrinsic: encoder.output, runtime: self)
@@ -75,18 +75,18 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     
     @inlinable
     public func queryFeeDetailsCall<C: Call>(
-        extrinsic: Extrinsic<C, RC.TExtrinsicManager.TSignedExtra>
-    ) throws -> any RuntimeCall<RC.TFeeDetails> {
+        extrinsic: Extrinsic<C, ST<RC>.ExtrinsicSignedExtra>
+    ) throws -> any RuntimeCall<ST<RC>.FeeDetails> {
         var encoder = self.encoder()
         try extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: self)
         return try config.queryFeeDetailsCall(extrinsic: encoder.output, runtime: self)
     }
     
     public init(config: RC, metadata: any Metadata,
-                metadataHash: RC.THasher.THash?,
-                genesisHash: RC.THasher.THash,
-                version: RC.TRuntimeVersion,
-                properties: RC.TSystemProperties) throws
+                metadataHash: ST<RC>.Hash?,
+                genesisHash: ST<RC>.Hash,
+                version: ST<RC>.RuntimeVersion,
+                properties: ST<RC>.SystemProperties) throws
     {
         self.config = config
         self.metadata = metadata
@@ -113,37 +113,37 @@ open class ExtendedRuntime<RC: Config>: Runtime {
 
 public extension ExtendedRuntime {
     @inlinable
-    func account(ss58: String) throws -> RC.TAccountId {
-        try create(account: RC.TAccountId.self, from: ss58)
+    func account(ss58: String) throws -> ST<RC>.AccountId {
+        try create(account: ST<RC>.AccountId.self, from: ss58)
     }
     
     @inlinable
-    func account(pub: any PublicKey) throws -> RC.TAccountId {
+    func account(pub: any PublicKey) throws -> ST<RC>.AccountId {
         try pub.account(runtime: self)
     }
     
     @inlinable
-    func account(raw: Data) throws -> RC.TAccountId {
-        try create(account: RC.TAccountId.self, raw: raw)
+    func account(raw: Data) throws -> ST<RC>.AccountId {
+        try create(account: ST<RC>.AccountId.self, raw: raw)
     }
     
     @inlinable
-    func address(account: RC.TAccountId) throws -> RC.TAddress {
+    func address(account: ST<RC>.AccountId) throws -> ST<RC>.Address {
         try account.address()
     }
     
     @inlinable
-    func address(ss58: String) throws -> RC.TAddress {
+    func address(ss58: String) throws -> ST<RC>.Address {
         try account(ss58: ss58).address()
     }
     
     @inlinable
-    func address(pub: any PublicKey) throws -> RC.TAddress {
+    func address(pub: any PublicKey) throws -> ST<RC>.Address {
         try pub.address(runtime: self)
     }
     
     @inlinable
-    func hash(data: Data) throws -> RC.THasher.THash {
+    func hash(data: Data) throws -> ST<RC>.Hash {
         try typedHasher.hash(data: data, runtime: self)
     }
 }
@@ -193,13 +193,13 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
     public var signature: RuntimeType.Info { get throws { try _extrinsic.signature }}
     public var extrinsicExtra: RuntimeType.Info { get throws { try _extrinsic.extra }}
     
-    public var dispatchInfo: RuntimeType.Info { get throws {
-        try _state.sync { state in
-            if let res = state.dispatchInfo { return try res.get() }
-            state.dispatchInfo = Result { try self._config.dispatchInfoType(metadata: self._metadata) }
-            return try state.dispatchInfo!.get()
-        }
-    }}
+//    public var dispatchInfo: RuntimeType.Info { get throws {
+//        try _state.sync { state in
+//            if let res = state.dispatchInfo { return try res.get() }
+//            state.dispatchInfo = Result { try self._config.dispatchInfoType(metadata: self._metadata) }
+//            return try state.dispatchInfo!.get()
+//        }
+//    }}
     
     public var dispatchError: RuntimeType.Info { get throws {
         try _state.sync { state in
@@ -208,14 +208,14 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
             return try state.dispatchError!.get()
         }
     }}
-    
-    public var feeDetails: RuntimeType.Info { get throws {
-        try _state.sync { state in
-            if let res = state.feeDetails { return try res.get() }
-            state.feeDetails = Result { try self._config.feeDetailsType(metadata: self._metadata) }
-            return try state.feeDetails!.get()
-        }
-    }}
+//
+//    public var feeDetails: RuntimeType.Info { get throws {
+//        try _state.sync { state in
+//            if let res = state.feeDetails { return try res.get() }
+//            state.feeDetails = Result { try self._config.feeDetailsType(metadata: self._metadata) }
+//            return try state.feeDetails!.get()
+//        }
+//    }}
     
     public var transactionValidityError: RuntimeType.Info { get throws {
         try _state.sync { state in

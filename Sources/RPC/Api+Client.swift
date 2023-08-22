@@ -12,14 +12,14 @@ import Substrate
 
 public extension Api {
     convenience init<RPC>(
-        rpc client: RPC, config: RC, signer: Signer? = nil, at hash: RC.THasher.THash? = nil
+        rpc client: RPC, config: RC, signer: Signer? = nil, at hash: ST<RC>.Hash? = nil
     ) async throws where RPC: RpcCallableClient, CL == RpcClient<RC, RPC> {
         let systemClient = RpcClient<RC, RPC>(client: client)
         try await self.init(client: systemClient, config: config, signer: signer, at: hash)
     }
     
     convenience init<RPC>(
-        rpc client: RPC, config: ConfigRegistry<RC>, signer: Signer? = nil, at hash: RC.THasher.THash? = nil
+        rpc client: RPC, config: ConfigRegistry<RC>, signer: Signer? = nil, at hash: ST<RC>.Hash? = nil
     ) async throws where RPC: RpcCallableClient, CL == RpcClient<RC, RPC> {
         let systemClient = RpcClient<RC, RPC>(client: client)
         try await self.init(client: systemClient, config: config, signer: signer, at: hash)
@@ -28,14 +28,14 @@ public extension Api {
 
 public extension Api where CL == RpcClient<RC, JsonRpcCallableClient> {
     func fork<C: Config>(config: C) async throws -> Api<C, RpcClient<C, JsonRpcCallableClient>>
-        where C.THasher.THash == RC.THasher.THash
+        where ST<C>.Hash == ST<RC>.Hash
     {
         let client = RpcClient<C, JsonRpcCallableClient>(client: self.client.client)
         return try await Api<_, _>(client: client, config: config, signer: signer, at: hash)
     }
     
     func fork<C: Config>(
-        at hash: C.THasher.THash?, config: C
+        at hash: ST<C>.Hash?, config: C
     ) async throws -> Api<C, RpcClient<C, JsonRpcCallableClient>> {
         let client = RpcClient<C, JsonRpcCallableClient>(client: self.client.client)
         return try await Api<_, _>(client: client, config: config, signer: signer, at: hash)
@@ -44,14 +44,14 @@ public extension Api where CL == RpcClient<RC, JsonRpcCallableClient> {
 
 public extension Api where CL == RpcClient<RC, JsonRpcSubscribableClient> {
     func fork<C: Config>(config: C) async throws -> Api<C, RpcClient<C, JsonRpcSubscribableClient>>
-        where C.THasher.THash == RC.THasher.THash
+        where ST<C>.Hash == ST<RC>.Hash
     {
         let client = RpcClient<C, _>(client: self.client.client)
         return try await Api<_, _>(client: client, config: config, signer: signer, at: hash)
     }
     
     func fork<C: Config>(
-        at hash: C.THasher.THash?, config: C
+        at hash: ST<C>.Hash?, config: C
     ) async throws -> Api<C, RpcClient<C, JsonRpcSubscribableClient>> {
         let client = RpcClient<C, _>(client: self.client.client)
         return try await Api<_, _>(client: client, config: config, signer: signer, at: hash)

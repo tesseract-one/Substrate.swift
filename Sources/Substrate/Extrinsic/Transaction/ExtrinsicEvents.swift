@@ -31,7 +31,7 @@ public struct ExtrinsicEvents<H: Hash, BE: SomeBlockEvents, Failure: SomeExtrins
     }
     
     public init<R>(api: R, blockHash: H, extrinsicHash: H) async throws
-        where R: RootApi, H == R.RC.THasher.THash, BE == R.RC.TBlockEvents
+        where R: RootApi, H == ST<R.RC>.Hash, BE == ST<R.RC>.BlockEvents
     {
         let block = try await api.client.block(at: blockHash, runtime: api.runtime)
         guard let idx = block?.block.extrinsics.firstIndex(where: { $0.hash().raw == extrinsicHash.raw }) else {

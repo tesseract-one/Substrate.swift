@@ -32,7 +32,6 @@ public class ExtrinsicV4Manager<SE: SignedExtensionsProvider>: ExtrinsicManager 
     public typealias TSignature = SE.TConfig.TSignature
     public typealias TUnsignedParams = Void
     public typealias TUnsignedExtra = Nothing
-    public typealias TSigningParams = SE.TParams
     public typealias TSigningExtra = (extra: SE.TExtra, additional: SE.TAdditionalSigned)
     public typealias TSignedExtra = ExtrinsicV4Extra<TAddress, TSignature, SE.TExtra>
     
@@ -42,9 +41,9 @@ public class ExtrinsicV4Manager<SE: SignedExtensionsProvider>: ExtrinsicManager 
         self.extensions = extensions
     }
     
-    public func unsigned<C: Call, R: RootApi<TConfig>>(
+    public func unsigned<C: Call, R: RootApi>(
         call: C, params: TUnsignedParams, for api: R
-    ) async throws -> Extrinsic<C, TUnsignedExtra> {
+    ) async throws -> Extrinsic<C, TUnsignedExtra> where SBC<R.RC> == TConfig {
         Extrinsic(call: call, extra: nil)
     }
     
@@ -58,17 +57,17 @@ public class ExtrinsicV4Manager<SE: SignedExtensionsProvider>: ExtrinsicManager 
         try encoder.encode(inner.output)
     }
     
-    public func params<C: Call, R: RootApi<TConfig>>(
+    public func params<C: Call, R: RootApi>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        partial params: TSigningParams.TPartial, for api: R
-    ) async throws -> TSigningParams {
+        partial params: SBT<TConfig>.SigningParamsPartial, for api: R
+    ) async throws -> SBT<TConfig>.SigningParams where SBC<R.RC> == TConfig {
         try await extensions.params(partial: params, for: api)
     }
     
-    public func payload<C: Call, R: RootApi<TConfig>>(
+    public func payload<C: Call, R: RootApi>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        params: TSigningParams, for api: R
-    ) async throws -> ExtrinsicSignPayload<C, TSigningExtra> {
+        params: SBT<TConfig>.SigningParams, for api: R
+    ) async throws -> ExtrinsicSignPayload<C, TSigningExtra> where SBC<R.RC> == TConfig {
         return try await ExtrinsicSignPayload(call: extrinsic.call,
                                               extra: (extensions.extra(params: params, for: api),
                                                       extensions.additionalSigned(params: params, for: api)))

@@ -11,10 +11,10 @@ public protocol Signer {
     func account(type: KeyTypeId, algos: [CryptoTypeId]) async -> Result<any PublicKey, SignerError>
     
     func sign<RC: Config, C: Call>(
-        payload: SigningPayload<C, RC.TExtrinsicManager>,
+        payload: ST<RC>.SigningPayload<C>,
         with account: any PublicKey,
         runtime: ExtendedRuntime<RC>
-    ) async -> Result<RC.TSignature, SignerError>
+    ) async -> Result<ST<RC>.Signature, SignerError>
 }
 
 public enum SignerError: Error {

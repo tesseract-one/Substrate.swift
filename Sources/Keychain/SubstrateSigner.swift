@@ -21,10 +21,10 @@ extension Keychain: Signer {
     }
     
     public func sign<RC: Config, C: Call>(
-        payload: SigningPayload<C, RC.TExtrinsicManager>,
+        payload: ST<RC>.SigningPayload<C>,
         with account: any PublicKey,
         runtime: ExtendedRuntime<RC>
-    ) async -> Result<RC.TSignature, SignerError> {
+    ) async -> Result<ST<RC>.Signature, SignerError> {
         guard let pair = keyPair(for: account) else {
             return .failure(.accountNotFound(account))
         }
@@ -41,10 +41,10 @@ public extension KeyPair {
     }
     
     func sign<RC: Config, C: Call>(
-        payload: SigningPayload<C, RC.TExtrinsicManager>,
+        payload: ST<RC>.SigningPayload<C>,
         with account: any PublicKey,
         runtime: ExtendedRuntime<RC>
-    ) async -> Result<RC.TSignature, SignerError> {
+    ) async -> Result<ST<RC>.Signature, SignerError> {
         guard self.pubKey.raw == account.raw else {
             return .failure(.accountNotFound(account))
         }
@@ -56,7 +56,7 @@ public extension KeyPair {
         }
         let signature = sign(message: encoder.output)
         do {
-            let signature = try runtime.create(signature: RC.TSignature.self,
+            let signature = try runtime.create(signature: ST<RC>.Signature.self,
                                                raw: signature.raw,
                                                algorithm: signature.algorithm)
             return .success(signature)

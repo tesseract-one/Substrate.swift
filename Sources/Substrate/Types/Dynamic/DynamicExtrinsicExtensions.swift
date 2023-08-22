@@ -15,25 +15,25 @@ public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial { params }
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
         try api.runtime.version.specVersion.asValue(runtime: api.runtime, type: id)
     }
     
-    public func validate<C: Config>(
+    public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
-            C.TRuntimeVersion.TVersion.validate(runtime: runtime, type: additionalSigned)
+            SBT<C>.Version.validate(runtime: runtime, type: additionalSigned)
         }
     }
 }
@@ -45,25 +45,25 @@ public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial { params }
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
         try api.runtime.version.transactionVersion.asValue(runtime: api.runtime, type: id)
     }
     
-    public func validate<C: Config>(
+    public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
-            C.TRuntimeVersion.TVersion.validate(runtime: runtime, type: additionalSigned)
+            SBT<C>.Version.validate(runtime: runtime, type: additionalSigned)
         }
     }
 }
@@ -75,25 +75,25 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial { params }
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
         try api.runtime.genesisHash.asValue(runtime: api.runtime, type: id)
     }
     
-    public func validate<C: Config>(
+    public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
-            C.THasher.THash.validate(runtime: runtime, type: additionalSigned)
+            SBT<C>.Hash.validate(runtime: runtime, type: additionalSigned)
         }
     }
 }
@@ -104,18 +104,18 @@ public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial { params }
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
-    public func validate<C: Config>(
+    public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> {
@@ -132,8 +132,8 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial {
         guard params.nonce == nil else { return params }
         guard let account = params.account else {
             throw ExtrinsicCodingError.parameterNotFound(extension: identifier,
@@ -147,16 +147,16 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
     }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
         try params.nonce.asValue(runtime: api.runtime, type: id)
     }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
-    public func validate<C: Config>(
+    public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> {
@@ -173,8 +173,8 @@ public struct DynamicCheckMortalityExtension: DynamicExtrinsicExtension {
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial {
         var params = params
         if params.era == nil {
             params.era = .immortal
@@ -186,18 +186,18 @@ public struct DynamicCheckMortalityExtension: DynamicExtrinsicExtension {
     }
 
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
         try params.era.asValue(runtime: api.runtime, type: id)
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
         try params.blockHash.asValue(runtime: api.runtime, type: id)
     }
     
-    public func validate<C: Config>(
+    public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> {
@@ -214,18 +214,18 @@ public struct DynamicCheckWeightExtension: DynamicExtrinsicExtension {
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial { params }
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
-    public func validate<C: Config>(
+    public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> {
@@ -243,8 +243,8 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial {
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial {
         var params = params
         if params.tip == nil {
             params.tip = try api.runtime.config.defaultPayment(runtime: api.runtime)
@@ -253,16 +253,16 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
     }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
         try params.tip.asValue(runtime: api.runtime, type: id)
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
-    public func validate<C: Config>(
+    public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> {
@@ -287,18 +287,18 @@ public struct DynamicPrevalidateAttestsExtension: DynamicExtrinsicExtension {
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: AnySigningParams<R.RC>.TPartial
-    ) async throws -> AnySigningParams<R.RC>.TPartial { params }
+        api: R, partial params: AnySigningParams<SBC<R.RC>>.TPartial
+    ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<R.RC>, id: RuntimeType.Id
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
-    public func validate<C: Config>(
+    public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> {

@@ -11,33 +11,40 @@ import ScaleCodec
 public typealias ConfigUnsignedInteger = UnsignedInteger & ValueRepresentable & DataConvertible
     & CompactCodable & Swift.Codable & RuntimeCodable & ValidatableRuntimeType
 
-public protocol Config {
+// Config split to avoid recursive types
+public protocol BasicConfig {
     associatedtype THasher: FixedHasher
     associatedtype TIndex: ConfigUnsignedInteger
     associatedtype TAccountId: AccountId
     associatedtype TAddress: Address<TAccountId>
     associatedtype TSignature: Signature
-    associatedtype TBlock: SomeBlock where TBlock.THeader.THasher == THasher
-    associatedtype TChainBlock: SomeChainBlock<TBlock>
+    associatedtype TSigningParams: ExtraSigningParameters
     associatedtype TExtrinsicEra: SomeExtrinsicEra
     associatedtype TExtrinsicPayment: ValueRepresentable & ValidatableRuntimeType
+    associatedtype TSystemProperties: SystemProperties
+    associatedtype TRuntimeVersion: RuntimeVersion
+    associatedtype TDispatchInfo: RuntimeDynamicDecodable
+    associatedtype TFeeDetails: RuntimeDynamicDecodable
+}
+
+public protocol Config {
+    associatedtype BC: BasicConfig
+    
+    associatedtype TBlock: SomeBlock where TBlock.THeader.THasher == SBT<BC>.Hasher
+    associatedtype TChainBlock: SomeChainBlock<TBlock>
     associatedtype TBlockEvents: SomeBlockEvents
     associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent
     associatedtype TDispatchError: CallError
     associatedtype TTransactionValidityError: CallError
-    associatedtype TDispatchInfo: RuntimeDynamicDecodable
-    associatedtype TFeeDetails: RuntimeDynamicDecodable
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
-    associatedtype TSystemProperties: SystemProperties
-    associatedtype TRuntimeVersion: RuntimeVersion
     associatedtype TStorageChangeSet: SomeStorageChangeSet<TBlock.THeader.THasher.THash>
-    associatedtype TExtrinsicManager: ExtrinsicManager<Self>
+    associatedtype TExtrinsicManager: ExtrinsicManager<BC>
     
     // Metadata Info Providers
     func blockType(metadata: any Metadata) throws -> RuntimeType.Info
-    func hashType(metadata: any Metadata) throws -> RuntimeType.Info
-    func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info
-    func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info
+    func hashType(metadata: any Metadata) throws -> RuntimeType.Info 
+    //func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info
+//    func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info
     func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info
     func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info
@@ -45,11 +52,13 @@ public protocol Config {
     func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
                                                            signature: RuntimeType.Info, extra: RuntimeType.Info)
     // Object Builders
-    func hasher(metadata: any Metadata) throws -> THasher
-    func defaultPayment(runtime: any Runtime) throws -> TExtrinsicPayment
+    func hasher(metadata: any Metadata) throws -> ST<Self>.Hasher
+    func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment
     func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
-    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo>
-    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails>
+    func queryInfoCall(extrinsic: Data,
+                       runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.DispatchInfo>
+    func queryFeeDetailsCall(extrinsic: Data,
+                             runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.FeeDetails>
     func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]>
     func metadataAtVersionCall(version: UInt32) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>>
     func extrinsicManager() throws -> TExtrinsicManager
@@ -66,6 +75,73 @@ public protocol BatchSupportedConfig: Config {
     associatedtype TBatchAllCall: SomeBatchCall
     
     func isBatchSupported(metadata: any Metadata) -> Bool
+}
+
+@frozen public struct SBT<C: BasicConfig> {
+    public typealias Hasher = C.THasher
+    public typealias Hash = C.THasher.THash
+    public typealias Index = C.TIndex
+    public typealias AccountId = C.TAccountId
+    public typealias Address = C.TAddress
+    public typealias Signature = C.TSignature
+    public typealias SigningParams = C.TSigningParams
+    public typealias ExtrinsicEra = C.TExtrinsicEra
+    public typealias ExtrinsicPayment = C.TExtrinsicPayment
+    public typealias SystemProperties = C.TSystemProperties
+    public typealias RuntimeVersion = C.TRuntimeVersion
+    public typealias DispatchInfo = C.TDispatchInfo
+    public typealias FeeDetails = C.TFeeDetails
+    
+    public typealias Version = C.TRuntimeVersion.TVersion
+    public typealias SigningParamsPartial = C.TSigningParams.TPartial
+}
+
+public typealias SBC<C: Config> = C.BC
+
+@frozen public struct ST<C: Config> {
+    public typealias Hasher = SBT<SBC<C>>.Hasher
+    public typealias Hash = SBT<SBC<C>>.Hash
+    public typealias Index = SBT<SBC<C>>.Index
+    public typealias AccountId = SBT<SBC<C>>.AccountId
+    public typealias Address = SBT<SBC<C>>.Address
+    public typealias Signature = SBT<SBC<C>>.Signature
+    public typealias SigningParams = SBT<SBC<C>>.SigningParams
+    public typealias ExtrinsicEra = SBT<SBC<C>>.ExtrinsicEra
+    public typealias ExtrinsicPayment = SBT<SBC<C>>.ExtrinsicPayment
+    public typealias SystemProperties = SBT<SBC<C>>.SystemProperties
+    public typealias RuntimeVersion = SBT<SBC<C>>.RuntimeVersion
+    public typealias DispatchInfo = SBT<SBC<C>>.DispatchInfo
+    public typealias FeeDetails = SBT<SBC<C>>.FeeDetails
+    public typealias Version = SBT<SBC<C>>.Version
+    public typealias SigningParamsPartial = SBT<SBC<C>>.SigningParamsPartial
+    
+    public typealias Block = C.TBlock
+    public typealias BlockHeader = C.TBlock.THeader
+    public typealias BlockNumber = C.TBlock.THeader.TNumber
+    public typealias ChainBlock = C.TChainBlock
+    public typealias BlockEvents = C.TBlockEvents
+    public typealias ExtrinsicFailureEvent = C.TExtrinsicFailureEvent
+    public typealias DispatchError = C.TDispatchError
+    public typealias TransactionValidityError = C.TTransactionValidityError
+    public typealias TransactionStatus = C.TTransactionStatus
+    public typealias StorageChangeSet = C.TStorageChangeSet
+    public typealias ExtrinsicManager = C.TExtrinsicManager
+    
+    public typealias ExtrinsicSignedExtra = ExtrinsicManager.TSignedExtra
+    public typealias ExtrinsicUnsignedParams = ExtrinsicManager.TUnsignedParams
+    public typealias ExtrinsicUnsignedExtra = ExtrinsicManager.TUnsignedExtra
+    
+    public typealias AnyExtrinsic<C: Call> =
+        Extrinsic<C, Either<ExtrinsicUnsignedExtra, ExtrinsicSignedExtra>>
+    public typealias SignedExtrinsic<C: Call> = Extrinsic<C, ExtrinsicSignedExtra>
+    public typealias UnsignedExtrinsic<C: Call> = Extrinsic<C, ExtrinsicUnsignedExtra>
+    public typealias SigningPayload<C: Call> =
+        ExtrinsicSignPayload<C, ExtrinsicManager.TSigningExtra>
+}
+
+public extension ST where C: BatchSupportedConfig {
+    typealias BatchCall = C.TBatchCall
+    typealias BatchAllCall = C.TBatchAllCall
 }
 
 // Default isBatchSupported implementation
@@ -109,6 +185,23 @@ public extension Config {
     func customCoders() throws -> [RuntimeCustomDynamicCoder] {
         [ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")]
     }
+    
+    @inlinable
+    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
+        EventsStorageKey<TBlockEvents>()
+    }
+    
+    @inlinable
+    func queryInfoCall(extrinsic: Data,
+                       runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.DispatchInfo> {
+        TransactionQueryInfoRuntimeCall(extrinsic: extrinsic)
+    }
+    
+    @inlinable
+    func queryFeeDetailsCall(extrinsic: Data,
+                             runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.FeeDetails> {
+        TransactionQueryFeeDetailsRuntimeCall(extrinsic: extrinsic)
+    }
 }
 
 // Сan be safely removed after removing metadata v14 (v15 has types inside)
@@ -147,13 +240,13 @@ public extension Config {
     }
 }
 
-public extension Config where THasher: StaticHasher {
+public extension Config where ST<Self>.Hasher: StaticHasher {
     // Static hasher creates Hash without type lookup
     func hashType(metadata: any Metadata) throws -> RuntimeType.Info {
         throw RuntimeType.IdNeverCalledError()
     }
     // Static Hasher can be returned by singleton instance
-    func hasher(metadata: Metadata) throws -> THasher { THasher.instance }
+    func hasher(metadata: Metadata) throws -> ST<Self>.Hasher { ST<Self>.Hasher.instance }
 }
 
 // Static Block doesn't need runtime type
@@ -178,50 +271,29 @@ public extension Config where TDispatchError: StaticCallError {
 }
 
 // Static Dispatch Info doesn't need runtime type
-public extension Config where TDispatchInfo: RuntimeDecodable {
+public extension Config where ST<Self>.DispatchInfo: RuntimeDecodable {
     func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info {
         throw RuntimeType.IdNeverCalledError()
     }
 }
 
 // Static Fee Details doesn't need runtime type
-public extension Config where TFeeDetails: RuntimeDecodable {
+public extension Config where ST<Self>.FeeDetails: RuntimeDecodable {
     func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info {
         throw RuntimeType.IdNeverCalledError()
     }
 }
 
 // Static Account doesn't need runtime type
-public extension Config where TAccountId: StaticAccountId {
+public extension Config where ST<Self>.AccountId: StaticAccountId {
     func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info {
         throw RuntimeType.IdNeverCalledError()
     }
 }
 
-public extension Config where TExtrinsicPayment: Default {
-    func defaultPayment(runtime: any Runtime) throws -> TExtrinsicPayment {
+public extension Config where ST<Self>.ExtrinsicPayment: Default {
+    func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment {
         .default
-    }
-}
-
-public extension Config where TBlockEvents: RuntimeDecodable {
-    @inlinable
-    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
-        EventsStorageKey<TBlockEvents>()
-    }
-}
-
-public extension Config where TDispatchInfo: RuntimeDecodable {
-    @inlinable
-    func queryInfoCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TDispatchInfo> {
-        TransactionQueryInfoRuntimeCall(extrinsic: extrinsic)
-    }
-}
-
-public extension Config where TFeeDetails: RuntimeDecodable {
-    @inlinable
-    func queryFeeDetailsCall(extrinsic: Data, runtime: any Runtime) throws -> any RuntimeCall<TFeeDetails> {
-        TransactionQueryFeeDetailsRuntimeCall(extrinsic: extrinsic)
     }
 }
 
