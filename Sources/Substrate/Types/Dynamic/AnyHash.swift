@@ -36,4 +36,15 @@ public struct AnyHash: Hash {
         let data = try container.decode(Data.self)
         try self.init(raw: data, metadata: context.metadata, id: context.id)
     }
+    
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError> {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard info.asBytes(runtime) != nil else {
+            return .failure(.wrongType(got: info, for: "AnyHash"))
+        }
+        return .success(())
+    }
 }

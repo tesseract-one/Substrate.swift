@@ -119,6 +119,24 @@ extension ExtrinsicEra: ScaleCodec.Codable {
 
 extension ExtrinsicEra: RuntimeCodable, RuntimeDynamicDecodable, RuntimeDynamicEncodable {}
 
+extension ExtrinsicEra: ValidatableRuntimeType {
+    public static func validate(runtime: Runtime, type id: RuntimeType.Id) -> Result<Void, TypeValidationError> {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard case .variant(variants: let vars) = info.flatten(runtime).definition else {
+            return .failure(.wrongType(got: info, for: "ExtrinsicEra"))
+        }
+        guard vars.count == Int(UInt8.max) + 1 else {
+            return .failure(.wrongType(got: info, for: "ExtrinsicEra"))
+        }
+        guard vars[0].name == "Immortal", vars[1].name.hasPrefix("Mortal") else {
+            return .failure(.wrongType(got: info, for: "ExtrinsicEra"))
+        }
+        return .success(())
+    }
+}
+
 extension ExtrinsicEra: ValueRepresentable {
     public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
         guard let info = runtime.resolve(type: type) else {

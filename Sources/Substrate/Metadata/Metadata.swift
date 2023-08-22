@@ -8,18 +8,13 @@
 import Foundation
 import ScaleCodec
 
-public protocol RuntimeMetadata: ScaleCodec.Codable {
-    var version: UInt8 { get }
-    
-    func asMetadata() throws -> Metadata
-    
-    static var versions: Set<UInt32> { get }
-}
-
 public protocol Metadata {
     var extrinsic: ExtrinsicMetadata { get }
+    
     // Swith to non optional after v14 drop
-    var enums: OuterEnumsMetadata? { get }
+    var outerEnums: OuterEnumsMetadata? { get }
+    var customTypes: Dictionary<String, (RuntimeType.Id, Data)>? { get }
+    
     var pallets: [String] { get }
     var apis: [String] { get }
     
@@ -52,9 +47,9 @@ public protocol PalletMetadata {
 
 public protocol StorageMetadata {
     var name: String { get }
-    var modifier: StorageEntryModifier { get }
-    var types:
-        (keys: [(StorageHasher, RuntimeType.Info)], value: RuntimeType.Info) { get }
+    var modifier: MetadataV14.StorageEntryModifier { get }
+    var types: (keys: [(MetadataV14.StorageHasher, RuntimeType.Info)],
+                value: RuntimeType.Info) { get }
     var defaultValue: Data { get }
     var documentation: [String] { get }
 }
@@ -116,6 +111,6 @@ public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable {
     
     public func metadata<C: Config>(config: C) throws -> any Metadata {
         var decoder = config.decoder(data: raw)
-        return try decoder.decode(VersionedMetadata.self).metadata.asMetadata()
+        return try decoder.decode(VersionedNetworkMetadata.self).metadata.asMetadata()
     }
 }

@@ -24,7 +24,16 @@ public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: R.RC.TSigningParams, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
-        .uint(UInt256(api.runtime.version.specVersion), id)
+        try api.runtime.version.specVersion.asValue(runtime: api.runtime, type: id)
+    }
+    
+    public func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> {
+        Nothing.validate(runtime: runtime, type: extra).flatMap {
+            C.TRuntimeVersion.TVersion.validate(runtime: runtime, type: additionalSigned)
+        }
     }
 }
 
@@ -45,7 +54,16 @@ public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: R.RC.TSigningParams, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> {
-        .uint(UInt256(api.runtime.version.transactionVersion), id)
+        try api.runtime.version.transactionVersion.asValue(runtime: api.runtime, type: id)
+    }
+    
+    public func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> {
+        Nothing.validate(runtime: runtime, type: extra).flatMap {
+            C.TRuntimeVersion.TVersion.validate(runtime: runtime, type: additionalSigned)
+        }
     }
 }
 
@@ -68,6 +86,15 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     ) async throws -> Value<RuntimeType.Id> {
         try api.runtime.genesisHash.asValue(runtime: api.runtime, type: id)
     }
+    
+    public func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> {
+        Nothing.validate(runtime: runtime, type: extra).flatMap {
+            C.THasher.THash.validate(runtime: runtime, type: additionalSigned)
+        }
+    }
 }
 
 public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
@@ -86,6 +113,15 @@ public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: R.RC.TSigningParams, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
+    
+    public func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> {
+        Nothing.validate(runtime: runtime, type: extra).flatMap {
+            Nothing.validate(runtime: runtime, type: additionalSigned)
+        }
+    }
 }
 
 /// Nonce check and increment to give replay protection for transactions.
@@ -116,12 +152,21 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
     ) async throws -> Value<RuntimeType.Id>
         where R.RC.TSigningParams == AnySigningParams<R.RC>
     {
-        .uint(UInt256(params.nonce), id)
+        try params.nonce.asValue(runtime: api.runtime, type: id)
     }
     
     public func additionalSigned<R: RootApi>(
         api: R, params: R.RC.TSigningParams, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
+    
+    public func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> where C.TSigningParams == AnySigningParams<C> {
+        C.TSigningParams.TPartial.TNonce.validate(runtime: runtime, type: extra).flatMap {
+            Nothing.validate(runtime: runtime, type: additionalSigned)
+        }
+    }
 }
 
 /// Check for transaction mortality.
@@ -160,6 +205,15 @@ public struct DynamicCheckMortalityExtension: DynamicExtrinsicExtension {
     {
         try params.blockHash.asValue(runtime: api.runtime, type: id)
     }
+    
+    public func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> where C.TSigningParams == AnySigningParams<C> {
+        C.TSigningParams.TPartial.TEra.validate(runtime: runtime, type: extra).flatMap {
+            C.TSigningParams.TPartial.THash.validate(runtime: runtime, type: additionalSigned)
+        }
+    }
 }
 
 /// Resource limit check.
@@ -179,6 +233,15 @@ public struct DynamicCheckWeightExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: R.RC.TSigningParams, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
+    
+    public func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> {
+        Nothing.validate(runtime: runtime, type: extra).flatMap {
+            Nothing.validate(runtime: runtime, type: additionalSigned)
+        }
+    }
 }
 
 /// Require the transactor pay for themselves and maybe include a tip to gain additional priority
@@ -212,6 +275,15 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
         api: R, params: R.RC.TSigningParams, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
     
+    public func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> where C.TSigningParams == AnySigningParams<C> {
+        C.TSigningParams.TPartial.TPayment.validate(runtime: runtime, type: extra).flatMap {
+            Nothing.validate(runtime: runtime, type: additionalSigned)
+        }
+    }
+    
     static func tipType(runtime: any Runtime) -> RuntimeType.Info? {
         guard let ext = runtime.metadata.extrinsic.extensions.first(where: {
             $0.identifier == ExtrinsicExtensionId.chargeTransactionPayment.rawValue
@@ -238,4 +310,13 @@ public struct DynamicPrevalidateAttestsExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: R.RC.TSigningParams, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id> { .nil(id) }
+    
+    public func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> {
+        Nothing.validate(runtime: runtime, type: extra).flatMap {
+            Nothing.validate(runtime: runtime, type: additionalSigned)
+        }
+    }
 }

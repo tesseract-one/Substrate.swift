@@ -36,6 +36,10 @@ public protocol SignedExtensionsProvider where TConfig.TSigningParams: ExtraSign
     func extra<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws -> TExtra
     func additionalSigned<D: ScaleCodec.Decoder>(from decoder: inout D,
                                                  runtime: any Runtime) throws -> TAdditionalSigned
+    
+    func validate(
+        runtime: any Runtime
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>>
 }
 
 public protocol ExtrinsicSignedExtension {

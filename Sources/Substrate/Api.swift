@@ -61,11 +61,14 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
         self.constants = ConstantsApiRegistry()
         
         // Init registries
+        constants.setRootApi(api: self)
         rpc.setRootApi(api: self)
-        tx.setRootApi(api: self)
         call.setRootApi(api: self)
         query.setRootApi(api: self)
-        constants.setRootApi(api: self)
+        tx.setRootApi(api: self)
+        
+        // Validate
+        try runtime.validate()
     }
     
     public convenience init(client: CL, config: RC, signer: Signer? = nil,

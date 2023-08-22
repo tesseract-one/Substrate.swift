@@ -36,7 +36,7 @@ public struct AnySignature: Signature {
             .flatten(runtime: runtime)
         switch value.value {
         case .variant(let variant):
-            let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type)
+            let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type).getValueError()
             guard let algo = algos[variant.name] else {
                 throw Error.unsupportedCrypto(name: variant.name)
             }
@@ -62,7 +62,7 @@ public struct AnySignature: Signature {
     }
     
     public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type)
+        let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type).getValueError()
         if algos.count == 1 {
             guard algos.first!.value == _sig.algorithm else {
                 throw Error.unsupportedCrypto(id: algos.first!.value)
@@ -78,71 +78,76 @@ public struct AnySignature: Signature {
     public static func algorithms(runtime: Runtime,
                                   id: @escaping RuntimeType.LazyId) throws -> [CryptoTypeId]
     {
-        try Array(Self.parseTypeInfo(runtime: runtime, typeId: id(runtime)).values)
+        try Array(parseTypeInfo(runtime: runtime, typeId: id(runtime)).getValueError().values)
+    }
+    
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+    {
+        parseTypeInfo(runtime: runtime, typeId: id).map{_ in}
     }
     
     public static func parseTypeInfo(
         runtime: Runtime, typeId: RuntimeType.Id
-    ) throws -> [String: CryptoTypeId] {
+    ) -> Result<[String: CryptoTypeId], TypeValidationError> {
         guard let type = runtime.resolve(type: typeId) else {
-            throw ValueRepresentableError.typeNotFound(typeId)
+            return .failure(.typeNotFound(typeId))
         }
         switch type.definition {
         case .variant(variants: let variants):
-            let mapped = try variants.map { item in
+            let mapped: Result<[(String, CryptoTypeId)], TypeValidationError> = variants.resultMap { item in
                 if let id = CryptoTypeId.byName[item.name.lowercased()] {
-                    return (item.name, id)
+                    return .success((item.name, id))
                 }
                 guard item.fields.count == 1 else {
-                    throw ValueRepresentableError.wrongValuesCount(in: type,
-                                                                   expected: 1,
-                                                                   for: "Signature")
+                    return .failure(.wrongValuesCount(in: type, expected: 1,
+                                                      for: "Signature"))
                 }
                 if let typeName = item.fields[0].typeName?.lowercased() {
                     if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
-                        return (item.name, CryptoTypeId.byName[name]!)
+                        return .success((item.name, CryptoTypeId.byName[name]!))
                     }
                 }
                 guard let type = runtime.resolve(type: item.fields[0].type) else {
-                    throw ValueRepresentableError.typeNotFound(item.fields[0].type)
+                    return .failure(.typeNotFound(item.fields[0].type))
                 }
                 if let typeName = type.name?.lowercased() {
                     if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
-                        return (item.name, CryptoTypeId.byName[name]!)
+                        return .success((item.name, CryptoTypeId.byName[name]!))
                     }
                 }
-                throw ValueRepresentableError.wrongType(got: type, for: "AnySignature")
+                return .failure(.wrongType(got: type, for: "Signature"))
             }
-            return Dictionary(uniqueKeysWithValues: mapped)
+            return mapped.map{Dictionary(uniqueKeysWithValues: $0)}
         case .composite(fields: let fields):
             if let typeName = type.name?.lowercased() {
                 if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
-                    return ["": CryptoTypeId.byName[name]!]
+                    return .success(["": CryptoTypeId.byName[name]!])
                 }
             }
             guard fields.count == 1 else {
-                throw ValueRepresentableError.wrongValuesCount(in: type, expected: 1,
-                                                               for: "AnySignature")
+                return .failure(.wrongValuesCount(in: type, expected: 1,
+                                                  for: "Signature"))
             }
             if let typeName = fields[0].typeName?.lowercased() {
                 if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
-                    return ["": CryptoTypeId.byName[name]!]
+                    return .success(["": CryptoTypeId.byName[name]!])
                 }
             }
-            return try parseTypeInfo(runtime: runtime, typeId: fields[0].type)
+            return parseTypeInfo(runtime: runtime, typeId: fields[0].type)
         case .tuple(components: let ids):
             if let typeName = type.name?.lowercased() {
                 if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
-                    return ["": CryptoTypeId.byName[name]!]
+                    return .success(["": CryptoTypeId.byName[name]!])
                 }
             }
             guard ids.count == 1 else {
-                throw ValueRepresentableError.wrongValuesCount(in: type, expected: 1,
-                                                               for: "AnySignature")
+                return .failure(.wrongValuesCount(in: type, expected: 1,
+                                                  for: "Signature"))
             }
-            return try parseTypeInfo(runtime: runtime, typeId: ids[0])
+            return parseTypeInfo(runtime: runtime, typeId: ids[0])
         default:
-            throw ValueRepresentableError.wrongType(got: type, for: "AnySignature")
+            return .failure(.wrongType(got: type, for: "Signature"))
         }
     }
 }

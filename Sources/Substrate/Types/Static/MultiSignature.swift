@@ -60,7 +60,7 @@ extension MultiSignature: ValueRepresentable {
             throw ValueRepresentableError.typeNotFound(type)
         }
         let selfvars = Set(Self.supportedCryptoTypes.map{$0.signatureName})
-        guard case .variant(variants: let variants) = info.definition.flatten(metadata: runtime.metadata) else {
+        guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
         }
         guard selfvars == Set(variants.map{$0.name}) else {
@@ -72,6 +72,32 @@ extension MultiSignature: ValueRepresentable {
         }
         return try .variant(name: sig.algorithm.signatureName,
                             values: [sig.asValue(runtime: runtime, type: field.type)], type)
+    }
+}
+
+extension MultiSignature: ValidatableRuntimeType {
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+    {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        let selfvars = Set(Self.supportedCryptoTypes.map{$0.signatureName})
+        guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
+            return .failure(.wrongType(got: info, for: "MultiSignature"))
+        }
+        guard selfvars == Set(variants.map{$0.name}) else {
+            return .failure(.wrongType(got: info, for: "MultiSignature"))
+        }
+        for variant in variants {
+            guard variant.fields.count == 1 else {
+                return .failure(.wrongType(got: info, for: "MultiSignature"))
+            }
+            guard runtime.resolve(type: variant.fields.first!.type)?.asBytes(runtime) != nil else {
+                return .failure(.wrongType(got: info, for: "MultiSignature"))
+            }
+        }
+        return .success(())
     }
 }
 

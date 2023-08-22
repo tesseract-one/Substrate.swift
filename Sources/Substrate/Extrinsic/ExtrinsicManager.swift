@@ -65,6 +65,8 @@ public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder where TConfig.TSigni
         from decoder: inout D, runtime: any Runtime
     ) throws -> AnyExtrinsic<C, Self>
     
+    func validate(runtime: any Runtime) throws
+    
     static var version: UInt8 { get }
 }
 

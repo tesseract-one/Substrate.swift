@@ -338,21 +338,33 @@ public extension RuntimeType {
             }
         }
         
-        @inlinable public var isInt: Bool {
+        @inlinable public var isInt: Int? {
             switch self {
-            case .i8, .i16, .i32, .i64, .i128, .i256: return true
-            default: return false
+            case .i8: return 8
+            case .i16: return 16
+            case .i32: return 32
+            case .i64: return 64
+            case .i128: return 128
+            case .i256: return 256
+            default: return nil
             }
         }
         
-        @inlinable public var isUInt: Bool {
+        @inlinable public var isUInt: Int? {
             switch self {
-            case .u8, .u16, .u32, .u64, .u128, .u256: return true
-            default: return false
+            case .u8: return 8
+            case .u16: return 16
+            case .u32: return 32
+            case .u64: return 64
+            case .u128: return 128
+            case .u256: return 256
+            default: return nil
             }
         }
         
-        @inlinable public var isAnyInt: Bool { isInt || isUInt }
+        @inlinable public var isAnyInt: (signed: Bool, bits: Int)? {
+            isInt.map{(true, $0)} ?? isUInt.map{(false, $0)}
+        }
         
         @inlinable public var isBool: Bool {
             switch self {

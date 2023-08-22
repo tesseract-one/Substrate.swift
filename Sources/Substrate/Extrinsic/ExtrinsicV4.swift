@@ -136,5 +136,17 @@ public class ExtrinsicV4Manager<SE: SignedExtensionsProvider>: ExtrinsicManager 
         }
     }
     
+    public func validate(runtime: any Runtime) throws {
+        guard runtime.metadata.extrinsic.version == version else {
+            throw ExtrinsicCodingError.badExtrinsicVersion(
+                supported: version,
+                got: runtime.metadata.extrinsic.version
+            )
+        }
+        try TAddress.validate(runtime: runtime, type: runtime.types.address.id).get()
+        try TSignature.validate(runtime: runtime, type: runtime.types.signature.id).get()
+        try extensions.validate(runtime: runtime).get()
+    }
+    
     public static var version: UInt8 { 4 }
 }

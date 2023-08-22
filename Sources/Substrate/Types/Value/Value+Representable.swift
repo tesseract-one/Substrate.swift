@@ -1,5 +1,5 @@
 //
-//  Value+Convertible.swift
+//  Value+Representable.swift
 //  
 //
 //  Created by Yehor Popovych on 17.01.2023.
@@ -17,6 +17,27 @@ public enum ValueRepresentableError: Error {
     case variantNotFound(name: String, in: RuntimeType)
     case keyNotFound(key: String, in: [String: ValueRepresentable])
     case typeIdMismatch(got: RuntimeType.Id, has: RuntimeType.Id)
+    
+    public init(_ error: TypeValidationError) {
+        switch error {
+        case .typeIdMismatch(got: let gid, has: let hid):
+            self = .typeIdMismatch(got: gid, has: hid)
+        case .typeNotFound(let tid):
+            self = .typeNotFound(tid)
+        case .variantNotFound(name: let n, in: let t):
+            self = .variantNotFound(name: n, in: t)
+        case .wrongType(got: let t, for: let n):
+            self = .wrongType(got: t, for: n)
+        case .wrongValuesCount(in: let t, expected: let c, for: let n):
+            self = .wrongValuesCount(in: t, expected: c, for: n)
+        }
+    }
+}
+
+public extension Result where Failure == TypeValidationError {
+    @inlinable func getValueError() throws -> Success {
+        try mapError { ValueRepresentableError($0) }.get()
+    }
 }
 
 public extension FixedWidthInteger {
@@ -28,7 +49,7 @@ public extension FixedWidthInteger {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        guard let primitive = info.asPrimitive(runtime), primitive.isAnyInt else {
+        guard let primitive = info.asPrimitive(runtime), primitive.isAnyInt != nil else {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         return Self.isSigned ?  .int(Int256(self), type) : .uint(UInt256(self), type)
@@ -65,12 +86,7 @@ extension Bool: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .bool(self) }
     
     public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
-        }
-        guard let primitive = info.asPrimitive(runtime), primitive.isBool else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
-        }
+        try Self.validate(runtime: runtime, type: type).getValueError()
         return .bool(self, type)
     }
 }
@@ -79,12 +95,7 @@ extension String: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .string(self) }
     
     public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
-        }
-        guard let primitive = info.asPrimitive(runtime), primitive.isString else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
-        }
+        try Self.validate(runtime: runtime, type: type).getValueError()
         return .string(self, type)
     }
 }
@@ -100,8 +111,9 @@ extension Data: ValueRepresentable, VoidValueRepresentable {
             throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
         }
         guard count == 0 || self.count == count else {
-            throw ValueRepresentableError.wrongValuesCount(in: info, expected: self.count,
-                                                           for: String(describing: Self.self))
+            throw ValueRepresentableError.wrongValuesCount(
+                in: info, expected: self.count, for: String(describing: Self.self)
+            )
         }
         return .bytes(self, type)
     }

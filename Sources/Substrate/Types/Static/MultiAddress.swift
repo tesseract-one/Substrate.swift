@@ -8,8 +8,10 @@
 import Foundation
 import ScaleCodec
 
-public enum MultiAddress<Id: AccountId & Hashable,
-                         Index: CompactCodable & Hashable & ValueRepresentable>: Equatable, Hashable {
+public enum MultiAddress<Id, Index>: Equatable, Hashable
+    where Index: CompactCodable & Hashable & ValueRepresentable & ValidatableRuntimeType,
+          Id: AccountId & Hashable
+{
     case id(Id)
     case index(Index)
     case raw(Data)
@@ -103,6 +105,14 @@ extension MultiAddress: StaticAddress {
     
     public init(accountId: Id, runtime: Runtime) throws {
         self.init(id: accountId)
+    }
+}
+
+extension MultiAddress: ValidatableRuntimeType {
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+    {
+        .success(())
     }
 }
 

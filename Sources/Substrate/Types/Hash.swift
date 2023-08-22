@@ -11,7 +11,7 @@ import ContextCodable
 
 public protocol Hash: ContextDecodable, Swift.Encodable,
                       ValueRepresentable, VoidValueRepresentable,
-                      Equatable, CustomStringConvertible
+                      ValidatableRuntimeType, Equatable, CustomStringConvertible
     where DecodingContext == (metadata: any Metadata, id: () throws -> RuntimeType.Id)
 {
     var raw: Data { get }
@@ -87,6 +87,21 @@ public extension StaticHash {
     
     @inlinable
     func serialize() -> Data { raw }
+    
+    static func validate(runtime: any Runtime,
+                         type id: RuntimeType.Id) -> Result<Void, TypeValidationError> {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard let count = info.asBytes(runtime) else {
+            return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+        }
+        guard Self.fixedBytesCount == count else {
+            return .failure(.wrongValuesCount(in: info, expected: Self.fixedBytesCount,
+                                              for: String(describing: Self.self)))
+        }
+        return .success(())
+    }
 }
 
 public struct SizeMismatchError: Error {

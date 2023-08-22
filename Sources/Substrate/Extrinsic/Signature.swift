@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Signature: RuntimeDynamicCodable, ValueRepresentable {
+public protocol Signature: RuntimeDynamicCodable, ValueRepresentable, ValidatableRuntimeType {
     var raw: Data { get }
     var algorithm: CryptoTypeId { get }
     
@@ -51,23 +51,6 @@ public extension StaticSignature {
     {
         try Self.algorithms(runtime: runtime)
     }
-    
-    func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
-        }
-        guard let count = info.asBytes(runtime) else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
-        }
-        let bytes = raw
-        guard count == 0 || bytes.count == count else {
-            throw ValueRepresentableError.wrongValuesCount(in: info, expected: bytes.count,
-                                                           for: String(describing: Self.self))
-        }
-        return .bytes(bytes, type)
-    }
-    
-    func asValue() -> Value<Void> { .bytes(raw) }
 }
 
 public extension CryptoTypeId {

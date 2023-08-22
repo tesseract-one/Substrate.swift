@@ -50,12 +50,10 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, Cu
             throw StorageKeyCodingError.badCountOfPathComponents(has: params.count,
                                                                  expected: keys.count)
         }
-        var components = Array<Component>()
-        components.reserveCapacity(params.count)
-        for (key, val) in zip(keys, params) {
+        let components: [Component] = try zip(keys, params).map { (key, val) in
             let value = try val.asValue(runtime: runtime, type: key.1.id)
             let data = try runtime.encode(value: value, as: key.1.id)
-            components.append(.full(val, key.0.hasher.hash(data: data)))
+            return .full(val, key.0.hasher.hash(data: data))
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
     }
@@ -171,12 +169,10 @@ public extension AnyStorageKey {
                 throw StorageKeyCodingError.badCountOfPathComponents(has: params.count,
                                                                      expected: keys.count - 1)
             }
-            var components = Array<Component>()
-            components.reserveCapacity(params.count)
-            for (key, val) in zip(keys, params) {
+            let components: [Component] = try zip(keys, params).map { (key, val) in
                 let value = try val.asValue(runtime: runtime, type: key.1.id)
                 let data = try runtime.encode(value: value, as: key.1.id)
-                components.append(.full(val, key.0.hasher.hash(data: data)))
+                return .full(val, key.0.hasher.hash(data: data))
             }
             self.init(name: name, pallet: pallet, path: components)
         }

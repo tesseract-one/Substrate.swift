@@ -8,7 +8,9 @@
 import Foundation
 
 public struct SubstrateSigningParameters<
-    E: SomeExtrinsicEra, H: Hash, A: AccountId, N: UnsignedInteger, P: ValueRepresentable
+    E: SomeExtrinsicEra, H: Hash, A: AccountId,
+    N: UnsignedInteger & ValueRepresentable & ValidatableRuntimeType,
+    P: ValueRepresentable & ValidatableRuntimeType
 >: EraSigningParameters, NonceSigningParameters, PaymentSigningParameters {
     public typealias TPartial = Partial
     
@@ -18,9 +20,6 @@ public struct SubstrateSigningParameters<
         self.partial = partial
     }
 }
-
-public typealias SubstrateSigningParametersFor<C: Config> =
-    SubstrateSigningParameters<C.TExtrinsicEra, C.THasher.THash, C.TAccountId, C.TIndex, C.TExtrinsicPayment>
 
 public extension SubstrateSigningParameters {
     struct Partial: EraPartialSigningParameter, NoncePartialSigningParameter, PaymentPartialSigningParameter {

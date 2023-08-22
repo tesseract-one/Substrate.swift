@@ -13,22 +13,38 @@ public extension SomeTuple1 where
     TConfig == T1.TConfig, TExtra: SomeTuple1, TExtra.T1 == T1.TExtra,
     TAdditionalSigned: SomeTuple1, TAdditionalSigned.T1 == T1.TAdditionalSigned
 {
+    @inlinable
     var identifiers: [ExtrinsicExtensionId] { [first.identifier] }
     
+    @inlinable
     func params<R: RootApi<TConfig>>(
         api: R, partial params: TConfig.TSigningParams.TPartial
     ) async throws -> TConfig.TSigningParams.TPartial {
         try await first.params(api: api, partial: params)
     }
     
+    @inlinable
     func extra<R: RootApi<TConfig>>(api: R, params: TConfig.TSigningParams) async throws -> TExtra {
         try await TExtra(first.extra(api: api, params: params))
     }
     
+    @inlinable
     func additionalSigned<R: RootApi<TConfig>>(
         api: R, params: TConfig.TSigningParams
     ) async throws -> TAdditionalSigned {
         try await TAdditionalSigned(first.additionalSigned(api: api, params: params))
+    }
+    
+    @inlinable
+    func validate(
+        runtime: any Runtime,
+        types: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>> {
+        guard let info = types[first.identifier] else {
+            return .failure(.left(.unknownExtension(identifier: first.identifier)))
+        }
+        return first.validate(runtime: runtime, extra: info.extId,
+                              additionalSigned: info.addId).mapError{.right($0)}
     }
 }
 
@@ -40,8 +56,10 @@ public extension ListTuple where
     TAdditionalSigned.DroppedLast == DroppedLast.TAdditionalSigned,
     TAdditionalSigned.Last == Last.TAdditionalSigned
 {
+    @inlinable
     var identifiers: [ExtrinsicExtensionId] { dropLast.identifiers + [last.identifier] }
     
+    @inlinable
     func params<R: RootApi<TConfig>>(
         api: R, partial params: TConfig.TSigningParams.TPartial
     ) async throws -> TConfig.TSigningParams.TPartial {
@@ -49,16 +67,31 @@ public extension ListTuple where
         return try await last.params(api: api, partial: prefix)
     }
     
+    @inlinable
     func extra<R: RootApi<TConfig>>(api: R, params: TConfig.TSigningParams) async throws -> TExtra {
         try await TExtra(first: dropLast.extra(api: api, params: params),
                          last: last.extra(api: api, params: params))
     }
     
+    @inlinable
     func additionalSigned<R: RootApi<TConfig>>(
         api: R, params: TConfig.TSigningParams
     ) async throws -> TAdditionalSigned {
         try await TAdditionalSigned(first: dropLast.additionalSigned(api: api, params: params),
                                     last: last.additionalSigned(api: api, params: params))
+    }
+    
+    @inlinable
+    func validate(
+        runtime: any Runtime,
+        types: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>> {
+        guard let info = types[last.identifier] else {
+            return .failure(.left(.unknownExtension(identifier: last.identifier)))
+        }
+        return last.validate(runtime: runtime, extra: info.extId, additionalSigned: info.addId)
+            .mapError{.right($0)}
+            .flatMap{dropLast.validate(runtime: runtime, types: types)}
     }
 }
 

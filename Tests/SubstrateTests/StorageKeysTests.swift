@@ -494,7 +494,7 @@ final class StorageKeysTests: XCTestCase {
     private func runtime() throws -> ExtendedRuntime<DynamicConfig> {
         let data = Resources.inst.metadadav15()
         let opaq = try ScaleCodec.decode(Optional<OpaqueMetadata>.self, from: data)!
-        let versioned = try ScaleCodec.decode(VersionedMetadata.self, from: opaq.raw)
+        let versioned = try ScaleCodec.decode(VersionedNetworkMetadata.self, from: opaq.raw)
         let metadata = try versioned.metadata.asMetadata()
         return try ExtendedRuntime(config: try DynamicConfig(),
                                    metadata: metadata,

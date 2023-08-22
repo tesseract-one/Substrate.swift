@@ -8,7 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable, ValueRepresentable {
+public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
+                           ValueRepresentable, ValidatableRuntimeType
+{
     init(from string: String, runtime: any Runtime,
          id: @escaping RuntimeType.LazyId) throws
     init(pub: any PublicKey, runtime: any Runtime,
@@ -105,5 +107,20 @@ public extension StaticAccountId {
     func encode(to encoder: Swift.Encoder, runtime: Runtime) throws {
         var container = encoder.singleValueContainer()
         try container.encode(self.string)
+    }
+    
+    static func validate(runtime: any Runtime,
+                         type id: RuntimeType.Id) -> Result<Void, TypeValidationError> {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard let count = info.asBytes(runtime) else {
+            return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+        }
+        guard byteCount == count else {
+            return .failure(.wrongValuesCount(in: info, expected: byteCount,
+                                              for: String(describing: Self.self)))
+        }
+        return .success(())
     }
 }

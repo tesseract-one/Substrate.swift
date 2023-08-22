@@ -10,7 +10,9 @@ import ScaleCodec
 
 public protocol Config {
     associatedtype THasher: FixedHasher
-    associatedtype TIndex: UnsignedInteger & DataConvertible & CompactCodable & Swift.Codable & RuntimeCodable
+    associatedtype TIndex:
+        UnsignedInteger & ValueRepresentable & DataConvertible
+        & CompactCodable & Swift.Codable & RuntimeCodable & ValidatableRuntimeType
     associatedtype TAccountId: AccountId
     associatedtype TAddress: Address<TAccountId>
     associatedtype TSignature: Signature
@@ -19,7 +21,7 @@ public protocol Config {
     associatedtype TSigningParams: ExtraSigningParameters
     
     associatedtype TExtrinsicEra: SomeExtrinsicEra
-    associatedtype TExtrinsicPayment: ValueRepresentable
+    associatedtype TExtrinsicPayment: ValueRepresentable & ValidatableRuntimeType
     associatedtype TBlockEvents: SomeBlockEvents
     associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent
     associatedtype TDispatchError: CallError

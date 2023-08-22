@@ -18,24 +18,48 @@ public protocol StaticExtrinsicExtensionBase {
         api: R, partial params: TConfig.TSigningParams.TPartial
     ) async throws -> TConfig.TSigningParams.TPartial
     func extra<R: RootApi<TConfig>>(api: R, params: TConfig.TSigningParams) async throws -> TExtra
-    func additionalSigned<R: RootApi<TConfig>>(api: R,
-                                      params: TConfig.TSigningParams) async throws -> TAdditionalSigned
+    func additionalSigned<R: RootApi<TConfig>>(
+        api: R, params: TConfig.TSigningParams
+    ) async throws -> TAdditionalSigned
 }
 
 public protocol StaticExtrinsicExtension: StaticExtrinsicExtensionBase, ExtrinsicSignedExtension
     where TExtra: RuntimeCodable, TAdditionalSigned: RuntimeCodable
 {
     static var identifier: ExtrinsicExtensionId { get }
+    
+    func validate(
+        runtime: any Runtime,
+        extra: RuntimeType.Id,
+        additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError>
 }
 
 public extension StaticExtrinsicExtension {
     var identifier: ExtrinsicExtensionId { Self.identifier }
 }
 
+public extension StaticExtrinsicExtension where
+    TExtra: ValidatableRuntimeType, TAdditionalSigned: ValidatableRuntimeType
+{
+    func validate(runtime: Runtime, extra: RuntimeType.Id,
+                  additionalSigned: RuntimeType.Id) -> Result<Void, TypeValidationError>
+    {
+        TExtra.validate(runtime: runtime, type: extra).flatMap {
+            TAdditionalSigned.validate(runtime: runtime, type: additionalSigned)
+        }
+    }
+}
+
 public protocol StaticExtrinsicExtensions: StaticExtrinsicExtensionBase
     where TExtra: RuntimeCodable, TAdditionalSigned: RuntimeCodable
 {
     var identifiers: [ExtrinsicExtensionId] { get }
+    
+    func validate(
+        runtime: any Runtime,
+        types: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>>
 }
 
 public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: SignedExtensionsProvider {
@@ -89,5 +113,25 @@ public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: Sig
     public func additionalSigned<D: ScaleCodec.Decoder>(from decoder: inout D,
                                                         runtime: any Runtime) throws -> TAdditionalSigned {
         try runtime.decode(from: &decoder)
+    }
+    
+    public func validate(
+        runtime: any Runtime
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>> {
+        guard runtime.metadata.extrinsic.version == version else {
+            return .failure(.left(.badExtrinsicVersion(
+                supported: version,
+                got: runtime.metadata.extrinsic.version
+            )))
+        }
+        let ext = runtime.metadata.extrinsic.extensions.map { info in
+            (key: ExtrinsicExtensionId(info.identifier),
+             value: (extId: info.type.id, addId: info.additionalSigned.id))
+        }
+        let unknown = Set(ext.map{$0.key}).subtracting(extensions.identifiers)
+        guard unknown.count == 0 else {
+            return .failure(.left(.unknownExtension(identifier: unknown.first!)))
+        }
+        return extensions.validate(runtime: runtime, types: Dictionary(uniqueKeysWithValues: ext))
     }
 }

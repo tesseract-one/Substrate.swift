@@ -14,8 +14,10 @@ public protocol SystemProperties: ContextDecodable where DecodingContext == (any
 }
 
 public protocol RuntimeVersion: ContextDecodable where DecodingContext == (any Metadata) {
-    var specVersion: UInt32 { get }
-    var transactionVersion: UInt32 { get }
+    associatedtype TVersion:
+        UnsignedInteger & DataInitalizable & ValueRepresentable & ValidatableRuntimeType
+    var specVersion: TVersion { get }
+    var transactionVersion: TVersion { get }
 }
 
 open class ExtendedRuntime<RC: Config>: Runtime {
@@ -104,9 +106,9 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         }
     }
     
-//    open func setRootApi<A: RootApi<RC>>(api: A) throws {
-//        try self.extrinsicManager.setRootApi(api: api)
-//    }
+    open func validate() throws {
+        try extrinsicManager.validate(runtime: self)
+    }
 }
 
 public extension ExtendedRuntime {

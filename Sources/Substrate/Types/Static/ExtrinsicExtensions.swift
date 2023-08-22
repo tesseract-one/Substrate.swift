@@ -9,10 +9,12 @@ import Foundation
 import ScaleCodec
 
 /// Ensure the runtime version registered in the transaction is the same as at present.
-public struct CheckSpecVersionExtension<C: Config>: StaticExtrinsicExtension {
+public struct CheckSpecVersionExtension<C: Config>: StaticExtrinsicExtension
+    where C.TRuntimeVersion.TVersion: RuntimeCodable
+{
     public typealias TConfig = C
     public typealias TExtra = Nothing
-    public typealias TAdditionalSigned = UInt32
+    public typealias TAdditionalSigned = C.TRuntimeVersion.TVersion
     
     public static var identifier: ExtrinsicExtensionId { .checkSpecVersion }
     
@@ -33,10 +35,12 @@ public struct CheckSpecVersionExtension<C: Config>: StaticExtrinsicExtension {
 }
 
 ///// Ensure the transaction version registered in the transaction is the same as at present.
-public struct CheckTxVersionExtension<C: Config>: StaticExtrinsicExtension {
+public struct CheckTxVersionExtension<C: Config>: StaticExtrinsicExtension
+    where C.TRuntimeVersion.TVersion: RuntimeCodable
+{
     public typealias TConfig = C
     public typealias TExtra = Nothing
-    public typealias TAdditionalSigned = UInt32
+    public typealias TAdditionalSigned = C.TRuntimeVersion.TVersion
     
     public static var identifier: ExtrinsicExtensionId { .checkTxVersion }
     
@@ -119,7 +123,7 @@ public struct CheckNonceExtension<C: Config>: StaticExtrinsicExtension
           C.TSigningParams.TPartial.TAccountId == C.TAccountId
 {
     public typealias TConfig = C
-    public typealias TExtra = C.TSigningParams.TPartial.TNonce
+    public typealias TExtra = Compact<C.TSigningParams.TPartial.TNonce>
     public typealias TAdditionalSigned = Nothing
     
     public static var identifier: ExtrinsicExtensionId { .checkNonce }
@@ -142,7 +146,7 @@ public struct CheckNonceExtension<C: Config>: StaticExtrinsicExtension
     }
 
     public func extra<R: RootApi<C>>(api: R, params: C.TSigningParams) async throws -> TExtra {
-        params.nonce
+        Compact(params.nonce)
     }
 
     public func additionalSigned<R: RootApi<C>>(

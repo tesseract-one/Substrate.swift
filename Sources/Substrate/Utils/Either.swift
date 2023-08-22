@@ -59,13 +59,21 @@ public enum Either<Left, Right>: CustomStringConvertible {
     }
 }
 
-public extension Either where Left: Error {
-    var result: Result<Right, Left> {
+extension Either: ResultLike where Left: Error {
+    public typealias Success = Right
+    public typealias Failure = Left
+    
+    @inlinable var result: Result<Right, Left> {
         switch self {
         case .left(let err): return .failure(err)
         case .right(let val): return .success(val)
         }
     }
+    
+    @inlinable public var isError: Bool { isLeft }
+    @inlinable public var value: Right? { right }
+    @inlinable public var error: Left? { left }
+    @inlinable public func get() throws -> Right { try result.get() }
 }
 
 extension Either: Equatable where Left: Equatable, Right: Equatable {}

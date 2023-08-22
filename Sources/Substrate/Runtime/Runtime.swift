@@ -49,7 +49,7 @@ public protocol Runtime: AnyObject {
     // Storage
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(StorageHasher, RuntimeType.Info)], value: RuntimeType.Info, `default`: Data)?
+    ) -> (keys: [(MetadataV14.StorageHasher, RuntimeType.Info)], value: RuntimeType.Info, `default`: Data)?
 }
 
 public extension Runtime {
@@ -126,12 +126,10 @@ public extension Runtime {
     @inlinable
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(StorageHasher, RuntimeType.Info)], value: RuntimeType.Info, `default`: Data)? {
+    ) -> (keys: [(MetadataV14.StorageHasher, RuntimeType.Info)], value: RuntimeType.Info, `default`: Data)? {
         metadata.resolve(pallet: pallet)?.storage(name: name).flatMap {
             let (keys, value) = $0.types
             return (keys.map { ($0.0, $0.1) }, value, $0.defaultValue)
         }
     }
 }
-
-

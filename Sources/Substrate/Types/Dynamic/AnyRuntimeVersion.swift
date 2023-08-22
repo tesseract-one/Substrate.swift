@@ -10,8 +10,10 @@ import ContextCodable
 import Serializable
 
 public struct AnyRuntimeVersion: RuntimeVersion {
-    public let specVersion: UInt32
-    public let transactionVersion: UInt32
+    public typealias TVersion = UInt32
+    
+    public let specVersion: TVersion
+    public let transactionVersion: TVersion
     public let other: [String: SerializableValue]
     
     public init(from decoder: Decoder, context: any Metadata) throws {

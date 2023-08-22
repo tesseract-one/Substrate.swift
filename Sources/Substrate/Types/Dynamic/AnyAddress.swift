@@ -22,7 +22,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         }
         switch info.flatten(runtime).definition {
         case .variant(variants: let vars):
-            let idVar = try Self.findIdVariant(in: vars, type: info)
+            let idVar = try Self.findIdVariant(in: vars, type: info).getValueError()
             if try decoder.peek() == idVar.index {
                 let _ = try decoder.decode(.enumCaseId)
                 self = try .id(Id(from: &decoder, as: idVar.fields.first!.type, runtime: runtime))
@@ -69,7 +69,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         case .variant(variants: let vars):
             switch self {
             case .id(let id):
-                let idVar = try Self.findIdVariant(in: vars, type: info)
+                let idVar = try Self.findIdVariant(in: vars, type: info).getValueError()
                 return try .variant(
                     name: idVar.name,
                     values: [id.asValue(runtime: runtime, type: idVar.fields.first!.type)],
@@ -97,14 +97,33 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         }
     }
     
-    public static func findIdVariant(in vars: [RuntimeType.VariantItem],
-                                     type: RuntimeType) throws -> RuntimeType.VariantItem {
+    public static func findIdVariant(
+        in vars: [RuntimeType.VariantItem], type: RuntimeType
+    ) -> Result<RuntimeType.VariantItem, TypeValidationError> {
         for item in vars {
             if item.fields.count != 1 { continue }
-            if item.name.lowercased().contains("id") { return item }
-            if item.fields.first?.typeName?.lowercased().contains("id") ?? false { return item }
+            if item.name.lowercased().contains("id") { return .success(item) }
+            if item.fields.first?.typeName?.lowercased().contains("id") ?? false {
+                return .success(item)
+            }
         }
-        throw ValueRepresentableError.wrongType(got: type, for: "AnyAddress")
+        return .failure(.variantNotFound(name: "Id", in: type))
+    }
+    
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+    {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        switch info.flatten(runtime).definition {
+        case .variant(variants: let vars):
+            return findIdVariant(in: vars, type: info).flatMap { variant in
+                TAccountId.validate(runtime: runtime, type: variant.fields.first!.type)
+            }
+        default:
+            return TAccountId.validate(runtime: runtime, type: id)
+        }
     }
     
     public var description: String {

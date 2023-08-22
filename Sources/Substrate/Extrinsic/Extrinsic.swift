@@ -75,7 +75,7 @@ public protocol OpaqueExtrinsic<THash, TSignedExtra, TUnsignedExtra>: RuntimeSwi
 }
 
 
-public protocol SomeExtrinsicEra: RuntimeDynamicCodable, ValueRepresentable, Default {
+public protocol SomeExtrinsicEra: RuntimeDynamicCodable, ValueRepresentable, ValidatableRuntimeType, Default {
     var isImmortal: Bool { get }
     
     func blockHash<R: RootApi>(api: R) async throws -> R.RC.TBlock.THeader.THasher.THash
@@ -90,7 +90,7 @@ public extension SomeExtrinsicEra {
 public enum ExtrinsicCodingError: Error {
     case badExtrinsicVersion(supported: UInt8, got: UInt8)
     case badExtrasCount(expected: Int, got: Int)
-    case badExtras(expected: [String], got: [ExtrinsicExtensionId])
+    //case badExtras(expected: [String], got: [ExtrinsicExtensionId])
     case parameterNotFound(extension: ExtrinsicExtensionId, parameter: String)
     case typeMismatch(expected: Any.Type, got: Any.Type)
     case unknownExtension(identifier: ExtrinsicExtensionId)

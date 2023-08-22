@@ -13,7 +13,7 @@ final class MetadataTests: XCTestCase {
     func testEncDecV14() throws {
         let data = Resources.inst.metadadav14()
         let opaq = try ScaleCodec.decode(Optional<OpaqueMetadata>.self, from: data)!
-        let metadata = try ScaleCodec.decode(VersionedMetadata.self, from: opaq.raw)
+        let metadata = try ScaleCodec.decode(VersionedNetworkMetadata.self, from: opaq.raw)
         XCTAssertEqual(metadata.metadata.version, 14)
         let enc = try ScaleCodec.encode(metadata)
         XCTAssertEqual(opaq.raw.hex(), enc.hex())
@@ -22,7 +22,7 @@ final class MetadataTests: XCTestCase {
     func testEncDecV15() throws {
         let data = Resources.inst.metadadav15()
         let opaq = try ScaleCodec.decode(Optional<OpaqueMetadata>.self, from: data)!
-        let metadata = try ScaleCodec.decode(VersionedMetadata.self, from: opaq.raw)
+        let metadata = try ScaleCodec.decode(VersionedNetworkMetadata.self, from: opaq.raw)
         XCTAssertEqual(metadata.metadata.version, 15)
         let enc = try ScaleCodec.encode(metadata)
         XCTAssertEqual(opaq.raw.hex(), enc.hex())

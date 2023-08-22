@@ -39,16 +39,25 @@ extension Nothing: ScaleCodec.Codable, RuntimeCodable {
 
 extension Nothing: ValueRepresentable {
     public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
-        }
-        guard info.isEmpty(runtime) else {
-            throw ValueRepresentableError.wrongType(got: info, for: "Nothing")
-        }
+        try Self.validate(runtime: runtime, type: type).getValueError()
         return .nil(type)
     }
 }
 
 extension Nothing: VoidValueRepresentable {
     public func asValue() -> Value<Void> { .nil }
+}
+
+extension Nothing: ValidatableRuntimeType {
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+    {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard info.isEmpty(runtime) else {
+            return .failure(.wrongType(got: info, for: "()"))
+        }
+        return .success(())
+    }
 }

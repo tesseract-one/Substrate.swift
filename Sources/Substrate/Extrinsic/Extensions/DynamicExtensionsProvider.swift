@@ -23,6 +23,11 @@ public protocol DynamicExtrinsicExtension: ExtrinsicSignedExtension {
         api: R, params: R.RC.TSigningParams, id: RuntimeType.Id
     ) async throws -> Value<RuntimeType.Id>
         where R.RC.TSigningParams == AnySigningParams<R.RC>
+    
+    func validate<C: Config>(
+        config: C.Type, runtime: any Runtime,
+        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+    ) -> Result<Void, TypeValidationError> where C.TSigningParams == AnySigningParams<C>
 }
 
 public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvider where
@@ -44,14 +49,14 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
                                        for api: R) async throws -> RC.TSigningParams
     {
         var params = params
-        for ext in try _activeExtensions(runtime: api.runtime) {
+        for ext in try _activeExtensions(runtime: api.runtime).get() {
             params = try await ext.ext.params(api: api, partial: params)
         }
         return try RC.TSigningParams(partial: params)
     }
         
     public func extra<R: RootApi<RC>>(params: RC.TSigningParams, for api: R) async throws -> TExtra {
-        let extensions = try _activeExtensions(runtime: api.runtime)
+        let extensions = try _activeExtensions(runtime: api.runtime).get()
         var extra: [Value<RuntimeType.Id>] = []
         extra.reserveCapacity(extensions.count)
         for ext in extensions {
@@ -63,7 +68,7 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
     public func additionalSigned<R: RootApi<RC>>(params: RC.TSigningParams,
                                                  for api: R) async throws -> TAdditionalSigned
     {
-        let extensions = try _activeExtensions(runtime: api.runtime)
+        let extensions = try _activeExtensions(runtime: api.runtime).get()
         var additional: [Value<RuntimeType.Id>] = []
         additional.reserveCapacity(extensions.count)
         for ext in extensions {
@@ -81,7 +86,7 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
     public func encode<E: ScaleCodec.Encoder>(additionalSigned: TAdditionalSigned,
                                               in encoder: inout E,
                                               runtime: any Runtime) throws {
-        let extensions = try _activeExtensions(runtime: runtime)
+        let extensions = try _activeExtensions(runtime: runtime).get()
         guard additionalSigned.count == extensions.count else {
             throw ExtrinsicCodingError.badExtrasCount(expected: extensions.count,
                                                       got: additionalSigned.count)
@@ -98,25 +103,45 @@ public class DynamicSignedExtensionsProvider<RC: Config>: SignedExtensionsProvid
     public func additionalSigned<D: ScaleCodec.Decoder>(
         from decoder: inout D, runtime: any Runtime
     ) throws -> TAdditionalSigned {
-        try _activeExtensions(runtime: runtime).map { ext in
+        try _activeExtensions(runtime: runtime).get().map { ext in
             try runtime.decode(from: &decoder, id: ext.addId)
         }
     }
     
+    public func validate(
+        runtime: any Runtime
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>> {
+        _activeExtensions(runtime: runtime)
+            .mapError {.left($0)}
+            .flatMap { exts in
+                exts.reduce(.success(())) { p, ext in
+                    p.flatMap {
+                        ext.ext.validate(
+                            config: RC.self, runtime: runtime,
+                            extra: ext.extId, additionalSigned: ext.addId
+                        ).mapError{.right($0)}
+                    }
+                }
+            }
+    }
+    
     private func _activeExtensions(
         runtime: any Runtime
-    ) throws -> [(ext: any DynamicExtrinsicExtension, extId: RuntimeType.Id, addId: RuntimeType.Id)] {
+    ) -> Result<[(ext: any DynamicExtrinsicExtension, extId: RuntimeType.Id, addId: RuntimeType.Id)],
+                ExtrinsicCodingError>
+    {
         guard runtime.metadata.extrinsic.version == version else {
-            throw ExtrinsicCodingError.badExtrinsicVersion(
+            return .failure(.badExtrinsicVersion(
                 supported: version,
-                got: runtime.metadata.extrinsic.version)
+                got: runtime.metadata.extrinsic.version
+            ))
         }
-        return try runtime.metadata.extrinsic.extensions.map { info in
+        return runtime.metadata.extrinsic.extensions.resultMap { info in
             let id = ExtrinsicExtensionId(info.identifier)
             guard let ext = self.extensions[id] else {
-                throw  ExtrinsicCodingError.unknownExtension(identifier: id)
+                return .failure(.unknownExtension(identifier: id))
             }
-            return (ext: ext, extId: info.type.id, addId: info.additionalSigned.id)
+            return .success((ext, info.type.id, info.additionalSigned.id))
         }
     }
 }
