@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ContextCodable
 
 public struct AnyHash: Hash {
     public let raw: Data

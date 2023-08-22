@@ -32,7 +32,7 @@ public struct DynamicConfig: Config {
     public typealias TTransactionValidityError = AnyTransactionValidityError
     public typealias TExtrinsicFailureEvent = AnyExtrinsicFailureEvent
     public typealias TBlockEvents = BlockEvents<AnyEventRecord>
-    public typealias TRuntimeVersion = AnyRuntimeVersion
+    public typealias TRuntimeVersion = AnyRuntimeVersion<UInt32>
     public typealias TStorageChangeSet = StorageChangeSet<THasher.THash>
     
     public enum Error: Swift.Error {

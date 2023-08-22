@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import ScaleCodec
 
 /// Ensure the runtime version registered in the transaction is the same as at present.
 public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
@@ -163,7 +164,7 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
     ) -> Result<Void, TypeValidationError> where C.TSigningParams == AnySigningParams<C> {
-        C.TSigningParams.TPartial.TNonce.validate(runtime: runtime, type: extra).flatMap {
+        Compact<C.TSigningParams.TPartial.TNonce>.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }
     }

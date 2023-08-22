@@ -46,19 +46,17 @@ extension XCTestCase {
 
 struct Environment {
     private let mnemonic: String
-    public let host: String
-    public let wsPort: String
-    public let httpPort: String
+    public let wsUrlString: String
+    public let httpUrlString: String
     
     init() {
         self.mnemonic = ProcessInfo.processInfo.environment["TEST_MNEMONIC"] ?? DEFAULT_DEV_PHRASE
-        self.host = ProcessInfo.processInfo.environment["NODE_HOST"] ?? "127.0.0.1"
-        self.httpPort = ProcessInfo.processInfo.environment["NODE_HTTP_PORT"] ?? "9933"
-        self.wsPort = ProcessInfo.processInfo.environment["NODE_WS_PORT"] ?? "9944"
+        self.httpUrlString = ProcessInfo.processInfo.environment["NODE_HTTP_URL"] ?? "http://127.0.0.1:9933"
+        self.wsUrlString = ProcessInfo.processInfo.environment["NODE_WS_URL"] ?? "ws://127.0.0.1:9944"
     }
     
-    var httpUrl: URL { URL(string: "http://\(host):\(httpPort)")! }
-    var wsUrl: URL { URL(string: "ws://\(host):\(wsPort)")! }
+    var httpUrl: URL { URL(string: httpUrlString)! }
+    var wsUrl: URL { URL(string: wsUrlString)! }
     
     public var sudoKeyPair: Sr25519KeyPair { mutating get { kpAlice } }
     public var fundedKeyPairs: [Sr25519KeyPair] { mutating get  { [kpAlice, kpBob] } }
