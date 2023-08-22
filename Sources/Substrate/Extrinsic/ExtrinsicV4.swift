@@ -32,6 +32,7 @@ public class ExtrinsicV4Manager<SE: SignedExtensionsProvider>: ExtrinsicManager 
     public typealias TSignature = SE.TConfig.TSignature
     public typealias TUnsignedParams = Void
     public typealias TUnsignedExtra = Nothing
+    public typealias TSigningParams = SE.TParams
     public typealias TSigningExtra = (extra: SE.TExtra, additional: SE.TAdditionalSigned)
     public typealias TSignedExtra = ExtrinsicV4Extra<TAddress, TSignature, SE.TExtra>
     
@@ -59,14 +60,14 @@ public class ExtrinsicV4Manager<SE: SignedExtensionsProvider>: ExtrinsicManager 
     
     public func params<C: Call, R: RootApi<TConfig>>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        partial params: TConfig.TSigningParams.TPartial, for api: R
-    ) async throws -> TConfig.TSigningParams {
+        partial params: TSigningParams.TPartial, for api: R
+    ) async throws -> TSigningParams {
         try await extensions.params(partial: params, for: api)
     }
     
     public func payload<C: Call, R: RootApi<TConfig>>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        params: TConfig.TSigningParams, for api: R
+        params: TSigningParams, for api: R
     ) async throws -> ExtrinsicSignPayload<C, TSigningExtra> {
         return try await ExtrinsicSignPayload(call: extrinsic.call,
                                               extra: (extensions.extra(params: params, for: api),

@@ -10,9 +10,7 @@ import ScaleCodec
 import ContextCodable
 import Serializable
 
-public struct AnyRuntimeVersion<V>: RuntimeVersion
-    where V: UnsignedInteger & Swift.Decodable & DataInitalizable & ValueRepresentable & ValidatableRuntimeType
-{
+public struct AnyRuntimeVersion<V: ConfigUnsignedInteger>: RuntimeVersion {
     public typealias TVersion = V
     
     public let specVersion: TVersion

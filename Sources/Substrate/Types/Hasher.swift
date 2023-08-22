@@ -15,16 +15,28 @@ public protocol Hasher {
     func hash(data: Data) -> Data
 }
 
-public protocol StaticHasher: Hasher {
+public protocol StaticHasher: Hasher, ValidatableRuntimeType {
     static var name: String { get }
     static var instance: Self { get }
 }
 
 public extension StaticHasher {
     @inlinable var name: String { Self.name }
+    
+    static func validate(runtime: any Runtime,
+                         type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+    {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard let name = info.path.last, name == Self.name else {
+            return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+        }
+        return .success(())
+    }
 }
 
-public protocol FixedHasher: Hasher {
+public protocol FixedHasher: Hasher, ValidatableRuntimeType {
     associatedtype THash: Hash
     
     func hash(data: Data, runtime: any Runtime) throws -> THash

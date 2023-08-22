@@ -14,8 +14,8 @@ public protocol SystemProperties: ContextDecodable where DecodingContext == (any
 }
 
 public protocol RuntimeVersion: ContextDecodable where DecodingContext == (any Metadata) {
-    associatedtype TVersion:
-        UnsignedInteger & DataInitalizable & ValueRepresentable & ValidatableRuntimeType
+    associatedtype TVersion: ConfigUnsignedInteger
+    
     var specVersion: TVersion { get }
     var transactionVersion: TVersion { get }
 }

@@ -50,10 +50,7 @@ public class MetadataV15: Metadata {
     
     @inlinable
     public func search(type cb: @escaping (String) -> Bool) -> RuntimeType.Info? {
-        for (path, type) in typesByPath {
-            if cb(path) { return type }
-        }
-        return nil
+        typesByPath.first { cb($0.key) }?.value
     }
     
     @inlinable

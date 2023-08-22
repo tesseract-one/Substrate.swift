@@ -32,6 +32,9 @@ public enum MultiAddress<Id, Index>: Equatable, Hashable
     public init(index: Index) {
         self = .index(index)
     }
+    
+    @inlinable
+    public static var allCases: [String] { ["Id", "Index", "Address20", "Raw", "Address32"] }
 }
 
 extension MultiAddress: ValueRepresentable {
@@ -39,12 +42,11 @@ extension MultiAddress: ValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        let selfvars: Set<String> = ["Id", "Index", "Address20", "Raw", "Address32"]
-        guard case .variant(variants: let variants) = info.definition.flatten(metadata: runtime.metadata) else {
+        guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
         }
-        guard selfvars == Set(variants.map{$0.name}) else {
-            throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
+        if let badCase = Set(Self.allCases).symmetricDifference(variants.map{$0.name}).first {
+            throw ValueRepresentableError.variantNotFound(name: badCase, in: info)
         }
         switch self {
         case .id(let id):
@@ -112,7 +114,22 @@ extension MultiAddress: ValidatableRuntimeType {
     public static func validate(runtime: Runtime,
                                 type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
     {
-        .success(())
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
+            return .failure(.wrongType(got: info, for: "MultiAddress"))
+        }
+        if let badCase = Set(allCases).symmetricDifference(variants.map{$0.name}).first {
+            return .failure(.variantNotFound(name: badCase, in: info))
+        }
+        for variant in variants {
+            if variant.fields.count != 1 {
+                return .failure(.wrongValuesCount(in: info, expected: 1,
+                                                  for: variant.name))
+            }
+        }
+        return .success(())
     }
 }
 

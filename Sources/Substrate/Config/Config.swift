@@ -8,18 +8,17 @@
 import Foundation
 import ScaleCodec
 
+public typealias ConfigUnsignedInteger = UnsignedInteger & ValueRepresentable & DataConvertible
+    & CompactCodable & Swift.Codable & RuntimeCodable & ValidatableRuntimeType
+
 public protocol Config {
     associatedtype THasher: FixedHasher
-    associatedtype TIndex:
-        UnsignedInteger & ValueRepresentable & DataConvertible
-        & CompactCodable & Swift.Codable & RuntimeCodable & ValidatableRuntimeType
+    associatedtype TIndex: ConfigUnsignedInteger
     associatedtype TAccountId: AccountId
     associatedtype TAddress: Address<TAccountId>
     associatedtype TSignature: Signature
     associatedtype TBlock: SomeBlock where TBlock.THeader.THasher == THasher
     associatedtype TChainBlock: SomeChainBlock<TBlock>
-    associatedtype TSigningParams: ExtraSigningParameters
-    
     associatedtype TExtrinsicEra: SomeExtrinsicEra
     associatedtype TExtrinsicPayment: ValueRepresentable & ValidatableRuntimeType
     associatedtype TBlockEvents: SomeBlockEvents

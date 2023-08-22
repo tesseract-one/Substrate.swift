@@ -68,4 +68,16 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
     public static func == (lhs: AnyFixedHasher, rhs: AnyFixedHasher) -> Bool {
         lhs.name == rhs.name
     }
+    
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+    {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard let name = info.path.last, HashType(name: name) != nil else {
+            return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+        }
+        return .success(())
+    }
 }

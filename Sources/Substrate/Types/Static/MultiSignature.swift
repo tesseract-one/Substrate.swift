@@ -59,16 +59,17 @@ extension MultiSignature: ValueRepresentable {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
-        let selfvars = Set(Self.supportedCryptoTypes.map{$0.signatureName})
         guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
         }
-        guard selfvars == Set(variants.map{$0.name}) else {
-            throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
+        if let badCrypto = Set(Self.supportedCryptoTypes.map{$0.signatureName})
+                .symmetricDifference(variants.map{$0.name}).first
+        {
+            throw ValueRepresentableError.variantNotFound(name: badCrypto, in: info)
         }
         let sig = self.signature
         guard let field = variants.first(where: {$0.name == sig.algorithm.signatureName})?.fields.first else {
-            throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
+            throw ValueRepresentableError.variantNotFound(name: sig.algorithm.signatureName, in: info)
         }
         return try .variant(name: sig.algorithm.signatureName,
                             values: [sig.asValue(runtime: runtime, type: field.type)], type)
@@ -82,12 +83,13 @@ extension MultiSignature: ValidatableRuntimeType {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }
-        let selfvars = Set(Self.supportedCryptoTypes.map{$0.signatureName})
         guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
             return .failure(.wrongType(got: info, for: "MultiSignature"))
         }
-        guard selfvars == Set(variants.map{$0.name}) else {
-            return .failure(.wrongType(got: info, for: "MultiSignature"))
+        if let badCrypto = Set(supportedCryptoTypes.map{$0.signatureName})
+                .symmetricDifference(variants.map{$0.name}).first
+        {
+            return .failure(.variantNotFound(name: badCrypto, in: info))
         }
         for variant in variants {
             guard variant.fields.count == 1 else {
