@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct TransactionQueryInfoRuntimeCall<DI: RuntimeDecodable>: StaticRuntimeCall {
+public struct TransactionQueryInfoRuntimeCall<DI: RuntimeDynamicDecodable>: StaticRuntimeCall {
     public typealias TReturn = DI
     
     @inlinable
@@ -26,9 +26,20 @@ public struct TransactionQueryInfoRuntimeCall<DI: RuntimeDecodable>: StaticRunti
         try encoder.encode(extrinsic, .fixed(UInt(extrinsic.count)))
         try encoder.encode(UInt32(extrinsic.count))
     }
+    
+    public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D,
+                                              runtime: Runtime) throws -> TReturn
+    {
+        try runtime.decode(from: &decoder) { runtime in
+            guard let call = runtime.resolve(runtimeCall: Self.method, api: Self.api) else {
+                throw RuntimeCallCodingError.callNotFound(method: method, api: api)
+            }
+            return call.result.id
+        }
+    }
 }
 
-public struct TransactionQueryFeeDetailsRuntimeCall<FD: RuntimeDecodable>: StaticRuntimeCall {
+public struct TransactionQueryFeeDetailsRuntimeCall<FD: RuntimeDynamicDecodable>: StaticRuntimeCall {
     public typealias TReturn = FD
     
     @inlinable
@@ -45,5 +56,16 @@ public struct TransactionQueryFeeDetailsRuntimeCall<FD: RuntimeDecodable>: Stati
     public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
         try encoder.encode(extrinsic, .fixed(UInt(extrinsic.count)))
         try encoder.encode(UInt32(extrinsic.count))
+    }
+    
+    public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D,
+                                              runtime: Runtime) throws -> TReturn
+    {
+        try runtime.decode(from: &decoder) { runtime in
+            guard let call = runtime.resolve(runtimeCall: Self.method, api: Self.api) else {
+                throw RuntimeCallCodingError.callNotFound(method: method, api: api)
+            }
+            return call.result.id
+        }
     }
 }
