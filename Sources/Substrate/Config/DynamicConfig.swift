@@ -249,7 +249,7 @@ public extension Configs.Dynamic {
 }
 
 // ConfigRegistry helpers
-public extension Configs.Registry where C == Configs.Dynamic {
+public extension Configs.Registry where C == Configs.Dynamic, Ext == Void {
     @inlinable
     static func dynamic(extensions: [DynamicExtrinsicExtension] = Configs.dynamicSignedExtensions,
                         customCoders: [RuntimeCustomDynamicCoder] = Configs.customCoders,
