@@ -6,7 +6,8 @@
 //
 
 import Foundation
-import Tuples
+import ScaleCodec
+import ContextCodable
 import Serializable
 
 public extension Configs {
