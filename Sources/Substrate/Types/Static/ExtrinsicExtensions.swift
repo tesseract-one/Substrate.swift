@@ -9,8 +9,9 @@ import Foundation
 import ScaleCodec
 
 /// Ensure the runtime version registered in the transaction is the same as at present.
-public struct CheckSpecVersionExtension<C: BasicConfig>: StaticExtrinsicExtension {
+public struct CheckSpecVersionExtension<C: BasicConfig, P: ExtraSigningParameters>: StaticExtrinsicExtension {
     public typealias TConfig = C
+    public typealias TParams = P
     public typealias TExtra = Nothing
     public typealias TAdditionalSigned = SBT<C>.Version
     
@@ -19,25 +20,26 @@ public struct CheckSpecVersionExtension<C: BasicConfig>: StaticExtrinsicExtensio
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: SBT<C>.SigningParamsPartial
-    ) async throws -> SBT<C>.SigningParamsPartial { params }
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra {
         .nothing
     }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws-> TAdditionalSigned where SBC<R.RC> == C {
         api.runtime.version.specVersion
     }
 }
 
 ///// Ensure the transaction version registered in the transaction is the same as at present.
-public struct CheckTxVersionExtension<C: BasicConfig>: StaticExtrinsicExtension {
+public struct CheckTxVersionExtension<C: BasicConfig, P: ExtraSigningParameters>: StaticExtrinsicExtension {
     public typealias TConfig = C
+    public typealias TParams = P
     public typealias TExtra = Nothing
     public typealias TAdditionalSigned = SBT<C>.Version
     
@@ -46,27 +48,28 @@ public struct CheckTxVersionExtension<C: BasicConfig>: StaticExtrinsicExtension 
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: SBT<C>.SigningParamsPartial
-    ) async throws -> SBT<C>.SigningParamsPartial { params }
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial { params }
 
     public func extra<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra {
         .nothing
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TAdditionalSigned where SBC<R.RC> == C {
         api.runtime.version.transactionVersion
     }
 }
 
 /// Check genesis hash
-public struct CheckGenesisExtension<C: BasicConfig>: StaticExtrinsicExtension
+public struct CheckGenesisExtension<C: BasicConfig, P: ExtraSigningParameters>: StaticExtrinsicExtension
     where SBT<C>.Hasher: StaticFixedHasher
 {
     public typealias TConfig = C
+    public typealias TParams = P
     public typealias TExtra = Nothing
     public typealias TAdditionalSigned = SBT<C>.Hash
     
@@ -75,26 +78,27 @@ public struct CheckGenesisExtension<C: BasicConfig>: StaticExtrinsicExtension
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: SBT<C>.SigningParamsPartial
-    ) async throws -> SBT<C>.SigningParamsPartial {
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial {
         params
     }
     
     public func extra<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra {
         .nothing
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TAdditionalSigned where SBC<R.RC> == C {
         api.runtime.genesisHash
     }
 }
 
-public struct CheckNonZeroSenderExtension<C: BasicConfig>: StaticExtrinsicExtension {
+public struct CheckNonZeroSenderExtension<C: BasicConfig, P: ExtraSigningParameters>: StaticExtrinsicExtension {
     public typealias TConfig = C
+    public typealias TParams = P
     public typealias TExtra = Nothing
     public typealias TAdditionalSigned = Nothing
     
@@ -103,32 +107,31 @@ public struct CheckNonZeroSenderExtension<C: BasicConfig>: StaticExtrinsicExtens
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: SBT<C>.SigningParamsPartial
-    ) async throws -> SBT<C>.SigningParamsPartial {
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial {
         params
     }
 
     public func extra<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra {
         .nothing
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TAdditionalSigned {
         .nothing
     }
 }
 
 /// Nonce check and increment to give replay protection for transactions.
-public struct CheckNonceExtension<C: BasicConfig>: StaticExtrinsicExtension
-    where SBT<C>.SigningParams: NonceSigningParameters,
-          SBT<C>.SigningParamsPartial.TNonce == SBT<C>.Index,
-          SBT<C>.SigningParamsPartial.TAccountId == SBT<C>.AccountId
+public struct CheckNonceExtension<C: BasicConfig, P: NonceSigningParameters>: StaticExtrinsicExtension
+    where P.TPartial.TNonce == SBT<C>.Index, P.TPartial.TAccountId == SBT<C>.AccountId
 {
     public typealias TConfig = C
-    public typealias TExtra = Compact<SBT<C>.SigningParamsPartial.TNonce>
+    public typealias TParams = P
+    public typealias TExtra = Compact<P.TPartial.TNonce>
     public typealias TAdditionalSigned = Nothing
     
     public static var identifier: ExtrinsicExtensionId { .checkNonce }
@@ -136,8 +139,8 @@ public struct CheckNonceExtension<C: BasicConfig>: StaticExtrinsicExtension
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: SBT<C>.SigningParamsPartial
-    ) async throws -> SBT<C>.SigningParamsPartial where SBC<R.RC> == C {
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial where SBC<R.RC> == C {
         guard params.nonce == nil else { return params }
         guard let account = params.account else {
             throw ExtrinsicCodingError.parameterNotFound(extension: Self.identifier,
@@ -151,36 +154,35 @@ public struct CheckNonceExtension<C: BasicConfig>: StaticExtrinsicExtension
     }
 
     public func extra<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra {
         Compact(params.nonce)
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TAdditionalSigned {
         .nothing
     }
 }
 
 /// Check for transaction mortality.
-public struct CheckMortalityExtension<C: BasicConfig>: StaticExtrinsicExtension
-    where SBT<C>.SigningParams: EraSigningParameters,
-          SBT<C>.SigningParamsPartial.TEra == SBT<C>.ExtrinsicEra,
-          SBT<C>.SigningParamsPartial.THash == SBT<C>.Hash,
-          SBT<C>.Hasher: StaticFixedHasher, SBT<C>.ExtrinsicEra: RuntimeCodable
+public struct CheckMortalityExtension<C: BasicConfig, P: EraSigningParameters>: StaticExtrinsicExtension
+    where P.TPartial.TEra == SBT<C>.ExtrinsicEra, P.TPartial.THash == SBT<C>.Hash,
+          SBT<C>.Hasher: StaticFixedHasher, P.TPartial.TEra: RuntimeCodable
 {
     public typealias TConfig = C
-    public typealias TExtra = SBT<C>.SigningParamsPartial.TEra
-    public typealias TAdditionalSigned = SBT<C>.SigningParamsPartial.THash
+    public typealias TParams = P
+    public typealias TExtra = P.TPartial.TEra
+    public typealias TAdditionalSigned = P.TPartial.THash
     
     public static var identifier: ExtrinsicExtensionId { .checkMortality }
     
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: SBT<C>.SigningParamsPartial
-    ) async throws -> SBT<C>.SigningParamsPartial where SBC<R.RC> == C {
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial where SBC<R.RC> == C {
         var params = params
         if params.era == nil {
             params.era = .immortal
@@ -192,21 +194,22 @@ public struct CheckMortalityExtension<C: BasicConfig>: StaticExtrinsicExtension
     }
 
     public func extra<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra {
         params.era
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TAdditionalSigned {
         params.blockHash
     }
 }
 
 /// Resource limit check.
-public struct CheckWeightExtension<C: BasicConfig>: StaticExtrinsicExtension {
+public struct CheckWeightExtension<C: BasicConfig, P: ExtraSigningParameters>: StaticExtrinsicExtension {
     public typealias TConfig = C
+    public typealias TParams = P
     public typealias TExtra = Nothing
     public typealias TAdditionalSigned = Nothing
     
@@ -215,19 +218,19 @@ public struct CheckWeightExtension<C: BasicConfig>: StaticExtrinsicExtension {
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: SBT<C>.SigningParamsPartial
-    ) async throws -> SBT<C>.SigningParamsPartial {
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial {
         params
     }
 
     public func extra<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra {
         .nothing
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TAdditionalSigned {
         .nothing
     }
@@ -235,13 +238,12 @@ public struct CheckWeightExtension<C: BasicConfig>: StaticExtrinsicExtension {
 
 /// Require the transactor pay for themselves and maybe include a tip to gain additional priority
 /// in the queue.
-public struct ChargeTransactionPaymentExtension<C: BasicConfig>: StaticExtrinsicExtension
-    where SBT<C>.SigningParams: PaymentSigningParameters,
-          SBT<C>.SigningParamsPartial.TPayment == SBT<C>.ExtrinsicPayment,
-          SBT<C>.ExtrinsicPayment: RuntimeCodable
+public struct ChargeTransactionPaymentExtension<C: BasicConfig, P: PaymentSigningParameters>: StaticExtrinsicExtension
+    where P.TPartial.TPayment == SBT<C>.ExtrinsicPayment, P.TPartial.TPayment: RuntimeCodable
 {
     public typealias TConfig = C
-    public typealias TExtra = SBT<C>.SigningParamsPartial.TPayment
+    public typealias TParams = P
+    public typealias TExtra = P.TPartial.TPayment
     public typealias TAdditionalSigned = Nothing
     
     public static var identifier: ExtrinsicExtensionId { .chargeTransactionPayment }
@@ -249,8 +251,8 @@ public struct ChargeTransactionPaymentExtension<C: BasicConfig>: StaticExtrinsic
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: SBT<C>.SigningParamsPartial
-    ) async throws -> SBT<C>.SigningParamsPartial where SBC<R.RC> == C {
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial where SBC<R.RC> == C {
         var params = params
         if params.tip == nil {
             params.tip = try api.runtime.config.defaultPayment(runtime: api.runtime)
@@ -259,20 +261,21 @@ public struct ChargeTransactionPaymentExtension<C: BasicConfig>: StaticExtrinsic
     }
     
     public func extra<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra {
         return params.tip
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TAdditionalSigned {
         .nothing
     }
 }
 
-public struct PrevalidateAttestsExtension<C: BasicConfig>: StaticExtrinsicExtension {
+public struct PrevalidateAttestsExtension<C: BasicConfig, P: ExtraSigningParameters>: StaticExtrinsicExtension {
     public typealias TConfig = C
+    public typealias TParams = P
     public typealias TExtra = Nothing
     public typealias TAdditionalSigned = Nothing
     
@@ -281,19 +284,19 @@ public struct PrevalidateAttestsExtension<C: BasicConfig>: StaticExtrinsicExtens
     public init() {}
     
     public func params<R: RootApi>(
-        api: R, partial params: SBT<C>.SigningParamsPartial
-    ) async throws -> SBT<C>.SigningParamsPartial {
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial {
         params
     }
 
     public func extra<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra {
         .nothing
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: SBT<C>.SigningParams
+        api: R, params: TParams
     ) async throws -> TAdditionalSigned {
         .nothing
     }

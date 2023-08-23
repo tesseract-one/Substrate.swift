@@ -491,12 +491,12 @@ final class StorageKeysTests: XCTestCase {
         static var name: String { "ConcatDMapKey" }
     }
     
-    private func runtime() throws -> ExtendedRuntime<DynamicConfig> {
+    private func runtime() throws -> ExtendedRuntime<Configs.Dynamic> {
         let data = Resources.inst.metadadav15()
         let opaq = try ScaleCodec.decode(Optional<OpaqueMetadata>.self, from: data)!
         let versioned = try ScaleCodec.decode(VersionedNetworkMetadata.self, from: opaq.raw)
         let metadata = try versioned.metadata.asMetadata()
-        return try ExtendedRuntime(config: try DynamicConfig(),
+        return try ExtendedRuntime(config: try Configs.Dynamic(),
                                    metadata: metadata,
                                    metadataHash: nil,
                                    genesisHash: AnyHash(unchecked: Data()),

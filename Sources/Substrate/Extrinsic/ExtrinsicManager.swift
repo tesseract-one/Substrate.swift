@@ -20,6 +20,7 @@ public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder {
     associatedtype TConfig: BasicConfig
     associatedtype TUnsignedParams
     associatedtype TUnsignedExtra: ExtrinsicExtra
+    associatedtype TSigningParams: ExtraSigningParameters
     associatedtype TSigningExtra
     associatedtype TSignedExtra: ExtrinsicExtra
     
@@ -33,13 +34,13 @@ public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder {
 
     func params<C: Call, R: RootApi>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        partial params: SBT<TConfig>.SigningParamsPartial,
+        partial params: TSigningParams.TPartial,
         for api: R
-    ) async throws -> SBT<TConfig>.SigningParams where SBC<R.RC> == TConfig
+    ) async throws -> TSigningParams where SBC<R.RC> == TConfig
     
     func payload<C: Call, R: RootApi>(
         unsigned extrinsic: Extrinsic<C, TUnsignedExtra>,
-        params: SBT<TConfig>.SigningParams, for api: R
+        params: TSigningParams, for api: R
     ) async throws -> ExtrinsicSignPayload<C, TSigningExtra> where SBC<R.RC> == TConfig
     
     func encode<C: Call, E: ScaleCodec.Encoder>(payload: ExtrinsicSignPayload<C, TSigningExtra>,

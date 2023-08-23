@@ -9,14 +9,13 @@ import Foundation
 import Tuples
 import Serializable
 
-public struct DynamicConfig: Config {
-    public struct Basic: BasicConfig {
+public extension Configs {
+    struct BaseDynamic: BasicConfig {
         public typealias THasher = AnyFixedHasher
         public typealias TIndex = UInt256
         public typealias TAccountId = AccountId32
         public typealias TAddress =  AnyAddress<TAccountId>
         public typealias TSignature = AnySignature
-        public typealias TSigningParams = AnySigningParams<Self>
         public typealias TExtrinsicEra = ExtrinsicEra
         public typealias TExtrinsicPayment = Value<Void>
         public typealias TSystemProperties = AnySystemProperties
@@ -25,76 +24,93 @@ public struct DynamicConfig: Config {
         public typealias TDispatchInfo = Value<RuntimeType.Id>
     }
     
-    public typealias BC = Basic
-    
-    public typealias TBlock = AnyBlock<BC.THasher, BC.TIndex, BlockExtrinsic<TExtrinsicManager>>
-    public typealias TChainBlock = AnyChainBlock<TBlock>
-    public typealias TExtrinsicManager = ExtrinsicV4Manager<DynamicSignedExtensionsProvider<BC>>
-    public typealias TTransactionStatus = TransactionStatus<BC.THasher.THash, BC.THasher.THash>
-    public typealias TDispatchError = AnyDispatchError
-    public typealias TTransactionValidityError = AnyTransactionValidityError
-    public typealias TExtrinsicFailureEvent = AnyExtrinsicFailureEvent
-    public typealias TBlockEvents = BlockEvents<AnyEventRecord>
-    public typealias TStorageChangeSet = StorageChangeSet<BC.THasher.THash>
-    
-    public enum Error: Swift.Error {
-        case typeNotFound(name: String, selector: NSRegularExpression)
-        case hashTypeNotFound(header: RuntimeType.Info)
-        case badHeaderType(header: RuntimeType.Info)
-        case paymentTypeNotFound
-        case cantProvideDefaultPayment(forType: RuntimeType.Info)
-        case extrinsicInfoNotFound
-        case unknownHashName(String)
+    struct Dynamic: Config, BatchSupportedConfig {
+        public enum Error: Swift.Error {
+            case typeNotFound(name: String, selector: NSRegularExpression)
+            case hashTypeNotFound(header: RuntimeType.Info)
+            case badHeaderType(header: RuntimeType.Info)
+            case paymentTypeNotFound
+            case cantProvideDefaultPayment(forType: RuntimeType.Info)
+            case extrinsicInfoNotFound
+            case unknownHashName(String)
+        }
+        
+        public typealias BC = BaseDynamic
+        
+        public typealias TBlock = AnyBlock<BC.THasher, BC.TIndex, BlockExtrinsic<TExtrinsicManager>>
+        public typealias TChainBlock = AnyChainBlock<TBlock>
+        public typealias TExtrinsicManager = ExtrinsicV4Manager<DynamicSignedExtensionsProvider<BC>>
+        public typealias TTransactionStatus = TransactionStatus<BC.THasher.THash, BC.THasher.THash>
+        public typealias TDispatchError = AnyDispatchError
+        public typealias TTransactionValidityError = AnyTransactionValidityError
+        public typealias TExtrinsicFailureEvent = AnyExtrinsicFailureEvent
+        public typealias TBlockEvents = BlockEvents<AnyEventRecord>
+        public typealias TStorageChangeSet = StorageChangeSet<BC.THasher.THash>
+        
+        public typealias TBatchCall = BatchCall
+        public typealias TBatchAllCall = BatchAllCall
+        
+        public let extensions: [DynamicExtrinsicExtension]
+        public let runtimeCustomCoders: [RuntimeCustomDynamicCoder]
+        public let payment: ST<Self>.ExtrinsicPayment?
+        public let blockSelector: NSRegularExpression
+        public let headerSelector: NSRegularExpression
+        public let accountSelector: NSRegularExpression
+        public let dispatchInfoSelector: NSRegularExpression
+        public let dispatchErrorSelector: NSRegularExpression
+        public let transactionValidityErrorSelector: NSRegularExpression
+        public let feeDetailsSelector: NSRegularExpression
+        
+        public init(extensions: [DynamicExtrinsicExtension] = Configs.dynamicSignedExtensions,
+                    customCoders: [RuntimeCustomDynamicCoder] = Configs.customCoders,
+                    defaultPayment: ST<Self>.ExtrinsicPayment? = nil,
+                    blockSelector: String = "^.*Block$",
+                    headerSelector: String = "^.*Header$",
+                    accountSelector: String = "^.*AccountId[0-9]*$",
+                    dispatchInfoSelector: String = "^.*DispatchInfo$",
+                    dispatchErrorSelector: String = "^.*DispatchError$",
+                    transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
+                    feeDetailsSelector: String = "^.*FeeDetails$") throws
+        {
+            self.extensions = extensions
+            self.runtimeCustomCoders = customCoders
+            self.payment = defaultPayment
+            self.blockSelector = try NSRegularExpression(pattern: blockSelector)
+            self.accountSelector = try NSRegularExpression(pattern: accountSelector)
+            self.headerSelector = try NSRegularExpression(pattern: headerSelector)
+            self.dispatchInfoSelector = try NSRegularExpression(pattern: dispatchInfoSelector)
+            self.dispatchErrorSelector = try NSRegularExpression(pattern: dispatchErrorSelector)
+            self.transactionValidityErrorSelector = try NSRegularExpression(
+                pattern: transactionValidityErrorSelector
+            )
+            self.feeDetailsSelector = try NSRegularExpression(pattern: feeDetailsSelector)
+        }
     }
     
-    public let extensions: [DynamicExtrinsicExtension]
-    public let runtimeCustomCoders: [RuntimeCustomDynamicCoder]
-    public let payment: ST<Self>.ExtrinsicPayment?
-    public let blockSelector: NSRegularExpression
-    public let headerSelector: NSRegularExpression
-    public let accountSelector: NSRegularExpression
-    public let dispatchInfoSelector: NSRegularExpression
-    public let dispatchErrorSelector: NSRegularExpression
-    public let transactionValidityErrorSelector: NSRegularExpression
-    public let feeDetailsSelector: NSRegularExpression
+    static var dynamicSignedExtensions: [any DynamicExtrinsicExtension] = [
+        DynamicCheckSpecVersionExtension(),
+        DynamicCheckTxVersionExtension(),
+        DynamicCheckGenesisExtension(),
+        DynamicCheckNonZeroSenderExtension(),
+        DynamicCheckNonceExtension(),
+        DynamicCheckMortalityExtension(),
+        DynamicCheckWeightExtension(),
+        DynamicChargeTransactionPaymentExtension(),
+        DynamicPrevalidateAttestsExtension()
+    ]
     
-    public init(signedExtensions: [DynamicExtrinsicExtension] = Self.allSignedExtensions,
-                customCoders: [RuntimeCustomDynamicCoder] = Self.customCoders,
-                defaultPayment: ST<Self>.ExtrinsicPayment? = nil,
-                blockSelector: String = "^.*Block$",
-                headerSelector: String = "^.*Header$",
-                accountSelector: String = "^.*AccountId[0-9]*$",
-                dispatchInfoSelector: String = "^.*DispatchInfo$",
-                dispatchErrorSelector: String = "^.*DispatchError$",
-                transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
-                feeDetailsSelector: String = "^.*FeeDetails$") throws
-    {
-        self.extensions = signedExtensions
-        self.runtimeCustomCoders = customCoders
-        self.payment = defaultPayment
-        self.blockSelector = try NSRegularExpression(pattern: blockSelector)
-        self.accountSelector = try NSRegularExpression(pattern: accountSelector)
-        self.headerSelector = try NSRegularExpression(pattern: headerSelector)
-        self.dispatchInfoSelector = try NSRegularExpression(pattern: dispatchInfoSelector)
-        self.dispatchErrorSelector = try NSRegularExpression(pattern: dispatchErrorSelector)
-        self.transactionValidityErrorSelector = try NSRegularExpression(
-            pattern: transactionValidityErrorSelector
-        )
-        self.feeDetailsSelector = try NSRegularExpression(pattern: feeDetailsSelector)
-    }
-}
-
-extension DynamicConfig: BatchSupportedConfig {
-    public typealias TBatchCall = BatchCall
-    public typealias TBatchAllCall = BatchAllCall
+    static var customCoders: [RuntimeCustomDynamicCoder] = [
+        ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")
+    ]
 }
 
 // Object getters and properties
-public extension DynamicConfig {
+public extension Configs.Dynamic {
     @inlinable
     func extrinsicManager() throws -> TExtrinsicManager {
-        let provider = DynamicSignedExtensionsProvider<SBC<Self>>(extensions: extensions,
-                                                                  version: TExtrinsicManager.version)
+        let provider = DynamicSignedExtensionsProvider<SBC<Self>>(
+            extensions: extensions, version: ST<Self>.ExtrinsicManager.version
+        )
         return TExtrinsicManager(extensions: provider)
     }
     
@@ -177,26 +193,10 @@ public extension DynamicConfig {
         default: throw Error.cantProvideDefaultPayment(forType: type)
         }
     }
-    
-    static let allSignedExtensions: [any DynamicExtrinsicExtension] = [
-        DynamicCheckSpecVersionExtension(),
-        DynamicCheckTxVersionExtension(),
-        DynamicCheckGenesisExtension(),
-        DynamicCheckNonZeroSenderExtension(),
-        DynamicCheckNonceExtension(),
-        DynamicCheckMortalityExtension(),
-        DynamicCheckWeightExtension(),
-        DynamicChargeTransactionPaymentExtension(),
-        DynamicPrevalidateAttestsExtension()
-    ]
-    
-    static let customCoders: [RuntimeCustomDynamicCoder] = [
-        ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")
-    ]
 }
 
 // Type lookups
-public extension DynamicConfig {
+public extension Configs.Dynamic {
     func blockType(metadata: any Metadata) throws -> RuntimeType.Info {
         guard let type = metadata.search(type: { blockSelector.matches($0) }) else {
             throw Error.typeNotFound(name: "Block", selector: blockSelector)
@@ -249,9 +249,10 @@ public extension DynamicConfig {
 }
 
 // ConfigRegistry helpers
-public extension ConfigRegistry where C == DynamicConfig {
+public extension Configs.Registry where C == Configs.Dynamic {
     @inlinable
-    static func dynamic(customCoders: [RuntimeCustomDynamicCoder] = C.customCoders,
+    static func dynamic(extensions: [DynamicExtrinsicExtension] = Configs.dynamicSignedExtensions,
+                        customCoders: [RuntimeCustomDynamicCoder] = Configs.customCoders,
                         defaultPayment: ST<C>.ExtrinsicPayment? = nil,
                         blockSelector: String = "^.*Block$",
                         headerSelector: String = "^.*Header$",
@@ -260,15 +261,17 @@ public extension ConfigRegistry where C == DynamicConfig {
                         dispatchErrorSelector: String = "^.*DispatchError$",
                         transactionValidityErrorSelector: String = "^.*TransactionValidityError$",
                         feeDetailsSelector: String = "^.*FeeDetails$") throws -> Self {
-        let config = try DynamicConfig(
-            customCoders: customCoders, defaultPayment: defaultPayment,
-            blockSelector: blockSelector, headerSelector: headerSelector, accountSelector: accountSelector,
-            dispatchInfoSelector: dispatchInfoSelector, dispatchErrorSelector: dispatchErrorSelector,
-            transactionValidityErrorSelector: transactionValidityErrorSelector,
-            feeDetailsSelector: feeDetailsSelector
-        )
+        let config = try Configs.Dynamic(extensions: extensions, customCoders: customCoders,
+                                         defaultPayment: defaultPayment,
+                                         blockSelector: blockSelector,
+                                         headerSelector: headerSelector,
+                                         accountSelector: accountSelector,
+                                         dispatchInfoSelector: dispatchInfoSelector,
+                                         dispatchErrorSelector: dispatchErrorSelector,
+                                         transactionValidityErrorSelector: transactionValidityErrorSelector,
+                                         feeDetailsSelector: feeDetailsSelector)
         return Self(config: config)
     }
-    
+
     @inlinable static var dynamic: Self { try! dynamic() }
 }

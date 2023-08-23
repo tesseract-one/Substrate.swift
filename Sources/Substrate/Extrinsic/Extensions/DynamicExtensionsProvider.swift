@@ -27,10 +27,9 @@ public protocol DynamicExtrinsicExtension: ExtrinsicSignedExtension {
     ) -> Result<Void, TypeValidationError>
 }
 
-public class DynamicSignedExtensionsProvider<BC>: SignedExtensionsProvider
-    where BC: BasicConfig, SBT<BC>.SigningParams == AnySigningParams<BC>
-{
+public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsProvider {
     public typealias TConfig = BC
+    public typealias TParams = AnySigningParams<BC>
     public typealias TExtra = Value<RuntimeType.Id>
     public typealias TAdditionalSigned = [Value<RuntimeType.Id>]
     
@@ -43,17 +42,17 @@ public class DynamicSignedExtensionsProvider<BC>: SignedExtensionsProvider
     }
     
     public func params<R: RootApi>(
-        partial params: SBT<TConfig>.SigningParamsPartial, for api: R
-    ) async throws -> SBT<TConfig>.SigningParams where SBC<R.RC> == TConfig {
+        partial params: TParams.TPartial, for api: R
+    ) async throws -> TParams where SBC<R.RC> == TConfig {
         var params = params
         for ext in try _activeExtensions(runtime: api.runtime).get() {
             params = try await ext.ext.params(api: api, partial: params)
         }
-        return try SBT<TConfig>.SigningParams(partial: params)
+        return try TParams(partial: params)
     }
         
     public func extra<R: RootApi>(
-        params: SBT<TConfig>.SigningParams, for api: R
+        params: TParams, for api: R
     ) async throws -> TExtra where SBC<R.RC> == TConfig {
         let extensions = try _activeExtensions(runtime: api.runtime).get()
         var extra: [Value<RuntimeType.Id>] = []
@@ -65,7 +64,7 @@ public class DynamicSignedExtensionsProvider<BC>: SignedExtensionsProvider
     }
     
     public func additionalSigned<R: RootApi>(
-        params: SBT<TConfig>.SigningParams, for api: R
+        params: TParams, for api: R
     ) async throws -> TAdditionalSigned where SBC<R.RC> == TConfig {
         let extensions = try _activeExtensions(runtime: api.runtime).get()
         var additional: [Value<RuntimeType.Id>] = []

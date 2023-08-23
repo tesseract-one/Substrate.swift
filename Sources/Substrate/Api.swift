@@ -87,8 +87,9 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
         try self.init(client: client, runtime: runtime, signer: signer)
     }
     
-    public convenience init(client: CL, config: ConfigRegistry<RC>, signer: Signer? = nil,
-                            at hash: ST<RC>.Hash? = nil) async throws {
+    public convenience init<Ext>(client: CL, config: Configs.Registry<RC, Ext>, signer: Signer? = nil,
+                                 at hash: ST<RC>.Hash? = nil) async throws
+    {
         try await self.init(client: client, config: config.config, signer: signer, at: hash)
     }
     

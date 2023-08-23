@@ -18,7 +18,6 @@ public protocol BasicConfig {
     associatedtype TAccountId: AccountId
     associatedtype TAddress: Address<TAccountId>
     associatedtype TSignature: Signature
-    associatedtype TSigningParams: ExtraSigningParameters
     associatedtype TExtrinsicEra: SomeExtrinsicEra
     associatedtype TExtrinsicPayment: ValueRepresentable & ValidatableRuntimeType
     associatedtype TSystemProperties: SystemProperties
@@ -84,7 +83,6 @@ public protocol BatchSupportedConfig: Config {
     public typealias AccountId = C.TAccountId
     public typealias Address = C.TAddress
     public typealias Signature = C.TSignature
-    public typealias SigningParams = C.TSigningParams
     public typealias ExtrinsicEra = C.TExtrinsicEra
     public typealias ExtrinsicPayment = C.TExtrinsicPayment
     public typealias SystemProperties = C.TSystemProperties
@@ -93,7 +91,6 @@ public protocol BatchSupportedConfig: Config {
     public typealias FeeDetails = C.TFeeDetails
     
     public typealias Version = C.TRuntimeVersion.TVersion
-    public typealias SigningParamsPartial = C.TSigningParams.TPartial
 }
 
 public typealias SBC<C: Config> = C.BC
@@ -105,7 +102,6 @@ public typealias SBC<C: Config> = C.BC
     public typealias AccountId = SBT<SBC<C>>.AccountId
     public typealias Address = SBT<SBC<C>>.Address
     public typealias Signature = SBT<SBC<C>>.Signature
-    public typealias SigningParams = SBT<SBC<C>>.SigningParams
     public typealias ExtrinsicEra = SBT<SBC<C>>.ExtrinsicEra
     public typealias ExtrinsicPayment = SBT<SBC<C>>.ExtrinsicPayment
     public typealias SystemProperties = SBT<SBC<C>>.SystemProperties
@@ -113,7 +109,6 @@ public typealias SBC<C: Config> = C.BC
     public typealias DispatchInfo = SBT<SBC<C>>.DispatchInfo
     public typealias FeeDetails = SBT<SBC<C>>.FeeDetails
     public typealias Version = SBT<SBC<C>>.Version
-    public typealias SigningParamsPartial = SBT<SBC<C>>.SigningParamsPartial
     
     public typealias Block = C.TBlock
     public typealias BlockHeader = C.TBlock.THeader
@@ -126,6 +121,9 @@ public typealias SBC<C: Config> = C.BC
     public typealias TransactionStatus = C.TTransactionStatus
     public typealias StorageChangeSet = C.TStorageChangeSet
     public typealias ExtrinsicManager = C.TExtrinsicManager
+    
+    public typealias SigningParams = ExtrinsicManager.TSigningParams
+    public typealias SigningParamsPartial = SigningParams.TPartial
     
     public typealias ExtrinsicSignedExtra = ExtrinsicManager.TSignedExtra
     public typealias ExtrinsicUnsignedParams = ExtrinsicManager.TUnsignedParams
@@ -152,10 +150,14 @@ public extension BatchSupportedConfig {
     }
 }
 
-// Type for Config registrations. Provides better constructors for RootApi
-public struct ConfigRegistry<C: Config> {
-    public let config: C
-    @inlinable public init(config: C) { self.config = config }
+// namespace for Configs declaration
+@frozen public struct Configs {
+    
+    // Type for Config registrations. Provides better constructors for Api
+    @frozen public struct Registry<C: Config, Ext> {
+        public let config: C
+        @inlinable public init(config: C) { self.config = config }
+    }
 }
 
 // Default constructors

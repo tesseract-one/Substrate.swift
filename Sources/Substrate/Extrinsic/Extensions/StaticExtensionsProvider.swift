@@ -9,23 +9,24 @@ import Foundation
 import Tuples
 import ScaleCodec
 
-public protocol StaticExtrinsicExtensionBase where SBT<TConfig>.SigningParams: ExtraSigningParameters {
+public protocol StaticExtrinsicExtensionBase {
     associatedtype TConfig: BasicConfig
+    associatedtype TParams: ExtraSigningParameters
     associatedtype TExtra
     associatedtype TAdditionalSigned
     
     init()
     
     func params<R: RootApi>(
-        api: R, partial params: SBT<TConfig>.SigningParamsPartial
-    ) async throws -> SBT<TConfig>.SigningParamsPartial where SBC<R.RC> == TConfig
+        api: R, partial params: TParams.TPartial
+    ) async throws -> TParams.TPartial where SBC<R.RC> == TConfig
     
     func extra<R: RootApi>(
-        api: R, params: SBT<TConfig>.SigningParams
+        api: R, params: TParams
     ) async throws -> TExtra where SBC<R.RC> == TConfig
     
     func additionalSigned<R: RootApi>(
-        api: R, params: SBT<TConfig>.SigningParams
+        api: R, params: TParams
     ) async throws -> TAdditionalSigned where SBC<R.RC> == TConfig
 }
 
@@ -70,6 +71,7 @@ public protocol StaticExtrinsicExtensions: StaticExtrinsicExtensionBase
 
 public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: SignedExtensionsProvider {
     public typealias TConfig = Ext.TConfig
+    public typealias TParams = Ext.TParams
     public typealias TExtra = Ext.TExtra
     public typealias TAdditionalSigned = Ext.TAdditionalSigned
     
@@ -82,19 +84,19 @@ public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: Sig
     }
     
     public func params<R: RootApi>(
-        partial params: SBT<TConfig>.SigningParamsPartial, for api: R
-    ) async throws -> SBT<TConfig>.SigningParams where SBC<R.RC> == TConfig {
-        try await SBT<TConfig>.SigningParams(partial: extensions.params(api: api, partial: params))
+        partial params: TParams.TPartial, for api: R
+    ) async throws -> TParams where SBC<R.RC> == TConfig {
+        try await TParams(partial: extensions.params(api: api, partial: params))
     }
     
     public func extra<R: RootApi>(
-        params: SBT<TConfig>.SigningParams, for api: R
+        params: TParams, for api: R
     ) async throws -> TExtra where SBC<R.RC> == TConfig {
         try await extensions.extra(api: api, params: params)
     }
     
     public func additionalSigned<R: RootApi>(
-        params: SBT<TConfig>.SigningParams, for api: R
+        params: TParams, for api: R
     ) async throws -> TAdditionalSigned where SBC<R.RC> == TConfig {
         try await extensions.additionalSigned(api: api, params: params)
     }

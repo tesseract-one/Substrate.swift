@@ -9,6 +9,8 @@ import Foundation
 import ContextCodable
 
 public struct AnyHash: Hash {
+    public typealias DecodingContext = (metadata: any Metadata, id: () throws -> RuntimeType.Id)
+    
     public let raw: Data
     
     public init(unchecked raw: Data) {
