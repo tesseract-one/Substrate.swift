@@ -11,11 +11,16 @@ import Tuples
 
 public typealias Justification = Tuple2<ConsensusEnngineId, Data>
 
-public struct SubstrateChainBlock<B: StaticBlock>: StaticChainBlock {
+public struct SubstrateChainBlock<B: StaticBlock>: StaticChainBlock, CustomStringConvertible {
     public typealias TBlock = B
     
     public let block: TBlock
     public let justifications: [Justification]?
+    
+    public var description: String {
+        let just = justifications?.map { "(\($0._0), \($0._1.hex())" }.joined(separator: ",")
+        return "{block: \(block), justifications: \(just ?? "null")}"
+    }
     
     enum CodingKeys: CodingKey {
         case block

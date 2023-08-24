@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic {
+public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic, CustomStringConvertible, CustomDebugStringConvertible {
     public typealias THash = M.TConfig.THasher.THash
     public typealias TSignedExtra = M.TSignedExtra
     public typealias TUnsignedExtra = M.TUnsignedExtra
@@ -30,6 +30,17 @@ public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic {
     public func decode<C: Call & RuntimeDynamicDecodable>() throws -> AnyExtrinsic<C> {
         var decoder = runtime.decoder(with: data)
         return try runtime.decode(extrinsic: AnyExtrinsic<C>.self, from: &decoder)
+    }
+    
+    public var description: String { data.hex() }
+    
+    public var debugDescription: String {
+        do {
+            let ext: AnyExtrinsic<AnyCall<RuntimeType.Id>> = try decode()
+            return ext.description
+        } catch {
+            return description
+        }
     }
     
     public static var version: UInt8 { M.version }

@@ -13,7 +13,7 @@ public typealias ConsensusEnngineId = Tuple4<UInt8, UInt8, UInt8, UInt8>
 
 public struct SubstrateBlock<H: StaticFixedHasher,
                              N: UnsignedInteger & DataConvertible & Swift.Decodable & ScaleCodec.Encodable,
-                             E: OpaqueExtrinsic>: StaticBlock
+                             E: OpaqueExtrinsic>: StaticBlock, CustomStringConvertible
 {
     public typealias THeader = Header
     public typealias TExtrinsic = E
@@ -26,6 +26,10 @@ public struct SubstrateBlock<H: StaticFixedHasher,
         case extrinsics
     }
     
+    public var description: String {
+        "{header: \(header), extrinsics: \(extrinsics)}"
+    }
+    
     public init(from decoder: Swift.Decoder, runtime: Runtime) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         header = try container.decode(THeader.self, forKey: .header, context: .init(runtime: runtime))
@@ -34,14 +38,14 @@ public struct SubstrateBlock<H: StaticFixedHasher,
 }
 
 public extension SubstrateBlock {
-    struct Header: SomeBlockHeader, RuntimeSwiftDecodable, RuntimeEncodable {
+    struct Header: SomeBlockHeader, RuntimeSwiftDecodable, RuntimeEncodable, CustomStringConvertible {
         public typealias TNumber = N
         public typealias THasher = H
         
         public let number: TNumber
         public let parentHash: THasher.THash
         public let stateRoot: THasher.THash
-        public let extrinsicRoot: THasher.THash
+        public let extrinsicsRoot: THasher.THash
         public let digest: Digest
         
         private var _runtime: any Runtime
@@ -50,7 +54,7 @@ public extension SubstrateBlock {
             case number
             case parentHash
             case stateRoot
-            case extrinsicRoot
+            case extrinsicsRoot
             case digest
         }
         
@@ -60,7 +64,7 @@ public extension SubstrateBlock {
             number = try container.decode(HexOrNumber<TNumber>.self, forKey: .number).value
             parentHash = try container.decode(THasher.THash.self, forKey: .parentHash)
             stateRoot = try container.decode(THasher.THash.self, forKey: .stateRoot)
-            extrinsicRoot = try container.decode(THasher.THash.self, forKey: .extrinsicRoot)
+            extrinsicsRoot = try container.decode(THasher.THash.self, forKey: .extrinsicsRoot)
             digest = try container.decode(Digest.self, forKey: .digest, context: .init(runtime: runtime))
         }
         
@@ -73,14 +77,19 @@ public extension SubstrateBlock {
             try encoder.encode(number)
             try encoder.encode(parentHash)
             try encoder.encode(stateRoot)
-            try encoder.encode(extrinsicRoot)
+            try encoder.encode(extrinsicsRoot)
             try encoder.encode(digest)
+        }
+        
+        public var description: String {
+            "{number: \(number), parentHash: \(parentHash), stateRoot: \(stateRoot), " +
+            "extrinsicsRoot: \(extrinsicsRoot), digest: \(digest)}"
         }
     }
 }
 
 public extension SubstrateBlock.Header {
-    struct Digest: RuntimeSwiftDecodable, ScaleCodec.Encodable {
+    struct Digest: RuntimeSwiftDecodable, ScaleCodec.Encodable, CustomStringConvertible {
         public let logs: [DigestItem]
         
         enum CodingKeys: CodingKey {
@@ -96,10 +105,12 @@ public extension SubstrateBlock.Header {
         public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
             try encoder.encode(logs)
         }
+        
+        public var description: String { logs.description }
     }
     
-    enum DigestItem: ScaleCodec.Codable, RuntimeCodable {
-        public enum ItemType: UInt32 {
+    enum DigestItem: ScaleCodec.Codable, RuntimeCodable, CustomStringConvertible {
+        public enum ItemType: UInt8 {
             case other = 0
             case consensus = 4
             case seal = 5
@@ -114,7 +125,7 @@ public extension SubstrateBlock.Header {
         case runtimeEnvironmentUpdated
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
-            let caseId = try decoder.decode(UInt32.self)
+            let caseId = try decoder.decode(UInt8.self)
             guard let type = ItemType(rawValue: caseId) else {
                 throw DecodingError.dataCorrupted(
                     DecodingError.Context(
@@ -151,6 +162,21 @@ public extension SubstrateBlock.Header {
                 try encoder.encode(val)
             case .runtimeEnvironmentUpdated:
                 try encoder.encode(ItemType.runtimeEnvironmentUpdated.rawValue)
+            }
+        }
+        
+        public var description: String {
+            switch self {
+            case .preRuntime(let id, let data):
+                return "PreRuntime(\(Data(id.array).hex()), \(data.hex()))"
+            case .consensus(let id, let data):
+                return "Consensus(\(Data(id.array).hex()), \(data.hex()))"
+            case .seal(let id, let data):
+                return "Seal(\(Data(id.array).hex()), \(data.hex()))"
+            case .other(let data):
+                return "Other(\(data.hex()))"
+            case .runtimeEnvironmentUpdated:
+                return "RuntimeEnvironmentUpdated"
             }
         }
     }
