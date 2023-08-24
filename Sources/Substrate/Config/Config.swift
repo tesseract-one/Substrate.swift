@@ -33,7 +33,7 @@ public protocol Config {
     associatedtype TChainBlock: SomeChainBlock<TBlock>
     associatedtype TBlockEvents: SomeBlockEvents
     associatedtype TExtrinsicFailureEvent: SomeExtrinsicFailureEvent
-    associatedtype TDispatchError: CallError
+    associatedtype TDispatchError: SomeDispatchError
     associatedtype TTransactionValidityError: CallError
     associatedtype TTransactionStatus: SomeTransactionStatus<TBlock.THeader.THasher.THash>
     associatedtype TStorageChangeSet: SomeStorageChangeSet<TBlock.THeader.THasher.THash>
@@ -41,13 +41,12 @@ public protocol Config {
     
     // Metadata Info Providers
     func blockType(metadata: any Metadata) throws -> RuntimeType.Info
-    func hashType(metadata: any Metadata) throws -> RuntimeType.Info 
-    //func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info
-//    func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info
+    func hashType(metadata: any Metadata) throws -> RuntimeType.Info
     func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info
     func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info
     func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info
     // Сan be safely removed after removing metadata v14 (v15 has them)
+    func eventType(metadata: any Metadata) throws -> RuntimeType.Info
     func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
                                                            signature: RuntimeType.Info, extra: RuntimeType.Info)
     // Object Builders
@@ -185,12 +184,12 @@ public extension Config {
     
     @inlinable
     func customCoders() throws -> [RuntimeCustomDynamicCoder] {
-        [ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")]
+        Configs.customCoders
     }
     
     @inlinable
-    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents> {
-        EventsStorageKey<TBlockEvents>()
+    func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<ST<Self>.BlockEvents> {
+        EventsStorageKey<ST<Self>.BlockEvents>()
     }
     
     @inlinable
@@ -240,6 +239,24 @@ public extension Config {
                 signature: RuntimeType.Info(id: sigTypeId, type: sigType),
                 extra: RuntimeType.Info(id: extraTypeId, type: extraType))
     }
+    
+    func eventType(metadata: any Metadata) throws -> RuntimeType.Info {
+        let eventsName = EventsStorageKey<ST<Self>.BlockEvents>.name
+        let eventsPallet = EventsStorageKey<ST<Self>.BlockEvents>.pallet
+        guard let beStorage = metadata.resolve(pallet: eventsPallet)?.storage(name: eventsName) else {
+            throw ConfigTypeLookupError.typeNotFound(name: eventsName,
+                                                     selector: "\(eventsPallet).Storage")
+        }
+        guard let id = ST<Self>.BlockEvents.eventTypeId(metadata: metadata,
+                                                        events: beStorage.types.value.id) else {
+            throw ConfigTypeLookupError.typeNotFound(name: "Event",
+                                                     selector: "EventRecord.event")
+        }
+        guard let info = metadata.resolve(type: id) else {
+            throw ConfigTypeLookupError.typeNotFound(id: id)
+        }
+        return RuntimeType.Info(id: id, type: info)
+    }
 }
 
 public extension Config where ST<Self>.Hasher: StaticHasher {
@@ -272,20 +289,6 @@ public extension Config where TDispatchError: StaticCallError {
     }
 }
 
-// Static Dispatch Info doesn't need runtime type
-public extension Config where ST<Self>.DispatchInfo: RuntimeDecodable {
-    func dispatchInfoType(metadata: any Metadata) throws -> RuntimeType.Info {
-        throw RuntimeType.IdNeverCalledError()
-    }
-}
-
-// Static Fee Details doesn't need runtime type
-public extension Config where ST<Self>.FeeDetails: RuntimeDecodable {
-    func feeDetailsType(metadata: any Metadata) throws -> RuntimeType.Info {
-        throw RuntimeType.IdNeverCalledError()
-    }
-}
-
 // Static Account doesn't need runtime type
 public extension Config where ST<Self>.AccountId: StaticAccountId {
     func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info {
@@ -301,14 +304,11 @@ public extension Config where ST<Self>.ExtrinsicPayment: Default {
 
 public enum ConfigTypeLookupError: Error {
     case paymentTypeNotFound
-    case accountTypeNotFound
     case extrinsicTypesNotFound
-    
-    case typeNotFound(name: String, selector: NSRegularExpression)
     case hashTypeNotFound
     case badHeaderType(header: RuntimeType.Info)
-    
+    case typeNotFound(id: RuntimeType.Id)
+    case typeNotFound(name: String, selector: String)
     case cantProvideDefaultPayment(forType: RuntimeType.Info)
-    case extrinsicInfoNotFound
     case unknownHashName(String)
 }

@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct SubstrateDispatchInfo: ScaleCodec.Decodable, RuntimeDecodable, RuntimeDynamicDecodable {
+public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable, RuntimeDynamicDecodable {
     public let weightRefTime: UInt64
     public let weightProofSize: UInt64
     public let clazz: UInt8
@@ -22,7 +22,7 @@ public struct SubstrateDispatchInfo: ScaleCodec.Decodable, RuntimeDecodable, Run
     }
 }
 
-public struct SubstrateFeeDetails: ScaleCodec.Decodable, RuntimeDecodable, RuntimeDynamicDecodable {
+public struct FeeDetails: ScaleCodec.Decodable, RuntimeDecodable, RuntimeDynamicDecodable {
     public struct InclusionFee: ScaleCodec.Decodable {
         /// minimum amount a user pays for a transaction.
         public let baseFee: UInt128

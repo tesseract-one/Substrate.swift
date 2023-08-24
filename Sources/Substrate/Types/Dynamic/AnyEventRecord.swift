@@ -138,3 +138,21 @@ extension AnyEventRecord: RuntimeDynamicDecodable {
         self.fields = other
     }
 }
+
+// Can be removed after dropping Metadata V14
+public extension SomeEventRecord {
+    static func eventTypeId(metadata: any Metadata, record id: RuntimeType.Id) -> RuntimeType.Id? {
+        guard let typeInfo = metadata.resolve(type: id)?.flatten(metadata) else {
+            return nil
+        }
+        guard case .composite(fields: let fields) = typeInfo.definition else {
+            return nil
+        }
+        let eventNames = ["event", "e", "ev"]
+        var type = fields.first { eventNames.contains($0.name ?? "") }?.type
+        if type == nil {
+            type = typeInfo.parameters.first { eventNames.contains($0.name.lowercased()) }?.type
+        }
+        return type
+    }
+}

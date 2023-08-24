@@ -8,10 +8,6 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeExtrinsicFailureEvent: IdentifiableEvent {
-    associatedtype Err: Error
-    var error: Err { get }
-}
 
 public struct ExtrinsicEvents<H: Hash, BE: SomeBlockEvents, Failure: SomeExtrinsicFailureEvent> {
     public enum Error: Swift.Error {

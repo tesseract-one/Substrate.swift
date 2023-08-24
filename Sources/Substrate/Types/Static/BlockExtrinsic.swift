@@ -34,4 +34,3 @@ public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic {
     
     public static var version: UInt8 { M.version }
 }
-

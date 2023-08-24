@@ -23,14 +23,15 @@ final class DynamicTypesLookupTests: XCTestCase {
         let metadata = try ScaleCodec.decode(VersionedNetworkMetadata.self, from: opaq.raw).metadata.asMetadata()
         let config = try Configs.Dynamic()
         
+        let _ = try config.hashType(metadata: metadata)
         let _ = try config.hasher(metadata: metadata)
+        let _ = try config.eventType(metadata: metadata)
+        let _ = try config.dispatchErrorType(metadata: metadata)
+        let ext = try config.extrinsicTypes(metadata: metadata)
+        let _ = try config.accountType(metadata: metadata, address: ext.addr)
         if !is14 {
             let _ = try config.blockType(metadata: metadata)
-            let _ = try config.feeDetailsType(metadata: metadata)
             let _ = try config.transactionValidityErrorType(metadata: metadata)
         }
-        let _ = try config.dispatchInfoType(metadata: metadata)
-        let _ = try config.dispatchErrorType(metadata: metadata)
-        let _ = try config.extrinsicTypes(metadata: metadata)
     }
 }

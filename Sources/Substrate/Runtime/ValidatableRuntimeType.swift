@@ -17,9 +17,7 @@ public enum TypeValidationError: Error {
     case typeNotFound(RuntimeType.Id)
     case wrongType(got: RuntimeType, for: String)
     case wrongValuesCount(in: RuntimeType, expected: Int, for: String)
-//    case nonVariant(map: [String: ValueRepresentable])
     case variantNotFound(name: String, in: RuntimeType)
-//    case keyNotFound(key: String, in: [String: ValueRepresentable])
     case typeIdMismatch(got: RuntimeType.Id, has: RuntimeType.Id)
 }
 

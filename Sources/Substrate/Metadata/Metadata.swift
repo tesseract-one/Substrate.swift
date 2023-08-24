@@ -32,6 +32,7 @@ public protocol PalletMetadata {
     var index: UInt8 { get }
     var call: RuntimeType.Info? { get }
     var event: RuntimeType.Info? { get }
+    var error: RuntimeType.Info? { get }
     var storage: [String] { get }
     var constants: [String] { get }
     

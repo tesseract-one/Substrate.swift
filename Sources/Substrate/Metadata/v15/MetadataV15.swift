@@ -69,6 +69,7 @@ public extension MetadataV15 {
         public let index: UInt8
         public let call: RuntimeType.Info?
         public let event: RuntimeType.Info?
+        public let error: RuntimeType.Info?
         
         public let callIdxByName: [String: UInt8]?
         public let callNameByIdx: [UInt8: String]?
@@ -93,6 +94,7 @@ public extension MetadataV15 {
             self.index = network.index
             self.call = network.call.map { RuntimeType.Info(id: $0, type: types[$0]!) }
             self.event = network.event.map { RuntimeType.Info(id: $0, type: types[$0]!) }
+            self.error = network.error.map { RuntimeType.Info(id: $0, type: types[$0]!) }
             let calls = self.call.flatMap { Self.variants(for: $0.type.definition) }
             self.callIdxByName = calls.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0.index) })

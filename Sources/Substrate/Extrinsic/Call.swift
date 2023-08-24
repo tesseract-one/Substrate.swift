@@ -78,5 +78,5 @@ public enum CallCodingError: Error {
 }
 
 public protocol CallError: Error, RuntimeDynamicDecodable, RuntimeDynamicSwiftDecodable {}
-
 public protocol StaticCallError: CallError, RuntimeDecodable, RuntimeSwiftDecodable {}
+

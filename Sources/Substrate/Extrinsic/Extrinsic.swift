@@ -90,8 +90,58 @@ public extension SomeExtrinsicEra {
 public enum ExtrinsicCodingError: Error {
     case badExtrinsicVersion(supported: UInt8, got: UInt8)
     case badExtrasCount(expected: Int, got: Int)
-    //case badExtras(expected: [String], got: [ExtrinsicExtensionId])
     case parameterNotFound(extension: ExtrinsicExtensionId, parameter: String)
     case typeMismatch(expected: Any.Type, got: Any.Type)
     case unknownExtension(identifier: ExtrinsicExtensionId)
 }
+
+public protocol SomeExtrinsicFailureEvent: IdentifiableEvent {
+    associatedtype Err: Error
+    var error: Err { get }
+}
+
+public protocol SomeDispatchError: CallError {
+    associatedtype TModuleError: Error
+    var isModuleError: Bool { get }
+    var moduleError: TModuleError { get throws }
+}
+
+public struct ModuleError: Error {
+    public enum DecodingError: Error {
+        case dispatchErrorIsNotModule(description: String)
+        case nonVariantValue(Value<RuntimeType.Id>)
+        case badModuleVariant(Value<RuntimeType.Id>.Variant)
+        case palletNotFound(index: UInt8)
+        case badPalletError(type: RuntimeType.Info?)
+        case errorNotFound(index: UInt8)
+    }
+    
+    public let pallet: PalletMetadata
+    public let error: RuntimeType.VariantItem
+    
+    public init(variant: Value<RuntimeType.Id>.Variant, runtime: any Runtime) throws {
+        let fields = variant.values
+        guard fields.count == 2,
+              let index = fields[0].uint.flatMap({UInt8(exactly: $0)}),
+              let bytes = fields[1].bytes, bytes.count > 0 else
+        {
+            throw DecodingError.badModuleVariant(variant)
+        }
+        try self.init(pallet: index, error: bytes[0], metadata: runtime.metadata)
+    }
+    
+    public init(pallet: UInt8, error: UInt8, metadata: any Metadata) throws {
+        guard let pallet = metadata.resolve(pallet: pallet) else {
+            throw DecodingError.palletNotFound(index: pallet)
+        }
+        guard case .variant(variants: let variants) = pallet.error?.type.definition else {
+            throw DecodingError.badPalletError(type: pallet.error)
+        }
+        guard let error = variants.first(where: { $0.index == error }) else {
+            throw DecodingError.errorNotFound(index: error)
+        }
+        self.pallet = pallet
+        self.error = error
+    }
+}
+

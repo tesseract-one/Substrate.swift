@@ -155,9 +155,8 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         var extrinsic: Result<(call: RuntimeType.Info, addr: RuntimeType.Info,
                                signature: RuntimeType.Info, extra: RuntimeType.Info), Error>?
         var hash: Result<RuntimeType.Info, Error>?
-        var dispatchInfo: Result<RuntimeType.Info, Error>?
         var dispatchError: Result<RuntimeType.Info, Error>?
-        var feeDetails: Result<RuntimeType.Info, Error>?
+        var event: Result<RuntimeType.Info, Error>?
         var transactionValidityError: Result<RuntimeType.Info, Error>?
     }
     
@@ -193,13 +192,17 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
     public var signature: RuntimeType.Info { get throws { try _extrinsic.signature }}
     public var extrinsicExtra: RuntimeType.Info { get throws { try _extrinsic.extra }}
     
-//    public var dispatchInfo: RuntimeType.Info { get throws {
-//        try _state.sync { state in
-//            if let res = state.dispatchInfo { return try res.get() }
-//            state.dispatchInfo = Result { try self._config.dispatchInfoType(metadata: self._metadata) }
-//            return try state.dispatchInfo!.get()
-//        }
-//    }}
+    public var event: RuntimeType.Info { get throws {
+        try _state.sync { state in
+            if let res = state.event { return try res.get() }
+            if let event = self._metadata.outerEnums?.eventType {
+                state.event = .success(event)
+            } else {
+                state.event = Result { try self._config.eventType(metadata: self._metadata) }
+            }
+            return try state.event!.get()
+        }
+    }}
     
     public var dispatchError: RuntimeType.Info { get throws {
         try _state.sync { state in
@@ -208,15 +211,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
             return try state.dispatchError!.get()
         }
     }}
-//
-//    public var feeDetails: RuntimeType.Info { get throws {
-//        try _state.sync { state in
-//            if let res = state.feeDetails { return try res.get() }
-//            state.feeDetails = Result { try self._config.feeDetailsType(metadata: self._metadata) }
-//            return try state.feeDetails!.get()
-//        }
-//    }}
-    
+
     public var transactionValidityError: RuntimeType.Info { get throws {
         try _state.sync { state in
             if let res = state.transactionValidityError { return try res.get() }
