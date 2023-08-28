@@ -8,9 +8,7 @@
 import Foundation
 import ScaleCodec
 import ContextCodable
-#if !COCOAPODS
 import Substrate
-#endif
 
 public struct RpcClient<RC: Config, CL: RpcCallableClient> {
     public let client: CL

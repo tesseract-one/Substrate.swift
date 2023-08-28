@@ -8,6 +8,7 @@
 import Foundation
 import Bip39
 import ScaleCodec
+import Substrate
 
 #if COCOAPODS
 import Sr25519
@@ -17,7 +18,6 @@ private typealias EDSignature = Sr25519.Ed25519Signature
 private typealias EDPublicKey = Sr25519.Ed25519PublicKey
 #else
 import Ed25519
-import Substrate
 private typealias EDKeyPair = Ed25519.Ed25519KeyPair
 private typealias EDSeed = Ed25519.Ed25519Seed
 private typealias EDSignature = Ed25519.Ed25519Signature

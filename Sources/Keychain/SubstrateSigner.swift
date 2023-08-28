@@ -6,9 +6,7 @@
 //
 
 import Foundation
-#if !COCOAPODS
 import Substrate
-#endif
 
 extension Keychain: Signer {
     public func account(type: KeyTypeId, algos: [CryptoTypeId]) async -> Result<any PublicKey, SignerError> {

@@ -8,9 +8,7 @@
 import Foundation
 import Sr25519
 import Bip39
-#if !COCOAPODS
 import Substrate
-#endif
 
 public struct Sr25519KeyPair: Equatable, Hashable {
     private let _keyPair: Sr25519.Sr25519KeyPair

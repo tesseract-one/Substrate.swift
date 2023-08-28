@@ -7,9 +7,7 @@
 
 import Foundation
 import Sr25519
-#if !COCOAPODS
 import Substrate
-#endif
 
 public typealias Random = Sr25519SecureRandom
 

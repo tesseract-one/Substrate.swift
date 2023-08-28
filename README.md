@@ -39,10 +39,11 @@ Add the following to your [Podfile](http://guides.cocoapods.org/using/the-podfil
 
 ```rb
 # Main and RPC
-pod 'Substrate/Substrate', '~> 0.0.1'
-pod 'Substrate/RPC', '~> 0.0.1'
+pod 'Substrate', '~> 0.0.1'
+# RPC
+pod 'Substrate-RPC', '~> 0.0.1'
 # Keychain
-pod 'Substrate/Keychain', '~> 0.0.1'
+pod 'Substrate-Keychain', '~> 0.0.1'
 ```
 
 Then run `pod install`
@@ -53,8 +54,6 @@ For initialization `Api` needs client and runtime config. For now there is only 
 
 ```swift
 import Substrate
-// Import not needed for CocoaPods.
-// In CocoaPods all types are inside one Substrate module.
 import SubstrateRPC
 
 let nodeUrl = URL(string: "wss://westend-rpc.polkadot.io")!
@@ -69,7 +68,6 @@ let substrate = try await Api(
 
 ### Submit Extrinsic
 ```swift
-// Not needed for CocoaPods
 import SubstrateKeychain
 
 // Create KeyPair for signing
@@ -250,7 +248,6 @@ SDK provides simple in-memory keychain with Secp256k1, Ed25519 and Sr25519 keys 
 
 #### Key Pairs
 ```swift
-// Not needed for CocoaPods
 import SubstrateKeychain
 
 // Initializers
@@ -275,7 +272,6 @@ In-memory storage for multiple KeyPairs (multi-account support).
 
 ##### Initialization and base API
 ```swift
-// Not needed for CocoaPods
 import SubstrateKeychain
 
 // Create empty keychain object with default delegate
@@ -377,4 +373,3 @@ print("Events: \(try events.parsed())")
 ## License
 
 Substrate.swift is available under the Apache 2.0 license. See [the LICENSE file](./LICENSE) for more information.
-

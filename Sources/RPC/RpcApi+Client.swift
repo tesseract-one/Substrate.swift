@@ -7,9 +7,7 @@
 
 import Foundation
 import ContextCodable
-#if !COCOAPODS
 import Substrate
-#endif
 
 extension RpcApiRegistry: RpcCallableClient where R.CL: RpcCallableClient {
     @inlinable

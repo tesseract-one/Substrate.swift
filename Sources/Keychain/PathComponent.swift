@@ -7,9 +7,7 @@
 
 import Foundation
 import ScaleCodec
-#if !COCOAPODS
 import Substrate
-#endif
 
 public enum PathComponent {
     /// Soft (vanilla) derivation. Public keys have a correspondent derivation.

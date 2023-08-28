@@ -6,9 +6,7 @@
 //
 
 import Foundation
-#if !COCOAPODS
 import Substrate
-#endif
 
 /// The root phrase for our publicly known keys.
 public var DEFAULT_DEV_PHRASE = "bottom drive obey lake curtain smoke basket hold race lonely fit walk"

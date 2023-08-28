@@ -6,13 +6,8 @@
 //
 
 import XCTest
-
-#if !COCOAPODS
-@testable import SubstrateKeychain
 import Substrate
-#else
-@testable import Substrate
-#endif
+@testable import SubstrateKeychain
 
 final class Sr25519Tests: XCTestCase {
     func testSrTestVectorShouldWork() {

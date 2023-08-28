@@ -8,9 +8,7 @@
 import XCTest
 import ScaleCodec
 import Substrate
-#if !COCOAPODS
 import SubstrateRPC
-#endif
 
 final class DynamicTests: XCTestCase {
     let debug = false

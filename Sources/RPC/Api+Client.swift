@@ -6,9 +6,7 @@
 //
 
 import Foundation
-#if !COCOAPODS
 import Substrate
-#endif
 
 public extension Api {
     convenience init<RPC>(

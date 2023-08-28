@@ -7,12 +7,8 @@
 
 import XCTest
 import Bip39
-#if !COCOAPODS
-@testable import SubstrateKeychain
 import Substrate
-#else
-@testable import Substrate
-#endif
+@testable import SubstrateKeychain
 
 final class EcdsaTests: XCTestCase {
     func testDefaultPhraseShouldBeUsed() {

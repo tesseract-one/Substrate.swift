@@ -9,9 +9,7 @@ import Foundation
 import CSecp256k1
 import Bip39
 import ScaleCodec
-#if !COCOAPODS
 import Substrate
-#endif
 
 public struct EcdsaKeyPair {
     private let _private: [UInt8]

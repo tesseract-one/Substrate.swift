@@ -7,9 +7,7 @@
 
 import Foundation
 import Bip39
-#if !COCOAPODS
 import Substrate
-#endif
 
 public enum KeyPairError: Error {
     public enum SecretParsing: Error {

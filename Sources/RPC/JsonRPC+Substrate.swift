@@ -6,11 +6,9 @@
 //
 
 import Foundation
+import Substrate
 import JsonRPC
 @_exported import func JsonRPC.Params
-#if !COCOAPODS
-import Substrate
-#endif
 
 extension JSONEncoder {
     public static var substrate: JSONEncoder = {

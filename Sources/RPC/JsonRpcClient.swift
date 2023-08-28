@@ -9,9 +9,7 @@ import Foundation
 import JsonRPC
 import ContextCodable
 import Serializable
-#if !COCOAPODS
 import Substrate
-#endif
 
 public class JsonRpcCallableClient: RpcCallableClient {
     public private (set) var client: JsonRPC.Client & ContentCodersProvider

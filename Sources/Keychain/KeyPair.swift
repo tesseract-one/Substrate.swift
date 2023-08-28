@@ -7,9 +7,7 @@
 
 import Foundation
 import Bip39
-#if !COCOAPODS
 import Substrate
-#endif
 
 public protocol KeyPair {
     var algorithm: CryptoTypeId { get }
