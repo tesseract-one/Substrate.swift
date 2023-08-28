@@ -44,7 +44,7 @@ jobs:
   linux:
     strategy:
       matrix:
-        swift: ['5.7', '5.8'] 
+        swift: ['5.8'] 
     runs-on: ubuntu-latest
     defaults:
       run:
