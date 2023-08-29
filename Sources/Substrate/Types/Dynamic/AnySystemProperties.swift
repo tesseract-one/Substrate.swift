@@ -13,7 +13,7 @@ public struct AnySystemProperties: SystemProperties {
     /// The address format
     public let ss58Format: SS58.AddressFormat?
     /// Other properties
-    public let other: [String: SerializableValue]
+    public let other: [String: Serializable.Value]
     
     public init(from decoder: Decoder, context: any Metadata) throws {
         let container = try decoder.container(keyedBy: AnyCodableCodingKey.self)
@@ -32,17 +32,17 @@ public struct AnySystemProperties: SystemProperties {
         }
         
         let otherKeys = container.allKeys.filter { $0 != ss58Key }
-        var other: [String: SerializableValue] = [:]
+        var other: [String: Serializable.Value] = [:]
         other.reserveCapacity(otherKeys.count)
         for key in otherKeys {
-            other[key.stringValue] = try container.decode(SerializableValue.self,
+            other[key.stringValue] = try container.decode(Serializable.Value.self,
                                                           forKey: key)
         }
         
         self.init(ss58Format: format, other: other)
     }
     
-    public init(ss58Format: SS58.AddressFormat?, other: [String: SerializableValue]) {
+    public init(ss58Format: SS58.AddressFormat?, other: [String: Serializable.Value]) {
         self.ss58Format = ss58Format
         self.other = other
     }

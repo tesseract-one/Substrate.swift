@@ -15,7 +15,7 @@ public struct AnyRuntimeVersion<V: ConfigUnsignedInteger>: RuntimeVersion {
     
     public let specVersion: TVersion
     public let transactionVersion: TVersion
-    public let other: [String: SerializableValue]
+    public let other: [String: Serializable.Value]
     
     public init(from decoder: Swift.Decoder, context: any Metadata) throws {
         let container = try decoder.container(keyedBy: AnyCodableCodingKey.self)
@@ -26,16 +26,16 @@ public struct AnyRuntimeVersion<V: ConfigUnsignedInteger>: RuntimeVersion {
         let txVersion = try container.decode(HexOrNumber<TVersion>.self,
                                              forKey: txVersionKey)
         let otherKeys = container.allKeys.filter { $0 != spVersionKey && $0 != txVersionKey }
-        var other: [String: SerializableValue] = [:]
+        var other: [String: Serializable.Value] = [:]
         other.reserveCapacity(otherKeys.count)
         for key in otherKeys {
-            other[key.stringValue] = try container.decode(SerializableValue.self,
+            other[key.stringValue] = try container.decode(Serializable.Value.self,
                                                           forKey: key)
         }
         self.init(specVersion: spVersion.value, transactionVersion: txVersion.value, other: other)
     }
     
-    public init(specVersion: TVersion, transactionVersion: TVersion, other: [String: SerializableValue]) {
+    public init(specVersion: TVersion, transactionVersion: TVersion, other: [String: Serializable.Value]) {
         self.specVersion = specVersion
         self.transactionVersion = transactionVersion
         self.other = other

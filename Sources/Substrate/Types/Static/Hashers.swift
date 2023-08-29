@@ -14,7 +14,7 @@ public struct HBlake2b128: StaticFixedHasher, Equatable {
     
     @inlinable
     public func hash(data: Data) -> THash {
-        try! Hash128(raw: Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data))
+        try! Hash128(raw: Blake2b.hash(size: Self.bitWidth / 8, data: data))
     }
     
     public static let name = "Blake2_128"
@@ -25,7 +25,7 @@ public struct HBlake2b128: StaticFixedHasher, Equatable {
 public struct HBlake2b128Concat: StaticConcatHasher, Equatable {
     @inlinable
     public func hash(data: Data) -> Data {
-        try! Blake2.hash(.b2b, size: Self.hashPartBitWidth / 8, data: data) + data
+        try! Blake2b.hash(size: Self.hashPartBitWidth / 8, data: data) + data
     }
     
     public static let name = "Blake2_128Concat"
@@ -38,7 +38,7 @@ public struct HBlake2b256: StaticFixedHasher, Equatable {
     
     @inlinable
     public func hash(data: Data) -> THash {
-        try! Hash256(raw: Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data))
+        try! Hash256(raw: Blake2b.hash(size: Self.bitWidth / 8, data: data))
     }
     
     public static let name = "Blake2_256"
@@ -51,7 +51,7 @@ public struct HBlake2b512: StaticFixedHasher, Equatable {
     
     @inlinable
     public func hash(data: Data) -> THash {
-        try! Hash512(raw: Blake2.hash(.b2b, size: Self.bitWidth / 8, data: data))
+        try! Hash512(raw: Blake2b.hash(size: Self.bitWidth / 8, data: data))
     }
     
     public static let name = "Blake2_512"
@@ -109,10 +109,9 @@ private func xxHash(data: Data, bitWidth: Int) -> Data {
     result.reserveCapacity(bitWidth / 8)
     let chunks = bitWidth / 64
     for seed in 0..<chunks {
-        let uint = xxHash64.hash(data, seed: UInt64(seed))
-        withUnsafeBytes(of: uint.littleEndian) { bytes in
-            result.append(contentsOf: bytes)
-        }
+        result.append(
+            contentsOf: xxHash64.canonical(hash: xxHash64.hash(data, seed: UInt64(seed))).reversed()
+        )
     }
     return result
 }

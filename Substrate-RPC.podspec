@@ -11,11 +11,11 @@ Pod::Spec.new do |s|
   s.swift_version    = '5.7'
 
   base_platforms     = { :ios => '14.0', :osx => '11.0', :tvos => '14.0' }
-  s.platforms        = base_platforms # base_platforms.merge({ :watchos => '7.0' }) # xxHash doesn't support watchOS
+  s.platforms        = base_platforms.merge({ :watchos => '7.0' })
 
-  s.source_files = 'Sources/RPC/**/*.swift'
+  s.source_files     = 'Sources/RPC/**/*.swift'
 
   s.dependency 'Substrate', "#{s.version}"
   s.dependency 'JsonRPC.swift', '~> 0.2.0'
-  s.dependency 'Serializable.swift', '~> 0.2.0'
+  s.dependency 'Serializable.swift', '~> 0.3.0'
 end

@@ -14,6 +14,8 @@ jobs:
         run: sed -i '' "s|[[:blank:]]*s\.version[[:blank:]].*|s.version = '${VERSION}'|g" *.podspec
         env: 
           VERSION: ${{ github.event.release.tag_name }}
+      - name: Update CocoaPods repo
+        run: pod repo update
       - name: Publish Substrate Pod
         run: pod trunk push --allow-warnings --synchronous Substrate.podspec
         env:

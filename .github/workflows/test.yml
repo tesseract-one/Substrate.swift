@@ -36,7 +36,7 @@ jobs:
           name: swift_test_node_full_log.txt
           path: node_log.txt
       - name: Substrate Build & Test Cocoapods
-        run: pod lib lint --allow-warnings --fail-fast --verbose Substrate.podspec
+        run: pod repo update && pod lib lint --allow-warnings --fail-fast --verbose Substrate.podspec
       - name: Keychain Build & Test Cocoapods
         run: pod lib lint --allow-warnings --fail-fast --include-podspecs=Substrate.podspec Substrate-Keychain.podspec
       - name: RPC Build & Test Cocoapods

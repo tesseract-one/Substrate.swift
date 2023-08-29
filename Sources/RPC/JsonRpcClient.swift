@@ -30,7 +30,7 @@ public class JsonRpcCallableClient: RpcCallableClient {
     public func call<Params: Encodable, Res: Decodable>(
         method: String, params: Params
     ) async throws -> Res {
-        try await client.call(method: method, params: params, SerializableValue.self)
+        try await client.call(method: method, params: params, Serializable.Value.self)
     }
     
     @inlinable
@@ -38,7 +38,7 @@ public class JsonRpcCallableClient: RpcCallableClient {
         method: String, params: Params, context: Params.EncodingContext
     ) async throws -> Res {
         try await client.call(method: method, params: params,
-                              context: context, SerializableValue.self)
+                              context: context, Serializable.Value.self)
     }
     
     @inlinable
@@ -46,7 +46,7 @@ public class JsonRpcCallableClient: RpcCallableClient {
         method: String, params: Params, context: Res.DecodingContext
     ) async throws -> Res {
         try await client.call(method: method, params: params,
-                              context: context, SerializableValue.self)
+                              context: context, Serializable.Value.self)
     }
     
     @inlinable
@@ -57,7 +57,7 @@ public class JsonRpcCallableClient: RpcCallableClient {
     ) async throws -> Res {
         try await client.call(method: method, params: params,
                               encoding: econtext, decoding: dcontext,
-                              SerializableValue.self)
+                              Serializable.Value.self)
     }
     
     deinit {
@@ -82,7 +82,7 @@ public class JsonRpcSubscribableClient:
 {
     public enum Error: Swift.Error {
         case codec(CodecError)
-        case request(RequestError<Any, SerializableValue>)
+        case request(RequestError<Any, Serializable.Value>)
         case unknown(subscription: String)
         case unsubscribeFailed
         case disconnected
@@ -268,7 +268,8 @@ public class JsonRpcSubscribableClient:
     
     private func unsubscribe(id: String, method: String) async throws {
         try await self.subscriptions.remove(id: id)
-        let result: Bool = try await self.client.call(method: method, params: Params(id), SerializableValue.self)
+        let result: Bool = try await self.client.call(method: method, params: Params(id),
+                                                      Serializable.Value.self)
         if !result { throw Error.unsubscribeFailed }
     }
     
@@ -319,11 +320,11 @@ public func JsonRpcClient<Factory: ServiceFactory>(
 }
 
 protocol TypeErasedRequestError: Error {
-    var anyError: RequestError<Any, SerializableValue> { get }
+    var anyError: RequestError<Any, Serializable.Value> { get }
 }
 
-extension RequestError: TypeErasedRequestError where Error == SerializableValue {
-    var anyError: RequestError<Any, SerializableValue> {
+extension RequestError: TypeErasedRequestError where Error == Serializable.Value {
+    var anyError: RequestError<Any, Serializable.Value> {
         switch self {
         case .empty: return .empty
         case .service(error: let err): return .service(error: err)

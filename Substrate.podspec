@@ -11,18 +11,18 @@ Pod::Spec.new do |s|
   s.swift_version    = '5.7'
 
   base_platforms     = { :ios => '14.0', :osx => '11.0', :tvos => '14.0' }
-  s.platforms        = base_platforms # base_platforms.merge({ :watchos => '7.0' }) # xxHash doesn't support watchOS
+  s.platforms        = base_platforms.merge({ :watchos => '7.0' })
   
-  s.source_files = 'Sources/Substrate/**/*.swift'
+  s.source_files     = 'Sources/Substrate/**/*.swift'
     
-  s.dependency 'Blake2', '~> 0.1.0'
+  s.dependency 'Blake2', '~> 0.2.0'
   s.dependency 'ScaleCodec', '~> 0.3.1'
   s.dependency 'Tuples', '~> 0.1.0'
   s.dependency 'ContextCodable.swift', '~> 0.1.0'
   s.dependency 'xxHash', '~> 0.1.0'
-  s.dependency 'Serializable.swift', '~> 0.2.0'
+  s.dependency 'Serializable.swift', '~> 0.3.0'
   s.dependency 'Numberick', '~> 0.10.0'
-    
+
   s.test_spec 'SubstrateTests' do |ts|
     ts.platforms = base_platforms
     ts.source_files = 'Tests/SubstrateTests/**/*.swift'

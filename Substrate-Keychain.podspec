@@ -11,16 +11,16 @@ Pod::Spec.new do |s|
   s.swift_version    = '5.7'
 
   base_platforms     = { :ios => '14.0', :osx => '11.0', :tvos => '14.0' }
-  s.platforms        = base_platforms # base_platforms.merge({ :watchos => '7.0' }) # xxHash doesn't support watchOS
+  s.platforms        = base_platforms.merge({ :watchos => '7.0' })
   
-  s.source_files = 'Sources/Keychain/**/*.swift'
+  s.source_files     = 'Sources/Keychain/**/*.swift'
 
   s.dependency 'Substrate', "#{s.version}"
-  s.dependency 'UncommonCrypto', '~> 0.1.0'
-  s.dependency 'Bip39.swift', '~> 0.1.0'
-  s.dependency 'Sr25519/Sr25519', '~> 0.1.0'
-  s.dependency 'Sr25519/Ed25519', '~> 0.1.0'
-  s.dependency 'CSecp256k1', '~> 0.1.0'
+  s.dependency 'UncommonCrypto', '~> 0.2.0'
+  s.dependency 'Bip39.swift', '~> 0.2.0'
+  s.dependency 'Sr25519/Sr25519', '~> 0.2.0'
+  s.dependency 'Sr25519/Ed25519', '~> 0.2.0'
+  s.dependency 'CSecp256k1', '~> 0.2.0'
     
   s.test_spec 'KeychainTests' do |ts|
     ts.platforms = base_platforms
