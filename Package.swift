@@ -18,7 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/oscbyspro/Numberick.git", .upToNextMinor(from: "0.10.0")),
-        .package(url: "https://github.com/daisuke-t-jp/xxHash-Swift.git", .upToNextMinor(from: "1.1.1")),
+        .package(url: "https://github.com/tesseract-one/xxHash.swift.git", .upToNextMinor(from: "0.1.0")),
         .package(url: "https://github.com/tesseract-one/ScaleCodec.swift.git", .upToNextMinor(from: "0.3.1")),
         .package(url: "https://github.com/tesseract-one/ContextCodable.swift.git", .upToNextMinor(from: "0.1.0")),
         .package(url: "https://github.com/tesseract-one/Tuples.swift.git", .upToNextMinor(from: "0.1.0")),
@@ -39,7 +39,8 @@ let package = Package(
                 .product(name: "ContextCodable", package: "ContextCodable.swift"),
                 .product(name: "Blake2", package: "Blake2.swift"),
                 .product(name: "Tuples", package: "Tuples.swift"),
-                "Numberick", "xxHash-Swift"
+                .product(name: "xxHash", package: "xxHash.swift"),
+                "Numberick"
             ]),
         .target(
             name: "SubstrateKeychain",

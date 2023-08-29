@@ -19,7 +19,7 @@ Pod::Spec.new do |s|
   s.dependency 'ScaleCodec', '~> 0.3.1'
   s.dependency 'Tuples', '~> 0.1.0'
   s.dependency 'ContextCodable.swift', '~> 0.1.0'
-  s.dependency 'xxHash-Swift', '~> 1.1.0'
+  s.dependency 'xxHash', '~> 0.1.0'
   s.dependency 'Serializable.swift', '~> 0.2.0'
   s.dependency 'Numberick', '~> 0.10.0'
     

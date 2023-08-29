@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import xxHash_Swift
+import xxHash
 import Blake2
 
 public struct HBlake2b128: StaticFixedHasher, Equatable {
@@ -109,7 +109,7 @@ private func xxHash(data: Data, bitWidth: Int) -> Data {
     result.reserveCapacity(bitWidth / 8)
     let chunks = bitWidth / 64
     for seed in 0..<chunks {
-        let uint = XXH64.digest(data, seed: UInt64(seed))
+        let uint = xxHash64.hash(data, seed: UInt64(seed))
         withUnsafeBytes(of: uint.littleEndian) { bytes in
             result.append(contentsOf: bytes)
         }
