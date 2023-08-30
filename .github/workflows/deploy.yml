@@ -46,9 +46,8 @@ jobs:
             'pod trunk push --allow-warnings --synchronous Substrate-RPC.podspec' \
             'node_log.txt'
       - name: Upload node log
+        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: test_node_full_log.txt
           path: node_log.txt
-          
-        

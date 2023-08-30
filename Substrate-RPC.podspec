@@ -21,7 +21,7 @@ Pod::Spec.new do |s|
   
   s.test_spec 'IntegrationTests' do |ts|
     ts.platforms = base_platforms
-    ts.depencency 'Substrate-Keychain', "#{s.version}"
+    ts.dependency 'Substrate-Keychain', "#{s.version}"
     ts.source_files = 'Tests/IntegrationTests/**/*.swift'
   end
 end

@@ -36,6 +36,7 @@ jobs:
       - name: Build & Test SPM
         run: Tests/with-node.sh './${{env.NODE_BIN}}' 'xcrun swift test' 'node_log.txt'
       - name: Upload swift test node log
+        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: swift_test_node_full_log.txt
@@ -49,17 +50,16 @@ jobs:
           echo "LINTED_PODS=Substrate.podspec" >> "$GITHUB_ENV"
       - name: Keychain Build & Test Cocoapods
         run: |
-          pod lib lint --allow-warnings --fail-fast \
-            --include-podspecs="{${LINTED_PODS}}" Substrate-Keychain.podspec
+          pod lib lint --allow-warnings --fail-fast --include-podspecs="{${LINTED_PODS}}" Substrate-Keychain.podspec
           # save podspec to env
           echo "LINTED_PODS=${LINTED_PODS},Substrate-Keychain.podspec" >> "$GITHUB_ENV"
       - name: RPC Build & Test Cocoapods
         run: |
           Tests/with-node.sh './${{env.NODE_BIN}}' \
-            'pod lib lint --allow-warnings --fail-fast \
-              --include-podspecs="{${LINTED_PODS}}" Substrate-RPC.podspec' \
+            'pod lib lint --allow-warnings --fail-fast --include-podspecs="{${LINTED_PODS}}" Substrate-RPC.podspec' \
             'cp_node_log.txt'
       - name: Upload swift test node log
+        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: cocoapods_node_full_log.txt
@@ -92,6 +92,7 @@ jobs:
       - name: Build and Test
         run: Tests/with-node.sh './${{env.NODE_BIN}}' 'swift test' 'node_log.txt'
       - name: Upload node log
+        if: success() || failure()
         uses: actions/upload-artifact@v3
         with:
           name: linux_swift_test_node_full_log.txt
