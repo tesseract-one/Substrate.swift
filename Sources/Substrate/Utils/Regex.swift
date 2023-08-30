@@ -17,9 +17,9 @@ public extension NSRegularExpression {
     @inlinable
     func enumerateMatches(
         in string: String, options: NSRegularExpression.MatchingOptions = [],
-        using block: @escaping (NSTextCheckingResult?,
-                                NSRegularExpression.MatchingFlags,
-                                inout Bool) -> Void
+        using block: (NSTextCheckingResult?,
+                      NSRegularExpression.MatchingFlags,
+                      inout Bool) -> Void
     ) {
         let nsrange = NSRange(string.startIndex..<string.endIndex, in: string)
         enumerateMatches(in: string, options: options, range: nsrange) { (res, flags, bl) in

@@ -13,15 +13,15 @@ public protocol Signature: RuntimeDynamicCodable, ValueRepresentable, Validatabl
     var algorithm: CryptoTypeId { get }
     
     init(raw: Data, algorithm: CryptoTypeId,
-         runtime: any Runtime, id: @escaping RuntimeType.LazyId) throws
+         runtime: any Runtime, id: RuntimeType.LazyId) throws
     static func algorithms(runtime: any Runtime,
-                           id: @escaping RuntimeType.LazyId) throws -> [CryptoTypeId]
+                           id: RuntimeType.LazyId) throws -> [CryptoTypeId]
 }
 
 public extension Signature {
     @inlinable
     init(fake algorithm: CryptoTypeId, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     {
         let sig = Data(repeating: 1, count: algorithm.signatureBytesCount)
         try self.init(raw: sig, algorithm: algorithm, runtime: runtime, id: id)
@@ -40,14 +40,14 @@ public protocol StaticSignature: Signature, RuntimeCodable {
 public extension StaticSignature {
     @inlinable
     init(raw: Data, algorithm: CryptoTypeId, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     {
         try self.init(raw: raw, algorithm: algorithm, runtime: runtime)
     }
     
     @inlinable
     static func algorithms(runtime: any Runtime,
-                           id: @escaping RuntimeType.LazyId) throws -> [CryptoTypeId]
+                           id: RuntimeType.LazyId) throws -> [CryptoTypeId]
     {
         try Self.algorithms(runtime: runtime)
     }

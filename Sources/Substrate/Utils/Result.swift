@@ -57,7 +57,7 @@ public extension Sequence where Element: ResultLike, Element.Failure: Error {
 }
 
 public extension Collection {
-    func resultMap<T, E: Error>(_ mapper: @escaping (Element) -> Result<T, E>) -> Result<Array<T>, E> {
+    func resultMap<T, E: Error>(_ mapper: (Element) -> Result<T, E>) -> Result<Array<T>, E> {
         var new: [T] = []
         new.reserveCapacity(count)
         for val in self {

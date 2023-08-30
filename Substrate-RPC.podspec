@@ -16,6 +16,6 @@ Pod::Spec.new do |s|
   s.source_files     = 'Sources/RPC/**/*.swift'
 
   s.dependency 'Substrate', "#{s.version}"
-  s.dependency 'JsonRPC.swift', '~> 0.2.0'
-  s.dependency 'Serializable.swift', '~> 0.3.0'
+  s.dependency 'JsonRPC.swift', '~> 0.2.3'
+  s.dependency 'Serializable.swift', '~> 0.3.1'
 end

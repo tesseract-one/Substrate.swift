@@ -18,7 +18,7 @@ public protocol Hash: ContextDecodable, Swift.Encodable,
     
     init(raw: Data,
          metadata: any Metadata,
-         id: @escaping () throws -> RuntimeType.Id) throws
+         id: () throws -> RuntimeType.Id) throws
 }
 
 public extension Hash {
@@ -27,7 +27,7 @@ public extension Hash {
     @inlinable
     init(raw: Data,
          runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     {
         try self.init(raw: raw, metadata: runtime.metadata) { try id(runtime) }
     }
@@ -64,7 +64,7 @@ public extension StaticHash {
     @inlinable
     init(raw: Data,
          metadata: any Metadata,
-         id: @escaping () throws -> RuntimeType.Id) throws
+         id: () throws -> RuntimeType.Id) throws
     {
         try self.init(raw: raw)
     }

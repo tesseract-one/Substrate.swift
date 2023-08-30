@@ -122,7 +122,7 @@ public extension RuntimeDynamicSwiftDecodable where
 public extension RuntimeDynamicSwiftDecodable {
     @inlinable
     init(from decoder: Decoder, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     {
         switch Self.self {
         case let sself as Swift.Decodable.Type:
@@ -146,7 +146,7 @@ public extension RuntimeDynamicSwiftEncodable where
 public extension RuntimeDynamicSwiftEncodable {
     @inlinable
     func encode(to encoder: Encoder, runtime: any Runtime,
-                id: @escaping RuntimeType.LazyId) throws
+                id: RuntimeType.LazyId) throws
     {
         switch self {
         case let sself as Swift.Encodable: try sself.encode(to: encoder)

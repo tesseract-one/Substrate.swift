@@ -101,7 +101,7 @@ public extension Runtime {
     @inlinable
     func decode<T: RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         from decoder: inout D, type: T.Type,
-        where id: @escaping RuntimeType.LazyId
+        where id: RuntimeType.LazyId
     ) throws -> T {
         switch type {
         case let type as ScaleCodec.Decodable.Type:
@@ -116,7 +116,7 @@ public extension Runtime {
     @inlinable
     func decode<T: RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         from decoder: inout D,
-        where id: @escaping RuntimeType.LazyId
+        where id: RuntimeType.LazyId
     ) throws -> T {
         try decode(from: &decoder, type: T.self, where: id)
     }
@@ -156,7 +156,7 @@ public extension Runtime {
     @inlinable
     func decode<T: RuntimeDynamicDecodable>(
         from data: Data, type: T.Type,
-        where id: @escaping RuntimeType.LazyId
+        where id: RuntimeType.LazyId
     ) throws -> T {
         var decoder = decoder(with: data)
         return try decode(from: &decoder, type: type, where: id)
@@ -164,7 +164,7 @@ public extension Runtime {
     
     @inlinable
     func decode<T: RuntimeDynamicDecodable>(
-        from data: Data, where id: @escaping RuntimeType.LazyId
+        from data: Data, where id: RuntimeType.LazyId
     ) throws -> T {
         try decode(from: data, type: T.self, where: id)
     }
@@ -183,7 +183,7 @@ public extension Runtime {
     
     @inlinable
     func encode<T: RuntimeDynamicEncodable, E: ScaleCodec.Encoder>(
-        value: T, in encoder: inout E, where id: @escaping RuntimeType.LazyId
+        value: T, in encoder: inout E, where id: RuntimeType.LazyId
     ) throws {
         switch value {
         case let val as ScaleCodec.Encodable: try val.encode(in: &encoder)
@@ -210,7 +210,7 @@ public extension Runtime {
     
     @inlinable
     func encode<T: RuntimeDynamicEncodable>(
-        value: T, where id: @escaping RuntimeType.LazyId
+        value: T, where id: RuntimeType.LazyId
     ) throws -> Data {
         var encoder = encoder()
         try encode(value: value, in: &encoder, where: id)

@@ -27,8 +27,8 @@ let package = Package(
         .package(url: "https://github.com/tesseract-one/Sr25519.swift.git", .upToNextMinor(from: "0.2.0")),
         .package(url: "https://github.com/tesseract-one/CSecp256k1.swift.git", .upToNextMinor(from: "0.2.0")),
         .package(url: "https://github.com/tesseract-one/Bip39.swift.git", .upToNextMinor(from: "0.2.0")),
-        .package(url: "https://github.com/tesseract-one/Serializable.swift.git", .upToNextMinor(from: "0.3.0")),
-        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", .upToNextMinor(from: "0.2.2")),
+        .package(url: "https://github.com/tesseract-one/Serializable.swift.git", .upToNextMinor(from: "0.3.1")),
+        .package(url: "https://github.com/tesseract-one/JsonRPC.swift.git", .upToNextMinor(from: "0.2.3")),
     ],
     targets: [
         .target(

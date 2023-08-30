@@ -12,11 +12,11 @@ public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
                            ValueRepresentable, ValidatableRuntimeType
 {
     init(from string: String, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     init(pub: any PublicKey, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     init(raw: Data, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     
     var raw: Data { get }
     var string: String { get }
@@ -25,7 +25,7 @@ public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
 
 public extension AccountId {
     init(from string: String, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     {
         let (raw, format) = try SS58.decode(string: string)
         guard format == runtime.addressFormat else {
@@ -66,19 +66,19 @@ public extension StaticAccountId {
     }
     
     init(from string: String, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     {
         try self.init(from: string, runtime: runtime)
     }
     
     init(pub: any PublicKey, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     {
         try self.init(pub: pub, runtime: runtime)
     }
     
     init(raw: Data, runtime: any Runtime,
-         id: @escaping RuntimeType.LazyId) throws
+         id: RuntimeType.LazyId) throws
     {
         try self.init(raw: raw, runtime: runtime)
     }

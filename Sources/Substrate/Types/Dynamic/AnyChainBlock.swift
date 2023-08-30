@@ -10,13 +10,13 @@ import Serializable
 
 public struct AnyChainBlock<B: SomeBlock>: SomeChainBlock {
     public let block: B
-    public let other: [String: Serializable.Value]
+    public let other: [String: AnyValue]
     
     public init(from decoder: Decoder,
                 context: (runtime: Runtime, blockType: RuntimeType.LazyId)) throws {
         let container = try decoder.container(keyedBy: AnyCodableCodingKey.self)
         var block: B? = nil
-        var other: [String: Serializable.Value] = [:]
+        var other: [String: AnyValue] = [:]
         for key in container.allKeys {
             if key.stringValue == "block" {
                 block = try container.decode(
@@ -25,7 +25,7 @@ public struct AnyChainBlock<B: SomeBlock>: SomeChainBlock {
                                                type: context.blockType)
                 )
             } else {
-                other[key.stringValue] = try container.decode(Serializable.Value.self, forKey: key)
+                other[key.stringValue] = try container.decode(AnyValue.self, forKey: key)
             }
         }
         guard let block = block else {

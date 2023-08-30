@@ -21,7 +21,7 @@ public struct AnySignature: Signature {
     public var raw: Data { _sig.raw }
     public var algorithm: CryptoTypeId { _sig.algorithm }
     
-    public init(raw: Data, algorithm: CryptoTypeId, runtime: Runtime, id: @escaping RuntimeType.LazyId) throws {
+    public init(raw: Data, algorithm: CryptoTypeId, runtime: Runtime, id: RuntimeType.LazyId) throws {
         let algos = try Self.algorithms(runtime: runtime, id: id)
         guard algos.contains(algorithm) else {
             throw Error.unsupportedCrypto(id: algorithm)
@@ -76,7 +76,7 @@ public struct AnySignature: Signature {
     }
     
     public static func algorithms(runtime: Runtime,
-                                  id: @escaping RuntimeType.LazyId) throws -> [CryptoTypeId]
+                                  id: RuntimeType.LazyId) throws -> [CryptoTypeId]
     {
         try Array(parseTypeInfo(runtime: runtime, typeId: id(runtime)).getValueError().values)
     }

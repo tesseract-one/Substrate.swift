@@ -36,7 +36,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         }
     }
     
-    public init(accountId: Id, runtime: Runtime, id: @escaping RuntimeType.LazyId) throws {
+    public init(accountId: Id, runtime: Runtime, id: RuntimeType.LazyId) throws {
         self = .id(accountId)
     }
     

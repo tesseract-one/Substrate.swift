@@ -128,7 +128,7 @@ public extension Value {
         mapContext { _ in }
     }
     
-    func mapContext<NC>(with mapper: @escaping (C) throws -> NC) rethrows -> Value<NC> {
+    func mapContext<NC>(with mapper: (C) throws -> NC) rethrows -> Value<NC> {
         try Value<NC>(value: value.mapContext(with: mapper), context: mapper(context))
     }
     
@@ -143,11 +143,23 @@ public extension Value {
         }
     }
     
-    subscript(_ key: String) -> Value<C>? { map?[key] }
+    subscript(_ key: String) -> Value<C>? {
+        switch value {
+        case .map(let dict): return dict[key]
+        case .sequence(let arr):
+            guard var index = Int(key) else { return nil }
+            index = index >= 0 ? index : arr.endIndex + index
+            return arr.indices.contains(index) ? arr[index] : nil
+        default: return nil
+        }
+    }
     
     subscript(_ index: Int) -> Value<C>? {
-        guard let seq = sequence else { return nil }
-        return seq.indices.contains(index) ? seq[index] : nil
+        guard case .sequence(let arr) = value else {
+            return nil
+        }
+        let index = index >= 0 ? index : arr.endIndex + index
+        return arr.indices.contains(index) ? arr[index] : nil
     }
 }
 
@@ -266,7 +278,7 @@ public extension Value where C == Void {
 
 
 extension Value.Def {
-    public func mapContext<NC>(with mapper: @escaping (C) throws -> NC) rethrows -> Value<NC>.Def {
+    public func mapContext<NC>(with mapper: (C) throws -> NC) rethrows -> Value<NC>.Def {
         switch self {
         case .primitive(let p): return try .primitive(p.mapContext(with: mapper))
         case .bitSequence(let seq): return .bitSequence(seq)
@@ -281,7 +293,7 @@ extension Value.Def {
 }
 
 extension Value.Primitive {
-    public func mapContext<NC>(with mapper: @escaping (C) throws -> NC) rethrows -> Value<NC>.Primitive {
+    public func mapContext<NC>(with mapper: (C) throws -> NC) rethrows -> Value<NC>.Primitive {
         switch self {
         case .bool(let v): return .bool(v)
         case .char(let v): return .char(v)
@@ -315,7 +327,7 @@ extension Value.Variant {
         }
     }
     
-    public func mapContext<NC>(with mapper: @escaping (C) throws -> NC) rethrows -> Value<NC>.Variant {
+    public func mapContext<NC>(with mapper: (C) throws -> NC) rethrows -> Value<NC>.Variant {
         switch self {
         case .sequence(name: let n, values: let vals):
             return try .sequence(name: n, values: vals.map { try $0.mapContext(with: mapper) })

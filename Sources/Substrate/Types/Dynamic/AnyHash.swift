@@ -19,7 +19,7 @@ public struct AnyHash: Hash {
     
     public init(raw: Data,
                 metadata: any Metadata,
-                id: @escaping () throws -> RuntimeType.Id) throws
+                id: () throws -> RuntimeType.Id) throws
     {
         let type = try id()
         guard let info = metadata.resolve(type: type) else {
