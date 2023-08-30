@@ -18,4 +18,10 @@ Pod::Spec.new do |s|
   s.dependency 'Substrate', "#{s.version}"
   s.dependency 'JsonRPC.swift', '~> 0.2.3'
   s.dependency 'Serializable.swift', '~> 0.3.1'
+  
+  s.test_spec 'IntegrationTests' do |ts|
+    ts.platforms = base_platforms
+    ts.depencency 'Substrate-Keychain', "#{s.version}"
+    ts.source_files = 'Tests/IntegrationTests/**/*.swift'
+  end
 end
