@@ -119,8 +119,10 @@ extension ExtrinsicEra: ScaleCodec.Codable {
 
 extension ExtrinsicEra: RuntimeCodable, RuntimeDynamicDecodable, RuntimeDynamicEncodable {}
 
-extension ExtrinsicEra: RuntimeDynamicValidatable {
-    public static func validate(runtime: Runtime, type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+extension ExtrinsicEra {
+    static func _validate(runtime: Runtime,
+                          type id: RuntimeType.Id) -> Result<RuntimeType.Id, DynamicValidationError>
+    {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }
@@ -133,22 +135,19 @@ extension ExtrinsicEra: RuntimeDynamicValidatable {
         guard vars[0].name == "Immortal", vars[1].name.hasPrefix("Mortal") else {
             return .failure(.wrongType(got: info, for: "ExtrinsicEra"))
         }
-        return .success(())
+        return .success(vars[1].fields.first!.type)
+    }
+}
+
+extension ExtrinsicEra: RuntimeDynamicValidatable {
+    public static func validate(runtime: Runtime, type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+        _validate(runtime: runtime, type: id).map{_ in}
     }
 }
 
 extension ExtrinsicEra: ValueRepresentable {
     public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
-        }
-        guard case .variant(variants: let vars) = info.definition.flatten(metadata: runtime.metadata) else {
-            throw ValueRepresentableError.wrongType(got: info, for: "ExtrinsicEra")
-        }
-        guard vars.count == Int(UInt8.max) + 1 else {
-            throw ValueRepresentableError.wrongType(got: info, for: "ExtrinsicEra")
-        }
-        let bodyType = vars[2].fields.first!.type
+        let bodyType = try Self._validate(runtime: runtime, type: type).getValueError()
         switch self {
         case .immortal: return .variant(name: "Immortal", values: [], type)
         case .mortal(period: _, phase: _):

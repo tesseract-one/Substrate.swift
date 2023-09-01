@@ -8,9 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public enum MultiAddress<Id, Index>: Equatable, Hashable
-    where Index: CompactCodable & Hashable & ValueRepresentable & RuntimeDynamicValidatable,
-          Id: AccountId & Hashable
+public enum MultiAddress<Id, Index>: RuntimeDynamicValidatableStaticVariant
+    where Index: CompactCodable & ValueRepresentable & RuntimeDynamicValidatable,
+          Id: AccountId
 {
     case id(Id)
     case index(Index)
@@ -33,56 +33,46 @@ public enum MultiAddress<Id, Index>: Equatable, Hashable
         self = .index(index)
     }
     
-    @inlinable
-    public static var allCases: [String] { ["Id", "Index", "Address20", "Raw", "Address32"] }
+    public static var validatableVariants: [ValidatableStaticVariant] {
+        [(0, "Id", [Id.self]), (1, "Index", [Compact<Index>.self]), (2, "Raw", [Data.self]),
+         (3, "Address32", [Data.self]), (4, "Address20", [Data.self])]
+    }
 }
+
+extension MultiAddress: Equatable where Id: Equatable, Index: Equatable {}
+extension MultiAddress: Hashable where Id: Hashable, Index: Hashable {}
 
 extension MultiAddress: ValueRepresentable {
     public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
-        }
-        guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
+        let info = try Self._validate(runtime: runtime, type: type).getValueError()
+        guard case .variant(variants: let variants) = info.definition else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
-        }
-        if let badCase = Set(Self.allCases).symmetricDifference(variants.map{$0.name}).first {
-            throw ValueRepresentableError.variantNotFound(name: badCase, in: info)
         }
         switch self {
         case .id(let id):
-            guard let field = variants.first(where: {$0.name == "Id"})?.fields.first else {
-                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
-            }
-            return try .variant(name: "Id",
-                                values: [id.asValue(runtime: runtime, type: field.type)],
+            return try .variant(name: variants[0].name,
+                                values: [id.asValue(runtime: runtime,
+                                                    type: variants[0].fields[0].type)],
                                 type)
         case .index(let index):
-            guard let field = variants.first(where: {$0.name == "Index"})?.fields.first else {
-                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
-            }
-            return try .variant(name: "Index",
-                                values: [index.asValue(runtime: runtime, type: field.type)],
+            return try .variant(name: variants[1].name,
+                                values: [index.asValue(runtime: runtime,
+                                                       type: variants[1].fields[0].type)],
                                 type)
         case .address20(let data):
-            guard let field = variants.first(where: {$0.name == "Address20"})?.fields.first else {
-                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
-            }
-            return try .variant(name: "Address20",
-                                values: [data.asValue(runtime: runtime, type: field.type)],
+            return try .variant(name: variants[2].name,
+                                values: [data.asValue(runtime: runtime,
+                                                      type: variants[2].fields[0].type)],
                                 type)
         case .raw(let data):
-            guard let field = variants.first(where: {$0.name == "Raw"})?.fields.first else {
-                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
-            }
-            return try .variant(name: "Raw",
-                                values: [data.asValue(runtime: runtime, type: field.type)],
+            return try .variant(name: variants[3].name,
+                                values: [data.asValue(runtime: runtime,
+                                                      type: variants[3].fields[0].type)],
                                 type)
         case .address32(let data):
-            guard let field = variants.first(where: {$0.name == "Address32"})?.fields.first else {
-                throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
-            }
-            return try .variant(name: "Address32",
-                                values: [data.asValue(runtime: runtime, type: field.type)],
+            return try .variant(name: variants[4].name,
+                                values: [data.asValue(runtime: runtime,
+                                                      type: variants[4].fields[0].type)],
                                 type)
         }
     }
@@ -107,29 +97,6 @@ extension MultiAddress: StaticAddress {
     
     public init(accountId: Id, runtime: Runtime) throws {
         self.init(id: accountId)
-    }
-}
-
-extension MultiAddress: RuntimeDynamicValidatable {
-    public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
-    {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
-            return .failure(.wrongType(got: info, for: "MultiAddress"))
-        }
-        if let badCase = Set(allCases).symmetricDifference(variants.map{$0.name}).first {
-            return .failure(.variantNotFound(name: badCase, in: info))
-        }
-        for variant in variants {
-            if variant.fields.count != 1 {
-                return .failure(.wrongValuesCount(in: info, expected: 1,
-                                                  for: variant.name))
-            }
-        }
-        return .success(())
     }
 }
 

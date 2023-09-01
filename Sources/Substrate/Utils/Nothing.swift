@@ -61,3 +61,17 @@ extension Nothing: RuntimeDynamicValidatable {
         return .success(())
     }
 }
+
+// Somehow substrate has Compact<()> type
+extension Nothing: CompactCodable {
+    public typealias UI = UInt8
+    @inlinable public init(uint: UInt8) { self.init() }
+    @inlinable public init?(trimmedLittleEndianData: Data) {
+        guard trimmedLittleEndianData.count == 0 else { return nil }
+        self.init()
+    }
+    @inlinable public var uint: UInt8 { 0 }
+    @inlinable public var trimmedLittleEndianData: Data { Data() }
+    @inlinable public var compactBitsUsed: Int { 0 }
+    @inlinable public static var compactBitWidth: Int { 0 }
+}

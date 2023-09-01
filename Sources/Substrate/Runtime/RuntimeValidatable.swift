@@ -60,8 +60,8 @@ public protocol RuntimeDynamicValidatablePrimitive: RuntimeDynamicValidatable {
 }
 
 public extension RuntimeDynamicValidatablePrimitive {
-    static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    static func _validate(runtime: Runtime,
+                          type id: RuntimeType.Id) -> Result<RuntimeType, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
@@ -69,7 +69,14 @@ public extension RuntimeDynamicValidatablePrimitive {
         guard let primitive = info.asPrimitive(runtime) else {
             return .failure(.wrongType(got: info, for: String(describing: Self.self)))
         }
-        return validate(self: info, name: String(describing: Self.self), primitive: primitive)
+        return validate(self: info, name: String(describing: Self.self),
+                        primitive: primitive).map { info }
+    }
+    
+    static func validate(runtime: any Runtime,
+                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    {
+        _validate(runtime: runtime, type: id).map {_ in}
     }
 }
 
@@ -80,8 +87,8 @@ public protocol RuntimeDynamicValidatableComposite: RuntimeDynamicValidatable {
 }
 
 public extension RuntimeDynamicValidatableComposite {
-    static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    static func _validate(runtime: Runtime,
+                          type id: RuntimeType.Id) -> Result<RuntimeType, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id)?.flatten(runtime) else {
             return .failure(.typeNotFound(id))
@@ -96,7 +103,13 @@ public extension RuntimeDynamicValidatableComposite {
             return .failure(.wrongType(got: info, for: String(describing: Self.self)))
         }
         return validate(self: info, name: String(describing: Self.self),
-                        fields: fields, runtime: runtime)
+                        fields: fields, runtime: runtime).map { info }
+    }
+    
+    static func validate(runtime: any Runtime,
+                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    {
+        _validate(runtime: runtime, type: id).map {_ in}
     }
 }
 
@@ -128,8 +141,8 @@ public protocol RuntimeDynamicValidatableVariant: RuntimeDynamicValidatable {
 }
 
 public extension RuntimeDynamicValidatableVariant {
-    static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    static func _validate(runtime: Runtime,
+                          type id: RuntimeType.Id) -> Result<RuntimeType, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id)?.flatten(runtime) else {
             return .failure(.typeNotFound(id))
@@ -138,7 +151,13 @@ public extension RuntimeDynamicValidatableVariant {
             return .failure(.wrongType(got: info, for: String(describing: Self.self)))
         }
         return validate(self: info, name: String(describing: Self.self),
-                        variants: variants, runtime: runtime)
+                        variants: variants, runtime: runtime).map { info }
+    }
+    
+    static func validate(runtime: any Runtime,
+                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    {
+        _validate(runtime: runtime, type: id).map {_ in}
     }
 }
 
@@ -283,12 +302,21 @@ extension Compact: RuntimeDynamicValidatable {
         guard let compact = info.asCompact(runtime) else {
             return .failure(.wrongType(got: info, for: String(describing: Self.self)))
         }
-        guard let primitive = compact.asPrimitive(runtime), let bits = primitive.isUInt else {
+        if let primitive = compact.asPrimitive(runtime) { // Compact<UInt>
+            guard let bits = primitive.isUInt else {
+                return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+            }
+            guard bits <= T.compactBitWidth else {
+                return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+            }
+        } else if compact.isEmpty(runtime) { // Compact<()>
+            guard T.compactBitWidth == 0 else {
+                return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+            }
+        } else { // Unknown Compact
             return .failure(.wrongType(got: info, for: String(describing: Self.self)))
         }
-        guard bits <= T.compactBitWidth else {
-            return .failure(.wrongType(got: info, for: String(describing: Self.self)))
-        }
+        
         return .success(())
     }
 }

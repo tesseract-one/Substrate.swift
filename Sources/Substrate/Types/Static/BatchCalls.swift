@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol BatchCallCommon: SomeBatchCall, RuntimeValidatableComposite {}
+public protocol BatchCallCommon: SomeBatchCall, RuntimeValidatableStaticComposite {}
 
 public extension BatchCallCommon {
     func add(_ call: any Call) -> Self { Self(calls: calls + [call]) }
@@ -42,20 +42,7 @@ public extension BatchCallCommon {
         }
     }
     
-    static func validate(fields ids: [RuntimeType.Id], runtime: any Runtime) -> Result<Void, ValidationError>
-    {
-        guard ids.count == 1 else {
-            return .failure(.wrongFieldsCount(for: Self.self, expected: 1, got: ids.count))
-        }
-        guard let type = runtime.resolve(type: ids[0]) else {
-            return .failure(.childError(for: Self.self, error: .typeNotFound(ids[0])))
-        }
-        guard case .sequence(of: let callType) = type.definition else {
-            return .failure(.childError(for: Self.self, error: .wrongType(got: type, for: "Array<Call>")))
-        }
-        return AnyCall<RuntimeType.Id>.validate(runtime: runtime, type: callType)
-            .mapError { .childError(for: Self.self, error: $0) }
-    }
+    static var validatableFields: [RuntimeDynamicValidatable.Type] { [AnyCall<RuntimeType.Id>.self] }
 }
 
 public struct BatchCall: BatchCallCommon {
