@@ -20,9 +20,6 @@ public extension PlainStorageKey {
         self.init()
     }
     var pathHash: Data { Data() }
-}
-
-public extension PlainStorageKey where Self: ValidatableStorageKey {
     @inlinable
     static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] { [] }
 }
@@ -51,7 +48,7 @@ public extension MapStorageKey {
     }
 }
 
-public extension MapStorageKey where Self: ValidatableStorageKey, TKH.TKey: RuntimeDynamicValidatable {
+public extension MapStorageKey where TKH.TKey: RuntimeDynamicValidatable {
     @inlinable
     static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] {
         [(TKH.TKey.self, TKH.THasher.self)]
@@ -91,8 +88,7 @@ public extension DoubleMapStorageKey {
 }
 
 public extension DoubleMapStorageKey where
-    Self: ValidatableStorageKey, TKH1.TKey: RuntimeDynamicValidatable,
-    TKH2.TKey: RuntimeDynamicValidatable
+    TKH1.TKey: RuntimeDynamicValidatable, TKH2.TKey: RuntimeDynamicValidatable
 {
     @inlinable
     static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] {
