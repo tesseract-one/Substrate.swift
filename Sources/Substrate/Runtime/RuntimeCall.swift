@@ -65,17 +65,14 @@ public enum RuntimeCallCodingError: Error {
 }
 
 public extension StaticRuntimeCall where
-    Self: RuntimeValidatable & RuntimeValidatableComposite,
-    TReturn: RuntimeDynamicValidatable
+    Self: RuntimeValidatableComposite, TReturn: RuntimeDynamicValidatable
 {
-    static func validate(runtime: any Runtime) -> Result<Void, ValidationError> {
+    static func validatableFieldIds(runtime: any Runtime) -> Result<[RuntimeType.Id], ValidationError> {
         guard let info = runtime.resolve(runtimeCall: method, api: api) else {
             return .failure(.infoNotFound(for: Self.self))
         }
-        return validate(fields: info.params.map{$0.type.id}, runtime: runtime).flatMap {
-            TReturn.validate(runtime: runtime, type: info.result.id).mapError {
-                .childError(for: Self.self, error: $0)
-            }
-        }
+        return TReturn.validate(runtime: runtime, type: info.result.id)
+            .mapError { .childError(for: Self.self, error: $0) }
+            .map { info.params.map{$0.type.id} }
     }
 }

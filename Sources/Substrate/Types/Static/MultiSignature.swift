@@ -8,10 +8,17 @@
 import Foundation
 import ScaleCodec
 
-public enum MultiSignature: Hashable, Equatable, CustomStringConvertible {
+public enum MultiSignature: Hashable, Equatable, CustomStringConvertible,
+                            RuntimeDynamicValidatableStaticVariant
+{
     case ed25519(Ed25519Signature)
     case sr25519(Sr25519Signature)
     case ecdsa(EcdsaSignature)
+    
+    public static var validatableVariants: [ValidatableStaticVariant] {
+        [(0, "Ed25519", [Ed25519Signature.self]), (1, "Sr25519", [Sr25519Signature.self]),
+         (2, "Ecdsa", [EcdsaSignature.self])]
+    }
 }
 
 extension MultiSignature: StaticSignature {
@@ -56,50 +63,24 @@ extension MultiSignature: StaticSignature {
 
 extension MultiSignature: ValueRepresentable {
     public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
-        }
+        let info = try Self._validate(runtime: runtime, type: type).getValueError()
         guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
         }
-        if let badCrypto = Set(Self.supportedCryptoTypes.map{$0.signatureName})
-                .symmetricDifference(variants.map{$0.name}).first
-        {
-            throw ValueRepresentableError.variantNotFound(name: badCrypto, in: info)
+        switch self {
+        case .sr25519(let sig):
+            return try .variant(name: variants[0].name,
+                                values: [sig.asValue(runtime: runtime, type: variants[0].fields[0].type)],
+                                type)
+        case .ed25519(let sig):
+            return try .variant(name: variants[1].name,
+                                values: [sig.asValue(runtime: runtime, type: variants[1].fields[0].type)],
+                                type)
+        case .ecdsa(let sig):
+            return try .variant(name: variants[2].name,
+                                values: [sig.asValue(runtime: runtime, type: variants[2].fields[0].type)],
+                                type)
         }
-        let sig = self.signature
-        guard let field = variants.first(where: {$0.name == sig.algorithm.signatureName})?.fields.first else {
-            throw ValueRepresentableError.variantNotFound(name: sig.algorithm.signatureName, in: info)
-        }
-        return try .variant(name: sig.algorithm.signatureName,
-                            values: [sig.asValue(runtime: runtime, type: field.type)], type)
-    }
-}
-
-extension MultiSignature: RuntimeDynamicValidatable {
-    public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
-    {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
-            return .failure(.wrongType(got: info, for: "MultiSignature"))
-        }
-        if let badCrypto = Set(supportedCryptoTypes.map{$0.signatureName})
-                .symmetricDifference(variants.map{$0.name}).first
-        {
-            return .failure(.variantNotFound(name: badCrypto, in: info))
-        }
-        for variant in variants {
-            guard variant.fields.count == 1 else {
-                return .failure(.wrongType(got: info, for: "MultiSignature"))
-            }
-            guard runtime.resolve(type: variant.fields.first!.type)?.asBytes(runtime) != nil else {
-                return .failure(.wrongType(got: info, for: "MultiSignature"))
-            }
-        }
-        return .success(())
     }
 }
 
