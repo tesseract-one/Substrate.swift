@@ -44,7 +44,7 @@ public extension SomeTuple1 where
     func validate(
         runtime: any Runtime,
         types: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
-    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>> {
+    ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>> {
         guard let info = types[first.identifier] else {
             return .failure(.left(.unknownExtension(identifier: first.identifier)))
         }
@@ -96,7 +96,7 @@ public extension ListTuple where
     func validate(
         runtime: any Runtime,
         types: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
-    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>> {
+    ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>> {
         guard let info = types[last.identifier] else {
             return .failure(.left(.unknownExtension(identifier: last.identifier)))
         }

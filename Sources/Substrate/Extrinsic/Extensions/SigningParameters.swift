@@ -13,7 +13,7 @@ public protocol AnyAccountPartialSigningParameter: Default {
 }
 
 public protocol NoncePartialSigningParameter<TNonce, TAccountId>: AnyAccountPartialSigningParameter {
-    associatedtype TNonce: UnsignedInteger & ValueRepresentable & ValidatableRuntimeType
+    associatedtype TNonce: UnsignedInteger & ValueRepresentable & RuntimeDynamicValidatable
     associatedtype TAccountId: AccountId
     
     var account: TAccountId? { get set }
@@ -106,7 +106,7 @@ public extension EraSigningParameters {
 }
 
 public protocol PaymentPartialSigningParameter<TPayment>: Default {
-    associatedtype TPayment: ValueRepresentable & ValidatableRuntimeType
+    associatedtype TPayment: ValueRepresentable & RuntimeDynamicValidatable
     
     var tip: TPayment? { get set }
     func tip(_ tip: TPayment) -> Self

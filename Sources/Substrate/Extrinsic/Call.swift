@@ -13,26 +13,19 @@ public protocol Call: RuntimeDynamicEncodable {
     var name: String { get }
 }
 
-public protocol IdentifiableCall: Call {
-    static var pallet: String { get }
-    static var name: String { get }
+public extension Call {
+    @inlinable static var palletTypeName: String { "Call" }
 }
 
-public extension IdentifiableCall {
-    var pallet: String { Self.pallet }
-    var name: String { Self.name }
-}
+public protocol IdentifiableCall: Call, PalletType {}
 
-public protocol SomeBatchCall: IdentifiableCall {
+public protocol SomeBatchCall: IdentifiableCall, RuntimeValidatable {
     var calls: [any Call] { get }
     init(calls: [any Call])
     func add(_ call: any Call) -> Self
 }
 
 public protocol StaticCall: IdentifiableCall, RuntimeEncodable, RuntimeDecodable {
-    static var pallet: String { get }
-    static var name: String { get }
-    
     init<D: ScaleCodec.Decoder>(decodingParams decoder: inout D, runtime: Runtime) throws
     func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws
 }
@@ -61,6 +54,15 @@ public extension StaticCall {
     }
 }
 
+public extension IdentifiableCall where Self: RuntimeValidatableComposite {
+    static func validatableFieldIds(runtime: any Runtime) -> Result<[RuntimeType.Id], ValidationError> {
+        guard let info = runtime.resolve(callParams: name, pallet: pallet) else {
+            return .failure(.infoNotFound(for: Self.self))
+        }
+        return .success(info.map{$0.type})
+    }
+}
+
 public protocol CallHolder<TCall> {
     associatedtype TCall: Call
     
@@ -77,6 +79,7 @@ public enum CallCodingError: Error {
     case decodedNonVariantValue(Value<RuntimeType.Id>)
 }
 
-public protocol CallError: Error, RuntimeDynamicDecodable, RuntimeDynamicSwiftDecodable {}
+public protocol CallError: Error, RuntimeDynamicValidatable, RuntimeDynamicDecodable,
+                           RuntimeDynamicSwiftDecodable {}
 public protocol StaticCallError: CallError, RuntimeDecodable, RuntimeSwiftDecodable {}
 

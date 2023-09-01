@@ -27,6 +27,11 @@ public struct AnyTransactionValidityError: CallError, CustomStringConvertible {
         self.init(value: value)
     }
     
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+        .success(())
+    }
+    
     public var description: String {
         "TransactionValidityError: \(value)"
     }
@@ -39,18 +44,11 @@ public struct AnyDispatchError: SomeDispatchError, CustomStringConvertible {
     public let value: Value<RuntimeType.Id>
     private let _runtime: any Runtime
     
-    public init(value: Value<RuntimeType.Id>, runtime: any Runtime) {
-        self.value = value
-        self._runtime = runtime
-    }
-    
     @inlinable
     public var isModuleError: Bool { value.variant?.name.contains("Module") ?? false }
     
     public var moduleError: TModuleError { get throws {
-        guard let variant = value.variant else {
-            throw ModuleError.DecodingError.nonVariantValue(value)
-        }
+        let variant = value.variant!
         guard variant.name.contains("Module") else {
             throw ModuleError.DecodingError.dispatchErrorIsNotModule(description: description)
         }
@@ -59,12 +57,45 @@ public struct AnyDispatchError: SomeDispatchError, CustomStringConvertible {
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: RuntimeType.Id, runtime: Runtime) throws {
         let value = try Value<RuntimeType.Id>(from: &decoder, as: type, runtime: runtime)
-        self.init(value: value, runtime: runtime)
+        guard value.variant != nil else {
+            throw ScaleCodec.DecodingError.typeMismatch(
+                Value<RuntimeType.Id>.self,
+                .init(path: decoder.path, description: "Decoded non-variant value")
+            )
+        }
+        self.value = value
+        self._runtime = runtime
     }
     
     public init(from decoder: Swift.Decoder, as type: RuntimeType.Id, runtime: Runtime) throws {
         let value = try Value<RuntimeType.Id>(from: decoder, as: type, runtime: runtime)
-        self.init(value: value, runtime: runtime)
+        guard value.variant != nil else {
+            throw Swift.DecodingError.typeMismatch(
+                Value<RuntimeType.Id>.self,
+                .init(codingPath: decoder.codingPath,
+                      debugDescription: "Decoded non-variant value")
+            )
+        }
+        self.value = value
+        self._runtime = runtime
+    }
+    
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    {
+        guard let info = runtime.resolve(type: id)?.flatten(runtime) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard case .variant(variants: let vars) = info.definition else {
+            return .failure(.wrongType(got: info, for: "DispatchError"))
+        }
+        guard let module = vars.first(where: { $0.name.contains("Module") }) else {
+            return .failure(.variantNotFound(name: "Module", in: info))
+        }
+        guard TModuleError.validate(variant: module, runtime: runtime) else {
+            return .failure(.wrongType(got: info, for: "DispatchError.Module"))
+        }
+        return .success(())
     }
     
     public var description: String {

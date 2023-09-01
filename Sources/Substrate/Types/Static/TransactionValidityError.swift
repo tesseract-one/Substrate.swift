@@ -10,7 +10,8 @@ import ScaleCodec
 
 /// Errors that can occur while checking the validity of a transaction.
 public enum TransactionValidityError: StaticCallError, Equatable, Swift.Codable,
-                                      RuntimeSwiftCodable, ScaleCodec.Codable, RuntimeCodable
+                                      RuntimeSwiftCodable, ScaleCodec.Codable, RuntimeCodable,
+                                      RuntimeDynamicValidatableStaticVariant
 {
     /// The transaction is invalid.
     case invalid(InvalidTransaction)
@@ -52,7 +53,7 @@ public enum TransactionValidityError: StaticCallError, Equatable, Swift.Codable,
             self = try .unknown(container2.decode(UnknownTransaction.self, forKey: key))
         default:
             throw Swift.DecodingError.dataCorruptedError(
-                forKey: key, in: container2, debugDescription: "Unknow enum case"
+                forKey: key, in: container2, debugDescription: "Unknown enum case"
             )
         }
     }
@@ -67,12 +68,17 @@ public enum TransactionValidityError: StaticCallError, Equatable, Swift.Codable,
             try container.encode(e, forKey: .unknown)
         }
     }
+    
+    public static var validatableVariants: [ValidatableStaticVariant] {
+        [(0, "Invalid", [InvalidTransaction.self]), (1, "Unknown", [UnknownTransaction.self])]
+    }
 }
 
 public extension TransactionValidityError {
     /// An invalid transaction validity.
     enum InvalidTransaction: Error, Equatable, Swift.Codable, ScaleCodec.Codable,
-                             RuntimeCodable, RuntimeSwiftCodable
+                             RuntimeCodable, RuntimeSwiftCodable,
+                             RuntimeDynamicValidatableStaticVariant
     {
         /// The call of the transaction is not expected.
         case call
@@ -220,13 +226,21 @@ public extension TransactionValidityError {
                 try container.encode(id, forKey: .custom)
             }
         }
+        
+        @inlinable
+        public static var validatableVariants: [ValidatableStaticVariant] {
+            [(0, "Call", []), (1, "Payment", []), (2, "Future", []), (3, "Stale", []),
+             (4, "BadProof", []), (5, "AncientBirthBlock", []), (6, "ExhaustsResources", []),
+             (7, "Custom", [UInt8.self]), (8, "BadMandatory", []), (9, "MandatoryDispatch", [])]
+        }
     }
 }
 
 public extension TransactionValidityError {
     /// An unknown transaction validity.
     enum UnknownTransaction: Error, Equatable, Swift.Codable, ScaleCodec.Codable,
-                             RuntimeCodable, RuntimeSwiftCodable
+                             RuntimeCodable, RuntimeSwiftCodable,
+                             RuntimeDynamicValidatableStaticVariant
     {
         /// Could not lookup some information that is required to validate the transaction.
         case cannotLookup
@@ -295,6 +309,11 @@ public extension TransactionValidityError {
                 var container = encoder.container(keyedBy: CodableComplexKey<Self>.self)
                 try container.encode(id, forKey: .custom)
             }
+        }
+        
+        public static var validatableVariants: [ValidatableStaticVariant] {
+            [(0, "CannotLookup", []), (1, "NoUnsignedValidator", []),
+             (2, "Custom", [UInt8.self])]
         }
     }
 }

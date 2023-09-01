@@ -75,7 +75,7 @@ public protocol OpaqueExtrinsic<THash, TSignedExtra, TUnsignedExtra>: RuntimeSwi
 }
 
 
-public protocol SomeExtrinsicEra: RuntimeDynamicCodable, ValueRepresentable, ValidatableRuntimeType, Default {
+public protocol SomeExtrinsicEra: RuntimeDynamicCodable, ValueRepresentable, RuntimeDynamicValidatable, Default {
     var isImmortal: Bool { get }
     
     func blockHash<R: RootApi>(api: R) async throws -> R.RC.TBlock.THeader.THasher.THash
@@ -95,7 +95,7 @@ public enum ExtrinsicCodingError: Error {
     case unknownExtension(identifier: ExtrinsicExtensionId)
 }
 
-public protocol SomeExtrinsicFailureEvent: IdentifiableEvent {
+public protocol SomeExtrinsicFailureEvent: IdentifiableEvent, RuntimeValidatable {
     associatedtype Err: Error
     var error: Err { get }
 }
@@ -109,7 +109,6 @@ public protocol SomeDispatchError: CallError {
 public struct ModuleError: Error {
     public enum DecodingError: Error {
         case dispatchErrorIsNotModule(description: String)
-        case nonVariantValue(Value<RuntimeType.Id>)
         case badModuleVariant(Value<RuntimeType.Id>.Variant)
         case palletNotFound(index: UInt8)
         case badPalletError(type: RuntimeType.Info?)
@@ -142,6 +141,21 @@ public struct ModuleError: Error {
         }
         self.pallet = pallet
         self.error = error
+    }
+    
+    public static func validate(variant: RuntimeType.VariantItem,
+                                runtime: any Runtime) -> Bool
+    {
+        guard variant.fields.count == 2 else {
+            return false
+        }
+        guard runtime.resolve(type: variant.fields[0].type)?.asPrimitive(runtime)?.isUInt == 8 else {
+            return false
+        }
+        guard runtime.resolve(type: variant.fields[0].type)?.asBytes(runtime) ?? 0 > 0 else {
+            return false
+        }
+        return true
     }
 }
 

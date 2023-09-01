@@ -17,7 +17,7 @@ public struct MetadataVersionsRuntimeCall: StaticCodableRuntimeCall {
     public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws {}
 }
 
-public struct MetadataAtVersionRuntimeCall: StaticCodableRuntimeCall {
+public struct MetadataAtVersionRuntimeCall: StaticCodableRuntimeCall{
     public typealias TReturn = Optional<OpaqueMetadata>
     public static let method = "metadata_at_version"
     public static let api = "Metadata"

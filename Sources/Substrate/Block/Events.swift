@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeBlockEvents: RuntimeDynamicDecodable, Default {
+public protocol SomeBlockEvents: RuntimeDynamicDecodable, RuntimeDynamicValidatable, Default {
     associatedtype ER: SomeEventRecord
     var events: [ER] { get }
     func events(extrinsic index: UInt32) -> [ER]

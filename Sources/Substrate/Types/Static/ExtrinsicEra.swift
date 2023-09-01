@@ -119,8 +119,8 @@ extension ExtrinsicEra: ScaleCodec.Codable {
 
 extension ExtrinsicEra: RuntimeCodable, RuntimeDynamicDecodable, RuntimeDynamicEncodable {}
 
-extension ExtrinsicEra: ValidatableRuntimeType {
-    public static func validate(runtime: Runtime, type id: RuntimeType.Id) -> Result<Void, TypeValidationError> {
+extension ExtrinsicEra: RuntimeDynamicValidatable {
+    public static func validate(runtime: Runtime, type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }

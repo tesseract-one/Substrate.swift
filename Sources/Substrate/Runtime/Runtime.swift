@@ -40,6 +40,7 @@ public protocol Runtime: AnyObject {
     // Events
     func resolve(eventName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(eventIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
+    func resolve(eventParams name: String, pallet: String) -> [RuntimeType.Field]?
     
     //Constants
     func resolve(
@@ -101,6 +102,11 @@ public extension Runtime {
         metadata.resolve(pallet: pallet).flatMap { pallet in
             pallet.eventIndex(name: name).map { (pallet.index, $0) }
         }
+    }
+    
+    @inlinable
+    func resolve(eventParams name: String, pallet: String) -> [RuntimeType.Field]? {
+        metadata.resolve(pallet: pallet)?.eventParams(name: name)
     }
     
     @inlinable

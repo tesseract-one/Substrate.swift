@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public typealias ConfigUnsignedInteger = UnsignedInteger & ValueRepresentable & DataConvertible
-    & CompactCodable & Swift.Codable & RuntimeCodable & ValidatableRuntimeType
+    & CompactCodable & Swift.Codable & RuntimeCodable & RuntimeDynamicValidatable
 
 // Config split to avoid recursive types
 public protocol BasicConfig {
@@ -19,11 +19,11 @@ public protocol BasicConfig {
     associatedtype TAddress: Address<TAccountId>
     associatedtype TSignature: Signature
     associatedtype TExtrinsicEra: SomeExtrinsicEra
-    associatedtype TExtrinsicPayment: ValueRepresentable & ValidatableRuntimeType
+    associatedtype TExtrinsicPayment: ValueRepresentable & RuntimeDynamicValidatable
     associatedtype TSystemProperties: SystemProperties
     associatedtype TRuntimeVersion: RuntimeVersion
-    associatedtype TDispatchInfo: RuntimeDynamicDecodable
-    associatedtype TFeeDetails: RuntimeDynamicDecodable
+    associatedtype TRuntimeDispatchInfo: RuntimeDynamicDecodable & RuntimeDynamicValidatable
+    associatedtype TFeeDetails: RuntimeDynamicDecodable & RuntimeDynamicValidatable
 }
 
 public protocol Config {
@@ -54,13 +54,16 @@ public protocol Config {
     func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment
     func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
     func queryInfoCall(extrinsic: Data,
-                       runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.DispatchInfo>
+                       runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.RuntimeDispatchInfo>
     func queryFeeDetailsCall(extrinsic: Data,
                              runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.FeeDetails>
     func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]>
     func metadataAtVersionCall(version: UInt32) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>>
     func extrinsicManager() throws -> TExtrinsicManager
     func customCoders() throws -> [RuntimeCustomDynamicCoder]
+    // Return Config pallets list for validation
+    func pallets(runtime: any Runtime) throws -> [Pallet]
+    func runtimeCalls(runtime: any Runtime) throws -> [any (StaticRuntimeCall & RuntimeValidatable).Type]
     // If you want your own Scale Codec coders
     func encoder() -> ScaleCodec.Encoder
     func encoder(reservedCapacity count: Int) -> ScaleCodec.Encoder
@@ -73,6 +76,7 @@ public protocol BatchSupportedConfig: Config {
     associatedtype TBatchAllCall: SomeBatchCall
     
     func isBatchSupported(metadata: any Metadata) -> Bool
+    func batchCalls(runtime: any Runtime) throws -> [SomeBatchCall.Type]
 }
 
 @frozen public struct SBT<C: BasicConfig> {
@@ -86,7 +90,7 @@ public protocol BatchSupportedConfig: Config {
     public typealias ExtrinsicPayment = C.TExtrinsicPayment
     public typealias SystemProperties = C.TSystemProperties
     public typealias RuntimeVersion = C.TRuntimeVersion
-    public typealias DispatchInfo = C.TDispatchInfo
+    public typealias RuntimeDispatchInfo = C.TRuntimeDispatchInfo
     public typealias FeeDetails = C.TFeeDetails
     
     public typealias Version = C.TRuntimeVersion.TVersion
@@ -105,7 +109,7 @@ public typealias SBC<C: Config> = C.BC
     public typealias ExtrinsicPayment = SBT<SBC<C>>.ExtrinsicPayment
     public typealias SystemProperties = SBT<SBC<C>>.SystemProperties
     public typealias RuntimeVersion = SBT<SBC<C>>.RuntimeVersion
-    public typealias DispatchInfo = SBT<SBC<C>>.DispatchInfo
+    public typealias RuntimeDispatchInfo = SBT<SBC<C>>.RuntimeDispatchInfo
     public typealias FeeDetails = SBT<SBC<C>>.FeeDetails
     public typealias Version = SBT<SBC<C>>.Version
     
@@ -147,15 +151,31 @@ public extension BatchSupportedConfig {
         metadata.resolve(pallet: TBatchCall.pallet)?.callIndex(name: TBatchCall.name) != nil &&
         metadata.resolve(pallet: TBatchAllCall.pallet)?.callIndex(name: TBatchAllCall.name) != nil
     }
+    
+    func batchCalls(runtime: any Runtime) throws -> [SomeBatchCall.Type] {
+        [TBatchCall.self, TBatchAllCall.self]
+    }
 }
 
 // namespace for Configs declaration
 @frozen public struct Configs {
-    
     // Type for Config registrations. Provides better constructors for Api
     @frozen public struct Registry<C: Config, Ext> {
         public let config: C
         @inlinable public init(config: C) { self.config = config }
+    }
+    
+    @inlinable
+    static func defaultPallets<C: Config>(runtime: any Runtime, config: C) throws -> [Pallet] {
+        try [BaseSystemPallet<C>(runtime: runtime, config: config)]
+    }
+    
+    @inlinable
+    static func defaultRuntimeCalls<C: Config>(
+        runtime: any Runtime, config: C
+    ) -> [any (StaticRuntimeCall & RuntimeValidatable).Type] {
+        [TransactionQueryInfoRuntimeCall<ST<C>.RuntimeDispatchInfo>.self,
+         TransactionQueryFeeDetailsRuntimeCall<ST<C>.FeeDetails>.self]
     }
 }
 
@@ -194,7 +214,7 @@ public extension Config {
     
     @inlinable
     func queryInfoCall(extrinsic: Data,
-                       runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.DispatchInfo> {
+                       runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.RuntimeDispatchInfo> {
         TransactionQueryInfoRuntimeCall(extrinsic: extrinsic)
     }
     
@@ -202,6 +222,16 @@ public extension Config {
     func queryFeeDetailsCall(extrinsic: Data,
                              runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.FeeDetails> {
         TransactionQueryFeeDetailsRuntimeCall(extrinsic: extrinsic)
+    }
+    
+    @inlinable
+    func pallets(runtime: any Runtime) throws -> [Pallet] {
+        try Configs.defaultPallets(runtime: runtime, config: self)
+    }
+    
+    @inlinable
+    func runtimeCalls(runtime: any Runtime) throws -> [any (StaticRuntimeCall & RuntimeValidatable).Type] {
+        Configs.defaultRuntimeCalls(runtime: runtime, config: self)
     }
 }
 

@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct EventsStorageKey<BE: SomeBlockEvents>: PlainStorageKey {
+public struct EventsStorageKey<BE: SomeBlockEvents>: PlainStorageKey, ValidatableStorageKey {
     public typealias TParams = Void
     public typealias TBaseParams = Void
     public typealias TValue = BE

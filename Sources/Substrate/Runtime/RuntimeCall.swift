@@ -63,3 +63,19 @@ public enum RuntimeCallCodingError: Error {
                               expected: [(String, RuntimeType.Info)])
     case parameterNotFound(name: String, inParams: [String: any ValueRepresentable])
 }
+
+public extension StaticRuntimeCall where
+    Self: RuntimeValidatable & RuntimeValidatableComposite,
+    TReturn: RuntimeDynamicValidatable
+{
+    static func validate(runtime: any Runtime) -> Result<Void, ValidationError> {
+        guard let info = runtime.resolve(runtimeCall: method, api: api) else {
+            return .failure(.infoNotFound(for: Self.self))
+        }
+        return validate(fields: info.params.map{$0.type.id}, runtime: runtime).flatMap {
+            TReturn.validate(runtime: runtime, type: info.result.id).mapError {
+                .childError(for: Self.self, error: $0)
+            }
+        }
+    }
+}

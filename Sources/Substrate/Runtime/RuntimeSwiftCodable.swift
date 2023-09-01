@@ -155,3 +155,26 @@ public extension RuntimeDynamicSwiftEncodable {
         }
     }
 }
+
+public extension CaseIterable where Self: Decodable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let name = try container.decode(String.self)
+        guard let cs = Self.allCases.first(
+            where: { name == String(describing: $0).uppercasedFirst }
+        ) else {
+            throw DecodingError.dataCorrupted(
+                .init(codingPath: container.codingPath,
+                      debugDescription: "Unknown enum case \(name) for \(Self.self)")
+            )
+        }
+        self = cs
+    }
+}
+
+public extension CaseIterable where Self: Encodable {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(String(describing: self).uppercasedFirst)
+    }
+}

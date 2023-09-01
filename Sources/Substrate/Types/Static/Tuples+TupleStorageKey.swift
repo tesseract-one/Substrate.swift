@@ -26,6 +26,12 @@ public extension SomeTuple1 where
     }
 }
 
+public extension SomeTuple1 where Self: TupleStorageValidatableKeyPath {
+    static var path: [(RuntimeDynamicValidatable.Type, StaticHasher.Type)] {
+        [(T1.TKey.self, T1.THasher.self)]
+    }
+}
+
 public extension ListTuple
     where Self: TupleStorageNKeyPath,
           DroppedFirst.TKeys == TKeys.DroppedFirst,
@@ -48,12 +54,23 @@ public extension ListTuple
     }
 }
 
+public extension ListTuple where
+    Self: TupleStorageNKeyPath & TupleStorageValidatableKeyPath,
+    DroppedFirst: TupleStorageValidatableKeyPath
+{
+    static var path: [(RuntimeDynamicValidatable.Type, StaticHasher.Type)] {
+        [(First.TKey.self, First.THasher.self)] + DroppedFirst.path
+    }
+}
+
 extension Tuple1: TupleStorageKeyPath where T1: TupleStorageKeyHasherPair {
     public typealias TKeys = Tuple1<T1.TKey>
     public typealias TDecodedKeys = Tuple1<T1.TDecodedKey>
     public typealias THashes = Tuple1<Data>
 }
-
+extension Tuple1: TupleStorageValidatableKeyPath where
+    Self: TupleStorageKeyPath, T1.TKey: RuntimeDynamicValidatable {}
+    
 extension Tuple2: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair
 {
@@ -61,6 +78,9 @@ extension Tuple2: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias TDecodedKeys = Tuple2<T1.TDecodedKey, T2.TDecodedKey>
     public typealias THashes = Tuple2<Data, Data>
 }
+extension Tuple2: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple3: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -70,6 +90,9 @@ extension Tuple3: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias TDecodedKeys = Tuple3<T1.TDecodedKey, T2.TDecodedKey, T3.TDecodedKey>
     public typealias THashes = Tuple3<Data, Data, Data>
 }
+extension Tuple3: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple4: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -80,6 +103,10 @@ extension Tuple4: TupleStorageNKeyPath, TupleStorageKeyPath where
                                            T4.TDecodedKey>
     public typealias THashes = Tuple4<Data, Data, Data, Data>
 }
+extension Tuple4: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple5: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -91,6 +118,10 @@ extension Tuple5: TupleStorageNKeyPath, TupleStorageKeyPath where
                                            T4.TDecodedKey, T5.TDecodedKey>
     public typealias THashes = Tuple5<Data, Data, Data, Data, Data>
 }
+extension Tuple5: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple6: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -102,6 +133,11 @@ extension Tuple6: TupleStorageNKeyPath, TupleStorageKeyPath where
                                            T4.TDecodedKey, T5.TDecodedKey, T6.TDecodedKey>
     public typealias THashes = Tuple6<Data, Data, Data, Data, Data, Data>
 }
+extension Tuple6: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple7: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -116,6 +152,11 @@ extension Tuple7: TupleStorageNKeyPath, TupleStorageKeyPath where
                                            T7.TDecodedKey>
     public typealias THashes = Tuple7<Data, Data, Data, Data, Data, Data, Data>
 }
+extension Tuple7: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable, T7.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple8: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -130,6 +171,12 @@ extension Tuple8: TupleStorageNKeyPath, TupleStorageKeyPath where
                                            T7.TDecodedKey, T8.TDecodedKey>
     public typealias THashes = Tuple8<Data, Data, Data, Data, Data, Data, Data, Data>
 }
+extension Tuple8: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable, T7.TKey: RuntimeDynamicValidatable,
+    T8.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple9: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -145,6 +192,12 @@ extension Tuple9: TupleStorageNKeyPath, TupleStorageKeyPath where
                                            T7.TDecodedKey, T8.TDecodedKey, T9.TDecodedKey>
     public typealias THashes = Tuple9<Data, Data, Data, Data, Data, Data, Data, Data, Data>
 }
+extension Tuple9: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable, T7.TKey: RuntimeDynamicValidatable,
+    T8.TKey: RuntimeDynamicValidatable, T9.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple10: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -162,6 +215,13 @@ extension Tuple10: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple10<Data, Data, Data, Data, Data, Data, Data, Data, Data,
                                        Data>
 }
+extension Tuple10: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable, T7.TKey: RuntimeDynamicValidatable,
+    T8.TKey: RuntimeDynamicValidatable, T9.TKey: RuntimeDynamicValidatable,
+    T10.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple11: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -180,6 +240,13 @@ extension Tuple11: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple11<Data, Data, Data, Data, Data, Data, Data, Data, Data,
                                        Data, Data>
 }
+extension Tuple11: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable, T7.TKey: RuntimeDynamicValidatable,
+    T8.TKey: RuntimeDynamicValidatable, T9.TKey: RuntimeDynamicValidatable,
+    T10.TKey: RuntimeDynamicValidatable, T11.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple12: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -198,6 +265,14 @@ extension Tuple12: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple12<Data, Data, Data, Data, Data, Data, Data, Data, Data,
                                        Data, Data, Data>
 }
+extension Tuple12: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable, T7.TKey: RuntimeDynamicValidatable,
+    T8.TKey: RuntimeDynamicValidatable, T9.TKey: RuntimeDynamicValidatable,
+    T10.TKey: RuntimeDynamicValidatable, T11.TKey: RuntimeDynamicValidatable,
+    T12.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple13: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -219,6 +294,14 @@ extension Tuple13: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple13<Data, Data, Data, Data, Data, Data, Data, Data, Data,
                                        Data, Data, Data, Data>
 }
+extension Tuple13: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable, T7.TKey: RuntimeDynamicValidatable,
+    T8.TKey: RuntimeDynamicValidatable, T9.TKey: RuntimeDynamicValidatable,
+    T10.TKey: RuntimeDynamicValidatable, T11.TKey: RuntimeDynamicValidatable,
+    T12.TKey: RuntimeDynamicValidatable, T13.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple14: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -240,6 +323,15 @@ extension Tuple14: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple14<Data, Data, Data, Data, Data, Data, Data, Data, Data,
                                        Data, Data, Data, Data, Data>
 }
+extension Tuple14: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable, T7.TKey: RuntimeDynamicValidatable,
+    T8.TKey: RuntimeDynamicValidatable, T9.TKey: RuntimeDynamicValidatable,
+    T10.TKey: RuntimeDynamicValidatable, T11.TKey: RuntimeDynamicValidatable,
+    T12.TKey: RuntimeDynamicValidatable, T13.TKey: RuntimeDynamicValidatable,
+    T14.TKey: RuntimeDynamicValidatable {}
 
 extension Tuple15: TupleStorageNKeyPath, TupleStorageKeyPath where
     T1: TupleStorageKeyHasherPair, T2: TupleStorageKeyHasherPair,
@@ -262,3 +354,12 @@ extension Tuple15: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple15<Data, Data, Data, Data, Data, Data, Data, Data, Data,
                                        Data, Data, Data, Data, Data, Data>
 }
+extension Tuple15: TupleStorageValidatableKeyPath where
+    Self: TupleStorageNKeyPath, T1.TKey: RuntimeDynamicValidatable,
+    T2.TKey: RuntimeDynamicValidatable, T3.TKey: RuntimeDynamicValidatable,
+    T4.TKey: RuntimeDynamicValidatable, T5.TKey: RuntimeDynamicValidatable,
+    T6.TKey: RuntimeDynamicValidatable, T7.TKey: RuntimeDynamicValidatable,
+    T8.TKey: RuntimeDynamicValidatable, T9.TKey: RuntimeDynamicValidatable,
+    T10.TKey: RuntimeDynamicValidatable, T11.TKey: RuntimeDynamicValidatable,
+    T12.TKey: RuntimeDynamicValidatable, T13.TKey: RuntimeDynamicValidatable,
+    T14.TKey: RuntimeDynamicValidatable, T15.TKey: RuntimeDynamicValidatable {}

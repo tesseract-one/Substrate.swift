@@ -16,4 +16,7 @@ public extension String {
             .map { $0.offset > 0 ? $0.element.capitalized : $0.element.lowercased() }
             .joined()
     }
+    
+    @inlinable
+    var uppercasedFirst: String { prefix(1).uppercased() + dropFirst() }
 }

@@ -47,7 +47,7 @@ extension Submittable where E == ST<R.RC>.ExtrinsicUnsignedExtra {
     public func paymentInfo(account: any PublicKey,
                             at block: ST<R.RC>.Hash? = nil,
                             overrides: ST<R.RC>.SigningParamsPartial? = nil
-    ) async throws -> ST<R.RC>.DispatchInfo {
+    ) async throws -> ST<R.RC>.RuntimeDispatchInfo {
         let signed = try await fakeSign(account: account, overrides: overrides)
         return try await signed.paymentInfo(at: block)
     }
@@ -174,7 +174,7 @@ extension Submittable where E == ST<R.RC>.ExtrinsicSignedExtra {
     
     public func paymentInfo(
         at block: ST<R.RC>.Hash? = nil
-    ) async throws -> ST<R.RC>.DispatchInfo {
+    ) async throws -> ST<R.RC>.RuntimeDispatchInfo {
         let call = try api.runtime.queryInfoCall(extrinsic: extrinsic)
         guard api.call.has(call: call) else {
             throw SubmittableError.queryInfoIsNotSupported

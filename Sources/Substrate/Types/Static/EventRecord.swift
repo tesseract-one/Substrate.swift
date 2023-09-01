@@ -68,6 +68,28 @@ extension EventRecord.EventPhase: ScaleCodec.Decodable {
     }
 }
 
+extension EventRecord.EventPhase: RuntimeDynamicValidatable {
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+        guard let info = runtime.resolve(type: id)?.flatten(runtime) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard case .variant(variants: let variants) = info.definition, variants.count == 3 else {
+            return .failure(.wrongType(got: info, for: "EventPhase"))
+        }
+        guard variants[0].name.lowercased() == "applyextrinsic", variants[0].index == 0 else {
+            return .failure(.variantNotFound(name: "ApplyExtrinsic", in: info))
+        }
+        guard variants[1].name.lowercased() == "finalization", variants[1].index == 1 else {
+            return .failure(.variantNotFound(name: "Finalization", in: info))
+        }
+        guard variants[2].name.lowercased() == "initialization", variants[2].index == 2 else {
+            return .failure(.variantNotFound(name: "Initialization", in: info))
+        }
+        return .success(())
+    }
+}
+
 extension EventRecord: RuntimeDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         let eventType = try runtime.types.event
@@ -84,4 +106,22 @@ extension EventRecord: RuntimeDecodable {
             )
         }
     }
+}
+
+extension EventRecord: RuntimeDynamicValidatable {
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    {
+        guard let info = runtime.resolve(type: id)?.flatten(runtime) else {
+            return .failure(.typeNotFound(id))
+        }
+        guard case .composite(fields: let fields) = info.definition, fields.count == 3 else {
+            return .failure(.wrongType(got: info, for: "EventPhase"))
+        }
+        return EventPhase.validate(runtime: runtime, type: fields[0].type)
+            .flatMap { AnyEvent.validate(runtime: runtime, type: fields[1].type) }
+            .flatMap { [H].validate(runtime: runtime, type: fields[2].type) }
+    }
+    
+    
 }

@@ -31,7 +31,7 @@ public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError> {
+    ) -> Result<Void, DynamicValidationError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             SBT<C>.Version.validate(runtime: runtime, type: additionalSigned)
         }
@@ -61,7 +61,7 @@ public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError> {
+    ) -> Result<Void, DynamicValidationError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             SBT<C>.Version.validate(runtime: runtime, type: additionalSigned)
         }
@@ -91,7 +91,7 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError> {
+    ) -> Result<Void, DynamicValidationError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             SBT<C>.Hash.validate(runtime: runtime, type: additionalSigned)
         }
@@ -118,7 +118,7 @@ public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError> {
+    ) -> Result<Void, DynamicValidationError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }
@@ -159,7 +159,7 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError> {
+    ) -> Result<Void, DynamicValidationError> {
         Compact<AnySigningParams<C>.TPartial.TNonce>.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }
@@ -200,7 +200,7 @@ public struct DynamicCheckMortalityExtension: DynamicExtrinsicExtension {
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError> {
+    ) -> Result<Void, DynamicValidationError> {
         AnySigningParams<C>.TPartial.TEra.validate(runtime: runtime, type: extra).flatMap {
             AnySigningParams<C>.TPartial.THash.validate(runtime: runtime, type: additionalSigned)
         }
@@ -228,7 +228,7 @@ public struct DynamicCheckWeightExtension: DynamicExtrinsicExtension {
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError> {
+    ) -> Result<Void, DynamicValidationError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }
@@ -265,7 +265,7 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError> {
+    ) -> Result<Void, DynamicValidationError> {
         AnySigningParams<C>.TPartial.TPayment.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }
@@ -301,7 +301,7 @@ public struct DynamicPrevalidateAttestsExtension: DynamicExtrinsicExtension {
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError> {
+    ) -> Result<Void, DynamicValidationError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }

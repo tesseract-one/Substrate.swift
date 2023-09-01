@@ -15,10 +15,12 @@ public enum ValueRepresentableError: Error {
     case wrongValuesCount(in: RuntimeType, expected: Int, for: String)
     case nonVariant(map: [String: ValueRepresentable])
     case variantNotFound(name: String, in: RuntimeType)
+    case fieldNotFound(name: String, in: RuntimeType)
     case keyNotFound(key: String, in: [String: ValueRepresentable])
+    case runtimeTypeLookupFailed(name: String, reason: Error)
     case typeIdMismatch(got: RuntimeType.Id, has: RuntimeType.Id)
     
-    public init(_ error: TypeValidationError) {
+    public init(_ error: DynamicValidationError) {
         switch error {
         case .typeIdMismatch(got: let gid, has: let hid):
             self = .typeIdMismatch(got: gid, has: hid)
@@ -30,11 +32,15 @@ public enum ValueRepresentableError: Error {
             self = .wrongType(got: t, for: n)
         case .wrongValuesCount(in: let t, expected: let c, for: let n):
             self = .wrongValuesCount(in: t, expected: c, for: n)
+        case .fieldNotFound(name: let n, in: let t):
+            self = .fieldNotFound(name: n, in: t)
+        case .runtimeTypeLookupFailed(name: let n, reason: let e):
+            self = .runtimeTypeLookupFailed(name: n, reason: e)
         }
     }
 }
 
-public extension Result where Failure == TypeValidationError {
+public extension Result where Failure == DynamicValidationError {
     @inlinable func getValueError() throws -> Success {
         try mapError { ValueRepresentableError($0) }.get()
     }

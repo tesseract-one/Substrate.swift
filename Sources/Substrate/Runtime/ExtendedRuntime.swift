@@ -67,7 +67,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     @inlinable
     public func queryInfoCall<C: Call>(
         extrinsic: Extrinsic<C, ST<RC>.ExtrinsicSignedExtra>
-    ) throws -> any RuntimeCall<ST<RC>.DispatchInfo> {
+    ) throws -> any RuntimeCall<ST<RC>.RuntimeDispatchInfo> {
         var encoder = self.encoder()
         try extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: self)
         return try config.queryInfoCall(extrinsic: encoder.output, runtime: self)
@@ -108,6 +108,8 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     
     open func validate() throws {
         try extrinsicManager.validate(runtime: self)
+        try config.pallets(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
+        try config.runtimeCalls(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
     }
 }
 

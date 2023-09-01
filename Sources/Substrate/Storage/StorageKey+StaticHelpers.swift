@@ -22,6 +22,11 @@ public extension PlainStorageKey {
     var pathHash: Data { Data() }
 }
 
+public extension PlainStorageKey where Self: ValidatableStorageKey {
+    @inlinable
+    static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] { [] }
+}
+
 public protocol MapStorageKey<TKH>: StaticStorageKey, IterableStorageKey where
     TParams == TKH.TKey, TIterator == MapStorageKeyIterator<Self>
 {
@@ -43,6 +48,13 @@ public extension MapStorageKey {
     init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws {
         let kh = try TKH(pairFrom: &decoder, runtime: runtime)
         self.init(khPair: kh)
+    }
+}
+
+public extension MapStorageKey where Self: ValidatableStorageKey, TKH.TKey: RuntimeDynamicValidatable {
+    @inlinable
+    static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] {
+        [(TKH.TKey.self, TKH.THasher.self)]
     }
 }
 
@@ -75,6 +87,16 @@ public extension DoubleMapStorageKey {
         let kh1 = try TKH1(pairFrom: &decoder, runtime: runtime)
         let kh2 = try TKH2(pairFrom: &decoder, runtime: runtime)
         self.init(khPair1: kh1, khPair2: kh2)
+    }
+}
+
+public extension DoubleMapStorageKey where
+    Self: ValidatableStorageKey, TKH1.TKey: RuntimeDynamicValidatable,
+    TKH2.TKey: RuntimeDynamicValidatable
+{
+    @inlinable
+    static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] {
+        [(TKH1.TKey.self, TKH1.THasher.self), (TKH2.TKey.self, TKH2.THasher.self)]
     }
 }
 

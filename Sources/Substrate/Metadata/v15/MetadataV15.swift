@@ -71,13 +71,11 @@ public extension MetadataV15 {
         public let event: RuntimeType.Info?
         public let error: RuntimeType.Info?
         
-        public let callIdxByName: [String: UInt8]?
         public let callNameByIdx: [UInt8: String]?
+        public let callByName: [String: RuntimeType.VariantItem]?
         
-        public let eventIdxByName: [String: UInt8]?
         public let eventNameByIdx: [UInt8: String]?
-        
-        public let callFields: [String: [RuntimeType.Field]]?
+        public let eventByName: [String: RuntimeType.VariantItem]?
         
         public let storageByName: [String: MetadataV14.Storage]?
         public var storage: [String] {
@@ -96,18 +94,15 @@ public extension MetadataV15 {
             self.event = network.event.map { RuntimeType.Info(id: $0, type: types[$0]!) }
             self.error = network.error.map { RuntimeType.Info(id: $0, type: types[$0]!) }
             let calls = self.call.flatMap { Self.variants(for: $0.type.definition) }
-            self.callIdxByName = calls.map {
-                Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0.index) })
+            self.callByName = calls.map {
+                Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0) })
             }
             self.callNameByIdx = calls.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
             }
-            self.callFields = calls.map {
-                Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0.fields) })
-            }
             let events = self.event.flatMap { Self.variants(for:$0.type.definition) }
-            self.eventIdxByName = events.map {
-                Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0.index) })
+            self.eventByName = events.map {
+                Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0) })
             }
             self.eventNameByIdx = events.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
@@ -129,16 +124,19 @@ public extension MetadataV15 {
         public func callName(index: UInt8) -> String? { callNameByIdx?[index] }
         
         @inlinable
-        public func callIndex(name: String) -> UInt8? { callIdxByName?[name] }
+        public func callIndex(name: String) -> UInt8? { callByName?[name]?.index }
         
         @inlinable
-        public func callParams(name: String) -> [RuntimeType.Field]? { callFields?[name] }
+        public func callParams(name: String) -> [RuntimeType.Field]? { callByName?[name]?.fields }
         
         @inlinable
         public func eventName(index: UInt8) -> String? { eventNameByIdx?[index] }
         
         @inlinable
-        public func eventIndex(name: String) -> UInt8? { eventIdxByName?[name] }
+        public func eventIndex(name: String) -> UInt8? { eventByName?[name]?.index }
+        
+        @inlinable
+        public func eventParams(name: String) -> [RuntimeType.Field]? { eventByName?[name]?.fields }
         
         @inlinable
         public func constant(name: String) -> ConstantMetadata? { constantByName[name] }

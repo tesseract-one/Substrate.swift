@@ -11,7 +11,7 @@ import ContextCodable
 
 public protocol Hash: ContextDecodable, Swift.Encodable,
                       ValueRepresentable, VoidValueRepresentable,
-                      ValidatableRuntimeType, Equatable, CustomStringConvertible
+                      RuntimeDynamicValidatable, Equatable, CustomStringConvertible
     where DecodingContext == (metadata: any Metadata, id: () throws -> RuntimeType.Id)
 {
     var raw: Data { get }
@@ -89,7 +89,7 @@ public extension StaticHash {
     func serialize() -> Data { raw }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, TypeValidationError> {
+                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }

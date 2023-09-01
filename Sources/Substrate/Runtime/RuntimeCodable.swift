@@ -252,10 +252,33 @@ public extension RuntimeCustomDynamicCoder {
     }
 }
 
-public enum RuntimeDynamicCodableError: Error {
+public enum DynamicCodableError: Error {
     case typeNotFound(RuntimeType.Id)
     case wrongType(got: RuntimeType, for: String)
+    case typeIdMismatch(got: RuntimeType.Id, has: RuntimeType.Id)
     case wrongValuesCount(in: RuntimeType, expected: Int, for: String)
     case variantNotFound(name: String, in: RuntimeType)
+    case fieldNotFound(name: String, in: RuntimeType)
+    case runtimeTypeLookupFailed(name: String, reason: Error)
     case badDecodedValue(value: Any, forType: RuntimeType.Id)
+    
+    public init(_ validation: DynamicValidationError) {
+        switch validation {
+        case .typeNotFound(let id): self = .typeNotFound(id)
+        case .wrongType(got: let t, for: let f): self = .wrongType(got: t, for: f)
+        case .wrongValuesCount(in: let t, expected: let e, for: let f):
+            self = .wrongValuesCount(in: t, expected: e, for: f)
+        case .variantNotFound(name: let n, in: let t): self = .variantNotFound(name: n, in: t)
+        case .typeIdMismatch(got: let got, has: let has): self = .typeIdMismatch(got: got, has: has)
+        case .fieldNotFound(name: let n, in: let t): self = .fieldNotFound(name: n, in: t)
+        case .runtimeTypeLookupFailed(name: let n, reason: let e):
+            self = .runtimeTypeLookupFailed(name: n, reason: e)
+        }
+    }
+}
+
+public extension Result where Failure == DynamicValidationError {
+    @inlinable func getCodableError() throws -> Success {
+        try mapError { DynamicCodableError($0) }.get()
+    }
 }

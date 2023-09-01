@@ -22,7 +22,7 @@ public extension Configs {
         public typealias TSystemProperties = AnySystemProperties
         public typealias TRuntimeVersion = AnyRuntimeVersion<UInt32>
         public typealias TFeeDetails = Value<RuntimeType.Id>
-        public typealias TDispatchInfo = Value<RuntimeType.Id>
+        public typealias TRuntimeDispatchInfo = Value<RuntimeType.Id>
     }
     
     struct Dynamic: Config, BatchSupportedConfig {

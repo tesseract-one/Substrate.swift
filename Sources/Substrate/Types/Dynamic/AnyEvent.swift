@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct AnyEvent: Event, CustomStringConvertible {
+public struct AnyEvent: Event, RuntimeDynamicValidatable, CustomStringConvertible {
     public let pallet: String
     public let name: String
     
@@ -63,6 +63,14 @@ public struct AnyEvent: Event, CustomStringConvertible {
             throw EventDecodingError.eventNotFound(index: hBytes[1], pallet: hBytes[0])
         }
         return try (name: header.name, pallet: header.pallet, data: decoder.read(count: size))
+    }
+    
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    {
+        return Result { try runtime.types.event }
+            .mapError { .runtimeTypeLookupFailed(name: "event", reason: $0) }
+            .flatMap { $0.id == id ? .success(()) : .failure(.typeIdMismatch(got: id, has: $0.id)) }
     }
     
     public var description: String {

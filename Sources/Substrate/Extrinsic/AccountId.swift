@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
-                           ValueRepresentable, ValidatableRuntimeType
+                           ValueRepresentable, RuntimeDynamicValidatable
 {
     init(from string: String, runtime: any Runtime,
          id: RuntimeType.LazyId) throws
@@ -110,7 +110,7 @@ public extension StaticAccountId {
     }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, TypeValidationError> {
+                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }

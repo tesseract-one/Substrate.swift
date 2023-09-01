@@ -20,6 +20,10 @@ public struct AnyExtrinsicFailureEvent: SomeExtrinsicFailureEvent {
         self.error = ExtrinsicFailed(body: value)
     }
     
+    public static func validate(runtime: Runtime) -> Result<Void, ValidationError> {
+        .success(())
+    }
+    
     public static let pallet: String = "System"
     public static let name: String = "ExtrinsicFailed"
 }

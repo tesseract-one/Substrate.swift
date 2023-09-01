@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicFailureEvent: SomeExtrinsicFailureEvent, StaticEvent {
+public struct ExtrinsicFailureEvent: SomeExtrinsicFailureEvent, StaticEvent, RuntimeValidatableStaticComposite {
     public struct ExtrinsicFailed: Error {
         public let error: DispatchError
         public let info: DispatchInfo
@@ -20,6 +20,11 @@ public struct ExtrinsicFailureEvent: SomeExtrinsicFailureEvent, StaticEvent {
     public init<D: ScaleCodec.Decoder>(paramsFrom decoder: inout D, runtime: Runtime) throws {
         self.error = ExtrinsicFailed(error: try runtime.decode(from: &decoder),
                                      info: try decoder.decode())
+    }
+    
+    @inlinable
+    public static var validatableFields: [RuntimeDynamicValidatable.Type] {
+        [DispatchError.self, DispatchInfo.self]
     }
     
     public static let pallet: String = "System"

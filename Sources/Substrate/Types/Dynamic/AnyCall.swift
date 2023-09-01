@@ -84,6 +84,16 @@ public extension AnyCall where C == Void {
     }
 }
 
+extension AnyCall: RuntimeDynamicValidatable {
+    public static func validate(runtime: Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    {
+        return Result { try runtime.types.call }
+            .mapError { .runtimeTypeLookupFailed(name: "call", reason: $0) }
+            .flatMap { $0.id == id ? .success(()) : .failure(.typeIdMismatch(got: id, has: $0.id)) }
+    }
+}
+
 extension AnyCall: CustomStringConvertible {
     public var description: String {
         "\(pallet).\(name)(\(_params))"

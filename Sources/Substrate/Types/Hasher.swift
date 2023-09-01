@@ -15,7 +15,7 @@ public protocol Hasher {
     func hash(data: Data) -> Data
 }
 
-public protocol StaticHasher: Hasher, ValidatableRuntimeType {
+public protocol StaticHasher: Hasher, RuntimeDynamicValidatable {
     static var name: String { get }
     static var instance: Self { get }
 }
@@ -24,7 +24,7 @@ public extension StaticHasher {
     @inlinable var name: String { Self.name }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
@@ -36,7 +36,7 @@ public extension StaticHasher {
     }
 }
 
-public protocol FixedHasher: Hasher, ValidatableRuntimeType {
+public protocol FixedHasher: Hasher, RuntimeDynamicValidatable {
     associatedtype THash: Hash
     
     func hash(data: Data, runtime: any Runtime) throws -> THash

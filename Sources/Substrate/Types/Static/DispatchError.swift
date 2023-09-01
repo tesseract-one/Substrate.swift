@@ -9,7 +9,9 @@ import Foundation
 import ScaleCodec
 
 /// An error dispatching a transaction.
-public enum DispatchError: SomeDispatchError, StaticCallError, Equatable, ScaleCodec.Encodable {
+public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
+                           ScaleCodec.Encodable, RuntimeDynamicValidatableStaticVariant
+{
     /// Some unknown error occurred.
     case other
     /// Failed to lookup some data.
@@ -38,7 +40,7 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable, ScaleC
     /// Some resource (e.g. a preimage) is unavailable right now. This might fix itself later.
     case unavailable
     /// Root origin is not allowed.
-    case rootNotAllowed
+    //  case rootNotAllowed
     
     public typealias TModuleError = ModuleError
     
@@ -78,7 +80,7 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable, ScaleC
         case 10: self = .exhausted
         case 11: self = .corruption
         case 12: self = .unavailable
-        case 13: self = .rootNotAllowed
+//        case 13: self = .rootNotAllowed
         default: throw decoder.enumCaseError(for: id)
         }
     }
@@ -106,14 +108,27 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable, ScaleC
         case .exhausted: try encoder.encode(10, .enumCaseId)
         case .corruption: try encoder.encode(11, .enumCaseId)
         case .unavailable: try encoder.encode(12, .enumCaseId)
-        case .rootNotAllowed: try encoder.encode(13, .enumCaseId)
+//        case .rootNotAllowed: try encoder.encode(13, .enumCaseId)
         }
+    }
+    
+    public static var validatableVariants: [ValidatableStaticVariant] {
+        [(0, "Other", []), (1, "CannotLookup", []), (2, "BadOrigin", []),
+         (3, "Module", [ModuleErrorData.self]), (4, "ConsumerRemaining", []),
+         (5, "NoProviders", []), (6, "TooManyConsumers", []),
+         (7, "Token", [TokenError.self]), (8, "Arithmetic", [ArithmeticError.self]),
+         (9, "Transactional", [TransactionalError.self]), (10, "Exhausted", []),
+         (11, "Corruption", []), (12, "Unavailable", [])]
+        //(13, "RootNotAllowed", [])
     }
 }
 
 public extension DispatchError {
     /// Reason why a pallet call failed.
-    struct ModuleErrorData: Equatable, RuntimeDecodable, ScaleCodec.Encodable, RuntimeSwiftCodable, Swift.Encodable {
+    struct ModuleErrorData: Equatable, RuntimeDecodable, ScaleCodec.Encodable,
+                            RuntimeSwiftCodable, Swift.Encodable,
+                            RuntimeDynamicValidatableStaticComposite
+    {
         /// Module index, matching the metadata module index.
         public let index: UInt8
         /// Module specific error value. 4 bytes
@@ -148,9 +163,16 @@ public extension DispatchError {
         public static func == (lhs: Self, rhs: Self) -> Bool {
             lhs.index == rhs.index && lhs.error == rhs.error
         }
+        
+        public static var validatableFields: [RuntimeDynamicValidatable.Type] {
+            [UInt8.self, Data.self]
+        }
     }
     
-    enum TokenError: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeCodable, Swift.Codable {
+    enum TokenError: UInt8, CaseIterable, ScaleCodec.Codable,
+                     RuntimeCodable, Swift.Codable,
+                     RuntimeDynamicValidatableStaticVariant
+    {
         /// Funds are unavailable.
         case fundsUnavailable
         /// Some part of the balance gives the only provider reference to the account and thus cannot
@@ -170,103 +192,26 @@ public extension DispatchError {
         case cannotCreateHold
         /// Withdrawal would cause unwanted loss of account.
         case notExpendable
-        /// Account cannot receive the assets.
-        case blocked
-        
-        public init(from decoder: Swift.Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let value = try container.decode(String.self)
-            switch value {
-            case "FundsUnavailable": self = .fundsUnavailable
-            case "OnlyProvider": self = .onlyProvider
-            case "BelowMinimum": self = .belowMinimum
-            case "CannotCreate": self = .cannotCreate
-            case "UnknownAsset": self = .unknownAsset
-            case "Frozen": self = .frozen
-            case "Unsupported": self = .unsupported
-            case "CannotCreateHold": self = .cannotCreateHold
-            case "NotExpendable": self = .notExpendable
-            case "Blocked": self = .blocked
-            default:
-                throw Swift.DecodingError.dataCorruptedError(
-                    in: container, debugDescription: "Unknown enum value: \(value)"
-                )
-            }
-        }
-        
-        public func encode(to encoder: Swift.Encoder) throws {
-            var container = encoder.singleValueContainer()
-            switch self {
-            case .fundsUnavailable: try container.encode("FundsUnavailable")
-            case .onlyProvider: try container.encode("OnlyProvider")
-            case .belowMinimum: try container.encode("BelowMinimum")
-            case .cannotCreate: try container.encode("CannotCreate")
-            case .unknownAsset: try container.encode("UnknownAsset")
-            case .frozen: try container.encode("Frozen")
-            case .unsupported: try container.encode("Unsupported")
-            case .cannotCreateHold: try container.encode("CannotCreateHold")
-            case .notExpendable: try container.encode("NotExpendable")
-            case .blocked: try container.encode("Blocked")
-            }
-        }
+//        /// Account cannot receive the assets.
+//        case blocked
     }
 
-    enum ArithmeticError: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeCodable, Swift.Codable {
+    enum ArithmeticError: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeCodable, Swift.Codable,
+                          RuntimeDynamicValidatableStaticVariant
+    {
         case underflow
         case overflow
         case divisionByZero
-        
-        public init(from decoder: Swift.Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let value = try container.decode(String.self)
-            switch value {
-            case "Underflow": self = .underflow
-            case "Overflow": self = .overflow
-            case "DivisionByZero": self = .divisionByZero
-            default:
-                throw Swift.DecodingError.dataCorruptedError(
-                    in: container, debugDescription: "Unknown enum value: \(value)"
-                )
-            }
-        }
-        
-        public func encode(to encoder: Swift.Encoder) throws {
-            var container = encoder.singleValueContainer()
-            switch self {
-            case .underflow: try container.encode("Underflow")
-            case .overflow: try container.encode("Overflow")
-            case .divisionByZero: try container.encode("DivisionByZero")
-            }
-        }
     }
 
     /// Errors related to transactional storage layers.
-    enum TransactionalError: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeCodable, Swift.Codable {
+    enum TransactionalError: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeCodable, Swift.Codable,
+                             RuntimeDynamicValidatableStaticVariant
+    {
         /// Too many transactional layers have been spawned.
         case limitReached
         /// A transactional layer was expected, but does not exist.
         case noLayer
-  
-        public init(from decoder: Swift.Decoder) throws {
-            let container = try decoder.singleValueContainer()
-            let value = try container.decode(String.self)
-            switch value {
-            case "LimitReached": self = .limitReached
-            case "NoLayer": self = .noLayer
-            default:
-                throw Swift.DecodingError.dataCorruptedError(
-                    in: container, debugDescription: "Unknown enum value: \(value)"
-                )
-            }
-        }
-        
-        public func encode(to encoder: Swift.Encoder) throws {
-            var container = encoder.singleValueContainer()
-            switch self {
-            case .limitReached: try container.encode("LimitReached")
-            case .noLayer: try container.encode("NoLayer")
-            }
-        }
     }
 }
 
@@ -284,7 +229,7 @@ extension DispatchError: RuntimeSwiftCodable, Swift.Encodable {
             case "Exhausted": self = .exhausted
             case "Corruption": self = .corruption
             case "Unavailable": self = .unavailable
-            case "RootNotAllowed": self = .rootNotAllowed
+            //case "RootNotAllowed": self = .rootNotAllowed
             default:
                 throw Swift.DecodingError.dataCorruptedError(in: container1,
                                                              debugDescription: "Unknown case \(simple)")
@@ -344,9 +289,9 @@ extension DispatchError: RuntimeSwiftCodable, Swift.Encodable {
         case .unavailable:
             var container = encoder.singleValueContainer()
             try container.encode("Unavailable")
-        case .rootNotAllowed:
-            var container = encoder.singleValueContainer()
-            try container.encode("RootNotAllowed")
+//        case .rootNotAllowed:
+//            var container = encoder.singleValueContainer()
+//            try container.encode("RootNotAllowed")
         case .module(let data):
             var container = encoder.container(keyedBy: CodableComplexKey<Self>.self)
             try container.encode(data, forKey: .module)

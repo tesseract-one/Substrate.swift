@@ -14,12 +14,13 @@ public extension Configs {
         public typealias THasher = HBlake2b256
         public typealias TIndex = UInt32
         public typealias TAccountId = AccountId32
+        public typealias Balance = UInt128
         public typealias TAddress = MultiAddress<TAccountId, TIndex>
         public typealias TSignature = MultiSignature
         public typealias TExtrinsicEra = ExtrinsicEra
-        public typealias TExtrinsicPayment = Compact<UInt128>
-        public typealias TDispatchInfo = DispatchInfo
-        public typealias TFeeDetails = FeeDetails
+        public typealias TExtrinsicPayment = Compact<Balance>
+        public typealias TRuntimeDispatchInfo = RuntimeDispatchInfo<Balance>
+        public typealias TFeeDetails = FeeDetails<Balance>
         public typealias TSystemProperties = AnySystemProperties
         public typealias TRuntimeVersion = AnyRuntimeVersion<UInt32>
     }

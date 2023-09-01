@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Address<TAccountId>: RuntimeDynamicCodable, ValueRepresentable, ValidatableRuntimeType {
+public protocol Address<TAccountId>: RuntimeDynamicCodable, ValueRepresentable, RuntimeDynamicValidatable {
     associatedtype TAccountId: AccountId
     
     init(accountId: TAccountId,

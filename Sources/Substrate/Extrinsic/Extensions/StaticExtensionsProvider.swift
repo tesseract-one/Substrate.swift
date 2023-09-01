@@ -39,7 +39,7 @@ public protocol StaticExtrinsicExtension: StaticExtrinsicExtensionBase, Extrinsi
         runtime: any Runtime,
         extra: RuntimeType.Id,
         additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError>
+    ) -> Result<Void, DynamicValidationError>
 }
 
 public extension StaticExtrinsicExtension {
@@ -47,10 +47,10 @@ public extension StaticExtrinsicExtension {
 }
 
 public extension StaticExtrinsicExtension where
-    TExtra: ValidatableRuntimeType, TAdditionalSigned: ValidatableRuntimeType
+    TExtra: RuntimeDynamicValidatable, TAdditionalSigned: RuntimeDynamicValidatable
 {
     func validate(runtime: Runtime, extra: RuntimeType.Id,
-                  additionalSigned: RuntimeType.Id) -> Result<Void, TypeValidationError>
+                  additionalSigned: RuntimeType.Id) -> Result<Void, DynamicValidationError>
     {
         TExtra.validate(runtime: runtime, type: extra).flatMap {
             TAdditionalSigned.validate(runtime: runtime, type: additionalSigned)
@@ -66,7 +66,7 @@ public protocol StaticExtrinsicExtensions: StaticExtrinsicExtensionBase
     func validate(
         runtime: any Runtime,
         types: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
-    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>>
+    ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>>
 }
 
 public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: SignedExtensionsProvider {
@@ -125,7 +125,7 @@ public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: Sig
     
     public func validate(
         runtime: any Runtime
-    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>> {
+    ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>> {
         guard runtime.metadata.extrinsic.version == version else {
             return .failure(.left(.badExtrinsicVersion(
                 supported: version,

@@ -38,14 +38,27 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringCon
     
     public static func recordTypeId(metadata: any Metadata, events id: RuntimeType.Id) throws -> RuntimeType.Id {
         guard let typeInfo = metadata.resolve(type: id)?.flatten(metadata) else {
-            throw RuntimeDynamicCodableError.typeNotFound(id)
+            throw DynamicCodableError.typeNotFound(id)
         }
         switch typeInfo.definition {
         case .sequence(of: let recordId):
             return recordId
         default:
-            throw RuntimeDynamicCodableError.wrongType(got: typeInfo,
+            throw DynamicCodableError.wrongType(got: typeInfo,
                                                        for: "Array<EventRecord>")
+        }
+    }
+    
+    public static func validate(runtime: any Runtime,
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+        guard let typeInfo = runtime.resolve(type: id)?.flatten(runtime) else {
+            return .failure(.typeNotFound(id))
+        }
+        switch typeInfo.definition {
+        case .sequence(of: let recordId):
+            return ER.validate(runtime: runtime, type: recordId)
+        default:
+            return .failure(.wrongType(got: typeInfo, for: "Array<EventRecord>"))
         }
     }
     

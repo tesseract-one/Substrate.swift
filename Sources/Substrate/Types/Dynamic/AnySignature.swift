@@ -82,20 +82,20 @@ public struct AnySignature: Signature {
     }
     
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
     {
         parseTypeInfo(runtime: runtime, typeId: id).map{_ in}
     }
     
     public static func parseTypeInfo(
         runtime: Runtime, typeId: RuntimeType.Id
-    ) -> Result<[String: CryptoTypeId], TypeValidationError> {
+    ) -> Result<[String: CryptoTypeId], DynamicValidationError> {
         guard let type = runtime.resolve(type: typeId) else {
             return .failure(.typeNotFound(typeId))
         }
         switch type.definition {
         case .variant(variants: let variants):
-            let mapped: Result<[(String, CryptoTypeId)], TypeValidationError> = variants.resultMap { item in
+            let mapped: Result<[(String, CryptoTypeId)], DynamicValidationError> = variants.resultMap { item in
                 if let id = CryptoTypeId.byName[item.name.lowercased()] {
                     return .success((item.name, id))
                 }

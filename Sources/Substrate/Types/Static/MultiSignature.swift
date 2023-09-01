@@ -76,9 +76,9 @@ extension MultiSignature: ValueRepresentable {
     }
 }
 
-extension MultiSignature: ValidatableRuntimeType {
+extension MultiSignature: RuntimeDynamicValidatable {
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))

@@ -76,17 +76,24 @@ public extension ConstantsApiRegistry {
     }
 }
 
-public protocol StaticConstant {
+public protocol StaticConstant: PalletType {
     associatedtype TValue
-    
-    static var name: String { get }
-    static var pallet: String { get }
-    
     static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: any Runtime) throws -> TValue
 }
 
 public extension StaticConstant where TValue: RuntimeDecodable {
     static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: any Runtime) throws -> TValue {
         try TValue(from: &decoder, runtime: runtime)
+    }
+}
+
+public extension StaticConstant where Self: RuntimeValidatable, TValue: RuntimeDynamicValidatable {
+    static func validate(runtime: any Runtime) -> Result<Void, ValidationError> {
+        guard let info = runtime.resolve(constant: name, pallet: pallet) else {
+            return .failure(.infoNotFound(for: Self.self))
+        }
+        return TValue.validate(runtime: runtime, type: info.type.id).mapError {
+            .childError(for: Self.self, error: $0)
+        }
     }
 }

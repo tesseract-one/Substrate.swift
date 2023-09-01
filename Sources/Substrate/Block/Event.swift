@@ -13,24 +13,13 @@ public protocol Event: RuntimeDynamicDecodable {
     var name: String { get }
 }
 
-public protocol IdentifiableEvent: Event {
-    static var pallet: String { get }
-    static var name: String { get }
-}
-
-public extension IdentifiableEvent {
-    var pallet: String { Self.pallet }
-    var name: String { Self.name }
-}
+public protocol IdentifiableEvent: Event, PalletType {}
 
 public protocol StaticEvent: IdentifiableEvent, RuntimeDecodable {
     init<D: ScaleCodec.Decoder>(paramsFrom decoder: inout D, runtime: Runtime) throws
 }
 
 public extension StaticEvent {
-    var pallet: String { Self.pallet }
-    var name: String { Self.name }
-    
     init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         let modIndex = try decoder.decode(UInt8.self)
         let evIndex = try decoder.decode(UInt8.self)
@@ -45,7 +34,16 @@ public extension StaticEvent {
     }
 }
 
-public protocol SomeEventRecord: RuntimeDynamicDecodable {
+public extension IdentifiableEvent where Self: RuntimeValidatableComposite {
+    static func validatableFieldIds(runtime: any Runtime) -> Result<[RuntimeType.Id], ValidationError> {
+        guard let info = runtime.resolve(eventParams: name, pallet: pallet) else {
+            return .failure(.infoNotFound(for: Self.self))
+        }
+        return .success(info.map{$0.type})
+    }
+}
+
+public protocol SomeEventRecord: RuntimeDynamicDecodable, RuntimeDynamicValidatable {
     var extrinsicIndex: UInt32? { get }
     var header: (name: String, pallet: String) { get }
     var any: AnyEvent { get throws }

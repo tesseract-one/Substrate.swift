@@ -99,7 +99,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     
     public static func findIdVariant(
         in vars: [RuntimeType.VariantItem], type: RuntimeType
-    ) -> Result<RuntimeType.VariantItem, TypeValidationError> {
+    ) -> Result<RuntimeType.VariantItem, DynamicValidationError> {
         for item in vars {
             if item.fields.count != 1 { continue }
             if item.name.lowercased().contains("id") { return .success(item) }
@@ -111,7 +111,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     }
     
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))

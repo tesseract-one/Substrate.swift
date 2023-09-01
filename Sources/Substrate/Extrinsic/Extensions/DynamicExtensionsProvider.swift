@@ -24,7 +24,7 @@ public protocol DynamicExtrinsicExtension: ExtrinsicSignedExtension {
     func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
-    ) -> Result<Void, TypeValidationError>
+    ) -> Result<Void, DynamicValidationError>
 }
 
 public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsProvider {
@@ -108,7 +108,7 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
     
     public func validate(
         runtime: any Runtime
-    ) -> Result<Void, Either<ExtrinsicCodingError, TypeValidationError>> {
+    ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>> {
         _activeExtensions(runtime: runtime)
             .mapError {.left($0)}
             .flatMap { exts in

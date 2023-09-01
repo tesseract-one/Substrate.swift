@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol SingleTypeStaticSignature: StaticSignature, FixedDataCodable, VoidValueRepresentable,
-                                           ValidatableRuntimeType, Hashable, Equatable,
+                                           RuntimeDynamicValidatable, Hashable, Equatable,
                                            CustomStringConvertible
 {
     var raw: Data { get }
@@ -57,7 +57,7 @@ public extension SingleTypeStaticSignature {
     func asValue() -> Value<Void> { .bytes(raw) }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, TypeValidationError> {
+                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }

@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public enum MultiAddress<Id, Index>: Equatable, Hashable
-    where Index: CompactCodable & Hashable & ValueRepresentable & ValidatableRuntimeType,
+    where Index: CompactCodable & Hashable & ValueRepresentable & RuntimeDynamicValidatable,
           Id: AccountId & Hashable
 {
     case id(Id)
@@ -110,9 +110,9 @@ extension MultiAddress: StaticAddress {
     }
 }
 
-extension MultiAddress: ValidatableRuntimeType {
+extension MultiAddress: RuntimeDynamicValidatable {
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, TypeValidationError>
+                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))

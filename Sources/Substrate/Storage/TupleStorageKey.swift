@@ -41,6 +41,12 @@ public protocol TupleStorageKeyPath: ListTuple
     var hash: Data { get }
 }
 
+public protocol TupleStorageValidatableKeyPath: TupleStorageKeyPath where
+    First.TKey: RuntimeDynamicValidatable, Last.TKey: RuntimeDynamicValidatable
+{
+    static var path: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] { get }
+}
+
 public protocol TupleStorageNKeyPath: TupleStorageKeyPath where DroppedFirst: TupleStorageKeyPath {}
 
 public protocol TupleStorageKeyBase<TPath, TValue>: StaticStorageKey
@@ -64,6 +70,13 @@ public extension TupleStorageKeyBase {
     
     init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws {
         try self.init(path: TPath(pairsFrom: &decoder, runtime: runtime))
+    }
+}
+
+public extension TupleStorageKeyBase where TPath: TupleStorageValidatableKeyPath {
+    @inlinable
+    static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] {
+        TPath.path
     }
 }
 

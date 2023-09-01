@@ -56,6 +56,18 @@ public extension Sequence where Element: ResultLike, Element.Failure: Error {
     }
 }
 
+public extension Sequence {
+    func voidErrorMap<E: Error>(_ mapper: (Element) -> Result<Void, E>) -> Result<Void, E> {
+        for val in self {
+            switch mapper(val) {
+            case .failure(let e): return .failure(e)
+            case .success(_): continue
+            }
+        }
+        return .success(())
+    }
+}
+
 public extension Collection {
     func resultMap<T, E: Error>(_ mapper: (Element) -> Result<T, E>) -> Result<Array<T>, E> {
         var new: [T] = []
