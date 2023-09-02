@@ -36,7 +36,7 @@ public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic, CustomString
     
     public var debugDescription: String {
         do {
-            let ext: AnyExtrinsic<AnyCall<RuntimeType.Id>> = try decode()
+            let ext: AnyExtrinsic<AnyCall<NetworkType.Id>> = try decode()
             return ext.description
         } catch {
             return description

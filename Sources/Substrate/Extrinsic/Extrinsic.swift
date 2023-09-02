@@ -109,16 +109,16 @@ public protocol SomeDispatchError: CallError {
 public struct ModuleError: Error {
     public enum DecodingError: Error {
         case dispatchErrorIsNotModule(description: String)
-        case badModuleVariant(Value<RuntimeType.Id>.Variant)
+        case badModuleVariant(Value<NetworkType.Id>.Variant)
         case palletNotFound(index: UInt8)
-        case badPalletError(type: RuntimeType.Info?)
+        case badPalletError(type: NetworkType.Info?)
         case errorNotFound(index: UInt8)
     }
     
     public let pallet: PalletMetadata
-    public let error: RuntimeType.VariantItem
+    public let error: NetworkType.Variant
     
-    public init(variant: Value<RuntimeType.Id>.Variant, runtime: any Runtime) throws {
+    public init(variant: Value<NetworkType.Id>.Variant, runtime: any Runtime) throws {
         let fields = variant.values
         guard fields.count == 2,
               let index = fields[0].uint.flatMap({UInt8(exactly: $0)}),
@@ -143,7 +143,7 @@ public struct ModuleError: Error {
         self.error = error
     }
     
-    public static func validate(variant: RuntimeType.VariantItem,
+    public static func validate(variant: NetworkType.Variant,
                                 runtime: any Runtime) -> Bool
     {
         guard variant.fields.count == 2 else {

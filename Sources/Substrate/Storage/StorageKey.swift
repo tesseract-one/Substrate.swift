@@ -149,7 +149,7 @@ public protocol ValidatableStorageKey: StaticStorageKey, RuntimeValidatable
 }
 
 public extension ValidatableStorageKey {
-    static func validate(path: [(RuntimeType.Id, MetadataV14.StorageHasher)],
+    static func validate(path: [(NetworkType.Id, MetadataV14.StorageHasher)],
                          runtime: any Runtime) -> Result<Void, ValidationError>
     {
         let ownKp = keyPath

@@ -15,10 +15,10 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     case other(name: String, values: [any ValueRepresentable])
     
     public init<D: ScaleCodec.Decoder>(
-        from decoder: inout D, as type: RuntimeType.Id, runtime: any Runtime
+        from decoder: inout D, as type: NetworkType.Id, runtime: any Runtime
     ) throws {
         guard let info = runtime.resolve(type: type) else {
-            throw Value<RuntimeType.Id>.DecodingError.typeNotFound(type)
+            throw Value<NetworkType.Id>.DecodingError.typeNotFound(type)
         }
         switch info.flatten(runtime).definition {
         case .variant(variants: let vars):
@@ -27,7 +27,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                 let _ = try decoder.decode(.enumCaseId)
                 self = try .id(Id(from: &decoder, as: idVar.fields.first!.type, runtime: runtime))
             } else {
-                let val = try Value<RuntimeType.Id>(from: &decoder, as: type, runtime: runtime)
+                let val = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
                     .flatten(runtime: runtime)
                 self = .other(name: val.variant!.name, values: val.variant!.values)
             }
@@ -36,7 +36,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         }
     }
     
-    public init(accountId: Id, runtime: Runtime, id: RuntimeType.LazyId) throws {
+    public init(accountId: Id, runtime: Runtime, id: NetworkType.LazyId) throws {
         self = .id(accountId)
     }
     
@@ -56,12 +56,12 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     }
     
     public func encode<E: ScaleCodec.Encoder>(
-        in encoder: inout E, as type: RuntimeType.Id, runtime: any Runtime
+        in encoder: inout E, as type: NetworkType.Id, runtime: any Runtime
     ) throws {
         try asValue(runtime: runtime, type: type).encode(in: &encoder, as: type, runtime: runtime)
     }
     
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -98,8 +98,8 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     }
     
     public static func findIdVariant(
-        in vars: [RuntimeType.VariantItem], type: RuntimeType
-    ) -> Result<RuntimeType.VariantItem, DynamicValidationError> {
+        in vars: [NetworkType.Variant], type: NetworkType
+    ) -> Result<NetworkType.Variant, DynamicValidationError> {
         for item in vars {
             if item.fields.count != 1 { continue }
             if item.name.lowercased().contains("id") { return .success(item) }
@@ -111,7 +111,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     }
     
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))

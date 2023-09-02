@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public typealias AnyValueStorageKey = AnyStorageKey<Value<RuntimeType.Id>>
+public typealias AnyValueStorageKey = AnyStorageKey<Value<NetworkType.Id>>
 
 public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, CustomStringConvertible {
     public typealias TParams = [ValueRepresentable]
@@ -24,8 +24,8 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, Cu
         path.map { $0.value }
     }
     
-    public var values: [Value<RuntimeType.Id>?] {
-        path.map { $0.value.flatMap{$0 as? Value<RuntimeType.Id>} }
+    public var values: [Value<NetworkType.Id>?] {
+        path.map { $0.value.flatMap{$0 as? Value<NetworkType.Id>} }
     }
     
     public var hashes: [Data] {

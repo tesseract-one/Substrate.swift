@@ -13,7 +13,7 @@ public protocol Address<TAccountId>: RuntimeDynamicCodable, ValueRepresentable, 
     
     init(accountId: TAccountId,
          runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
 }
 
 public protocol StaticAddress<TAccountId>: Address, RuntimeCodable {
@@ -24,7 +24,7 @@ public extension StaticAddress {
     @inlinable
     init(accountId: TAccountId,
          runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
     {
         try self.init(accountId: accountId, runtime: runtime)
     }

@@ -67,4 +67,4 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
     }
 }
 
-public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<RuntimeType.Id>>
+public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<NetworkType.Id>>

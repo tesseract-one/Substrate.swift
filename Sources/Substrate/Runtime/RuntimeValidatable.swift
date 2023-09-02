@@ -15,12 +15,12 @@ public protocol RuntimeValidatable {
 
 public protocol RuntimeDynamicValidatable {
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
 }
 
 public protocol RuntimeValidatableComposite: RuntimeValidatable {
-    static func validatableFieldIds(runtime: any Runtime) -> Result<[RuntimeType.Id], ValidationError>
-    static func validate(fields ids: [RuntimeType.Id],
+    static func validatableFieldIds(runtime: any Runtime) -> Result<[NetworkType.Id], ValidationError>
+    static func validate(fields ids: [NetworkType.Id],
                          runtime: any Runtime) -> Result<Void, ValidationError>
 }
 
@@ -37,7 +37,7 @@ public protocol RuntimeValidatableStaticComposite: RuntimeValidatableComposite {
 }
 
 public extension RuntimeValidatableStaticComposite {
-    static func validate(fields ids: [RuntimeType.Id],
+    static func validate(fields ids: [NetworkType.Id],
                          runtime: any Runtime) -> Result<Void, ValidationError>
     {
         let ourFields = validatableFields
@@ -55,13 +55,13 @@ public extension RuntimeValidatableStaticComposite {
 }
 
 public protocol RuntimeDynamicValidatablePrimitive: RuntimeDynamicValidatable {
-    static func validate(self: RuntimeType, name: String,
-                         primitive: RuntimeType.Primitive) -> Result<Void, DynamicValidationError>
+    static func validate(self: NetworkType, name: String,
+                         primitive: NetworkType.Primitive) -> Result<Void, DynamicValidationError>
 }
 
 public extension RuntimeDynamicValidatablePrimitive {
     static func _validate(runtime: Runtime,
-                          type id: RuntimeType.Id) -> Result<RuntimeType, DynamicValidationError>
+                          type id: NetworkType.Id) -> Result<NetworkType, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
@@ -74,26 +74,26 @@ public extension RuntimeDynamicValidatablePrimitive {
     }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         _validate(runtime: runtime, type: id).map {_ in}
     }
 }
 
 public protocol RuntimeDynamicValidatableComposite: RuntimeDynamicValidatable {
-    static func validate(self: RuntimeType, name: String,
-                         fields: [(name: String?, type: RuntimeType.Id)],
+    static func validate(self: NetworkType, name: String,
+                         fields: [(name: String?, type: NetworkType.Id)],
                          runtime: any Runtime) -> Result<Void, DynamicValidationError>
 }
 
 public extension RuntimeDynamicValidatableComposite {
     static func _validate(runtime: Runtime,
-                          type id: RuntimeType.Id) -> Result<RuntimeType, DynamicValidationError>
+                          type id: NetworkType.Id) -> Result<NetworkType, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id)?.flatten(runtime) else {
             return .failure(.typeNotFound(id))
         }
-        let fields: [(name: String?, type: RuntimeType.Id)]
+        let fields: [(name: String?, type: NetworkType.Id)]
         switch info.definition {
         case .composite(fields: let fs):
             fields = fs.map { ($0.name, $0.type) }
@@ -107,7 +107,7 @@ public extension RuntimeDynamicValidatableComposite {
     }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         _validate(runtime: runtime, type: id).map {_ in}
     }
@@ -118,8 +118,8 @@ public protocol RuntimeDynamicValidatableStaticComposite: RuntimeDynamicValidata
 }
 
 public extension RuntimeDynamicValidatableStaticComposite {
-    static func validate(self: RuntimeType, name: String,
-                         fields: [(name: String?, type: RuntimeType.Id)],
+    static func validate(self: NetworkType, name: String,
+                         fields: [(name: String?, type: NetworkType.Id)],
                          runtime: any Runtime) -> Result<Void, DynamicValidationError>
     {
         let ourFields = validatableFields
@@ -135,14 +135,14 @@ public extension RuntimeDynamicValidatableStaticComposite {
 }
 
 public protocol RuntimeDynamicValidatableVariant: RuntimeDynamicValidatable {
-    static func validate(self: RuntimeType, name: String,
-                         variants: [RuntimeType.VariantItem],
+    static func validate(self: NetworkType, name: String,
+                         variants: [NetworkType.Variant],
                          runtime: any Runtime) -> Result<Void, DynamicValidationError>
 }
 
 public extension RuntimeDynamicValidatableVariant {
     static func _validate(runtime: Runtime,
-                          type id: RuntimeType.Id) -> Result<RuntimeType, DynamicValidationError>
+                          type id: NetworkType.Id) -> Result<NetworkType, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id)?.flatten(runtime) else {
             return .failure(.typeNotFound(id))
@@ -155,7 +155,7 @@ public extension RuntimeDynamicValidatableVariant {
     }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         _validate(runtime: runtime, type: id).map {_ in}
     }
@@ -169,8 +169,8 @@ public protocol RuntimeDynamicValidatableStaticVariant: RuntimeDynamicValidatabl
 }
 
 public extension RuntimeDynamicValidatableStaticVariant {
-    static func validate(self: RuntimeType, name: String,
-                         variants: [RuntimeType.VariantItem],
+    static func validate(self: NetworkType, name: String,
+                         variants: [NetworkType.Variant],
                          runtime: any Runtime) -> Result<Void, DynamicValidationError>
     {
         let ourVariants = validatableVariants
@@ -207,13 +207,13 @@ public enum ValidationError: Error {
 }
 
 public enum DynamicValidationError: Error {
-    case typeNotFound(RuntimeType.Id)
+    case typeNotFound(NetworkType.Id)
     case runtimeTypeLookupFailed(name: String, reason: Error)
-    case wrongType(got: RuntimeType, for: String)
-    case wrongValuesCount(in: RuntimeType, expected: Int, for: String)
-    case fieldNotFound(name: String, in: RuntimeType)
-    case variantNotFound(name: String, in: RuntimeType)
-    case typeIdMismatch(got: RuntimeType.Id, has: RuntimeType.Id)
+    case wrongType(got: NetworkType, for: String)
+    case wrongValuesCount(in: NetworkType, expected: Int, for: String)
+    case fieldNotFound(name: String, in: NetworkType)
+    case variantNotFound(name: String, in: NetworkType)
+    case typeIdMismatch(got: NetworkType.Id, has: NetworkType.Id)
 }
 
 public extension CaseIterable where Self: RuntimeDynamicValidatableStaticVariant {
@@ -226,8 +226,8 @@ public extension CaseIterable where Self: RuntimeDynamicValidatableStaticVariant
 
 public extension FixedWidthInteger where Self: RuntimeDynamicValidatablePrimitive {
     @inlinable
-    static func validate(self: RuntimeType, name: String,
-                         primitive: RuntimeType.Primitive) -> Result<Void, DynamicValidationError>
+    static func validate(self: NetworkType, name: String,
+                         primitive: NetworkType.Primitive) -> Result<Void, DynamicValidationError>
     {
         guard let int = primitive.isAnyInt else {
             return .failure(.wrongType(got: self, for: name))
@@ -254,7 +254,7 @@ extension Int: RuntimeDynamicValidatablePrimitive {}
 extension Value: RuntimeDynamicValidatable {
     @inlinable
     public static func validate(runtime: any Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         .success(())
     }
@@ -263,7 +263,7 @@ extension Value: RuntimeDynamicValidatable {
 extension Bool: RuntimeDynamicValidatablePrimitive {
     @inlinable
     public static func validate(
-        self: RuntimeType, name: String, primitive: RuntimeType.Primitive
+        self: NetworkType, name: String, primitive: NetworkType.Primitive
     ) -> Result<Void, DynamicValidationError> {
         primitive.isBool ? .success(()) : .failure(.wrongType(got: self, for: name))
     }
@@ -272,7 +272,7 @@ extension Bool: RuntimeDynamicValidatablePrimitive {
 extension String: RuntimeDynamicValidatablePrimitive {
     @inlinable
     public static func validate(
-        self: RuntimeType, name: String, primitive: RuntimeType.Primitive
+        self: NetworkType, name: String, primitive: NetworkType.Primitive
     ) -> Result<Void, DynamicValidationError> {
         primitive.isString ? .success(()) : .failure(.wrongType(got: self, for: name))
     }
@@ -280,7 +280,7 @@ extension String: RuntimeDynamicValidatablePrimitive {
 
 extension Data: RuntimeDynamicValidatable {
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
@@ -294,7 +294,7 @@ extension Data: RuntimeDynamicValidatable {
 
 extension Compact: RuntimeDynamicValidatable {
     public static func validate(runtime: any Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
@@ -324,7 +324,7 @@ extension Compact: RuntimeDynamicValidatable {
 extension Character: RuntimeDynamicValidatablePrimitive {
     @inlinable
     public static func validate(
-        self: RuntimeType, name: String, primitive: RuntimeType.Primitive
+        self: NetworkType, name: String, primitive: NetworkType.Primitive
     ) -> Result<Void, DynamicValidationError> {
         primitive.isChar ? .success(()) : .failure(.wrongType(got: self, for: name))
     }
@@ -332,7 +332,7 @@ extension Character: RuntimeDynamicValidatablePrimitive {
 
 extension Array: RuntimeDynamicValidatable where Element: RuntimeDynamicValidatable {
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
@@ -365,7 +365,7 @@ extension Array: RuntimeDynamicValidatable where Element: RuntimeDynamicValidata
 
 extension Optional: RuntimeDynamicValidatable where Wrapped: RuntimeDynamicValidatable {
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
@@ -379,7 +379,7 @@ extension Optional: RuntimeDynamicValidatable where Wrapped: RuntimeDynamicValid
 
 extension Either: RuntimeDynamicValidatable where Left: RuntimeDynamicValidatable, Right: RuntimeDynamicValidatable {
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))

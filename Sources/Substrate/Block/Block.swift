@@ -18,7 +18,7 @@ public protocol SomeBlock: RuntimeDynamicSwiftDecodable {
     var extrinsics: [TExtrinsic] { get }
     
     static func headerType(runtime: any Runtime,
-                           block id: RuntimeType.Id) throws -> RuntimeType.Id
+                           block id: NetworkType.Id) throws -> NetworkType.Id
 }
 
 public extension SomeBlock {
@@ -38,13 +38,13 @@ public protocol StaticBlock: SomeBlock, RuntimeSwiftDecodable where THeader: Run
 public extension StaticBlock {
     // Should never be called because of the static Header parsing
     static func headerType(runtime: any Runtime,
-                           block id: RuntimeType.Id) throws -> RuntimeType.Id {
-        try RuntimeType.IdNever(runtime)
+                           block id: NetworkType.Id) throws -> NetworkType.Id {
+        try NetworkType.IdNever(runtime)
     }
 }
 
 public protocol SomeChainBlock<TBlock>: ContextDecodable where
-    DecodingContext == (runtime: Runtime, blockType: RuntimeType.LazyId)
+    DecodingContext == (runtime: Runtime, blockType: NetworkType.LazyId)
 {
     associatedtype TBlock: SomeBlock
     
@@ -57,7 +57,7 @@ public protocol StaticChainBlock: SomeChainBlock where TBlock: StaticBlock {
 
 public extension StaticChainBlock {
     init(from decoder: Swift.Decoder,
-         context: (runtime: Runtime, blockType: RuntimeType.LazyId)) throws {
+         context: (runtime: Runtime, blockType: NetworkType.LazyId)) throws {
         try self.init(from: decoder, runtime: context.runtime)
     }
 }

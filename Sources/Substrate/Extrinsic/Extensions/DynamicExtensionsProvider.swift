@@ -14,24 +14,24 @@ public protocol DynamicExtrinsicExtension: ExtrinsicSignedExtension {
     ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial
 
     func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id>
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
+    ) async throws -> Value<NetworkType.Id>
 
     func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: RuntimeType.Id
-    ) async throws -> Value<RuntimeType.Id>
+        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
+    ) async throws -> Value<NetworkType.Id>
     
     func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: RuntimeType.Id, additionalSigned: RuntimeType.Id
+        extra: NetworkType.Id, additionalSigned: NetworkType.Id
     ) -> Result<Void, DynamicValidationError>
 }
 
 public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsProvider {
     public typealias TConfig = BC
     public typealias TParams = AnySigningParams<BC>
-    public typealias TExtra = Value<RuntimeType.Id>
-    public typealias TAdditionalSigned = [Value<RuntimeType.Id>]
+    public typealias TExtra = Value<NetworkType.Id>
+    public typealias TAdditionalSigned = [Value<NetworkType.Id>]
     
     public let extensions: [ExtrinsicExtensionId: any DynamicExtrinsicExtension]
     public let version: UInt8
@@ -55,7 +55,7 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
         params: TParams, for api: R
     ) async throws -> TExtra where SBC<R.RC> == TConfig {
         let extensions = try _activeExtensions(runtime: api.runtime).get()
-        var extra: [Value<RuntimeType.Id>] = []
+        var extra: [Value<NetworkType.Id>] = []
         extra.reserveCapacity(extensions.count)
         for ext in extensions {
             try await extra.append(ext.ext.extra(api: api, params: params, id: ext.extId))
@@ -67,7 +67,7 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
         params: TParams, for api: R
     ) async throws -> TAdditionalSigned where SBC<R.RC> == TConfig {
         let extensions = try _activeExtensions(runtime: api.runtime).get()
-        var additional: [Value<RuntimeType.Id>] = []
+        var additional: [Value<NetworkType.Id>] = []
         additional.reserveCapacity(extensions.count)
         for ext in extensions {
             try await additional.append(ext.ext.additionalSigned(api: api, params: params, id: ext.addId))
@@ -125,7 +125,7 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
     
     private func _activeExtensions(
         runtime: any Runtime
-    ) -> Result<[(ext: any DynamicExtrinsicExtension, extId: RuntimeType.Id, addId: RuntimeType.Id)],
+    ) -> Result<[(ext: any DynamicExtrinsicExtension, extId: NetworkType.Id, addId: NetworkType.Id)],
                 ExtrinsicCodingError>
     {
         guard runtime.metadata.extrinsic.version == version else {

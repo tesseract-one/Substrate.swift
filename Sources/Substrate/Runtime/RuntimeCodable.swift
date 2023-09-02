@@ -35,7 +35,7 @@ public extension ScaleCodec.Decodable {
 public extension RuntimeDecodable {
     @inlinable
     init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                `as` type: RuntimeType.Id,
+                                `as` type: NetworkType.Id,
                                 runtime: Runtime) throws
     {
         try self.init(from: &decoder, runtime: runtime)
@@ -45,7 +45,7 @@ public extension RuntimeDecodable {
 public extension RuntimeEncodable {
     @inlinable
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
-                                       `as` type: RuntimeType.Id,
+                                       `as` type: NetworkType.Id,
                                        runtime: Runtime) throws
     {
         try self.encode(in: &encoder, runtime: runtime)
@@ -54,13 +54,13 @@ public extension RuntimeEncodable {
 
 public protocol RuntimeDynamicEncodable {
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
-                                       `as` type: RuntimeType.Id,
+                                       `as` type: NetworkType.Id,
                                        runtime: Runtime) throws
 }
 
 public protocol RuntimeDynamicDecodable {
     init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                `as` type: RuntimeType.Id,
+                                `as` type: NetworkType.Id,
                                 runtime: Runtime) throws
 }
 
@@ -79,29 +79,29 @@ public extension Runtime {
     
     @inlinable
     func decode<T: RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: T.Type, id: RuntimeType.Id
+        from decoder: inout D, type: T.Type, id: NetworkType.Id
     ) throws -> T {
         try T(from: &decoder, as: id, runtime: self)
     }
     
     @inlinable
     func decode<T: RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
-        from decoder: inout D, id: RuntimeType.Id
+        from decoder: inout D, id: NetworkType.Id
     ) throws -> T {
         try decode(from: &decoder, type: T.self, id: id)
     }
     
     @inlinable
     func decodeValue<D: ScaleCodec.Decoder>(
-        from decoder: inout D, id: RuntimeType.Id
-    ) throws -> Value<RuntimeType.Id> {
+        from decoder: inout D, id: NetworkType.Id
+    ) throws -> Value<NetworkType.Id> {
         try Value(from: &decoder, as: id, runtime: self)
     }
     
     @inlinable
     func decode<T: RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         from decoder: inout D, type: T.Type,
-        where id: RuntimeType.LazyId
+        where id: NetworkType.LazyId
     ) throws -> T {
         switch type {
         case let type as ScaleCodec.Decodable.Type:
@@ -116,7 +116,7 @@ public extension Runtime {
     @inlinable
     func decode<T: RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         from decoder: inout D,
-        where id: RuntimeType.LazyId
+        where id: NetworkType.LazyId
     ) throws -> T {
         try decode(from: &decoder, type: T.self, where: id)
     }
@@ -134,7 +134,7 @@ public extension Runtime {
     
     @inlinable
     func decode<T: RuntimeDynamicDecodable>(
-        from data: Data, type: T.Type, id: RuntimeType.Id
+        from data: Data, type: T.Type, id: NetworkType.Id
     ) throws -> T {
         var decoder = decoder(with: data)
         return try decode(from: &decoder, type: type, id: id)
@@ -142,13 +142,13 @@ public extension Runtime {
     
     @inlinable
     func decode<T: RuntimeDynamicDecodable>(
-        from data: Data, id: RuntimeType.Id
+        from data: Data, id: NetworkType.Id
     ) throws -> T {
         try decode(from: data, type: T.self, id: id)
     }
     
     @inlinable
-    func decodeValue(from data: Data, id: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    func decodeValue(from data: Data, id: NetworkType.Id) throws -> Value<NetworkType.Id> {
         var decoder = decoder(with: data)
         return try decodeValue(from: &decoder, id: id)
     }
@@ -156,7 +156,7 @@ public extension Runtime {
     @inlinable
     func decode<T: RuntimeDynamicDecodable>(
         from data: Data, type: T.Type,
-        where id: RuntimeType.LazyId
+        where id: NetworkType.LazyId
     ) throws -> T {
         var decoder = decoder(with: data)
         return try decode(from: &decoder, type: type, where: id)
@@ -164,7 +164,7 @@ public extension Runtime {
     
     @inlinable
     func decode<T: RuntimeDynamicDecodable>(
-        from data: Data, where id: RuntimeType.LazyId
+        from data: Data, where id: NetworkType.LazyId
     ) throws -> T {
         try decode(from: data, type: T.self, where: id)
     }
@@ -176,14 +176,14 @@ public extension Runtime {
     
     @inlinable
     func encode<T: RuntimeDynamicEncodable, E: ScaleCodec.Encoder>(
-        value: T, in encoder: inout E, `as` id: RuntimeType.Id
+        value: T, in encoder: inout E, `as` id: NetworkType.Id
     ) throws {
         try value.encode(in: &encoder, as: id, runtime: self)
     }
     
     @inlinable
     func encode<T: RuntimeDynamicEncodable, E: ScaleCodec.Encoder>(
-        value: T, in encoder: inout E, where id: RuntimeType.LazyId
+        value: T, in encoder: inout E, where id: NetworkType.LazyId
     ) throws {
         switch value {
         case let val as ScaleCodec.Encodable: try val.encode(in: &encoder)
@@ -201,7 +201,7 @@ public extension Runtime {
     
     @inlinable
     func encode<T: RuntimeDynamicEncodable>(
-        value: T, `as` id: RuntimeType.Id
+        value: T, `as` id: NetworkType.Id
     ) throws -> Data {
         var encoder = encoder()
         try encode(value: value, in: &encoder, as: id)
@@ -210,7 +210,7 @@ public extension Runtime {
     
     @inlinable
     func encode<T: RuntimeDynamicEncodable>(
-        value: T, where id: RuntimeType.LazyId
+        value: T, where id: NetworkType.LazyId
     ) throws -> Data {
         var encoder = encoder()
         try encode(value: value, in: &encoder, where: id)
@@ -219,48 +219,48 @@ public extension Runtime {
 }
 
 public protocol RuntimeCustomDynamicCoder {
-    func checkType(id: RuntimeType.Id, runtime: any Runtime) throws -> Bool
+    func checkType(id: NetworkType.Id, runtime: any Runtime) throws -> Bool
     func decode<D: ScaleCodec.Decoder>(
-        from decoder: inout D, as id: RuntimeType.Id, runtime: any Runtime
-    ) throws -> Value<RuntimeType.Id>
+        from decoder: inout D, as id: NetworkType.Id, runtime: any Runtime
+    ) throws -> Value<NetworkType.Id>
     func encode<C, E: ScaleCodec.Encoder>(
-        value: Value<C>, in encoder: inout E, as id: RuntimeType.Id, runtime: any Runtime
+        value: Value<C>, in encoder: inout E, as id: NetworkType.Id, runtime: any Runtime
     ) throws
     func decode(from container: inout ValueDecodingContainer,
-                as id: RuntimeType.Id, runtime: any Runtime) throws -> Value<RuntimeType.Id>
+                as id: NetworkType.Id, runtime: any Runtime) throws -> Value<NetworkType.Id>
 }
 
 public extension RuntimeCustomDynamicCoder {
     @inlinable
     func decode<D: ScaleCodec.Decoder>(
-        from decoder: inout D, as id: RuntimeType.Id, runtime: any Runtime
-    ) throws -> Value<RuntimeType.Id> {
+        from decoder: inout D, as id: NetworkType.Id, runtime: any Runtime
+    ) throws -> Value<NetworkType.Id> {
         try Value(from: &decoder, as: id, runtime: runtime, custom: false)
     }
     
     @inlinable
     func encode<C, E: ScaleCodec.Encoder>(
-        value: Value<C>, in encoder: inout E, as id: RuntimeType.Id, runtime: any Runtime
+        value: Value<C>, in encoder: inout E, as id: NetworkType.Id, runtime: any Runtime
     ) throws {
         try value.encode(in: &encoder, as: id, runtime: runtime, custom: false)
     }
 
     @inlinable
     func decode(from container: inout ValueDecodingContainer,
-                as id: RuntimeType.Id, runtime: any Runtime) throws -> Value<RuntimeType.Id> {
+                as id: NetworkType.Id, runtime: any Runtime) throws -> Value<NetworkType.Id> {
         try Value(from: &container, as: id, runtime: runtime, custom: false)
     }
 }
 
 public enum DynamicCodableError: Error {
-    case typeNotFound(RuntimeType.Id)
-    case wrongType(got: RuntimeType, for: String)
-    case typeIdMismatch(got: RuntimeType.Id, has: RuntimeType.Id)
-    case wrongValuesCount(in: RuntimeType, expected: Int, for: String)
-    case variantNotFound(name: String, in: RuntimeType)
-    case fieldNotFound(name: String, in: RuntimeType)
+    case typeNotFound(NetworkType.Id)
+    case wrongType(got: NetworkType, for: String)
+    case typeIdMismatch(got: NetworkType.Id, has: NetworkType.Id)
+    case wrongValuesCount(in: NetworkType, expected: Int, for: String)
+    case variantNotFound(name: String, in: NetworkType)
+    case fieldNotFound(name: String, in: NetworkType)
     case runtimeTypeLookupFailed(name: String, reason: Error)
-    case badDecodedValue(value: Any, forType: RuntimeType.Id)
+    case badDecodedValue(value: Any, forType: NetworkType.Id)
     
     public init(_ validation: DynamicValidationError) {
         switch validation {

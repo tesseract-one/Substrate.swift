@@ -12,16 +12,16 @@ public struct AnyEvent: Event, RuntimeDynamicValidatable, CustomStringConvertibl
     public let pallet: String
     public let name: String
     
-    public let params: Value<RuntimeType.Id>
+    public let params: Value<NetworkType.Id>
     
-    public init(name: String, pallet: String, params: Value<RuntimeType.Id>) {
+    public init(name: String, pallet: String, params: Value<NetworkType.Id>) {
         self.pallet = pallet
         self.name = name
         self.params = params
     }
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: RuntimeType.Id,
+                                       as type: NetworkType.Id,
                                        runtime: Runtime) throws
     {
         var value = try Value(from: &decoder, as: type, runtime: runtime)
@@ -55,7 +55,7 @@ public struct AnyEvent: Event, RuntimeDynamicValidatable, CustomStringConvertibl
     }
     
     public static func fetchEventData<D: ScaleCodec.Decoder>(
-        from decoder: inout D, runtime: any Runtime, type: RuntimeType.Id
+        from decoder: inout D, runtime: any Runtime, type: NetworkType.Id
     ) throws -> (name: String, pallet: String, data: Data) {
         let size = try Value<Void>.calculateSize(in: decoder, for: type, runtime: runtime)
         let hBytes = try decoder.peek(count: 2)
@@ -66,7 +66,7 @@ public struct AnyEvent: Event, RuntimeDynamicValidatable, CustomStringConvertibl
     }
     
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         return Result { try runtime.types.event }
             .mapError { .runtimeTypeLookupFailed(name: "event", reason: $0) }

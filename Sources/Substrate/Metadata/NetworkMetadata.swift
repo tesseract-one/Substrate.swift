@@ -1,5 +1,5 @@
 //
-//  RuntimeMetadata.swift
+//  NetworkMetadata.swift
 //  
 //
 //  Created by Yehor Popovych on 12/2/20.

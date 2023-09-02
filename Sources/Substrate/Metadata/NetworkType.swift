@@ -1,5 +1,5 @@
 //
-//  RuntimeType.swift
+//  NetworkType.swift
 //  
 //
 //  Created by Yehor Popovych on 28.12.2022.
@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct RuntimeType: ScaleCodec.Codable, Hashable, Equatable, CustomStringConvertible {
+public struct NetworkType: ScaleCodec.Codable, Hashable, Equatable, CustomStringConvertible {
     public let path: [String]
     public let parameters: [Parameter]
     public let definition: Definition
@@ -56,7 +56,7 @@ public struct RuntimeType: ScaleCodec.Codable, Hashable, Equatable, CustomString
     }
 }
 
-public extension RuntimeType {
+public extension NetworkType {
     struct Id: ScaleCodec.Codable, Hashable, Equatable,
                ExpressibleByIntegerLiteral, RawRepresentable,
                CustomStringConvertible
@@ -92,14 +92,14 @@ public extension RuntimeType {
     }
 }
 
-public extension RuntimeType {
+public extension NetworkType {
     typealias Registry = [Info]
     
     struct Info: ScaleCodec.Codable, Hashable, Equatable, CustomStringConvertible {
         public let id: Id
-        public let type: RuntimeType
+        public let type: NetworkType
 
-        public init(id: Id, type: RuntimeType) {
+        public init(id: Id, type: NetworkType) {
             self.id = id
             self.type = type
         }
@@ -120,7 +120,7 @@ public extension RuntimeType {
     }
 }
 
-public extension RuntimeType {
+public extension NetworkType {
     struct Parameter: ScaleCodec.Codable, Hashable, Equatable, CustomStringConvertible {
         public let name: String
         public let type: Id?
@@ -146,10 +146,10 @@ public extension RuntimeType {
     }
 }
 
-public extension RuntimeType {
+public extension NetworkType {
     enum Definition: ScaleCodec.Codable, Hashable, Equatable, CustomStringConvertible {
         case composite(fields: [Field])
-        case variant(variants: [VariantItem])
+        case variant(variants: [Variant])
         case sequence(of: Id)
         case array(count: UInt32, of: Id)
         case tuple(components: [Id])
@@ -219,7 +219,7 @@ public extension RuntimeType {
     }
 }
 
-public extension RuntimeType {
+public extension NetworkType {
     struct Field: ScaleCodec.Codable, Hashable, Equatable, CustomStringConvertible {
         public let name: String?
         public let type: Id
@@ -257,8 +257,8 @@ public extension RuntimeType {
     }
 }
 
-public extension RuntimeType {
-    struct VariantItem: ScaleCodec.Codable, Hashable, Equatable, CustomStringConvertible {
+public extension NetworkType {
+    struct Variant: ScaleCodec.Codable, Hashable, Equatable, CustomStringConvertible {
         public let name: String
         public let fields: [Field]
         public let index: UInt8
@@ -296,7 +296,7 @@ public extension RuntimeType {
     }
 }
 
-public extension RuntimeType {
+public extension NetworkType {
     enum Primitive: CaseIterable, Hashable, Equatable,
                     ScaleCodec.Codable, CustomStringConvertible
     {
@@ -389,8 +389,7 @@ public extension RuntimeType {
     }
 }
 
-
-public extension RuntimeType.Definition {
+public extension NetworkType.Definition {
     func flatten(metadata: any Metadata) -> Self {
         switch self{
         case .composite(fields: let fields):
@@ -405,7 +404,7 @@ public extension RuntimeType.Definition {
         }
     }
     
-    func asPrimitive(metadata: any Metadata) -> RuntimeType.Primitive? {
+    func asPrimitive(metadata: any Metadata) -> NetworkType.Primitive? {
         switch flatten(metadata: metadata) {
         case .primitive(let p): return p
         case .compact(of: let type):
@@ -415,7 +414,7 @@ public extension RuntimeType.Definition {
         }
     }
     
-    func asResult(metadata: any Metadata) -> (ok: RuntimeType.Field, err: RuntimeType.Field)? {
+    func asResult(metadata: any Metadata) -> (ok: NetworkType.Field, err: NetworkType.Field)? {
         switch flatten(metadata: metadata) {
         case .variant(variants: let vars):
             guard vars.count == 2 else { return nil }
@@ -434,7 +433,7 @@ public extension RuntimeType.Definition {
         }
     }
     
-    func asOptional(metadata: any Metadata) -> RuntimeType.Field? {
+    func asOptional(metadata: any Metadata) -> NetworkType.Field? {
         switch flatten(metadata: metadata) {
         case .variant(variants: let vars):
             guard vars.count == 2 else { return nil }
@@ -461,7 +460,7 @@ public extension RuntimeType.Definition {
     }
     
     func asBytes(metadata: any Metadata) -> UInt32? {
-        let subtype: RuntimeType.Id
+        let subtype: NetworkType.Id
         let count: UInt32
         switch flatten(metadata: metadata) {
         case .sequence(of: let type): subtype = type; count = 0
@@ -475,9 +474,9 @@ public extension RuntimeType.Definition {
     }
 }
 
-public extension RuntimeType {
+public extension NetworkType {
     @inlinable
-    func asPrimitive(_ metadata: any Metadata) -> RuntimeType.Primitive? {
+    func asPrimitive(_ metadata: any Metadata) -> NetworkType.Primitive? {
         definition.asPrimitive(metadata: metadata)
     }
     
@@ -493,7 +492,7 @@ public extension RuntimeType {
     
     
     @inlinable
-    func asOptional(_ metadata: any Metadata) -> RuntimeType.Field? {
+    func asOptional(_ metadata: any Metadata) -> NetworkType.Field? {
         definition.asOptional(metadata: metadata)
     }
     
@@ -511,7 +510,7 @@ public extension RuntimeType {
     }
     
     @inlinable
-    func asResult(_ metadata: any Metadata) -> (ok: RuntimeType.Field, err: RuntimeType.Field)? {
+    func asResult(_ metadata: any Metadata) -> (ok: NetworkType.Field, err: NetworkType.Field)? {
         definition.asResult(metadata: metadata)
     }
     

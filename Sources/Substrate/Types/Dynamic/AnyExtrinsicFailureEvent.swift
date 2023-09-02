@@ -10,13 +10,13 @@ import ScaleCodec
 
 public struct AnyExtrinsicFailureEvent: SomeExtrinsicFailureEvent {
     public struct ExtrinsicFailed: Error {
-        public let body: Value<RuntimeType.Id>
+        public let body: Value<NetworkType.Id>
     }
     public typealias Err = ExtrinsicFailed
     public let error: ExtrinsicFailed
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: RuntimeType.Id, runtime: Runtime) throws {
-        let value = try Value<RuntimeType.Id>(from: &decoder, as: type, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
         self.error = ExtrinsicFailed(body: value)
     }
     

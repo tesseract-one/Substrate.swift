@@ -21,7 +21,7 @@ public struct AnyCall<C>: Call {
     }
     
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
-                                              as type: RuntimeType.Id,
+                                              as type: NetworkType.Id,
                                               runtime: Runtime) throws
     {
         guard let callParams = runtime.resolve(callParams: name, pallet: pallet) else {
@@ -30,7 +30,7 @@ public struct AnyCall<C>: Call {
         guard callParams.count == _params.count else {
             throw CallCodingError.wrongParametersCount(in: asVoid(), expected: callParams.count)
         }
-        let variant: Value<RuntimeType.Id>
+        let variant: Value<NetworkType.Id>
         if callParams.first?.name != nil { // Map
             let pairs = try callParams.enumerated().map { (idx, el) in
                 let value: any ValueRepresentable
@@ -86,7 +86,7 @@ public extension AnyCall where C == Void {
 
 extension AnyCall: RuntimeDynamicValidatable {
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         return Result { try runtime.types.call }
             .mapError { .runtimeTypeLookupFailed(name: "call", reason: $0) }
@@ -100,9 +100,9 @@ extension AnyCall: CustomStringConvertible {
     }
 }
 
-public extension AnyCall where C == RuntimeType.Id {
-    var params: [String: Value<RuntimeType.Id>] {
-        _params as! [String: Value<RuntimeType.Id>]
+public extension AnyCall where C == NetworkType.Id {
+    var params: [String: Value<NetworkType.Id>] {
+        _params as! [String: Value<NetworkType.Id>]
     }
     
     init(name: String, pallet: String) {
@@ -159,9 +159,9 @@ public extension AnyCall where C == RuntimeType.Id {
     }
 }
 
-extension AnyCall: RuntimeDynamicDecodable where C == RuntimeType.Id {
+extension AnyCall: RuntimeDynamicDecodable where C == NetworkType.Id {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: RuntimeType.Id,
+                                       as type: NetworkType.Id,
                                        runtime: Runtime) throws
     {
         try self.init(root: Value(from: &decoder, as: type, runtime: runtime))

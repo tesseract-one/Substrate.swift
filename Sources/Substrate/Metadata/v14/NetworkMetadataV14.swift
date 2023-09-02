@@ -11,10 +11,10 @@ import ScaleCodec
 public extension MetadataV14 {
     struct Network: ScaleCodec.Codable, NetworkMetadata {
         public var version: UInt8 { 14 }
-        public let types: RuntimeType.Registry
+        public let types: NetworkType.Registry
         public let pallets: [Pallet]
         public let extrinsic: Extrinsic
-        public let runtimeType: RuntimeType.Id
+        public let runtimeType: NetworkType.Id
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             types = try decoder.decode()
@@ -42,10 +42,10 @@ public extension MetadataV14.Network {
     struct Pallet: ScaleCodec.Codable {
         public let name: String
         public let storage: Optional<PalletStorage>
-        public let call: Optional<RuntimeType.Id>
-        public let event: Optional<RuntimeType.Id>
+        public let call: Optional<NetworkType.Id>
+        public let event: Optional<NetworkType.Id>
         public let constants: [PalletConstant]
-        public let error: Optional<RuntimeType.Id>
+        public let error: Optional<NetworkType.Id>
         public let index: UInt8
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
@@ -89,8 +89,8 @@ public extension MetadataV14.Network {
 
 public extension MetadataV14.Network {
     enum PalletStorageEntryType: ScaleCodec.Codable {
-        case plain(_ value: RuntimeType.Id)
-        case map(hashers: [StorageHasher], key: RuntimeType.Id, value: RuntimeType.Id)
+        case plain(_ value: NetworkType.Id)
+        case map(hashers: [StorageHasher], key: NetworkType.Id, value: NetworkType.Id)
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             let caseId = try decoder.decode(.enumCaseId)
@@ -187,7 +187,7 @@ public extension MetadataV14.Network {
 public extension MetadataV14.Network {
     struct PalletConstant: ScaleCodec.Codable {
         public let name: String
-        public let type: RuntimeType.Id
+        public let type: NetworkType.Id
         public let value: Data
         public let documentation: [String]
         
@@ -209,7 +209,7 @@ public extension MetadataV14.Network {
 
 public extension MetadataV14.Network {
     struct Extrinsic: ScaleCodec.Codable {
-        public let type: RuntimeType.Id
+        public let type: NetworkType.Id
         public let version: UInt8
         public let signedExtensions: [ExtrinsicSignedExtension]
         
@@ -230,8 +230,8 @@ public extension MetadataV14.Network {
 public extension MetadataV14.Network {
     struct ExtrinsicSignedExtension: ScaleCodec.Codable {
         public let identifier: String
-        public let type: RuntimeType.Id
-        public let additionalSigned: RuntimeType.Id
+        public let type: NetworkType.Id
+        public let additionalSigned: NetworkType.Id
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             identifier = try decoder.decode()

@@ -27,7 +27,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     public let version: ST<RC>.RuntimeVersion
     public let properties: ST<RC>.SystemProperties
     public let metadataHash: ST<RC>.Hash?
-    public let types: any RuntimeTypes
+    public let types: any RuntimeNetworkTypes
     public let isBatchSupported: Bool
     public let customCoders: [RuntimeCustomDynamicCoder]
     
@@ -60,7 +60,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     public func decoder(with data: Data) -> ScaleCodec.Decoder { config.decoder(data: data) }
     
     @inlinable
-    public func custom(coder type: RuntimeType.Id) -> RuntimeCustomDynamicCoder? {
+    public func custom(coder type: NetworkType.Id) -> RuntimeCustomDynamicCoder? {
         try? customCoders.first { try $0.checkType(id: type, runtime: self) }
     }
     
@@ -98,7 +98,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         self.customCoders = try config.customCoders()
         self.typedHasher = try config.hasher(metadata: metadata)
         self.extrinsicManager = try config.extrinsicManager()
-        self.types = LazyRuntimeTypes(config: config, metadata: metadata)
+        self.types = LazyRuntimeNetworkTypes(config: config, metadata: metadata)
         if let bc = config as? any BatchSupportedConfig {
             self.isBatchSupported = bc.isBatchSupported(metadata: metadata)
         } else {
@@ -150,16 +150,16 @@ public extension ExtendedRuntime {
     }
 }
 
-public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
+public struct LazyRuntimeNetworkTypes<RC: Config>: RuntimeNetworkTypes {
     private struct State {
-        var block: Result<RuntimeType.Info, Error>?
-        var account: Result<RuntimeType.Info, Error>?
-        var extrinsic: Result<(call: RuntimeType.Info, addr: RuntimeType.Info,
-                               signature: RuntimeType.Info, extra: RuntimeType.Info), Error>?
-        var hash: Result<RuntimeType.Info, Error>?
-        var dispatchError: Result<RuntimeType.Info, Error>?
-        var event: Result<RuntimeType.Info, Error>?
-        var transactionValidityError: Result<RuntimeType.Info, Error>?
+        var block: Result<NetworkType.Info, Error>?
+        var account: Result<NetworkType.Info, Error>?
+        var extrinsic: Result<(call: NetworkType.Info, addr: NetworkType.Info,
+                               signature: NetworkType.Info, extra: NetworkType.Info), Error>?
+        var hash: Result<NetworkType.Info, Error>?
+        var dispatchError: Result<NetworkType.Info, Error>?
+        var event: Result<NetworkType.Info, Error>?
+        var transactionValidityError: Result<NetworkType.Info, Error>?
     }
     
     private var _state: Synced<State>
@@ -172,7 +172,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         self._metadata = metadata
     }
     
-    public var block: RuntimeType.Info { get throws {
+    public var block: NetworkType.Info { get throws {
         try _state.sync { state in
             if let res = state.block { return try res.get() }
             state.block = Result { try self._config.blockType(metadata: self._metadata) }
@@ -180,7 +180,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    public var account: RuntimeType.Info { get throws {
+    public var account: NetworkType.Info { get throws {
         let address = try self.address
         return try _state.sync { state in
             if let res = state.account { return try res.get() }
@@ -189,12 +189,12 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    public var call: RuntimeType.Info { get throws { try _extrinsic.call }}
-    public var address: RuntimeType.Info { get throws { try _extrinsic.addr } }
-    public var signature: RuntimeType.Info { get throws { try _extrinsic.signature }}
-    public var extrinsicExtra: RuntimeType.Info { get throws { try _extrinsic.extra }}
+    public var call: NetworkType.Info { get throws { try _extrinsic.call }}
+    public var address: NetworkType.Info { get throws { try _extrinsic.addr } }
+    public var signature: NetworkType.Info { get throws { try _extrinsic.signature }}
+    public var extrinsicExtra: NetworkType.Info { get throws { try _extrinsic.extra }}
     
-    public var event: RuntimeType.Info { get throws {
+    public var event: NetworkType.Info { get throws {
         try _state.sync { state in
             if let res = state.event { return try res.get() }
             if let event = self._metadata.outerEnums?.eventType {
@@ -206,7 +206,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    public var dispatchError: RuntimeType.Info { get throws {
+    public var dispatchError: NetworkType.Info { get throws {
         try _state.sync { state in
             if let res = state.dispatchError { return try res.get() }
             state.dispatchError = Result { try self._config.dispatchErrorType(metadata: self._metadata) }
@@ -214,7 +214,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
 
-    public var transactionValidityError: RuntimeType.Info { get throws {
+    public var transactionValidityError: NetworkType.Info { get throws {
         try _state.sync { state in
             if let res = state.transactionValidityError { return try res.get() }
             state.transactionValidityError = Result {
@@ -224,7 +224,7 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    public var hash: RuntimeType.Info { get throws {
+    public var hash: NetworkType.Info { get throws {
         try _state.sync { state in
             if let res = state.hash { return try res.get() }
             state.hash = Result {
@@ -234,8 +234,8 @@ public struct LazyRuntimeTypes<RC: Config>: RuntimeTypes {
         }
     }}
     
-    private var _extrinsic: (call: RuntimeType.Info, addr: RuntimeType.Info,
-                             signature: RuntimeType.Info, extra: RuntimeType.Info)
+    private var _extrinsic: (call: NetworkType.Info, addr: NetworkType.Info,
+                             signature: NetworkType.Info, extra: NetworkType.Info)
     { get throws {
         try _state.sync { state in
             if let res = state.extrinsic { return try res.get() }

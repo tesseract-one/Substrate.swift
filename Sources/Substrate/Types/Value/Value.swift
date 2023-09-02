@@ -393,7 +393,7 @@ extension Value.Primitive: CustomStringConvertible {
 }
 
 public protocol ValueRepresentable {
-    func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id>
+    func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id>
 }
 
 public protocol VoidValueRepresentable {

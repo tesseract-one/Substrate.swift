@@ -10,8 +10,8 @@ import ScaleCodec
 
 public struct AnyBlock<H: FixedHasher, N: UnsignedInteger & DataConvertible, E: OpaqueExtrinsic>: SomeBlock {
     public enum TypeError: Error {
-        case blockNotFound(id: RuntimeType.Id)
-        case headerNotFound(inBlock: RuntimeType.Info)
+        case blockNotFound(id: NetworkType.Id)
+        case headerNotFound(inBlock: NetworkType.Info)
     }
     
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
@@ -21,10 +21,10 @@ public struct AnyBlock<H: FixedHasher, N: UnsignedInteger & DataConvertible, E: 
     public let header: Header
     public let extrinsics: [E]
     
-    public let other: [String: Value<RuntimeType.Id>]?
-    public let type: RuntimeType.Info
+    public let other: [String: Value<NetworkType.Id>]?
+    public let type: NetworkType.Info
     
-    public init(from decoder: Swift.Decoder, as type: RuntimeType.Id, runtime: Runtime) throws {
+    public init(from decoder: Swift.Decoder, as type: NetworkType.Id, runtime: Runtime) throws {
         guard let info = Self.fieldTypes(id: type, runtime: runtime) else {
             throw try Swift.DecodingError.dataCorruptedError(
                 in: decoder.singleValueContainer(),
@@ -34,14 +34,14 @@ public struct AnyBlock<H: FixedHasher, N: UnsignedInteger & DataConvertible, E: 
         self.type = info.info
         guard let header = info.header else {
             throw Swift.DecodingError.typeMismatch(
-                RuntimeType.Field.self,
+                NetworkType.Field.self,
                 .init(codingPath: decoder.codingPath,
                       debugDescription: "Can't find header in Block: \(info.info)")
             )
         }
         guard let extrinsic = info.extrinsic else {
             throw Swift.DecodingError.typeMismatch(
-                RuntimeType.Field.self,
+                NetworkType.Field.self,
                 .init(codingPath: decoder.codingPath,
                       debugDescription: "Can't find extrinsics in Block: \(info.info)")
             )
@@ -63,7 +63,7 @@ public struct AnyBlock<H: FixedHasher, N: UnsignedInteger & DataConvertible, E: 
         self.other = try info.other.map { other in
             try other.map { (key, type) in
                 let val = try container.decode(
-                    Value<RuntimeType.Id>.self, forKey: key,
+                    Value<NetworkType.Id>.self, forKey: key,
                     context: .init(runtime: runtime) { _ in type}
                 )
                 return (key.stringValue, val)
@@ -72,7 +72,7 @@ public struct AnyBlock<H: FixedHasher, N: UnsignedInteger & DataConvertible, E: 
     }
     
     public static func headerType(runtime: Runtime,
-                                  block id: RuntimeType.Id) throws -> RuntimeType.Id
+                                  block id: NetworkType.Id) throws -> NetworkType.Id
     {
         guard let info = Self.fieldTypes(id: id, runtime: runtime) else {
             throw TypeError.blockNotFound(id: id)
@@ -84,23 +84,23 @@ public struct AnyBlock<H: FixedHasher, N: UnsignedInteger & DataConvertible, E: 
     }
     
     private static func fieldTypes(
-        id: RuntimeType.Id, runtime: any Runtime
-    ) -> (info: RuntimeType.Info, header: (AnyCodableCodingKey, RuntimeType.Id)?,
-          extrinsic: (AnyCodableCodingKey, RuntimeType.Id)?,
-          other: [AnyCodableCodingKey: RuntimeType.Id]?)?
+        id: NetworkType.Id, runtime: any Runtime
+    ) -> (info: NetworkType.Info, header: (AnyCodableCodingKey, NetworkType.Id)?,
+          extrinsic: (AnyCodableCodingKey, NetworkType.Id)?,
+          other: [AnyCodableCodingKey: NetworkType.Id]?)?
     {
         guard let type = runtime.resolve(type: id) else {
             return nil
         }
-        let info = RuntimeType.Info(id: id, type: type)
+        let info = NetworkType.Info(id: id, type: type)
         switch type.definition {
         case .composite(fields: let fields):
             guard fields.count >= 2 else {
                 return (info: info, header: nil, extrinsic: nil, other: nil)
             }
-            let header: (AnyCodableCodingKey, RuntimeType.Id)
-            let extrinsics: (AnyCodableCodingKey, RuntimeType.Id)
-            let filtered: [RuntimeType.Field]
+            let header: (AnyCodableCodingKey, NetworkType.Id)
+            let extrinsics: (AnyCodableCodingKey, NetworkType.Id)
+            let filtered: [NetworkType.Field]
             if fields[0].name != nil { // Named
                 guard let hField = fields.first(where: { $0.name!.lowercased() == Self.headerKey }) else {
                     return (info: info, header: nil, extrinsic: nil, other: nil)
@@ -149,21 +149,21 @@ public extension AnyBlock {
         
         private var _runtime: any Runtime
         
-        public let fields: [String: Value<RuntimeType.Id>]
+        public let fields: [String: Value<NetworkType.Id>]
         public let number: TNumber
-        public let type: RuntimeType.Id
+        public let type: NetworkType.Id
         
         public var hash: THasher.THash {
-            let value = Value<RuntimeType.Id>(value: .map(fields), context: type)
+            let value = Value<NetworkType.Id>(value: .map(fields), context: type)
             let data = try! _runtime.encode(value: value, as: type)
             return try! _runtime.hash(type: THasher.THash.self, data: data)
         }
         
-        public init(from decoder: Swift.Decoder, `as` type: RuntimeType.Id, runtime: any Runtime) throws {
+        public init(from decoder: Swift.Decoder, `as` type: NetworkType.Id, runtime: any Runtime) throws {
             self._runtime = runtime
             self.type = type
             var container = ValueDecodingContainer(decoder)
-            let value = try Value<RuntimeType.Id>(from: &container, as: type, runtime: _runtime, custom: true)
+            let value = try Value<NetworkType.Id>(from: &container, as: type, runtime: _runtime, custom: true)
             guard let map = value.map else {
                 throw try container.newError("Header is not a map: \(value)")
             }
@@ -180,7 +180,7 @@ public extension AnyBlock {
 }
 
 public extension Array where Element: OpaqueExtrinsic {
-    func parsed() throws -> [Extrinsic<AnyCall<RuntimeType.Id>, Either<Element.TUnsignedExtra, Element.TSignedExtra>>] {
+    func parsed() throws -> [Extrinsic<AnyCall<NetworkType.Id>, Either<Element.TUnsignedExtra, Element.TSignedExtra>>] {
         try map { try $0.decode() }
     }
 }

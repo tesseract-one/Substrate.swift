@@ -71,7 +71,7 @@ public extension ConstantsApiRegistry {
     }
     
     @inlinable
-    func `dynamic`(name: String, pallet: String) throws -> Value<RuntimeType.Id> {
+    func `dynamic`(name: String, pallet: String) throws -> Value<NetworkType.Id> {
         try get(name: name, pallet: pallet)
     }
 }

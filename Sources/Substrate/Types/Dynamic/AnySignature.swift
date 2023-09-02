@@ -12,16 +12,16 @@ public struct AnySignature: Signature {
     public enum Error: Swift.Error {
         case unsupportedCrypto(id: CryptoTypeId)
         case unsupportedCrypto(name: String)
-        case variantIsNotBytes(Value<RuntimeType.Id>.Variant)
-        case rawBytesForMultiSignature(value: Value<RuntimeType.Id>)
-        case wrongValueType(value: Value<RuntimeType.Id>)
+        case variantIsNotBytes(Value<NetworkType.Id>.Variant)
+        case rawBytesForMultiSignature(value: Value<NetworkType.Id>)
+        case wrongValueType(value: Value<NetworkType.Id>)
     }
     private let _sig: MultiSignature
     
     public var raw: Data { _sig.raw }
     public var algorithm: CryptoTypeId { _sig.algorithm }
     
-    public init(raw: Data, algorithm: CryptoTypeId, runtime: Runtime, id: RuntimeType.LazyId) throws {
+    public init(raw: Data, algorithm: CryptoTypeId, runtime: Runtime, id: NetworkType.LazyId) throws {
         let algos = try Self.algorithms(runtime: runtime, id: id)
         guard algos.contains(algorithm) else {
             throw Error.unsupportedCrypto(id: algorithm)
@@ -30,9 +30,9 @@ public struct AnySignature: Signature {
     }
     
     public init<D: ScaleCodec.Decoder>(
-        from decoder: inout D, as type: RuntimeType.Id, runtime: Runtime
+        from decoder: inout D, as type: NetworkType.Id, runtime: Runtime
     ) throws {
-        let value = try Value<RuntimeType.Id>(from: &decoder, as: type, runtime: runtime)
+        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
             .flatten(runtime: runtime)
         switch value.value {
         case .variant(let variant):
@@ -56,12 +56,12 @@ public struct AnySignature: Signature {
     }
     
     public func encode<E: ScaleCodec.Encoder>(
-        in encoder: inout E, as type: RuntimeType.Id, runtime: Runtime
+        in encoder: inout E, as type: NetworkType.Id, runtime: Runtime
     ) throws {
         try asValue(runtime: runtime, type: type).encode(in: &encoder, as: type, runtime: runtime)
     }
     
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type).getValueError()
         if algos.count == 1 {
             guard algos.first!.value == _sig.algorithm else {
@@ -76,19 +76,19 @@ public struct AnySignature: Signature {
     }
     
     public static func algorithms(runtime: Runtime,
-                                  id: RuntimeType.LazyId) throws -> [CryptoTypeId]
+                                  id: NetworkType.LazyId) throws -> [CryptoTypeId]
     {
         try Array(parseTypeInfo(runtime: runtime, typeId: id(runtime)).getValueError().values)
     }
     
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         parseTypeInfo(runtime: runtime, typeId: id).map{_ in}
     }
     
     public static func parseTypeInfo(
-        runtime: Runtime, typeId: RuntimeType.Id
+        runtime: Runtime, typeId: NetworkType.Id
     ) -> Result<[String: CryptoTypeId], DynamicValidationError> {
         guard let type = runtime.resolve(type: typeId) else {
             return .failure(.typeNotFound(typeId))

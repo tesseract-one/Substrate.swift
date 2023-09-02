@@ -55,7 +55,7 @@ public extension StaticCall {
 }
 
 public extension IdentifiableCall where Self: RuntimeValidatableComposite {
-    static func validatableFieldIds(runtime: any Runtime) -> Result<[RuntimeType.Id], ValidationError> {
+    static func validatableFieldIds(runtime: any Runtime) -> Result<[NetworkType.Id], ValidationError> {
         guard let info = runtime.resolve(callParams: name, pallet: pallet) else {
             return .failure(.infoNotFound(for: Self.self))
         }
@@ -74,9 +74,9 @@ public enum CallCodingError: Error {
     case callNotFound(name: String, pallet: String)
     case foundWrongCall(found: (name: String, pallet: String), expected: (name: String, pallet: String))
     case valueNotFound(key: String)
-    case wrongFieldCountInVariant(variant: Value<RuntimeType.Id>, expected: Int)
+    case wrongFieldCountInVariant(variant: Value<NetworkType.Id>, expected: Int)
     case wrongParametersCount(in: AnyCall<Void>, expected: Int)
-    case decodedNonVariantValue(Value<RuntimeType.Id>)
+    case decodedNonVariantValue(Value<NetworkType.Id>)
 }
 
 public protocol CallError: Error, RuntimeDynamicValidatable, RuntimeDynamicDecodable,

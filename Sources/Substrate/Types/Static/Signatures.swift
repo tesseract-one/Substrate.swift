@@ -39,7 +39,7 @@ public extension SingleTypeStaticSignature {
     @inlinable
     static var fixedBytesCount: Int { algorithm.signatureBytesCount }
     
-    func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -57,7 +57,7 @@ public extension SingleTypeStaticSignature {
     func asValue() -> Value<Void> { .bytes(raw) }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }

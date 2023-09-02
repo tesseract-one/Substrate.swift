@@ -18,7 +18,7 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringCon
     }
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: RuntimeType.Id,
+                                       as type: NetworkType.Id,
                                        runtime: Runtime) throws
     {
         let recordId = try Self.recordTypeId(metadata: runtime.metadata, events: type)
@@ -36,7 +36,7 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringCon
         events.description
     }
     
-    public static func recordTypeId(metadata: any Metadata, events id: RuntimeType.Id) throws -> RuntimeType.Id {
+    public static func recordTypeId(metadata: any Metadata, events id: NetworkType.Id) throws -> NetworkType.Id {
         guard let typeInfo = metadata.resolve(type: id)?.flatten(metadata) else {
             throw DynamicCodableError.typeNotFound(id)
         }
@@ -50,7 +50,7 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringCon
     }
     
     public static func validate(runtime: any Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
         guard let typeInfo = runtime.resolve(type: id)?.flatten(runtime) else {
             return .failure(.typeNotFound(id))
         }
@@ -73,7 +73,7 @@ extension BlockEvents: RuntimeDecodable where ER: RuntimeDecodable {
 
 // Can be removed after dropping Metadata V14
 public extension SomeBlockEvents {
-    static func eventTypeId(metadata: any Metadata, events id: RuntimeType.Id) -> RuntimeType.Id? {
+    static func eventTypeId(metadata: any Metadata, events id: NetworkType.Id) -> NetworkType.Id? {
         (try? BlockEvents<ER>.recordTypeId(metadata: metadata, events: id)).flatMap {
             ER.eventTypeId(metadata: metadata, record: $0)
         }

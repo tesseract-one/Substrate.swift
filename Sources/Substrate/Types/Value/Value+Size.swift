@@ -11,14 +11,14 @@ import ScaleCodec
 
 public extension Value {
     static func calculateSize(
-        in decoder: ScaleCodec.Decoder, for id: RuntimeType.Id, runtime: any Runtime
+        in decoder: ScaleCodec.Decoder, for id: NetworkType.Id, runtime: any Runtime
     ) throws -> Int {
         var skippable = decoder.skippable()
         return try calculateSize(in: &skippable, for: id, runtime: runtime)
     }
     
     static func calculateSize<D: SkippableDecoder>(
-        in decoder: inout D, for id: RuntimeType.Id, runtime: any Runtime
+        in decoder: inout D, for id: NetworkType.Id, runtime: any Runtime
     ) throws -> Int {
         guard let typeInfo = runtime.resolve(type: id) else {
             throw DecodingError.typeNotFound(id)
@@ -44,7 +44,7 @@ public extension Value {
 
 private extension Value {
     static func _primitiveSize<D: SkippableDecoder>(
-        in decoder: inout D, prim: RuntimeType.Primitive
+        in decoder: inout D, prim: NetworkType.Primitive
     ) throws -> Int {
         switch prim {
         case .bool: return try Bool.calculateSize(in: &decoder)
@@ -71,7 +71,7 @@ private extension Value {
     
     static func _bitSequenceSize<D: SkippableDecoder>(
         from decoder: inout D,
-        store: RuntimeType.Id, order: RuntimeType.Id, runtime: Runtime
+        store: NetworkType.Id, order: NetworkType.Id, runtime: Runtime
     ) throws -> Int {
         let format = try BitSequence.Format(store: store, order: order, runtime: runtime)
         let cCount = try Compact<UInt32>.calculateSizeNoSkip(in: &decoder)
@@ -84,7 +84,7 @@ private extension Value {
     }
     
     static func _tupleSize<D: SkippableDecoder>(
-        from decoder: inout D, fields: [RuntimeType.Id], runtime: any Runtime
+        from decoder: inout D, fields: [NetworkType.Id], runtime: any Runtime
     ) throws -> Int {
         try fields.reduce(0) { sum, field in
             try sum + Self.calculateSize(in: &decoder, for: field, runtime: runtime)
@@ -92,7 +92,7 @@ private extension Value {
     }
     
     static func _arraySize<D: SkippableDecoder>(
-        from decoder: inout D, count: Int, type: RuntimeType.Id, runtime: any Runtime
+        from decoder: inout D, count: Int, type: NetworkType.Id, runtime: any Runtime
     ) throws -> Int {
         try (0..<count).reduce(0) { sum, _ in
             try sum + Self.calculateSize(in: &decoder, for: type, runtime: runtime)
@@ -100,7 +100,7 @@ private extension Value {
     }
     
     static func _sequenceSize<D: SkippableDecoder>(
-        from decoder: inout D, type: RuntimeType.Id, runtime: any Runtime
+        from decoder: inout D, type: NetworkType.Id, runtime: any Runtime
     ) throws -> Int {
         try Array<Void>.calculateSize(in: &decoder) { decoder in
             try Self.calculateSize(in: &decoder, for: type, runtime: runtime)
@@ -108,7 +108,7 @@ private extension Value {
     }
     
     static func _compositeSize<D: SkippableDecoder>(
-        from decoder: inout D, fields: [RuntimeType.Field], runtime: any Runtime
+        from decoder: inout D, fields: [NetworkType.Field], runtime: any Runtime
     ) throws -> Int {
         try fields.reduce(0) { sum, field in
             try sum + Self.calculateSize(in: &decoder, for: field.type, runtime: runtime)
@@ -116,8 +116,8 @@ private extension Value {
     }
     
     static func _variantSize<D: SkippableDecoder>(
-        from decoder: inout D, type: RuntimeType.Id,
-        variants: [RuntimeType.VariantItem], runtime: any Runtime
+        from decoder: inout D, type: NetworkType.Id,
+        variants: [NetworkType.Variant], runtime: any Runtime
     ) throws -> Int {
         let index = try decoder.decode(.enumCaseId)
         guard let variant = variants.first(where: { $0.index == index }) else {

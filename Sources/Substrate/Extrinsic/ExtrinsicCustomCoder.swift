@@ -15,15 +15,15 @@ public struct ExtrinsicCustomDynamicCoder: RuntimeCustomDynamicCoder {
         self.name = name
     }
     
-    public func checkType(id: RuntimeType.Id, runtime: Runtime) throws -> Bool {
+    public func checkType(id: NetworkType.Id, runtime: Runtime) throws -> Bool {
         guard let definition = runtime.resolve(type: id) else {
-            throw Value<RuntimeType.Id>.DecodingError.typeNotFound(id)
+            throw Value<NetworkType.Id>.DecodingError.typeNotFound(id)
         }
         return definition.path.last == name
     }
     
     public func encode<C, E: ScaleCodec.Encoder>(
-        value: Value<C>, in encoder: inout E, as id: RuntimeType.Id, runtime: Runtime
+        value: Value<C>, in encoder: inout E, as id: NetworkType.Id, runtime: Runtime
     ) throws {
         guard let bytes = value.bytes else {
             throw Value.EncodingError.wrongShape(actual: value, expected: id)

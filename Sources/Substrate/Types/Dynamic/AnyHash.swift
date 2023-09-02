@@ -9,7 +9,7 @@ import Foundation
 import ContextCodable
 
 public struct AnyHash: Hash {
-    public typealias DecodingContext = (metadata: any Metadata, id: () throws -> RuntimeType.Id)
+    public typealias DecodingContext = (metadata: any Metadata, id: () throws -> NetworkType.Id)
     
     public let raw: Data
     
@@ -19,7 +19,7 @@ public struct AnyHash: Hash {
     
     public init(raw: Data,
                 metadata: any Metadata,
-                id: () throws -> RuntimeType.Id) throws
+                id: () throws -> NetworkType.Id) throws
     {
         let type = try id()
         guard let info = metadata.resolve(type: type) else {
@@ -41,7 +41,7 @@ public struct AnyHash: Hash {
     }
     
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }

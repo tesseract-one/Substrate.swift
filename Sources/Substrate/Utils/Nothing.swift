@@ -38,7 +38,7 @@ extension Nothing: ScaleCodec.Codable, RuntimeCodable {
 }
 
 extension Nothing: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         try Self.validate(runtime: runtime, type: type).getValueError()
         return .nil(type)
     }
@@ -50,7 +50,7 @@ extension Nothing: VoidValueRepresentable {
 
 extension Nothing: RuntimeDynamicValidatable {
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))

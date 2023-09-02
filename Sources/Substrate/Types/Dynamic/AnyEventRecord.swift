@@ -12,10 +12,10 @@ public struct AnyEventRecord: SomeEventRecord, CustomStringConvertible {
     public let phase: Phase
     public let header: (name: String, pallet: String)
     public let data: Data
-    public let fields: [String: Value<RuntimeType.Id>]
+    public let fields: [String: Value<NetworkType.Id>]
     
     private let _runtime: any Runtime
-    private let _eventTypeId: RuntimeType.Id
+    private let _eventTypeId: NetworkType.Id
     
     public var extrinsicIndex: UInt32? {
         switch phase {
@@ -41,7 +41,7 @@ public extension AnyEventRecord {
     enum Phase: Equatable, Hashable, CustomStringConvertible {
         // Applying an extrinsic.
         case applyExtrinsic(UInt32)
-        case other(name: String, fields: [String: Value<RuntimeType.Id>])
+        case other(name: String, fields: [String: Value<NetworkType.Id>])
         
         public var description: String {
             switch self {
@@ -55,7 +55,7 @@ public extension AnyEventRecord {
 
 extension AnyEventRecord.Phase: RuntimeDynamicValidatable {
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let typeInfo = runtime.resolve(type: id)?.flatten(runtime) else {
             return .failure(.typeNotFound(id))
@@ -81,12 +81,12 @@ extension AnyEventRecord.Phase: RuntimeDynamicValidatable {
 
 extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: RuntimeType.Id,
+                                       as type: NetworkType.Id,
                                        runtime: Runtime) throws
     {
         try Self.validate(runtime: runtime, type: type).getCodableError()
-        let value = try Value<RuntimeType.Id>(from: &decoder, as: type, runtime: runtime)
-        let extrinsicId: Value<RuntimeType.Id>
+        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
+        let extrinsicId: Value<NetworkType.Id>
         switch value.value {
         case .variant(.sequence(name: let name, values: let vals)):
             guard name == "ApplyExtrinsic" else {
@@ -113,8 +113,8 @@ extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
 
 extension AnyEventRecord: RuntimeDynamicValidatable {
     private static func _validate(
-        runtime: Runtime, type id: RuntimeType.Id
-    ) -> Result<[RuntimeType.Field], DynamicValidationError> {
+        runtime: Runtime, type id: NetworkType.Id
+    ) -> Result<[NetworkType.Field], DynamicValidationError> {
         guard let typeInfo = runtime.resolve(type: id)?.flatten(runtime) else {
             return .failure(.typeNotFound(id))
         }
@@ -137,7 +137,7 @@ extension AnyEventRecord: RuntimeDynamicValidatable {
     }
     
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         _validate(runtime: runtime, type: id).map{_ in}
     }
@@ -145,13 +145,13 @@ extension AnyEventRecord: RuntimeDynamicValidatable {
 
 extension AnyEventRecord: RuntimeDynamicDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: RuntimeType.Id,
+                                       as type: NetworkType.Id,
                                        runtime: Runtime) throws
     {
         let fields = try Self._validate(runtime: runtime, type: type).getCodableError()
         var phase: Phase? = nil
-        var event: (name: String, pallet: String, data: Data, type: RuntimeType.Id)? = nil
-        var other: [String: Value<RuntimeType.Id>] = [:]
+        var event: (name: String, pallet: String, data: Data, type: NetworkType.Id)? = nil
+        var other: [String: Value<NetworkType.Id>] = [:]
         for field in fields {
             switch field.name! {
             case "phase": phase = try runtime.decode(from: &decoder, id: field.type)
@@ -173,7 +173,7 @@ extension AnyEventRecord: RuntimeDynamicDecodable {
 
 // Can be removed after dropping Metadata V14
 public extension SomeEventRecord {
-    static func eventTypeId(metadata: any Metadata, record id: RuntimeType.Id) -> RuntimeType.Id? {
+    static func eventTypeId(metadata: any Metadata, record id: NetworkType.Id) -> NetworkType.Id? {
         guard let typeInfo = metadata.resolve(type: id)?.flatten(metadata) else {
             return nil
         }

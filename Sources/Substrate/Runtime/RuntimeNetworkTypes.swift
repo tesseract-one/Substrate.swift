@@ -1,5 +1,5 @@
 //
-//  RuntimeTypes.swift
+//  RuntimeNetworkTypes.swift
 //  
 //
 //  Created by Yehor Popovych on 07/07/2023.
@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public extension RuntimeType {
+public extension NetworkType {
     typealias LazyId = (Runtime) throws -> Id
     
     struct IdNeverCalledError: Error, CustomStringConvertible {
@@ -16,20 +16,20 @@ public extension RuntimeType {
         public init() {}
     }
     
-    static func IdNever(_ r: Runtime) throws -> RuntimeType.Id { throw IdNeverCalledError() }
+    static func IdNever(_ r: Runtime) throws -> NetworkType.Id { throw IdNeverCalledError() }
 }
 
-public protocol RuntimeTypes {
-    var block: RuntimeType.Info { get throws }
-    var account: RuntimeType.Info { get throws }
-    var address: RuntimeType.Info { get throws }
-    var signature: RuntimeType.Info { get throws }
-    var hash: RuntimeType.Info { get throws }
-    var call: RuntimeType.Info { get throws }
-    var extrinsicExtra: RuntimeType.Info { get throws }
-    var event: RuntimeType.Info { get throws }
-    var dispatchError: RuntimeType.Info { get throws }
-    var transactionValidityError: RuntimeType.Info { get throws }
+public protocol RuntimeNetworkTypes {
+    var block: NetworkType.Info { get throws }
+    var account: NetworkType.Info { get throws }
+    var address: NetworkType.Info { get throws }
+    var signature: NetworkType.Info { get throws }
+    var hash: NetworkType.Info { get throws }
+    var call: NetworkType.Info { get throws }
+    var extrinsicExtra: NetworkType.Info { get throws }
+    var event: NetworkType.Info { get throws }
+    var dispatchError: NetworkType.Info { get throws }
+    var transactionValidityError: NetworkType.Info { get throws }
 }
 
 public extension Runtime {
@@ -142,9 +142,9 @@ public extension Runtime {
     }
 }
 
-public extension RuntimeType {
+public extension NetworkType {
     @inlinable
-    func asPrimitive(_ runtime: any Runtime) -> RuntimeType.Primitive? {
+    func asPrimitive(_ runtime: any Runtime) -> NetworkType.Primitive? {
         asPrimitive(runtime.metadata)
     }
     
@@ -159,7 +159,7 @@ public extension RuntimeType {
     }
     
     @inlinable
-    func asOptional(_ runtime: any Runtime) -> RuntimeType.Field? {
+    func asOptional(_ runtime: any Runtime) -> NetworkType.Field? {
         asOptional(runtime.metadata)
     }
     
@@ -174,7 +174,7 @@ public extension RuntimeType {
     }
     
     @inlinable
-    func asResult(_ runtime: any Runtime) -> (ok: RuntimeType.Field, err: RuntimeType.Field)? {
+    func asResult(_ runtime: any Runtime) -> (ok: NetworkType.Field, err: NetworkType.Field)? {
         asResult(runtime.metadata)
     }
     

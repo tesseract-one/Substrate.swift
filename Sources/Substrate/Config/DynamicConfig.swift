@@ -21,8 +21,8 @@ public extension Configs {
         public typealias TExtrinsicPayment = Value<Void>
         public typealias TSystemProperties = AnySystemProperties
         public typealias TRuntimeVersion = AnyRuntimeVersion<UInt32>
-        public typealias TFeeDetails = Value<RuntimeType.Id>
-        public typealias TRuntimeDispatchInfo = Value<RuntimeType.Id>
+        public typealias TFeeDetails = Value<NetworkType.Id>
+        public typealias TRuntimeDispatchInfo = Value<NetworkType.Id>
     }
     
     struct Dynamic: Config, BatchSupportedConfig {
@@ -102,11 +102,11 @@ public extension Configs.Dynamic {
     @inlinable
     func customCoders() throws -> [RuntimeCustomDynamicCoder] { runtimeCustomCoders }
     
-    func headerType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func headerType(metadata: any Metadata) throws -> NetworkType.Info {
         if let block = try? blockType(metadata: metadata) {
             let headerType = block.type.parameters.first{ $0.name.lowercased() == "header" }?.type
             if let id = headerType, let type = metadata.resolve(type: id) {
-                return RuntimeType.Info(id: id, type: type)
+                return NetworkType.Info(id: id, type: type)
             }
         }
         guard let type = metadata.search(type: { headerSelector.matches($0) }) else {
@@ -116,7 +116,7 @@ public extension Configs.Dynamic {
         return type
     }
     
-    func hashType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func hashType(metadata: any Metadata) throws -> NetworkType.Info {
         let header = try headerType(metadata: metadata)
         guard case .composite(let fields) = header.type.definition else {
             throw ConfigTypeLookupError.badHeaderType(header: header)
@@ -125,7 +125,7 @@ public extension Configs.Dynamic {
         guard let hashType = hashType, let hashInfo = metadata.resolve(type: hashType) else {
             throw ConfigTypeLookupError.hashTypeNotFound
         }
-        return RuntimeType.Info(id: hashType, type: hashInfo)
+        return NetworkType.Info(id: hashType, type: hashInfo)
     }
     
     func hasher(metadata: Metadata) throws -> ST<Self>.Hasher {
@@ -162,7 +162,7 @@ public extension Configs.Dynamic {
 
 // Type lookups
 public extension Configs.Dynamic {
-    func blockType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func blockType(metadata: any Metadata) throws -> NetworkType.Info {
         guard let type = metadata.search(type: { blockSelector.matches($0) }) else {
             throw ConfigTypeLookupError.typeNotFound(name: "Block", selector:
                                                      blockSelector.pattern)
@@ -171,12 +171,12 @@ public extension Configs.Dynamic {
     }
     
     func accountType(metadata: any Metadata,
-                     address: RuntimeType.Info) throws -> RuntimeType.Info
+                     address: NetworkType.Info) throws -> NetworkType.Info
     {
         let selectors = ["accountid", "t::accountid", "account", "acc", "a"]
         let accid = address.type.parameters.first{selectors.contains($0.name.lowercased())}?.type
         if let id = accid, let info = metadata.resolve(type: id) {
-            return RuntimeType.Info(id: id, type: info)
+            return NetworkType.Info(id: id, type: info)
         }
         guard let type = metadata.search(type: {accountSelector.matches($0)}) else {
             throw ConfigTypeLookupError.typeNotFound(name: "AccountId",
@@ -185,7 +185,7 @@ public extension Configs.Dynamic {
         return type
     }
     
-    func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func dispatchErrorType(metadata: any Metadata) throws -> NetworkType.Info {
         guard let type = metadata.search(type: {dispatchErrorSelector.matches($0)}) else {
             throw ConfigTypeLookupError.typeNotFound(name: "DispatchError",
                                                      selector: dispatchErrorSelector.pattern)
@@ -193,7 +193,7 @@ public extension Configs.Dynamic {
         return type
     }
     
-    func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func transactionValidityErrorType(metadata: any Metadata) throws -> NetworkType.Info {
         guard let type = metadata.search(type: {transactionValidityErrorSelector.matches($0)}) else {
             throw ConfigTypeLookupError.typeNotFound(name: "TransactionValidityError",
                                                      selector: transactionValidityErrorSelector.pattern)

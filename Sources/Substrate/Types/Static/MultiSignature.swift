@@ -62,7 +62,7 @@ extension MultiSignature: StaticSignature {
 }
 
 extension MultiSignature: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         let info = try Self._validate(runtime: runtime, type: type).getValueError()
         guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
             throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")

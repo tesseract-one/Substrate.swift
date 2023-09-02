@@ -12,11 +12,11 @@ public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
                            ValueRepresentable, RuntimeDynamicValidatable
 {
     init(from string: String, runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
     init(pub: any PublicKey, runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
     init(raw: Data, runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
     
     var raw: Data { get }
     var string: String { get }
@@ -25,7 +25,7 @@ public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
 
 public extension AccountId {
     init(from string: String, runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
     {
         let (raw, format) = try SS58.decode(string: string)
         guard format == runtime.addressFormat else {
@@ -62,23 +62,23 @@ public extension StaticAccountId {
     }
     
     init(from string: String, runtime: any Runtime) throws {
-        try self.init(from: string, runtime: runtime, id: RuntimeType.IdNever)
+        try self.init(from: string, runtime: runtime, id: NetworkType.IdNever)
     }
     
     init(from string: String, runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
     {
         try self.init(from: string, runtime: runtime)
     }
     
     init(pub: any PublicKey, runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
     {
         try self.init(pub: pub, runtime: runtime)
     }
     
     init(raw: Data, runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
     {
         try self.init(raw: raw, runtime: runtime)
     }
@@ -110,7 +110,7 @@ public extension StaticAccountId {
     }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }

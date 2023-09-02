@@ -35,7 +35,7 @@ public extension StaticEvent {
 }
 
 public extension IdentifiableEvent where Self: RuntimeValidatableComposite {
-    static func validatableFieldIds(runtime: any Runtime) -> Result<[RuntimeType.Id], ValidationError> {
+    static func validatableFieldIds(runtime: any Runtime) -> Result<[NetworkType.Id], ValidationError> {
         guard let info = runtime.resolve(eventParams: name, pallet: pallet) else {
             return .failure(.infoNotFound(for: Self.self))
         }
@@ -53,6 +53,6 @@ public protocol SomeEventRecord: RuntimeDynamicDecodable, RuntimeDynamicValidata
 public enum EventDecodingError: Error {
     case eventNotFound(index: UInt8, pallet: UInt8)
     case foundWrongEvent(found: (name: String, pallet: String), expected: (name: String, pallet: String))
-    case decodedNonVariantValue(Value<RuntimeType.Id>)
-    case tooManyFieldsInVariant(variant: Value<RuntimeType.Id>, expected: Int)
+    case decodedNonVariantValue(Value<NetworkType.Id>)
+    case tooManyFieldsInVariant(variant: Value<NetworkType.Id>, expected: Int)
 }

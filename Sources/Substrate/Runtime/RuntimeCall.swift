@@ -60,14 +60,14 @@ public extension StaticCodableRuntimeCall {
 public enum RuntimeCallCodingError: Error {
     case callNotFound(method: String, api: String)
     case wrongParametersCount(params: [String: any ValueRepresentable],
-                              expected: [(String, RuntimeType.Info)])
+                              expected: [(String, NetworkType.Info)])
     case parameterNotFound(name: String, inParams: [String: any ValueRepresentable])
 }
 
 public extension StaticRuntimeCall where
     Self: RuntimeValidatableComposite, TReturn: RuntimeDynamicValidatable
 {
-    static func validatableFieldIds(runtime: any Runtime) -> Result<[RuntimeType.Id], ValidationError> {
+    static func validatableFieldIds(runtime: any Runtime) -> Result<[NetworkType.Id], ValidationError> {
         guard let info = runtime.resolve(runtimeCall: method, api: api) else {
             return .failure(.infoNotFound(for: Self.self))
         }

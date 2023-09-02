@@ -11,24 +11,24 @@ import ScaleCodec
 public struct AnyTransactionValidityError: CallError, CustomStringConvertible {
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
-    public let value: Value<RuntimeType.Id>
+    public let value: Value<NetworkType.Id>
     
-    public init(value: Value<RuntimeType.Id>) {
+    public init(value: Value<NetworkType.Id>) {
         self.value = value
     }
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: RuntimeType.Id, runtime: Runtime) throws {
-        let value = try Value<RuntimeType.Id>(from: &decoder, as: type, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
         self.init(value: value)
     }
     
-    public init(from decoder: Swift.Decoder, as type: RuntimeType.Id, runtime: Runtime) throws {
-        let value = try Value<RuntimeType.Id>(from: decoder, as: type, runtime: runtime)
+    public init(from decoder: Swift.Decoder, as type: NetworkType.Id, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: decoder, as: type, runtime: runtime)
         self.init(value: value)
     }
     
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
         .success(())
     }
     
@@ -41,7 +41,7 @@ public struct AnyDispatchError: SomeDispatchError, CustomStringConvertible {
     public typealias TModuleError = ModuleError
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
-    public let value: Value<RuntimeType.Id>
+    public let value: Value<NetworkType.Id>
     private let _runtime: any Runtime
     
     @inlinable
@@ -55,11 +55,11 @@ public struct AnyDispatchError: SomeDispatchError, CustomStringConvertible {
         return try ModuleError(variant: variant, runtime: _runtime)
     }}
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: RuntimeType.Id, runtime: Runtime) throws {
-        let value = try Value<RuntimeType.Id>(from: &decoder, as: type, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
         guard value.variant != nil else {
             throw ScaleCodec.DecodingError.typeMismatch(
-                Value<RuntimeType.Id>.self,
+                Value<NetworkType.Id>.self,
                 .init(path: decoder.path, description: "Decoded non-variant value")
             )
         }
@@ -67,11 +67,11 @@ public struct AnyDispatchError: SomeDispatchError, CustomStringConvertible {
         self._runtime = runtime
     }
     
-    public init(from decoder: Swift.Decoder, as type: RuntimeType.Id, runtime: Runtime) throws {
-        let value = try Value<RuntimeType.Id>(from: decoder, as: type, runtime: runtime)
+    public init(from decoder: Swift.Decoder, as type: NetworkType.Id, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: decoder, as: type, runtime: runtime)
         guard value.variant != nil else {
             throw Swift.DecodingError.typeMismatch(
-                Value<RuntimeType.Id>.self,
+                Value<NetworkType.Id>.self,
                 .init(codingPath: decoder.codingPath,
                       debugDescription: "Decoded non-variant value")
             )
@@ -81,7 +81,7 @@ public struct AnyDispatchError: SomeDispatchError, CustomStringConvertible {
     }
     
     public static func validate(runtime: Runtime,
-                                type id: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id)?.flatten(runtime) else {
             return .failure(.typeNotFound(id))

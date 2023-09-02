@@ -65,10 +65,10 @@ extension BitSequence {
         }
         
         public enum Error: Swift.Error {
-            case storeFormatNotFound(RuntimeType.Id)
-            case orderFormatNotFound(RuntimeType.Id)
-            case storeFormatNotSupported(RuntimeType)
-            case orderFormatNotSupported(RuntimeType)
+            case storeFormatNotFound(NetworkType.Id)
+            case orderFormatNotFound(NetworkType.Id)
+            case storeFormatNotSupported(NetworkType)
+            case orderFormatNotSupported(NetworkType)
         }
         
         public let store: Store
@@ -214,7 +214,7 @@ extension BitSequence {
 }
 
 extension BitSequence.Format {
-    public init(store: RuntimeType.Id, order: RuntimeType.Id, runtime: Runtime) throws {
+    public init(store: NetworkType.Id, order: NetworkType.Id, runtime: Runtime) throws {
         try self.init(store: Store(type: store, runtime: runtime),
                       order: Order(type: order, runtime: runtime))
     }
@@ -229,7 +229,7 @@ extension BitSequence.Format {
 }
 
 extension BitSequence.Format.Store {
-    public init(type: RuntimeType.Id, runtime: Runtime) throws {
+    public init(type: NetworkType.Id, runtime: Runtime) throws {
         guard let bitStore = runtime.resolve(type: type) else {
             throw BitSequence.Format.Error.storeFormatNotFound(type)
         }
@@ -248,7 +248,7 @@ extension BitSequence.Format.Store {
 }
 
 extension BitSequence.Format.Order {
-    public init(type: RuntimeType.Id, runtime: Runtime) throws {
+    public init(type: NetworkType.Id, runtime: Runtime) throws {
         guard let orderStore = runtime.resolve(type: type) else {
             throw BitSequence.Format.Error.orderFormatNotFound(type)
         }
@@ -277,13 +277,22 @@ extension CustomDecoderFactory where T == BitSequence {
 }
 
 extension BitSequence: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
+        try Self.validate(runtime: runtime, type: type).getValueError()
+        return .bits(self, type)
+    }
+}
+
+extension BitSequence: RuntimeDynamicValidatable {
+    public static func validate(runtime: Runtime,
+                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
+    {
+        guard let info = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(id))
         }
         guard info.isBitSequence(runtime) else {
-            throw ValueRepresentableError.wrongType(got: info, for: "BitSequence")
+            return .failure(.wrongType(got: info, for: "BitSequence"))
         }
-        return .bits(self, type)
+        return .success(())
     }
 }

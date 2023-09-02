@@ -40,15 +40,15 @@ public protocol Config {
     associatedtype TExtrinsicManager: ExtrinsicManager<BC>
     
     // Metadata Info Providers
-    func blockType(metadata: any Metadata) throws -> RuntimeType.Info
-    func hashType(metadata: any Metadata) throws -> RuntimeType.Info
-    func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info
-    func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info
-    func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info
+    func blockType(metadata: any Metadata) throws -> NetworkType.Info
+    func hashType(metadata: any Metadata) throws -> NetworkType.Info
+    func dispatchErrorType(metadata: any Metadata) throws -> NetworkType.Info
+    func transactionValidityErrorType(metadata: any Metadata) throws -> NetworkType.Info
+    func accountType(metadata: any Metadata, address: NetworkType.Info) throws -> NetworkType.Info
     // Сan be safely removed after removing metadata v14 (v15 has them)
-    func eventType(metadata: any Metadata) throws -> RuntimeType.Info
-    func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
-                                                           signature: RuntimeType.Info, extra: RuntimeType.Info)
+    func eventType(metadata: any Metadata) throws -> NetworkType.Info
+    func extrinsicTypes(metadata: any Metadata) throws -> (call: NetworkType.Info, addr: NetworkType.Info,
+                                                           signature: NetworkType.Info, extra: NetworkType.Info)
     // Object Builders
     func hasher(metadata: any Metadata) throws -> ST<Self>.Hasher
     func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment
@@ -237,13 +237,13 @@ public extension Config {
 
 // Сan be safely removed after removing metadata v14 (v15 has types inside)
 public extension Config {
-    func extrinsicTypes(metadata: any Metadata) throws -> (call: RuntimeType.Info, addr: RuntimeType.Info,
-                                                           signature: RuntimeType.Info, extra: RuntimeType.Info)
+    func extrinsicTypes(metadata: any Metadata) throws -> (call: NetworkType.Info, addr: NetworkType.Info,
+                                                           signature: NetworkType.Info, extra: NetworkType.Info)
     {
-        var addressTypeId: RuntimeType.Id? = nil
-        var sigTypeId: RuntimeType.Id? = nil
-        var extraTypeId: RuntimeType.Id? = nil
-        var callTypeId: RuntimeType.Id? = nil
+        var addressTypeId: NetworkType.Id? = nil
+        var sigTypeId: NetworkType.Id? = nil
+        var extraTypeId: NetworkType.Id? = nil
+        var callTypeId: NetworkType.Id? = nil
         for param in metadata.extrinsic.type.type.parameters {
             switch param.name.lowercased() {
             case "address": addressTypeId = param.type
@@ -264,13 +264,13 @@ public extension Config {
         {
             throw ConfigTypeLookupError.extrinsicTypesNotFound
         }
-        return (call: RuntimeType.Info(id: callTypeId, type: callType),
-                addr: RuntimeType.Info(id: addressTypeId, type: addressType),
-                signature: RuntimeType.Info(id: sigTypeId, type: sigType),
-                extra: RuntimeType.Info(id: extraTypeId, type: extraType))
+        return (call: NetworkType.Info(id: callTypeId, type: callType),
+                addr: NetworkType.Info(id: addressTypeId, type: addressType),
+                signature: NetworkType.Info(id: sigTypeId, type: sigType),
+                extra: NetworkType.Info(id: extraTypeId, type: extraType))
     }
     
-    func eventType(metadata: any Metadata) throws -> RuntimeType.Info {
+    func eventType(metadata: any Metadata) throws -> NetworkType.Info {
         let eventsName = EventsStorageKey<ST<Self>.BlockEvents>.name
         let eventsPallet = EventsStorageKey<ST<Self>.BlockEvents>.pallet
         guard let beStorage = metadata.resolve(pallet: eventsPallet)?.storage(name: eventsName) else {
@@ -285,14 +285,14 @@ public extension Config {
         guard let info = metadata.resolve(type: id) else {
             throw ConfigTypeLookupError.typeNotFound(id: id)
         }
-        return RuntimeType.Info(id: id, type: info)
+        return NetworkType.Info(id: id, type: info)
     }
 }
 
 public extension Config where ST<Self>.Hasher: StaticHasher {
     // Static hasher creates Hash without type lookup
-    func hashType(metadata: any Metadata) throws -> RuntimeType.Info {
-        throw RuntimeType.IdNeverCalledError()
+    func hashType(metadata: any Metadata) throws -> NetworkType.Info {
+        throw NetworkType.IdNeverCalledError()
     }
     // Static Hasher can be returned by singleton instance
     func hasher(metadata: Metadata) throws -> ST<Self>.Hasher { ST<Self>.Hasher.instance }
@@ -300,29 +300,29 @@ public extension Config where ST<Self>.Hasher: StaticHasher {
 
 // Static Block doesn't need runtime type
 public extension Config where TBlock: StaticBlock {
-    func blockType(metadata: Metadata) throws -> RuntimeType.Info {
-        throw RuntimeType.IdNeverCalledError()
+    func blockType(metadata: Metadata) throws -> NetworkType.Info {
+        throw NetworkType.IdNeverCalledError()
     }
 }
 
 // Static Transaction Validity Error doesn't need runtime type
 public extension Config where TTransactionValidityError: StaticCallError {
-    func transactionValidityErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
-        throw RuntimeType.IdNeverCalledError()
+    func transactionValidityErrorType(metadata: any Metadata) throws -> NetworkType.Info {
+        throw NetworkType.IdNeverCalledError()
     }
 }
 
 // Static Dispatch Error doesn't need runtime type
 public extension Config where TDispatchError: StaticCallError {
-    func dispatchErrorType(metadata: any Metadata) throws -> RuntimeType.Info {
-        throw RuntimeType.IdNeverCalledError()
+    func dispatchErrorType(metadata: any Metadata) throws -> NetworkType.Info {
+        throw NetworkType.IdNeverCalledError()
     }
 }
 
 // Static Account doesn't need runtime type
 public extension Config where ST<Self>.AccountId: StaticAccountId {
-    func accountType(metadata: any Metadata, address: RuntimeType.Info) throws -> RuntimeType.Info {
-        throw RuntimeType.IdNeverCalledError()
+    func accountType(metadata: any Metadata, address: NetworkType.Info) throws -> NetworkType.Info {
+        throw NetworkType.IdNeverCalledError()
     }
 }
 
@@ -336,9 +336,9 @@ public enum ConfigTypeLookupError: Error {
     case paymentTypeNotFound
     case extrinsicTypesNotFound
     case hashTypeNotFound
-    case badHeaderType(header: RuntimeType.Info)
-    case typeNotFound(id: RuntimeType.Id)
+    case badHeaderType(header: NetworkType.Info)
+    case typeNotFound(id: NetworkType.Id)
     case typeNotFound(name: String, selector: String)
-    case cantProvideDefaultPayment(forType: RuntimeType.Info)
+    case cantProvideDefaultPayment(forType: NetworkType.Info)
     case unknownHashName(String)
 }

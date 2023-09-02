@@ -17,7 +17,7 @@ public struct EventRecord<H: Hash>: SomeEventRecord, CustomStringConvertible,
     public let topics: [H]
     
     private let _runtime: any Runtime
-    private let _eventTypeId: RuntimeType.Id
+    private let _eventTypeId: NetworkType.Id
     
     public var extrinsicIndex: UInt32? {
         switch phase {

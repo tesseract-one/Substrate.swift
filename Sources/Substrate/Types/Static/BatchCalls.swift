@@ -15,7 +15,7 @@ public extension BatchCallCommon {
     
     @inlinable static var pallet: String { "Utility" }
     
-    init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: RuntimeType.Id, runtime: Runtime) throws {
+    init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
         let modIndex = try decoder.decode(.enumCaseId)
         let callIndex = try decoder.decode(.enumCaseId)
         guard let info = runtime.resolve(callName: callIndex, pallet: modIndex) else {
@@ -25,13 +25,13 @@ public extension BatchCallCommon {
             throw CallCodingError.foundWrongCall(found: (name: info.name, pallet: info.pallet),
                                                  expected: (name: Self.name, pallet: Self.pallet))
         }
-        let calls = try Array<AnyCall<RuntimeType.Id>>(from: &decoder) { decoder in
+        let calls = try Array<AnyCall<NetworkType.Id>>(from: &decoder) { decoder in
             try AnyCall(from: &decoder, as: type, runtime: runtime)
         }
         self.init(calls: calls)
     }
     
-    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, as type: RuntimeType.Id, runtime: Runtime) throws {
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, as type: NetworkType.Id, runtime: Runtime) throws {
         guard let info = runtime.resolve(callIndex: name, pallet: pallet) else {
             throw CallCodingError.callNotFound(name: name, pallet: pallet)
         }
@@ -42,7 +42,7 @@ public extension BatchCallCommon {
         }
     }
     
-    static var validatableFields: [RuntimeDynamicValidatable.Type] { [AnyCall<RuntimeType.Id>.self] }
+    static var validatableFields: [RuntimeDynamicValidatable.Type] { [AnyCall<NetworkType.Id>.self] }
 }
 
 public struct BatchCall: BatchCallCommon {

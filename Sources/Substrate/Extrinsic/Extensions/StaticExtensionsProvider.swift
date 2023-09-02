@@ -37,8 +37,8 @@ public protocol StaticExtrinsicExtension: StaticExtrinsicExtensionBase, Extrinsi
     
     func validate(
         runtime: any Runtime,
-        extra: RuntimeType.Id,
-        additionalSigned: RuntimeType.Id
+        extra: NetworkType.Id,
+        additionalSigned: NetworkType.Id
     ) -> Result<Void, DynamicValidationError>
 }
 
@@ -49,8 +49,8 @@ public extension StaticExtrinsicExtension {
 public extension StaticExtrinsicExtension where
     TExtra: RuntimeDynamicValidatable, TAdditionalSigned: RuntimeDynamicValidatable
 {
-    func validate(runtime: Runtime, extra: RuntimeType.Id,
-                  additionalSigned: RuntimeType.Id) -> Result<Void, DynamicValidationError>
+    func validate(runtime: Runtime, extra: NetworkType.Id,
+                  additionalSigned: NetworkType.Id) -> Result<Void, DynamicValidationError>
     {
         TExtra.validate(runtime: runtime, type: extra).flatMap {
             TAdditionalSigned.validate(runtime: runtime, type: additionalSigned)
@@ -65,7 +65,7 @@ public protocol StaticExtrinsicExtensions: StaticExtrinsicExtensionBase
     
     func validate(
         runtime: any Runtime,
-        types: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
+        types: [ExtrinsicExtensionId: (extId: NetworkType.Id, addId: NetworkType.Id)]
     ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>>
 }
 

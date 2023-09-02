@@ -43,7 +43,7 @@ public extension SomeTuple1 where
     @inlinable
     func validate(
         runtime: any Runtime,
-        types: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
+        types: [ExtrinsicExtensionId: (extId: NetworkType.Id, addId: NetworkType.Id)]
     ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>> {
         guard let info = types[first.identifier] else {
             return .failure(.left(.unknownExtension(identifier: first.identifier)))
@@ -95,7 +95,7 @@ public extension ListTuple where
     @inlinable
     func validate(
         runtime: any Runtime,
-        types: [ExtrinsicExtensionId: (extId: RuntimeType.Id, addId: RuntimeType.Id)]
+        types: [ExtrinsicExtensionId: (extId: NetworkType.Id, addId: NetworkType.Id)]
     ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>> {
         guard let info = types[last.identifier] else {
             return .failure(.left(.unknownExtension(identifier: last.identifier)))

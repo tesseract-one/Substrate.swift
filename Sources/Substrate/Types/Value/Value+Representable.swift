@@ -10,15 +10,15 @@ import ScaleCodec
 import Numberick
 
 public enum ValueRepresentableError: Error {
-    case typeNotFound(RuntimeType.Id)
-    case wrongType(got: RuntimeType, for: String)
-    case wrongValuesCount(in: RuntimeType, expected: Int, for: String)
+    case typeNotFound(NetworkType.Id)
+    case wrongType(got: NetworkType, for: String)
+    case wrongValuesCount(in: NetworkType, expected: Int, for: String)
     case nonVariant(map: [String: ValueRepresentable])
-    case variantNotFound(name: String, in: RuntimeType)
-    case fieldNotFound(name: String, in: RuntimeType)
+    case variantNotFound(name: String, in: NetworkType)
+    case fieldNotFound(name: String, in: NetworkType)
     case keyNotFound(key: String, in: [String: ValueRepresentable])
     case runtimeTypeLookupFailed(name: String, reason: Error)
-    case typeIdMismatch(got: RuntimeType.Id, has: RuntimeType.Id)
+    case typeIdMismatch(got: NetworkType.Id, has: NetworkType.Id)
     
     public init(_ error: DynamicValidationError) {
         switch error {
@@ -51,7 +51,7 @@ public extension FixedWidthInteger {
         Self.isSigned ?  .int(Int256(self)) : .uint(UInt256(self))
     }
     
-    func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -77,8 +77,8 @@ extension Int: ValueRepresentable, VoidValueRepresentable {}
 extension Value: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { mapContext{_ in} }
     
-    public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
-        if let sself = self as? Value<RuntimeType.Id> {
+    public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
+        if let sself = self as? Value<NetworkType.Id> {
             guard sself.context == type else {
                 throw ValueRepresentableError.typeIdMismatch(got: type, has: sself.context)
             }
@@ -91,7 +91,7 @@ extension Value: ValueRepresentable, VoidValueRepresentable {
 extension Bool: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .bool(self) }
     
-    public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         try Self.validate(runtime: runtime, type: type).getValueError()
         return .bool(self, type)
     }
@@ -100,7 +100,7 @@ extension Bool: ValueRepresentable, VoidValueRepresentable {
 extension String: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .string(self) }
     
-    public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         try Self.validate(runtime: runtime, type: type).getValueError()
         return .string(self, type)
     }
@@ -109,7 +109,7 @@ extension String: ValueRepresentable, VoidValueRepresentable {
 extension Data: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .bytes(self) }
     
-    public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -128,7 +128,7 @@ extension Data: ValueRepresentable, VoidValueRepresentable {
 extension Compact: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .uint(UInt256(value.uint)) }
     
-    public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -142,7 +142,7 @@ extension Compact: ValueRepresentable, VoidValueRepresentable {
 extension Character: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .char(self) }
     
-    public func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -154,7 +154,7 @@ extension Character: ValueRepresentable, VoidValueRepresentable {
 }
 
 public extension Collection where Element == ValueRepresentable {
-    func asValue(runtime: any Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -186,8 +186,8 @@ public extension Collection where Element == ValueRepresentable {
     }
     
     func asCompositeValue(runtime: any Runtime,
-                          type: RuntimeType.Info,
-                          types: [RuntimeType.Id]) throws -> [Value<RuntimeType.Id>] {
+                          type: NetworkType.Info,
+                          types: [NetworkType.Id]) throws -> [Value<NetworkType.Id>] {
         guard types.count == count else {
             throw ValueRepresentableError.wrongValuesCount(in: type.type,
                                                            expected: count,
@@ -205,7 +205,7 @@ extension Array: ValueRepresentable where Element == ValueRepresentable {}
 extension Array: VoidValueRepresentable where Element == VoidValueRepresentable {}
 
 extension Dictionary: ValueRepresentable where Key == String, Value == ValueRepresentable {
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Substrate.Value<RuntimeType.Id> {
+    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Substrate.Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -267,8 +267,8 @@ extension Dictionary: ValueRepresentable where Key == String, Value == ValueRepr
     
     func asCompositeValue(
         runtime: any Runtime,
-        type: RuntimeType.Info,
-        types: [String: RuntimeType.Id]) throws -> [String: Substrate.Value<RuntimeType.Id>]
+        type: NetworkType.Info,
+        types: [String: NetworkType.Id]) throws -> [String: Substrate.Value<NetworkType.Id>]
     {
         guard types.count == count else {
             throw ValueRepresentableError.wrongValuesCount(in: type.type,
@@ -292,7 +292,7 @@ extension Dictionary: VoidValueRepresentable where Key: StringProtocol, Value ==
 }
 
 extension Optional: ValueRepresentable where Wrapped == ValueRepresentable {
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -318,7 +318,7 @@ extension Optional: VoidValueRepresentable where Wrapped == VoidValueRepresentab
 }
 
 extension Either: ValueRepresentable where Left == ValueRepresentable, Right == ValueRepresentable {
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }

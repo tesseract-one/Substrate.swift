@@ -13,15 +13,15 @@ public protocol Metadata {
     
     // Swith to non optional after v14 drop
     var outerEnums: OuterEnumsMetadata? { get }
-    var customTypes: Dictionary<String, (RuntimeType.Id, Data)>? { get }
+    var customTypes: Dictionary<String, (NetworkType.Id, Data)>? { get }
     
     var pallets: [String] { get }
     var apis: [String] { get }
     
     // Search is O(n). Try to resolve directly by path
-    func search(type cb: (String) -> Bool) -> RuntimeType.Info?
-    func resolve(type id: RuntimeType.Id) -> RuntimeType?
-    func resolve(type path: [String]) -> RuntimeType.Info?
+    func search(type cb: (String) -> Bool) -> NetworkType.Info?
+    func resolve(type id: NetworkType.Id) -> NetworkType?
+    func resolve(type path: [String]) -> NetworkType.Info?
     func resolve(pallet index: UInt8) -> PalletMetadata?
     func resolve(pallet name: String) -> PalletMetadata?
     func resolve(api name: String) -> RuntimeApiMetadata?
@@ -30,18 +30,18 @@ public protocol Metadata {
 public protocol PalletMetadata {
     var name: String { get }
     var index: UInt8 { get }
-    var call: RuntimeType.Info? { get }
-    var event: RuntimeType.Info? { get }
-    var error: RuntimeType.Info? { get }
+    var call: NetworkType.Info? { get }
+    var event: NetworkType.Info? { get }
+    var error: NetworkType.Info? { get }
     var storage: [String] { get }
     var constants: [String] { get }
     
     func callName(index: UInt8) -> String?
     func callIndex(name: String) -> UInt8?
-    func callParams(name: String) -> [RuntimeType.Field]?
+    func callParams(name: String) -> [NetworkType.Field]?
     func eventName(index: UInt8) -> String?
     func eventIndex(name: String) -> UInt8?
-    func eventParams(name: String) -> [RuntimeType.Field]?
+    func eventParams(name: String) -> [NetworkType.Field]?
     
     func storage(name: String) -> StorageMetadata?
     func constant(name: String) -> ConstantMetadata?
@@ -50,34 +50,34 @@ public protocol PalletMetadata {
 public protocol StorageMetadata {
     var name: String { get }
     var modifier: MetadataV14.StorageEntryModifier { get }
-    var types: (keys: [(MetadataV14.StorageHasher, RuntimeType.Info)],
-                value: RuntimeType.Info) { get }
+    var types: (keys: [(MetadataV14.StorageHasher, NetworkType.Info)],
+                value: NetworkType.Info) { get }
     var defaultValue: Data { get }
     var documentation: [String] { get }
 }
 
 public protocol ExtrinsicMetadata {
     var version: UInt8 { get }
-    var type: RuntimeType.Info { get }
+    var type: NetworkType.Info { get }
     var extensions: [ExtrinsicExtensionMetadata] { get }
     // Make non optional after v14 metadata drop
-    var addressType: RuntimeType.Info? { get }
-    var callType: RuntimeType.Info? { get }
-    var signatureType: RuntimeType.Info? { get }
-    var extraType: RuntimeType.Info? { get }
+    var addressType: NetworkType.Info? { get }
+    var callType: NetworkType.Info? { get }
+    var signatureType: NetworkType.Info? { get }
+    var extraType: NetworkType.Info? { get }
 }
 
 public protocol ConstantMetadata {
     var name: String { get }
-    var type: RuntimeType.Info { get }
+    var type: NetworkType.Info { get }
     var value: Data { get }
     var documentation: [String] { get }
 }
 
 public protocol ExtrinsicExtensionMetadata {
     var identifier: String { get }
-    var type: RuntimeType.Info { get }
-    var additionalSigned: RuntimeType.Info { get }
+    var type: NetworkType.Info { get }
+    var additionalSigned: NetworkType.Info { get }
 }
 
 public protocol RuntimeApiMetadata {
@@ -86,18 +86,18 @@ public protocol RuntimeApiMetadata {
     
     func resolve(
         method name: String
-    ) -> (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)?
+    ) -> (params: [(String, NetworkType.Info)], result: NetworkType.Info)?
 }
 
 public protocol OuterEnumsMetadata {
-    var callType: RuntimeType.Info { get }
-    var eventType: RuntimeType.Info { get }
-    var moduleErrorType: RuntimeType.Info { get }
+    var callType: NetworkType.Info { get }
+    var eventType: NetworkType.Info { get }
+    var moduleErrorType: NetworkType.Info { get }
 }
 
 public enum MetadataError: Error {
     case storageBadHashersCount(expected: Int, got: Int, name: String, pallet: String)
-    case storageNonCompositeKey(name: String, pallet: String, type: RuntimeType.Info)
+    case storageNonCompositeKey(name: String, pallet: String, type: NetworkType.Info)
 }
 
 public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable {

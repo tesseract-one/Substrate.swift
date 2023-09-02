@@ -12,13 +12,13 @@ import ContextCodable
 public protocol Hash: ContextDecodable, Swift.Encodable,
                       ValueRepresentable, VoidValueRepresentable,
                       RuntimeDynamicValidatable, Equatable, CustomStringConvertible
-    where DecodingContext == (metadata: any Metadata, id: () throws -> RuntimeType.Id)
+    where DecodingContext == (metadata: any Metadata, id: () throws -> NetworkType.Id)
 {
     var raw: Data { get }
     
     init(raw: Data,
          metadata: any Metadata,
-         id: () throws -> RuntimeType.Id) throws
+         id: () throws -> NetworkType.Id) throws
 }
 
 public extension Hash {
@@ -27,7 +27,7 @@ public extension Hash {
     @inlinable
     init(raw: Data,
          runtime: any Runtime,
-         id: RuntimeType.LazyId) throws
+         id: NetworkType.LazyId) throws
     {
         try self.init(raw: raw, metadata: runtime.metadata) { try id(runtime) }
     }
@@ -37,7 +37,7 @@ public extension Hash {
         try container.encode(raw)
     }
     
-    func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
             throw ValueRepresentableError.typeNotFound(type)
         }
@@ -64,7 +64,7 @@ public extension StaticHash {
     @inlinable
     init(raw: Data,
          metadata: any Metadata,
-         id: () throws -> RuntimeType.Id) throws
+         id: () throws -> NetworkType.Id) throws
     {
         try self.init(raw: raw)
     }
@@ -89,7 +89,7 @@ public extension StaticHash {
     func serialize() -> Data { raw }
     
     static func validate(runtime: any Runtime,
-                         type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
         }

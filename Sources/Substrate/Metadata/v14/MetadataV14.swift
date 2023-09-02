@@ -7,20 +7,20 @@
 
 import Foundation
 
-public class MetadataV14: Metadata {
+public final class MetadataV14: Metadata {
     public let extrinsic: ExtrinsicMetadata
     public var outerEnums: OuterEnumsMetadata? { nil }
-    public var customTypes: Dictionary<String, (RuntimeType.Id, Data)>? { nil }
+    public var customTypes: Dictionary<String, (NetworkType.Id, Data)>? { nil }
     public var pallets: [String] { Array(palletsByName.keys) }
     public var apis: [String] { [] }
     
-    public let types: [RuntimeType.Id: RuntimeType]
-    public let typesByPath: [String: RuntimeType.Info] // joined by "."
+    public let types: [NetworkType.Id: NetworkType]
+    public let typesByPath: [String: NetworkType.Info] // joined by "."
     public let palletsByIndex: [UInt8: Pallet]
     public let palletsByName: [String: Pallet]
     
     public init(network: Network) throws {
-        let types = Dictionary<RuntimeType.Id, RuntimeType>(
+        let types = Dictionary<NetworkType.Id, NetworkType>(
             uniqueKeysWithValues: network.types.map { ($0.id, $0.type) }
         )
         self.types = types
@@ -33,15 +33,15 @@ public class MetadataV14: Metadata {
     }
     
     @inlinable
-    public func resolve(type id: RuntimeType.Id) -> RuntimeType? { types[id] }
+    public func resolve(type id: NetworkType.Id) -> NetworkType? { types[id] }
     
     @inlinable
-    public func resolve(type path: [String]) -> RuntimeType.Info? {
+    public func resolve(type path: [String]) -> NetworkType.Info? {
         typesByPath[path.joined(separator: ".")]
     }
     
     @inlinable
-    public func search(type cb: (String) -> Bool) -> RuntimeType.Info? {
+    public func search(type cb: (String) -> Bool) -> NetworkType.Info? {
         for (path, type) in typesByPath {
             if cb(path) { return type }
         }
@@ -59,18 +59,18 @@ public class MetadataV14: Metadata {
 }
 
 public extension MetadataV14 {
-    class Pallet: PalletMetadata {
+    final class Pallet: PalletMetadata {
         public let name: String
         public let index: UInt8
-        public let call: RuntimeType.Info?
-        public let event: RuntimeType.Info?
-        public let error: RuntimeType.Info?
+        public let call: NetworkType.Info?
+        public let event: NetworkType.Info?
+        public let error: NetworkType.Info?
         
         public let callNameByIdx: [UInt8: String]?
-        public let callByName: [String: RuntimeType.VariantItem]?
+        public let callByName: [String: NetworkType.Variant]?
         
         public let eventNameByIdx: [UInt8: String]?
-        public let eventByName: [String: RuntimeType.VariantItem]?
+        public let eventByName: [String: NetworkType.Variant]?
         
         public let storageByName: [String: Storage]?
         public var storage: [String] {
@@ -83,12 +83,12 @@ public extension MetadataV14 {
         }
         
         public init(network: Network.Pallet,
-                    types: [RuntimeType.Id: RuntimeType]) throws {
+                    types: [NetworkType.Id: NetworkType]) throws {
             self.name = network.name
             self.index = network.index
-            self.call = network.call.map { RuntimeType.Info(id: $0, type: types[$0]!) }
-            self.event = network.event.map { RuntimeType.Info(id: $0, type: types[$0]!) }
-            self.error = network.error.map { RuntimeType.Info(id: $0, type: types[$0]!) }
+            self.call = network.call.map { NetworkType.Info(id: $0, type: types[$0]!) }
+            self.event = network.event.map { NetworkType.Info(id: $0, type: types[$0]!) }
+            self.error = network.error.map { NetworkType.Info(id: $0, type: types[$0]!) }
             let calls = self.call.flatMap { Self.variants(for: $0.type.definition) }
             self.callNameByIdx = calls.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
@@ -123,7 +123,7 @@ public extension MetadataV14 {
         public func callIndex(name: String) -> UInt8? { callByName?[name]?.index }
         
         @inlinable
-        public func callParams(name: String) -> [RuntimeType.Field]? { callByName?[name]?.fields }
+        public func callParams(name: String) -> [NetworkType.Field]? { callByName?[name]?.fields }
         
         @inlinable
         public func eventName(index: UInt8) -> String? { eventNameByIdx?[index] }
@@ -132,7 +132,7 @@ public extension MetadataV14 {
         public func eventIndex(name: String) -> UInt8? { eventByName?[name]?.index }
         
         @inlinable
-        public func eventParams(name: String) -> [RuntimeType.Field]? { eventByName?[name]?.fields }
+        public func eventParams(name: String) -> [NetworkType.Field]? { eventByName?[name]?.fields }
         
         @inlinable
         public func constant(name: String) -> ConstantMetadata? { constantByName[name] }
@@ -141,8 +141,8 @@ public extension MetadataV14 {
         public func storage(name: String) -> StorageMetadata? { storageByName?[name] }
         
         private static func variants(
-            for def: RuntimeType.Definition
-        ) -> [RuntimeType.VariantItem]? {
+            for def: NetworkType.Definition
+        ) -> [NetworkType.Variant]? {
             switch def {
             case .variant(variants: let vars): return vars
             default: return nil
@@ -155,24 +155,24 @@ public extension MetadataV14 {
     typealias StorageEntryModifier = Network.StorageEntryModifier
     typealias StorageHasher = Network.StorageHasher
     
-    class Storage: StorageMetadata {
+    struct Storage: StorageMetadata {
         public let name: String
         public let modifier: StorageEntryModifier
-        public let types: (keys: [(StorageHasher, RuntimeType.Info)],
-                           value: RuntimeType.Info)
+        public let types: (keys: [(StorageHasher, NetworkType.Info)],
+                           value: NetworkType.Info)
         public let defaultValue: Data
         public let documentation: [String]
         
         public init(network: Network.PalletStorageEntry,
                     pallet: String,
-                    types: [RuntimeType.Id: RuntimeType]) throws
+                    types: [NetworkType.Id: NetworkType]) throws
         {
             self.name = network.name
             self.modifier = network.modifier
             self.defaultValue = network.defaultValue
             self.documentation = network.documentation
-            var keys: [(StorageHasher, RuntimeType.Info)]
-            var valueType: RuntimeType.Id
+            var keys: [(StorageHasher, NetworkType.Info)]
+            var valueType: NetworkType.Id
             switch network.type {
             case .plain(let vType):
                 keys = []
@@ -186,7 +186,7 @@ public extension MetadataV14 {
                                                                name: network.name,
                                                                pallet: pallet)
                 case 1:
-                    keys = [(hashers[0], RuntimeType.Info(id: kType, type: types[kType]!))]
+                    keys = [(hashers[0], NetworkType.Info(id: kType, type: types[kType]!))]
                 default:
                     switch types[kType]!.definition {
                     case .tuple(components: let fields): // DoubleMap / NMap
@@ -197,7 +197,7 @@ public extension MetadataV14 {
                                                                        pallet: pallet)
                         }
                         keys = zip(hashers, fields).map { hash, field in
-                            (hash, RuntimeType.Info(id: field, type: types[field]!))
+                            (hash, NetworkType.Info(id: field, type: types[field]!))
                         }
                     case .composite(fields: let fields): // Array / Struct
                         guard hashers.count == fields.count else {
@@ -207,53 +207,53 @@ public extension MetadataV14 {
                                                                        pallet: pallet)
                         }
                         keys = zip(hashers, fields).map { hash, field in
-                            (hash, RuntimeType.Info(id: field.type, type: types[field.type]!))
+                            (hash, NetworkType.Info(id: field.type, type: types[field.type]!))
                         }
                     default:
                         throw MetadataError.storageNonCompositeKey(
                             name: network.name, pallet: pallet,
-                            type: RuntimeType.Info(id: kType, type: types[kType]!))
+                            type: NetworkType.Info(id: kType, type: types[kType]!))
                     }
                 }
             }
             self.types = (keys: keys,
-                          value: RuntimeType.Info(id: valueType, type: types[valueType]!))
+                          value: NetworkType.Info(id: valueType, type: types[valueType]!))
         }
     }
 }
 
 public extension MetadataV14 {
-    class Constant: ConstantMetadata {
+    struct Constant: ConstantMetadata {
         public let name: String
-        public let type: RuntimeType.Info
+        public let type: NetworkType.Info
         public let value: Data
         public let documentation: [String]
         
         public init(network: Network.PalletConstant,
-                    types: [RuntimeType.Id: RuntimeType])
+                    types: [NetworkType.Id: NetworkType])
         {
             self.name = network.name
             self.value = network.value
             self.documentation = network.documentation
-            self.type = RuntimeType.Info(id: network.type, type: types[network.type]!)
+            self.type = NetworkType.Info(id: network.type, type: types[network.type]!)
         }
     }
 }
 
 public extension MetadataV14 {
-    class Extrinsic: ExtrinsicMetadata {
+    struct Extrinsic: ExtrinsicMetadata {
         public let version: UInt8
-        public let type: RuntimeType.Info
+        public let type: NetworkType.Info
         public let extensions: [ExtrinsicExtensionMetadata]
         
-        public var addressType: RuntimeType.Info? { nil }
-        public var callType: RuntimeType.Info? { nil }
-        public var signatureType: RuntimeType.Info? { nil }
-        public var extraType: RuntimeType.Info? { nil }
+        public var addressType: NetworkType.Info? { nil }
+        public var callType: NetworkType.Info? { nil }
+        public var signatureType: NetworkType.Info? { nil }
+        public var extraType: NetworkType.Info? { nil }
         
-        public init(network: Network.Extrinsic, types: [RuntimeType.Id: RuntimeType]) {
+        public init(network: Network.Extrinsic, types: [NetworkType.Id: NetworkType]) {
             self.version = network.version
-            self.type = RuntimeType.Info(id: network.type, type: types[network.type]!)
+            self.type = NetworkType.Info(id: network.type, type: types[network.type]!)
             self.extensions = network.signedExtensions.map {
                 ExtrinsicExtension(network: $0, types: types)
             }
@@ -262,17 +262,17 @@ public extension MetadataV14 {
 }
 
 public extension MetadataV14 {
-    class ExtrinsicExtension: ExtrinsicExtensionMetadata {
+    struct ExtrinsicExtension: ExtrinsicExtensionMetadata {
         public let identifier: String
-        public let type: RuntimeType.Info
-        public let additionalSigned: RuntimeType.Info
+        public let type: NetworkType.Info
+        public let additionalSigned: NetworkType.Info
         
         public init(network: Network.ExtrinsicSignedExtension,
-                    types: [RuntimeType.Id: RuntimeType])
+                    types: [NetworkType.Id: NetworkType])
         {
             self.identifier = network.identifier
-            self.type = RuntimeType.Info(id: network.type, type: types[network.type]!)
-            self.additionalSigned = RuntimeType.Info(id: network.additionalSigned,
+            self.type = NetworkType.Info(id: network.type, type: types[network.type]!)
+            self.additionalSigned = NetworkType.Info(id: network.additionalSigned,
                                                      type: types[network.additionalSigned]!)
         }
     }

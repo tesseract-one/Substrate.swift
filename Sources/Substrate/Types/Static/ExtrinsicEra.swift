@@ -121,7 +121,7 @@ extension ExtrinsicEra: RuntimeCodable, RuntimeDynamicDecodable, RuntimeDynamicE
 
 extension ExtrinsicEra {
     static func _validate(runtime: Runtime,
-                          type id: RuntimeType.Id) -> Result<RuntimeType.Id, DynamicValidationError>
+                          type id: NetworkType.Id) -> Result<NetworkType.Id, DynamicValidationError>
     {
         guard let info = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(id))
@@ -140,13 +140,13 @@ extension ExtrinsicEra {
 }
 
 extension ExtrinsicEra: RuntimeDynamicValidatable {
-    public static func validate(runtime: Runtime, type id: RuntimeType.Id) -> Result<Void, DynamicValidationError> {
+    public static func validate(runtime: Runtime, type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
         _validate(runtime: runtime, type: id).map{_ in}
     }
 }
 
 extension ExtrinsicEra: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: RuntimeType.Id) throws -> Value<RuntimeType.Id> {
+    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         let bodyType = try Self._validate(runtime: runtime, type: type).getValueError()
         switch self {
         case .immortal: return .variant(name: "Immortal", values: [], type)

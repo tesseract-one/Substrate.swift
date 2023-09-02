@@ -7,27 +7,27 @@
 
 import Foundation
 
-public class MetadataV15: Metadata {
+public final class MetadataV15: Metadata {
     public let extrinsic: ExtrinsicMetadata
     public let outerEnums: OuterEnumsMetadata?
-    public let customTypes: Dictionary<String, (RuntimeType.Id, Data)>?
+    public let customTypes: Dictionary<String, (NetworkType.Id, Data)>?
     public var pallets: [String] { Array(palletsByName.keys) }
     public var apis: [String] { Array(apisByName.keys) }
     
-    public let types: [RuntimeType.Id: RuntimeType]
-    public let typesByPath: [String: RuntimeType.Info] // joined by "."
+    public let types: [NetworkType.Id: NetworkType]
+    public let typesByPath: [String: NetworkType.Info] // joined by "."
     public let palletsByIndex: [UInt8: Pallet]
     public let palletsByName: [String: Pallet]
     public let apisByName: [String: RuntimeApi]!
     
     public init(network: Network) throws {
-        let types = Dictionary<RuntimeType.Id, RuntimeType>(
+        let types = Dictionary<NetworkType.Id, NetworkType>(
             uniqueKeysWithValues: network.types.map { ($0.id, $0.type) }
         )
         self.types = types
         let byPathPairs = network.types.compactMap { i in i.type.name.map { ($0, i) } }
         self.typesByPath = Dictionary(byPathPairs) { (l, r) in l }
-        self.extrinsic = MetadataV14.Extrinsic(network: network.extrinsic, types: types)
+        self.extrinsic = Extrinsic(network: network.extrinsic, types: types)
         let pallets = try network.pallets.map { try Pallet(network: $0, types: types) }
         self.palletsByName = Dictionary(uniqueKeysWithValues: pallets.map { ($0.name, $0) })
         self.palletsByIndex = Dictionary(uniqueKeysWithValues: pallets.map { ($0.index, $0) })
@@ -41,15 +41,15 @@ public class MetadataV15: Metadata {
     }
     
     @inlinable
-    public func resolve(type id: RuntimeType.Id) -> RuntimeType? { types[id] }
+    public func resolve(type id: NetworkType.Id) -> NetworkType? { types[id] }
     
     @inlinable
-    public func resolve(type path: [String]) -> RuntimeType.Info? {
+    public func resolve(type path: [String]) -> NetworkType.Info? {
         typesByPath[path.joined(separator: ".")]
     }
     
     @inlinable
-    public func search(type cb: (String) -> Bool) -> RuntimeType.Info? {
+    public func search(type cb: (String) -> Bool) -> NetworkType.Info? {
         typesByPath.first { cb($0.key) }?.value
     }
     
@@ -64,35 +64,39 @@ public class MetadataV15: Metadata {
 }
 
 public extension MetadataV15 {
-    class Pallet: PalletMetadata {
+    typealias Constant = MetadataV14.Constant
+    typealias Storage = MetadataV14.Storage
+    typealias Extrinsic = MetadataV14.Extrinsic
+    
+    final class Pallet: PalletMetadata {
         public let name: String
         public let index: UInt8
-        public let call: RuntimeType.Info?
-        public let event: RuntimeType.Info?
-        public let error: RuntimeType.Info?
+        public let call: NetworkType.Info?
+        public let event: NetworkType.Info?
+        public let error: NetworkType.Info?
         
         public let callNameByIdx: [UInt8: String]?
-        public let callByName: [String: RuntimeType.VariantItem]?
+        public let callByName: [String: NetworkType.Variant]?
         
         public let eventNameByIdx: [UInt8: String]?
-        public let eventByName: [String: RuntimeType.VariantItem]?
+        public let eventByName: [String: NetworkType.Variant]?
         
-        public let storageByName: [String: MetadataV14.Storage]?
+        public let storageByName: [String: Storage]?
         public var storage: [String] {
             storageByName.map { Array($0.keys) } ?? []
         }
         
-        public let constantByName: [String: MetadataV14.Constant]
+        public let constantByName: [String: Constant]
         public var constants: [String] {
             Array(constantByName.keys)
         }
         
-        public init(network: Network.Pallet, types: [RuntimeType.Id: RuntimeType]) throws {
+        public init(network: Network.Pallet, types: [NetworkType.Id: NetworkType]) throws {
             self.name = network.name
             self.index = network.index
-            self.call = network.call.map { RuntimeType.Info(id: $0, type: types[$0]!) }
-            self.event = network.event.map { RuntimeType.Info(id: $0, type: types[$0]!) }
-            self.error = network.error.map { RuntimeType.Info(id: $0, type: types[$0]!) }
+            self.call = network.call.map { NetworkType.Info(id: $0, type: types[$0]!) }
+            self.event = network.event.map { NetworkType.Info(id: $0, type: types[$0]!) }
+            self.error = network.error.map { NetworkType.Info(id: $0, type: types[$0]!) }
             let calls = self.call.flatMap { Self.variants(for: $0.type.definition) }
             self.callByName = calls.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0) })
@@ -127,7 +131,7 @@ public extension MetadataV15 {
         public func callIndex(name: String) -> UInt8? { callByName?[name]?.index }
         
         @inlinable
-        public func callParams(name: String) -> [RuntimeType.Field]? { callByName?[name]?.fields }
+        public func callParams(name: String) -> [NetworkType.Field]? { callByName?[name]?.fields }
         
         @inlinable
         public func eventName(index: UInt8) -> String? { eventNameByIdx?[index] }
@@ -136,7 +140,7 @@ public extension MetadataV15 {
         public func eventIndex(name: String) -> UInt8? { eventByName?[name]?.index }
         
         @inlinable
-        public func eventParams(name: String) -> [RuntimeType.Field]? { eventByName?[name]?.fields }
+        public func eventParams(name: String) -> [NetworkType.Field]? { eventByName?[name]?.fields }
         
         @inlinable
         public func constant(name: String) -> ConstantMetadata? { constantByName[name] }
@@ -145,8 +149,8 @@ public extension MetadataV15 {
         public func storage(name: String) -> StorageMetadata? { storageByName?[name] }
         
         private static func variants(
-            for def: RuntimeType.Definition
-        ) -> [RuntimeType.VariantItem]? {
+            for def: NetworkType.Definition
+        ) -> [NetworkType.Variant]? {
             switch def {
             case .variant(variants: let vars): return vars
             default: return nil
@@ -161,16 +165,16 @@ public extension MetadataV15 {
         public var methods: [String] { Array(methodsByName.keys) }
         
         public let methodsByName:
-            [String: (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)]
+            [String: (params: [(String, NetworkType.Info)], result: NetworkType.Info)]
         
-        public init(network: Network.RuntimeApi, types: [RuntimeType.Id: RuntimeType]) {
+        public init(network: Network.RuntimeApi, types: [NetworkType.Id: NetworkType]) {
             self.name = network.name
             self.methodsByName = Dictionary(
                 uniqueKeysWithValues: network.methods.map { method in
                     let params = method.inputs.map {
-                        ($0.name, RuntimeType.Info(id: $0.type, type: types[$0.type]!))
+                        ($0.name, NetworkType.Info(id: $0.type, type: types[$0.type]!))
                     }
-                    let result = RuntimeType.Info(id: method.output, type: types[method.output]!)
+                    let result = NetworkType.Info(id: method.output, type: types[method.output]!)
                     return (method.name, (params, result))
                 }
             )
@@ -178,7 +182,7 @@ public extension MetadataV15 {
         
         public func resolve(
             method name: String
-        ) -> (params: [(String, RuntimeType.Info)], result: RuntimeType.Info)? {
+        ) -> (params: [(String, NetworkType.Info)], result: NetworkType.Info)? {
             methodsByName[name]
         }
     }
@@ -186,16 +190,16 @@ public extension MetadataV15 {
 
 public extension MetadataV15 {
     struct OuterEnums: OuterEnumsMetadata {
-        public let callType: RuntimeType.Info
-        public let eventType: RuntimeType.Info
-        public let moduleErrorType: RuntimeType.Info
+        public let callType: NetworkType.Info
+        public let eventType: NetworkType.Info
+        public let moduleErrorType: NetworkType.Info
         
-        public init(network: Network.OuterEnums, types: [RuntimeType.Id: RuntimeType]) {
-            self.callType = RuntimeType.Info(id: network.callEnumType,
+        public init(network: Network.OuterEnums, types: [NetworkType.Id: NetworkType]) {
+            self.callType = NetworkType.Info(id: network.callEnumType,
                                              type: types[network.callEnumType]!)
-            self.eventType = RuntimeType.Info(id: network.eventEnumType,
+            self.eventType = NetworkType.Info(id: network.eventEnumType,
                                               type: types[network.eventEnumType]!)
-            self.moduleErrorType = RuntimeType.Info(id: network.moduleErrorEnumType,
+            self.moduleErrorType = NetworkType.Info(id: network.moduleErrorEnumType,
                                                     type: types[network.moduleErrorEnumType]!)
         }
     }

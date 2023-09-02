@@ -11,13 +11,13 @@ import ScaleCodec
 public extension MetadataV15 {
     struct Network: ScaleCodec.Codable, NetworkMetadata {
         public var version: UInt8 { 15 }
-        public let types: RuntimeType.Registry
+        public let types: NetworkType.Registry
         public let pallets: [Pallet]
-        public let extrinsic: MetadataV14.Network.Extrinsic
-        public let runtimeType: RuntimeType.Id
+        public let extrinsic: Extrinsic
+        public let runtimeType: NetworkType.Id
         public let apis: [RuntimeApi]
         public let outerEnums: OuterEnums?
-        public let custom: Dictionary<String, (RuntimeType.Id, Data)>?
+        public let custom: Dictionary<String, (NetworkType.Id, Data)>?
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             types = try decoder.decode()
@@ -58,13 +58,17 @@ public extension MetadataV15 {
 }
 
 public extension MetadataV15.Network {
+    typealias Extrinsic = MetadataV14.Network.Extrinsic
+    typealias PalletStorage = MetadataV14.Network.PalletStorage
+    typealias PalletConstant = MetadataV14.Network.PalletConstant
+    
     struct Pallet: ScaleCodec.Codable {
         public let name: String
-        public let storage: Optional<MetadataV14.Network.PalletStorage>
-        public let call: Optional<RuntimeType.Id>
-        public let event: Optional<RuntimeType.Id>
-        public let constants: [MetadataV14.Network.PalletConstant]
-        public let error: Optional<RuntimeType.Id>
+        public let storage: Optional<PalletStorage>
+        public let call: Optional<NetworkType.Id>
+        public let event: Optional<NetworkType.Id>
+        public let constants: [PalletConstant]
+        public let error: Optional<NetworkType.Id>
         public let index: UInt8
         public let docs: [String]
         
@@ -116,7 +120,7 @@ public extension MetadataV15.Network {
     struct RuntimeApiMethod: ScaleCodec.Codable {
         public let name: String
         public let inputs: [RuntimeApiMethodParam]
-        public let output: RuntimeType.Id
+        public let output: NetworkType.Id
         public let docs: [String]
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
@@ -138,7 +142,7 @@ public extension MetadataV15.Network {
 public extension MetadataV15.Network {
     struct RuntimeApiMethodParam: ScaleCodec.Codable {
         public let name: String
-        public let type: RuntimeType.Id
+        public let type: NetworkType.Id
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             name = try decoder.decode()
@@ -155,9 +159,9 @@ public extension MetadataV15.Network {
 public extension MetadataV15.Network {
     struct OuterEnums: ScaleCodec.Codable {
         /// The type of the outer `RuntimeCall` enum.
-        public let callEnumType: RuntimeType.Id
+        public let callEnumType: NetworkType.Id
         /// The type of the outer `RuntimeEvent` enum.
-        public let eventEnumType: RuntimeType.Id
+        public let eventEnumType: NetworkType.Id
         /// The module error type of the
         /// [`DispatchError::Module`](https://docs.rs/sp-runtime/24.0.0/sp_runtime/enum.DispatchError.html#variant.Module) variant.
         ///
@@ -173,7 +177,7 @@ public extension MetadataV15.Network {
         ///   chain. It provides just the information needed to decode `sp_runtime::DispatchError::Module`.
         /// - Decoding the 5 error bytes into this type will not always lead to all of the bytes being consumed;
         ///   many error types do not require all of the bytes to represent them fully.
-        public let moduleErrorEnumType: RuntimeType.Id
+        public let moduleErrorEnumType: NetworkType.Id
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             callEnumType = try decoder.decode()
