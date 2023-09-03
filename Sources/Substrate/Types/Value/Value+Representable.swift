@@ -9,43 +9,6 @@ import Foundation
 import ScaleCodec
 import Numberick
 
-public enum ValueRepresentableError: Error {
-    case typeNotFound(NetworkType.Id)
-    case wrongType(got: NetworkType, for: String)
-    case wrongValuesCount(in: NetworkType, expected: Int, for: String)
-    case nonVariant(map: [String: ValueRepresentable])
-    case variantNotFound(name: String, in: NetworkType)
-    case fieldNotFound(name: String, in: NetworkType)
-    case keyNotFound(key: String, in: [String: ValueRepresentable])
-    case runtimeTypeLookupFailed(name: String, reason: Error)
-    case typeIdMismatch(got: NetworkType.Id, has: NetworkType.Id)
-    
-    public init(_ error: DynamicValidationError) {
-        switch error {
-        case .typeIdMismatch(got: let gid, has: let hid):
-            self = .typeIdMismatch(got: gid, has: hid)
-        case .typeNotFound(let tid):
-            self = .typeNotFound(tid)
-        case .variantNotFound(name: let n, in: let t):
-            self = .variantNotFound(name: n, in: t)
-        case .wrongType(got: let t, for: let n):
-            self = .wrongType(got: t, for: n)
-        case .wrongValuesCount(in: let t, expected: let c, for: let n):
-            self = .wrongValuesCount(in: t, expected: c, for: n)
-        case .fieldNotFound(name: let n, in: let t):
-            self = .fieldNotFound(name: n, in: t)
-        case .runtimeTypeLookupFailed(name: let n, reason: let e):
-            self = .runtimeTypeLookupFailed(name: n, reason: e)
-        }
-    }
-}
-
-public extension Result where Failure == DynamicValidationError {
-    @inlinable func getValueError() throws -> Success {
-        try mapError { ValueRepresentableError($0) }.get()
-    }
-}
-
 public extension FixedWidthInteger {
     func asValue() -> Value<Void> {
         Self.isSigned ?  .int(Int256(self)) : .uint(UInt256(self))
@@ -53,10 +16,11 @@ public extension FixedWidthInteger {
     
     func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         guard let primitive = info.asPrimitive(runtime), primitive.isAnyInt != nil else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+            throw TypeError.wrongType(for: Self.self, got: info,
+                                      reason: "Not an integer")
         }
         return Self.isSigned ?  .int(Int256(self), type) : .uint(UInt256(self), type)
     }
@@ -78,13 +42,7 @@ extension Value: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { mapContext{_ in} }
     
     public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        if let sself = self as? Value<NetworkType.Id> {
-            guard sself.context == type else {
-                throw ValueRepresentableError.typeIdMismatch(got: type, has: sself.context)
-            }
-            return sself
-        }
-        return mapContext{_ in type}
+        mapContext{_ in type}
     }
 }
 
@@ -92,7 +50,7 @@ extension Bool: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .bool(self) }
     
     public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        try Self.validate(runtime: runtime, type: type).getValueError()
+        let _ = try Self.validate(runtime: runtime, type: type).get()
         return .bool(self, type)
     }
 }
@@ -101,7 +59,7 @@ extension String: ValueRepresentable, VoidValueRepresentable {
     public func asValue() -> Value<Void> { .string(self) }
     
     public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        try Self.validate(runtime: runtime, type: type).getValueError()
+        let _ = try Self.validate(runtime: runtime, type: type).get()
         return .string(self, type)
     }
 }
@@ -111,15 +69,13 @@ extension Data: ValueRepresentable, VoidValueRepresentable {
     
     public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         guard let count = info.asBytes(runtime) else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+            throw TypeError.wrongType(for: Self.self, got: info, reason: "Isn't bytes")
         }
         guard count == 0 || self.count == count else {
-            throw ValueRepresentableError.wrongValuesCount(
-                in: info, expected: self.count, for: String(describing: Self.self)
-            )
+            throw TypeError.wrongValuesCount(for: Self.self, expected: self.count, in: info)
         }
         return .bytes(self, type)
     }
@@ -130,10 +86,10 @@ extension Compact: ValueRepresentable, VoidValueRepresentable {
     
     public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         guard info.asCompact(runtime) != nil else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+            throw TypeError.wrongType(for: Self.self, got: info, reason: "Isn't Compact")
         }
         return .uint(UInt256(value.uint), type)
     }
@@ -144,10 +100,10 @@ extension Character: ValueRepresentable, VoidValueRepresentable {
     
     public func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         guard let primitive = info.asPrimitive(runtime), primitive.isChar else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+            throw TypeError.wrongType(for: Self.self, got: info, reason: "Isn't char")
         }
         return .char(self, type)
     }
@@ -156,15 +112,14 @@ extension Character: ValueRepresentable, VoidValueRepresentable {
 public extension Collection where Element == ValueRepresentable {
     func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
-        let flat = info.flatten(runtime)
-        switch flat.definition {
+        switch info.flatten(runtime).definition {
         case .array(count: let count, of: let eType):
             guard count == self.count else {
-                throw ValueRepresentableError.wrongValuesCount(in: info,
-                                                               expected: self.count,
-                                                               for: String(describing: Self.self))
+                throw TypeError.wrongValuesCount(for: Self.self,
+                                                 expected: self.count,
+                                                 in: info)
             }
             fallthrough
         case .sequence(of: let eType):
@@ -172,26 +127,24 @@ public extension Collection where Element == ValueRepresentable {
             return .sequence(mapped, type)
         case .composite(fields: let fields):
             let arr = try asCompositeValue(runtime: runtime,
-                                           type: .init(id: type, type: info),
+                                           type: info,
                                            types: fields.map { $0.type })
             return .sequence(arr, type)
         case .tuple(components: let ids):
             let arr = try asCompositeValue(runtime: runtime,
-                                           type: .init(id: type, type: info),
+                                           type: info,
                                            types: ids)
             return .sequence(arr, type)
         default:
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+            throw TypeError.wrongType(for: Self.self, got: info, reason: "Isn't collection")
         }
     }
     
     func asCompositeValue(runtime: any Runtime,
-                          type: NetworkType.Info,
+                          type: NetworkType,
                           types: [NetworkType.Id]) throws -> [Value<NetworkType.Id>] {
         guard types.count == count else {
-            throw ValueRepresentableError.wrongValuesCount(in: type.type,
-                                                           expected: count,
-                                                           for: String(describing: Self.self))
+            throw TypeError.wrongValuesCount(for: Self.self, expected: count, in: type)
         }
         return try zip(self, types).map { try $0.asValue(runtime: runtime, type: $1) }
     }
@@ -207,28 +160,28 @@ extension Array: VoidValueRepresentable where Element == VoidValueRepresentable 
 extension Dictionary: ValueRepresentable where Key == String, Value == ValueRepresentable {
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Substrate.Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
-        let flat = info.flatten(runtime)
-        switch flat.definition {
+        switch info.flatten(runtime).definition {
         case .composite(fields: let fields):
             let types = try fields.map { field in
                 guard let key = field.name else {
-                    throw ValueRepresentableError.wrongType(got: info,
-                                                            for: String(describing: Self.self))
+                    throw TypeError.wrongType(for: Self.self, got: info,
+                                              reason: "field name is nil")
                 }
                 return (key, field.type)
             }
             let map = try asCompositeValue(runtime: runtime,
-                                           type: .init(id: type, type: info),
+                                           type: info,
                                            types: Dictionary<_,_>(uniqueKeysWithValues: types))
             return .map(map, type)
         case .variant(variants: let variants):
             guard count == 1 else {
-                throw ValueRepresentableError.nonVariant(map: self)
+                throw TypeError.wrongType(for: Self.self, got: info,
+                                          reason: "count != 1 for variant")
             }
             guard let variant = variants.first(where: { $0.name == first!.key }) else {
-                throw ValueRepresentableError.variantNotFound(name: first!.key, in: info)
+                throw TypeError.variantNotFound(for: Self.self, variant: first!.key, in: info)
             }
             if variant.fields.count == 1 {
                 let val = try first!.value.asValue(runtime: runtime,
@@ -242,42 +195,41 @@ extension Dictionary: ValueRepresentable where Key == String, Value == ValueRepr
             switch first!.value {
             case let arr as Array<ValueRepresentable>:
                 let seq = try arr.asCompositeValue(runtime: runtime,
-                                                   type: .init(id: type, type: info),
+                                                   type: info,
                                                    types: variant.fields.map{$0.type})
                 return .variant(name: variant.name, values: seq, type)
             case let map as Dictionary<String, ValueRepresentable>:
                 let types = try variant.fields.map { field in
                     guard let key = field.name else {
-                        throw ValueRepresentableError.wrongType(got: info,
-                                                                for: String(describing: Self.self))
+                        throw TypeError.wrongType(for: Self.self, got: info,
+                                                  reason: "field name is nil")
                     }
                     return (key, field.type)
                 }
                 let map = try map.asCompositeValue(runtime: runtime,
-                                                   type: .init(id: type, type: info),
+                                                   type: info,
                                                    types: Dictionary<_,_>(uniqueKeysWithValues: types))
                 return .variant(name: variant.name, fields: map, type)
-            default: throw ValueRepresentableError.wrongType(got: info,
-                                                             for: String(describing: Self.self))
+            default: throw TypeError.wrongType(for: Self.self, got: info,
+                                               reason: "Can't be a variant type")
             }
         default:
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+            throw TypeError.wrongType(for: Self.self, got: info,
+                                      reason: "Isn't map")
         }
     }
     
     func asCompositeValue(
         runtime: any Runtime,
-        type: NetworkType.Info,
+        type: NetworkType,
         types: [String: NetworkType.Id]) throws -> [String: Substrate.Value<NetworkType.Id>]
     {
         guard types.count == count else {
-            throw ValueRepresentableError.wrongValuesCount(in: type.type,
-                                                           expected: count,
-                                                           for: String(describing: Self.self))
+            throw TypeError.wrongValuesCount(for: Self.self, expected: count, in: type)
         }
         let pairs = try types.map { field in
             guard let value = self[field.key] else {
-                throw ValueRepresentableError.keyNotFound(key: field.key, in: self)
+                throw TypeError.fieldNotFound(for: Self.self, field: field.key, in: type)
             }
             return try (field.key, value.asValue(runtime: runtime, type: field.value))
         }
@@ -294,10 +246,10 @@ extension Dictionary: VoidValueRepresentable where Key: StringProtocol, Value ==
 extension Optional: ValueRepresentable where Wrapped == ValueRepresentable {
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         guard let field = info.asOptional(runtime) else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+            throw TypeError.wrongType(for: Self.self, got: info, reason: "Isn't Optional")
         }
         switch self {
         case .some(let val):
@@ -320,10 +272,10 @@ extension Optional: VoidValueRepresentable where Wrapped == VoidValueRepresentab
 extension Either: ValueRepresentable where Left == ValueRepresentable, Right == ValueRepresentable {
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         guard let result = info.asResult(runtime) else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+            throw TypeError.wrongType(for: Self.self, got: info, reason: "Isn't Result")
         }
         switch self {
         case .left(let err):

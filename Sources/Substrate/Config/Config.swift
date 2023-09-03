@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public typealias ConfigUnsignedInteger = UnsignedInteger & ValueRepresentable & DataConvertible
-    & CompactCodable & Swift.Codable & RuntimeCodable & RuntimeDynamicValidatable
+    & CompactCodable & Swift.Codable & RuntimeCodable & IdentifiableType
 
 // Config split to avoid recursive types
 public protocol BasicConfig {
@@ -19,11 +19,11 @@ public protocol BasicConfig {
     associatedtype TAddress: Address<TAccountId>
     associatedtype TSignature: Signature
     associatedtype TExtrinsicEra: SomeExtrinsicEra
-    associatedtype TExtrinsicPayment: ValueRepresentable & RuntimeDynamicValidatable
+    associatedtype TExtrinsicPayment: ValueRepresentable & ValidatableType
     associatedtype TSystemProperties: SystemProperties
     associatedtype TRuntimeVersion: RuntimeVersion
-    associatedtype TRuntimeDispatchInfo: RuntimeDynamicDecodable & RuntimeDynamicValidatable
-    associatedtype TFeeDetails: RuntimeDynamicDecodable & RuntimeDynamicValidatable
+    associatedtype TRuntimeDispatchInfo: RuntimeDynamicDecodable & ValidatableType
+    associatedtype TFeeDetails: RuntimeDynamicDecodable & ValidatableType
 }
 
 public protocol Config {
@@ -62,8 +62,8 @@ public protocol Config {
     func extrinsicManager() throws -> TExtrinsicManager
     func customCoders() throws -> [RuntimeCustomDynamicCoder]
     // Return Config pallets list for validation
-    func pallets(runtime: any Runtime) throws -> [Pallet]
-    func runtimeCalls(runtime: any Runtime) throws -> [any (StaticRuntimeCall & RuntimeValidatable).Type]
+    func frames(runtime: any Runtime) throws -> [Frame]
+    func runtimeCalls(runtime: any Runtime) throws -> [any StaticRuntimeCall.Type]
     // If you want your own Scale Codec coders
     func encoder() -> ScaleCodec.Encoder
     func encoder(reservedCapacity count: Int) -> ScaleCodec.Encoder
@@ -76,7 +76,7 @@ public protocol BatchSupportedConfig: Config {
     associatedtype TBatchAllCall: SomeBatchCall
     
     func isBatchSupported(metadata: any Metadata) -> Bool
-    func batchCalls(runtime: any Runtime) throws -> [SomeBatchCall.Type]
+    func batchCalls(runtime: any Runtime) throws -> [any SomeBatchCall.Type]
 }
 
 @frozen public struct SBT<C: BasicConfig> {
@@ -152,7 +152,7 @@ public extension BatchSupportedConfig {
         metadata.resolve(pallet: TBatchAllCall.pallet)?.callIndex(name: TBatchAllCall.name) != nil
     }
     
-    func batchCalls(runtime: any Runtime) throws -> [SomeBatchCall.Type] {
+    func batchCalls(runtime: any Runtime) throws -> [any SomeBatchCall.Type] {
         [TBatchCall.self, TBatchAllCall.self]
     }
 }
@@ -166,14 +166,14 @@ public extension BatchSupportedConfig {
     }
     
     @inlinable
-    static func defaultPallets<C: Config>(runtime: any Runtime, config: C) throws -> [Pallet] {
-        try [BaseSystemPallet<C>(runtime: runtime, config: config)]
+    static func defaultFrames<C: Config>(runtime: any Runtime, config: C) throws -> [Frame] {
+        try [BaseSystemFrame<C>(runtime: runtime, config: config)]
     }
     
     @inlinable
     static func defaultRuntimeCalls<C: Config>(
         runtime: any Runtime, config: C
-    ) -> [any (StaticRuntimeCall & RuntimeValidatable).Type] {
+    ) -> [any StaticRuntimeCall.Type] {
         [TransactionQueryInfoRuntimeCall<ST<C>.RuntimeDispatchInfo>.self,
          TransactionQueryFeeDetailsRuntimeCall<ST<C>.FeeDetails>.self]
     }
@@ -225,12 +225,12 @@ public extension Config {
     }
     
     @inlinable
-    func pallets(runtime: any Runtime) throws -> [Pallet] {
-        try Configs.defaultPallets(runtime: runtime, config: self)
+    func frames(runtime: any Runtime) throws -> [Frame] {
+        try Configs.defaultFrames(runtime: runtime, config: self)
     }
     
     @inlinable
-    func runtimeCalls(runtime: any Runtime) throws -> [any (StaticRuntimeCall & RuntimeValidatable).Type] {
+    func runtimeCalls(runtime: any Runtime) throws -> [any StaticRuntimeCall.Type] {
         Configs.defaultRuntimeCalls(runtime: runtime, config: self)
     }
 }

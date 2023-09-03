@@ -56,7 +56,7 @@ public extension ExtrinsicEvents {
         _events.has(event: event, pallet: pallet, extrinsic: index)
     }
     
-    func has<E: IdentifiableEvent>(_ type: E.Type) -> Bool {
+    func has<E: PalletEvent>(_ type: E.Type) -> Bool {
         _events.has(type, extrinsic: index)
     }
     
@@ -72,11 +72,11 @@ public extension ExtrinsicEvents {
         try _events.all(events: event, pallet: pallet, extrinsic: index)
     }
     
-    func all<E: IdentifiableEvent>(records type: E.Type) -> [BE.ER] {
+    func all<E: PalletEvent>(records type: E.Type) -> [BE.ER] {
         _events.all(records: type)
     }
     
-    func all<E: IdentifiableEvent>(events type: E.Type) throws -> [E] {
+    func all<E: PalletEvent>(events type: E.Type) throws -> [E] {
         try _events.all(events: type, extrinsic: index)
     }
     
@@ -88,11 +88,11 @@ public extension ExtrinsicEvents {
         try _events.first(event: name, pallet: pallet, extrinsic: index)
     }
     
-    func first<E: IdentifiableEvent>(record type: E.Type) -> BE.ER? {
+    func first<E: PalletEvent>(record type: E.Type) -> BE.ER? {
         _events.first(record: type, extrinsic: index)
     }
     
-    func first<E: IdentifiableEvent>(event type: E.Type) throws -> E? {
+    func first<E: PalletEvent>(event type: E.Type) throws -> E? {
         try _events.first(event: type, extrinsic: index)
     }
     
@@ -104,11 +104,11 @@ public extension ExtrinsicEvents {
         try _events.last(event: name, pallet: pallet, extrinsic: index)
     }
     
-    func last<E: IdentifiableEvent>(record type: E.Type) -> BE.ER? {
+    func last<E: PalletEvent>(record type: E.Type) -> BE.ER? {
         _events.last(record: type, extrinsic: index)
     }
     
-    func last<E: IdentifiableEvent>(event type: E.Type) throws -> E? {
+    func last<E: PalletEvent>(event type: E.Type) throws -> E? {
         try _events.last(event: type, extrinsic: index)
     }
 }

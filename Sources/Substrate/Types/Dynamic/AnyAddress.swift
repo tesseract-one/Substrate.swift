@@ -18,11 +18,11 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         from decoder: inout D, as type: NetworkType.Id, runtime: any Runtime
     ) throws {
         guard let info = runtime.resolve(type: type) else {
-            throw Value<NetworkType.Id>.DecodingError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         switch info.flatten(runtime).definition {
         case .variant(variants: let vars):
-            let idVar = try Self.findIdVariant(in: vars, type: info).getValueError()
+            let idVar = try Self.findIdVariant(in: vars, type: info).get()
             if try decoder.peek() == idVar.index {
                 let _ = try decoder.decode(.enumCaseId)
                 self = try .id(Id(from: &decoder, as: idVar.fields.first!.type, runtime: runtime))
@@ -63,13 +63,13 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         switch info.flatten(runtime).definition {
         case .variant(variants: let vars):
             switch self {
             case .id(let id):
-                let idVar = try Self.findIdVariant(in: vars, type: info).getValueError()
+                let idVar = try Self.findIdVariant(in: vars, type: info).get()
                 return try .variant(
                     name: idVar.name,
                     values: [id.asValue(runtime: runtime, type: idVar.fields.first!.type)],
@@ -77,12 +77,11 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                 )
             case .other(name: let n, values: let params):
                 guard let item = vars.first(where: { $0.name == n }) else {
-                    throw ValueRepresentableError.variantNotFound(name: n, in: info)
+                    throw TypeError.variantNotFound(for: Self.self, variant: n, in: info)
                 }
                 guard item.fields.count == params.count else {
-                    throw ValueRepresentableError.wrongValuesCount(in: info,
-                                                                   expected: params.count,
-                                                                   for: n)
+                    throw TypeError.wrongVariantFieldsCount(for: Self.self, variant: n,
+                                                            expected: params.count, in: info)
                 }
                 let mapped = try zip(item.fields, params).map {
                     try $1.asValue(runtime: runtime, type: $0.type)
@@ -91,7 +90,8 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
             }
         default:
             guard case .id(let id) = self else {
-                throw ValueRepresentableError.wrongType(got: info, for: "AnyAddress")
+                throw TypeError.wrongType(for: Self.self, got: info,
+                                          reason: "primitive type but self is not Id")
             }
             return try id.asValue(runtime: runtime, type: type)
         }
@@ -99,7 +99,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     
     public static func findIdVariant(
         in vars: [NetworkType.Variant], type: NetworkType
-    ) -> Result<NetworkType.Variant, DynamicValidationError> {
+    ) -> Result<NetworkType.Variant, TypeError> {
         for item in vars {
             if item.fields.count != 1 { continue }
             if item.name.lowercased().contains("id") { return .success(item) }
@@ -107,22 +107,19 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                 return .success(item)
             }
         }
-        return .failure(.variantNotFound(name: "Id", in: type))
+        return .failure(.variantNotFound(for: Self.self, variant: "Id", in: type))
     }
     
-    public static func validate(runtime: Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
+    public static func validate(runtime: any Runtime,
+                                type: NetworkType.Info) -> Result<Void, TypeError>
     {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        switch info.flatten(runtime).definition {
+        switch type.type.flatten(runtime).definition {
         case .variant(variants: let vars):
-            return findIdVariant(in: vars, type: info).flatMap { variant in
-                TAccountId.validate(runtime: runtime, type: variant.fields.first!.type)
+            return findIdVariant(in: vars, type: type.type).flatMap { variant in
+                TAccountId.validate(runtime: runtime, type: variant.fields.first!.type).map{_ in}
             }
         default:
-            return TAccountId.validate(runtime: runtime, type: id)
+            return TAccountId.validate(runtime: runtime, type: type)
         }
     }
     

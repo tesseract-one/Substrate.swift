@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicFailureEvent: SomeExtrinsicFailureEvent, StaticEvent, RuntimeValidatableStaticComposite {
+public struct ExtrinsicFailureEvent: SomeExtrinsicFailureEvent, StaticEvent, IdentifiableFrameType {
     public struct ExtrinsicFailed: Error {
         public let error: DispatchError
         public let info: DispatchInfo
@@ -23,8 +23,8 @@ public struct ExtrinsicFailureEvent: SomeExtrinsicFailureEvent, StaticEvent, Run
     }
     
     @inlinable
-    public static var validatableFields: [RuntimeDynamicValidatable.Type] {
-        [DispatchError.self, DispatchInfo.self]
+    public static var definition: FrameTypeDefinition {
+        .event(Self.self, fields: [.v(DispatchError.definition), .v(DispatchInfo.definition)])
     }
     
     public static let pallet: String = "System"

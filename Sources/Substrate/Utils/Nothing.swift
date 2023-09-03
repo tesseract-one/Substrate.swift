@@ -39,7 +39,7 @@ extension Nothing: ScaleCodec.Codable, RuntimeCodable {
 
 extension Nothing: ValueRepresentable {
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        try Self.validate(runtime: runtime, type: type).getValueError()
+        let _ = try Self.validate(runtime: runtime, type: type).get()
         return .nil(type)
     }
 }
@@ -48,18 +48,8 @@ extension Nothing: VoidValueRepresentable {
     public func asValue() -> Value<Void> { .nil }
 }
 
-extension Nothing: RuntimeDynamicValidatable {
-    public static func validate(runtime: Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
-    {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard info.isEmpty(runtime) else {
-            return .failure(.wrongType(got: info, for: "()"))
-        }
-        return .success(())
-    }
+extension Nothing: IdentifiableType {
+    @inlinable public static var definition: TypeDefinition { .void }
 }
 
 // Somehow substrate has Compact<()> type

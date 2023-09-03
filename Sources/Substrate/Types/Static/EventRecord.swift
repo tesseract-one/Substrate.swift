@@ -8,8 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct EventRecord<H: Hash>: SomeEventRecord, CustomStringConvertible,
-                                    RuntimeDynamicValidatableStaticComposite
+public struct EventRecord<H: Hash>: SomeEventRecord, CompositeStaticValidatableType, CustomStringConvertible
 {
     public let phase: EventPhase
     public let header: (name: String, pallet: String)
@@ -30,7 +29,7 @@ public struct EventRecord<H: Hash>: SomeEventRecord, CustomStringConvertible,
         try _runtime.decode(from: data) { _ in _eventTypeId }
     } }
     
-    public func typed<E: IdentifiableEvent>(_ type: E.Type) throws -> E {
+    public func typed<E: PalletEvent>(_ type: E.Type) throws -> E {
         try _runtime.decode(from: data) { _ in _eventTypeId }
     }
     
@@ -38,14 +37,14 @@ public struct EventRecord<H: Hash>: SomeEventRecord, CustomStringConvertible,
         "{phase: \(phase), event: \(header.pallet).\(header.name), topics: \(topics)}"
     }
     
-    public static var validatableFields: [RuntimeDynamicValidatable.Type] {
-        [EventPhase.self, AnyEvent.self, [H].self]
+    @inlinable
+    public static var childTypes: Array<ValidatableType.Type> {
+        [EventPhase.self, AnyEvent.self, Array<H>.self]
     }
 }
 
 public extension EventRecord {
-    enum EventPhase: Equatable, Hashable, CustomStringConvertible,
-                     RuntimeDynamicValidatableStaticVariant
+    enum EventPhase: Equatable, Hashable, CustomStringConvertible, IdentifiableType
     {
         // Applying an extrinsic.
         case applyExtrinsic(UInt32)
@@ -62,9 +61,11 @@ public extension EventRecord {
             }
         }
         
-        public static var validatableVariants: [ValidatableStaticVariant] {
-            [(0, "ApplyExtrinsic", [UInt32.self]), (1, "Finalization", []),
-             (2, "Initialization", [])]
+        public static var definition: TypeDefinition {
+            .variant(variants: [
+                .s(0, "ApplyExtrinsic", UInt32.definition), .e(1, "Finalization"),
+                .e(2, "Initialization")
+            ])
         }
     }
 }

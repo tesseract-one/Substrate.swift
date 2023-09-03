@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
-                           ValueRepresentable, RuntimeDynamicValidatable
+                           ValueRepresentable, ValidatableType
 {
     init(from string: String, runtime: any Runtime,
          id: NetworkType.LazyId) throws
@@ -43,7 +43,7 @@ public extension AccountId {
     }
 }
 
-public protocol StaticAccountId: AccountId, RuntimeCodable, RuntimeSwiftCodable {
+public protocol StaticAccountId: AccountId, IdentifiableType, RuntimeCodable, RuntimeSwiftCodable {
     init(checked raw: Data, runtime: any Runtime) throws
     
     init(from string: String, runtime: any Runtime) throws
@@ -109,18 +109,6 @@ public extension StaticAccountId {
         try container.encode(self.string)
     }
     
-    static func validate(runtime: any Runtime,
-                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard let count = info.asBytes(runtime) else {
-            return .failure(.wrongType(got: info, for: String(describing: Self.self)))
-        }
-        guard byteCount == count else {
-            return .failure(.wrongValuesCount(in: info, expected: byteCount,
-                                              for: String(describing: Self.self)))
-        }
-        return .success(())
-    }
+    @inlinable
+    static var definition: TypeDefinition { .data(count: UInt32(byteCount)) }
 }

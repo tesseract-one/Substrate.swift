@@ -10,33 +10,31 @@ import Foundation
 public protocol Hasher {
     var hashPartByteLength: Int { get }
     var isConcat: Bool { get }
-    var name: String { get }
+    var type: LastMetadata.StorageHasher { get }
     
     func hash(data: Data) -> Data
 }
 
-public protocol StaticHasher: Hasher, RuntimeDynamicValidatable {
-    static var name: String { get }
+public protocol StaticHasher: Hasher, ValidatableType {
+    static var hasherType: LastMetadata.StorageHasher { get }
     static var instance: Self { get }
 }
 
 public extension StaticHasher {
-    @inlinable var name: String { Self.name }
+    @inlinable var type: LastMetadata.StorageHasher { Self.hasherType }
     
     static func validate(runtime: any Runtime,
-                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
+                         type: NetworkType.Info) -> Result<Void, TypeError>
     {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard let name = info.path.last, name == Self.name else {
-            return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+        guard let name = type.type.path.last, name == hasherType.name else {
+            return .failure(.wrongType(for: Self.self, got: type.type,
+                                       reason: "Unknown hasher: \(type.type)"))
         }
         return .success(())
     }
 }
 
-public protocol FixedHasher: Hasher, RuntimeDynamicValidatable {
+public protocol FixedHasher: Hasher, ValidatableType {
     associatedtype THash: Hash
     
     func hash(data: Data, runtime: any Runtime) throws -> THash

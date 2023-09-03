@@ -8,9 +8,11 @@
 import Foundation
 import ScaleCodec
 
-public struct EventsStorageKey<BE: SomeBlockEvents>: PlainStorageKey, ValidatableStorageKey {
+public struct EventsStorageKey<BE: SomeBlockEvents>: PlainStorageKey, ComplexStaticFrameType {
     public typealias TParams = Void
     public typealias TBaseParams = Void
+    public typealias TypeInfo = StorageKeyTypeInfo
+    public typealias ChildTypes = StorageKeyChildTypes
     public typealias TValue = BE
     
     public static var pallet: String { "System" }

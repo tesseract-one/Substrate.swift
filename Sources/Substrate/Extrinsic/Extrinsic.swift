@@ -75,7 +75,7 @@ public protocol OpaqueExtrinsic<THash, TSignedExtra, TUnsignedExtra>: RuntimeSwi
 }
 
 
-public protocol SomeExtrinsicEra: RuntimeDynamicCodable, ValueRepresentable, RuntimeDynamicValidatable, Default {
+public protocol SomeExtrinsicEra: RuntimeDynamicCodable, ValueRepresentable, ValidatableType, Default {
     var isImmortal: Bool { get }
     
     func blockHash<R: RootApi>(api: R) async throws -> R.RC.TBlock.THeader.THasher.THash
@@ -95,7 +95,7 @@ public enum ExtrinsicCodingError: Error {
     case unknownExtension(identifier: ExtrinsicExtensionId)
 }
 
-public protocol SomeExtrinsicFailureEvent: IdentifiableEvent, RuntimeValidatable {
+public protocol SomeExtrinsicFailureEvent: PalletEvent {
     associatedtype Err: Error
     var error: Err { get }
 }
@@ -107,55 +107,66 @@ public protocol SomeDispatchError: CallError {
 }
 
 public struct ModuleError: Error {
-    public enum DecodingError: Error {
-        case dispatchErrorIsNotModule(description: String)
-        case badModuleVariant(Value<NetworkType.Id>.Variant)
-        case palletNotFound(index: UInt8)
-        case badPalletError(type: NetworkType.Info?)
-        case errorNotFound(index: UInt8)
-    }
-    
     public let pallet: PalletMetadata
     public let error: NetworkType.Variant
     
     public init(variant: Value<NetworkType.Id>.Variant, runtime: any Runtime) throws {
         let fields = variant.values
-        guard fields.count == 2,
-              let index = fields[0].uint.flatMap({UInt8(exactly: $0)}),
-              let bytes = fields[1].bytes, bytes.count > 0 else
-        {
-            throw DecodingError.badModuleVariant(variant)
+        guard fields.count == 2 else {
+            throw FrameTypeError.wrongFieldsCount(for: "Error", expected: 2,
+                                                  got: fields.count)
+        }
+        guard let index = fields[0].uint.flatMap({UInt8(exactly: $0)}) else {
+            throw FrameTypeError.paramMismatch(for: "Error", index: 0,
+                                               expected: "UInt8", got: fields[0].description)
+        }
+        guard let bytes = fields[1].bytes, bytes.count > 0 else {
+            throw FrameTypeError.paramMismatch(for: "Error", index: 1,
+                                               expected: "Data", got: fields[1].description)
         }
         try self.init(pallet: index, error: bytes[0], metadata: runtime.metadata)
     }
     
     public init(pallet: UInt8, error: UInt8, metadata: any Metadata) throws {
         guard let pallet = metadata.resolve(pallet: pallet) else {
-            throw DecodingError.palletNotFound(index: pallet)
+            throw FrameTypeError.typeInfoNotFound(for: "Error", index: error, frame: pallet)
         }
-        guard case .variant(variants: let variants) = pallet.error?.type.definition else {
-            throw DecodingError.badPalletError(type: pallet.error)
+        guard let palletError = pallet.error else {
+            throw FrameTypeError.paramMismatch(for: "\(pallet.name).error",
+                                               index: -1, expected: "NetworkType.Info",
+                                               got: "nil")
+        }
+        guard case .variant(variants: let variants) = palletError.type.definition else {
+            throw FrameTypeError.paramMismatch(for: "\(pallet.name).error",
+                                               index: -1, expected: "Variant",
+                                               got: palletError.type.description)
         }
         guard let error = variants.first(where: { $0.index == error }) else {
-            throw DecodingError.errorNotFound(index: error)
+            throw FrameTypeError.typeInfoNotFound(for: "Error", index: error, frame: pallet.index)
         }
         self.pallet = pallet
         self.error = error
     }
     
-    public static func validate(variant: NetworkType.Variant,
-                                runtime: any Runtime) -> Bool
+    public static func validate(info: (index: UInt8, name: String,
+                                       fields: [(name: String?, type: NetworkType.Info)]),
+                                type: NetworkType,
+                                runtime: any Runtime) -> Result<Void, TypeError>
     {
-        guard variant.fields.count == 2 else {
-            return false
+        guard info.fields.count == 2 else {
+            return .failure(.wrongVariantFieldsCount(for: Self.self,
+                                                     variant: info.name,
+                                                     expected: 2, in: type))
         }
-        guard runtime.resolve(type: variant.fields[0].type)?.asPrimitive(runtime)?.isUInt == 8 else {
-            return false
+        guard info.fields[0].type.type.asPrimitive(runtime)?.isUInt == 8 else {
+            return .failure(.wrongType(for: Self.self, got: type,
+                                       reason: "field[0] is not UInt8"))
         }
-        guard runtime.resolve(type: variant.fields[0].type)?.asBytes(runtime) ?? 0 > 0 else {
-            return false
+        guard info.fields[1].type.type.asBytes(runtime) ?? 0 > 0 else {
+            return .failure(.wrongType(for: Self.self, got: type,
+                                       reason: "field[1] is not byte array"))
         }
-        return true
+        return .success(())
     }
 }
 

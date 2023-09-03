@@ -76,9 +76,14 @@ public extension ConstantsApiRegistry {
     }
 }
 
-public protocol StaticConstant: PalletType {
+public protocol StaticConstant: FrameType {
     associatedtype TValue
+    static var pallet: String { get }
     static func decode<D: ScaleCodec.Decoder>(valueFrom decoder: inout D, runtime: any Runtime) throws -> TValue
+}
+
+public extension StaticConstant {
+    @inlinable static var frame: String { pallet }
 }
 
 public extension StaticConstant where TValue: RuntimeDecodable {
@@ -87,13 +92,20 @@ public extension StaticConstant where TValue: RuntimeDecodable {
     }
 }
 
-public extension StaticConstant where Self: RuntimeValidatable, TValue: RuntimeDynamicValidatable {
-    static func validate(runtime: any Runtime) -> Result<Void, ValidationError> {
+public extension StaticConstant where TValue: ValidatableType {
+    static func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
         guard let info = runtime.resolve(constant: name, pallet: pallet) else {
-            return .failure(.infoNotFound(for: Self.self))
+            return .failure(.typeInfoNotFound(for: Self.self))
         }
-        return TValue.validate(runtime: runtime, type: info.type.id).mapError {
-            .childError(for: Self.self, error: $0)
+        return TValue.validate(runtime: runtime, type: info.type).mapError {
+            .childError(for: Self.self, index: -1, error: $0)
         }
+    }
+}
+
+public extension StaticConstant where TValue: IdentifiableType {
+    @inlinable
+    static var definition: FrameTypeDefinition {
+        .constant(Self.self, type: TValue.definition)
     }
 }

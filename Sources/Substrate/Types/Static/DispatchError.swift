@@ -10,7 +10,7 @@ import ScaleCodec
 
 /// An error dispatching a transaction.
 public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
-                           ScaleCodec.Encodable, RuntimeDynamicValidatableStaticVariant
+                           ScaleCodec.Encodable
 {
     /// Some unknown error occurred.
     case other
@@ -58,9 +58,9 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
                                    error: data.error[0],
                                    metadata: data._runtime.metadata)
         default:
-            throw ModuleError.DecodingError.dispatchErrorIsNotModule(
-                description: String(describing: self)
-            )
+            throw FrameTypeError.paramMismatch(for: "DispatchError",
+                                               index: -1, expected: "ModuleError",
+                                               got: "\(self)")
         }
     }}
     
@@ -112,22 +112,24 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
         }
     }
     
-    public static var validatableVariants: [ValidatableStaticVariant] {
-        [(0, "Other", []), (1, "CannotLookup", []), (2, "BadOrigin", []),
-         (3, "Module", [ModuleErrorData.self]), (4, "ConsumerRemaining", []),
-         (5, "NoProviders", []), (6, "TooManyConsumers", []),
-         (7, "Token", [TokenError.self]), (8, "Arithmetic", [ArithmeticError.self]),
-         (9, "Transactional", [TransactionalError.self]), (10, "Exhausted", []),
-         (11, "Corruption", []), (12, "Unavailable", [])]
-        //(13, "RootNotAllowed", [])
+    public static var definition: TypeDefinition {
+        .variant(variants: [
+            .e(0, "Other"), .e(1, "CannotLookup"), .e(2, "BadOrigin"),
+            .s(3, "Module", ModuleErrorData.definition), .e(4, "ConsumerRemaining"),
+            .e(5, "NoProviders"), .e(6, "TooManyConsumers"),
+            .s(7, "Token", TokenError.definition),
+            .s(8, "Arithmetic", ArithmeticError.definition),
+            .s(9, "Transactional", TransactionalError.definition),
+            .e(10, "Exhausted"), .e(11, "Corruption"), .e(12, "Unavailable")
+            //(13, "RootNotAllowed", [])
+        ])
     }
 }
 
 public extension DispatchError {
     /// Reason why a pallet call failed.
     struct ModuleErrorData: Equatable, RuntimeDecodable, ScaleCodec.Encodable,
-                            RuntimeSwiftCodable, Swift.Encodable,
-                            RuntimeDynamicValidatableStaticComposite
+                            RuntimeSwiftCodable, Swift.Encodable, IdentifiableType
     {
         /// Module index, matching the metadata module index.
         public let index: UInt8
@@ -164,14 +166,13 @@ public extension DispatchError {
             lhs.index == rhs.index && lhs.error == rhs.error
         }
         
-        public static var validatableFields: [RuntimeDynamicValidatable.Type] {
-            [UInt8.self, Data.self]
+        public static var definition: TypeDefinition {
+            .composite(fields: [.v(UInt8.definition), .v(.data(count: 4))])
         }
     }
     
     enum TokenError: UInt8, CaseIterable, ScaleCodec.Codable,
-                     RuntimeCodable, Swift.Codable,
-                     RuntimeDynamicValidatableStaticVariant
+                     RuntimeCodable, Swift.Codable, IdentifiableType
     {
         /// Funds are unavailable.
         case fundsUnavailable
@@ -196,8 +197,8 @@ public extension DispatchError {
 //        case blocked
     }
 
-    enum ArithmeticError: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeCodable, Swift.Codable,
-                          RuntimeDynamicValidatableStaticVariant
+    enum ArithmeticError: UInt8, CaseIterable, ScaleCodec.Codable,
+                          RuntimeCodable, Swift.Codable, IdentifiableType
     {
         case underflow
         case overflow
@@ -205,8 +206,8 @@ public extension DispatchError {
     }
 
     /// Errors related to transactional storage layers.
-    enum TransactionalError: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeCodable, Swift.Codable,
-                             RuntimeDynamicValidatableStaticVariant
+    enum TransactionalError: UInt8, CaseIterable, ScaleCodec.Codable,
+                             RuntimeCodable, Swift.Codable, IdentifiableType
     {
         /// Too many transactional layers have been spawned.
         case limitReached

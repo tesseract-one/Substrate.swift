@@ -119,35 +119,22 @@ extension ExtrinsicEra: ScaleCodec.Codable {
 
 extension ExtrinsicEra: RuntimeCodable, RuntimeDynamicDecodable, RuntimeDynamicEncodable {}
 
-extension ExtrinsicEra {
-    static func _validate(runtime: Runtime,
-                          type id: NetworkType.Id) -> Result<NetworkType.Id, DynamicValidationError>
-    {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard case .variant(variants: let vars) = info.flatten(runtime).definition else {
-            return .failure(.wrongType(got: info, for: "ExtrinsicEra"))
-        }
-        guard vars.count == Int(UInt8.max) + 1 else {
-            return .failure(.wrongType(got: info, for: "ExtrinsicEra"))
-        }
-        guard vars[0].name == "Immortal", vars[1].name.hasPrefix("Mortal") else {
-            return .failure(.wrongType(got: info, for: "ExtrinsicEra"))
-        }
-        return .success(vars[1].fields.first!.type)
-    }
-}
-
-extension ExtrinsicEra: RuntimeDynamicValidatable {
-    public static func validate(runtime: Runtime, type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
-        _validate(runtime: runtime, type: id).map{_ in}
+extension ExtrinsicEra: IdentifiableType {
+    public static var definition: TypeDefinition {
+        return .variant(variants:
+            [.e(0, "Immortal")] +
+            Array((1...255).map{.s(UInt8($0), "Mortal\($0)", UInt8.definition)})
+        )
     }
 }
 
 extension ExtrinsicEra: ValueRepresentable {
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let bodyType = try Self._validate(runtime: runtime, type: type).getValueError()
+        let info = try Self.validate(runtime: runtime, type: type).get()
+        guard case .variant(variants: let vars) = info.type.flatten(runtime).definition else {
+            throw TypeError.wrongType(for: Self.self, got: info.type, reason: "Not a variant")
+        }
+        let bodyType = vars[1].fields[0].type
         switch self {
         case .immortal: return .variant(name: "Immortal", values: [], type)
         case .mortal(period: _, phase: _):

@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol SingleTypeStaticSignature: StaticSignature, FixedDataCodable, VoidValueRepresentable,
-                                           RuntimeDynamicValidatable, Hashable, Equatable,
+                                           IdentifiableType, Hashable, Equatable,
                                            CustomStringConvertible
 {
     var raw: Data { get }
@@ -40,37 +40,30 @@ public extension SingleTypeStaticSignature {
     static var fixedBytesCount: Int { algorithm.signatureBytesCount }
     
     func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
-        }
-        guard let count = info.asBytes(runtime) else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
-        }
-        let bytes = raw
-        guard count == 0 || bytes.count == count else {
-            throw ValueRepresentableError.wrongValuesCount(in: info, expected: bytes.count,
-                                                           for: String(describing: Self.self))
-        }
-        return .bytes(bytes, type)
+        let _ = try Self.validate(runtime: runtime, type: type).get()
+        return .bytes(raw, type)
     }
     
     func asValue() -> Value<Void> { .bytes(raw) }
     
-    static func validate(runtime: any Runtime,
-                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        return AnySignature.parseTypeInfo(runtime: runtime, typeId: id).flatMap { types in
+    @inlinable
+    static var definition: TypeDefinition { .data(count: UInt32(fixedBytesCount)) }
+    
+    static func _validate(runtime: any Runtime,
+                          type: NetworkType) -> Result<Void, TypeError> {
+        return AnySignature.parseTypeInfo(runtime: runtime, type: type).flatMap { types in
             guard types.count == 1, types.values.first == algorithm else {
-                return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+                return .failure(.wrongType(for: Self.self, got: type,
+                                           reason: "Unknown signature type: \(types)"))
             }
-            guard let count = info.asBytes(runtime) else {
-                return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+            guard let count = type.asBytes(runtime) else {
+                return .failure(.wrongType(for: Self.self, got: type,
+                                           reason: "Signature is not byte sequence"))
             }
             guard Self.fixedBytesCount == count else {
-                return .failure(.wrongValuesCount(in: info, expected: Self.fixedBytesCount,
-                                                  for: String(describing: Self.self)))
+                return .failure(.wrongValuesCount(for: Self.self,
+                                                  expected: Self.fixedBytesCount,
+                                                  in: type))
             }
             return .success(())
         }
@@ -88,6 +81,12 @@ public struct EcdsaSignature: SingleTypeStaticSignature {
     }
     
     @inlinable
+    public static func validate(runtime: Runtime,
+                                type: NetworkType) -> Result<Void, TypeError> {
+        _validate(runtime: runtime, type: type)
+    }
+    
+    @inlinable
     public static var algorithm: CryptoTypeId { .ecdsa }
 }
 
@@ -102,6 +101,12 @@ public struct Ed25519Signature: SingleTypeStaticSignature {
     }
     
     @inlinable
+    public static func validate(runtime: Runtime,
+                                type: NetworkType) -> Result<Void, TypeError> {
+        _validate(runtime: runtime, type: type)
+    }
+    
+    @inlinable
     public static var algorithm: CryptoTypeId { .ed25519 }
 }
 
@@ -113,6 +118,12 @@ public struct Sr25519Signature: SingleTypeStaticSignature {
             throw SizeMismatchError(size: data.count, expected: Self.fixedBytesCount)
         }
         raw = data
+    }
+    
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type: NetworkType) -> Result<Void, TypeError> {
+        _validate(runtime: runtime, type: type)
     }
     
     @inlinable

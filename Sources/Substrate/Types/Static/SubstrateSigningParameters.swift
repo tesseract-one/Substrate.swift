@@ -9,8 +9,8 @@ import Foundation
 
 public struct SubstrateSigningParameters<
     E: SomeExtrinsicEra, H: Hash, A: AccountId,
-    N: UnsignedInteger & ValueRepresentable & RuntimeDynamicValidatable,
-    P: ValueRepresentable & RuntimeDynamicValidatable
+    N: UnsignedInteger & ValueRepresentable & ValidatableType,
+    P: ValueRepresentable & ValidatableType
 >: EraSigningParameters, NonceSigningParameters, PaymentSigningParameters {
     public typealias TPartial = Partial
     

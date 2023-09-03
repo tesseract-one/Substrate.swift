@@ -36,7 +36,7 @@ public struct AnySignature: Signature {
             .flatten(runtime: runtime)
         switch value.value {
         case .variant(let variant):
-            let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type).getValueError()
+            let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type).get()
             guard let algo = algos[variant.name] else {
                 throw Error.unsupportedCrypto(name: variant.name)
             }
@@ -62,7 +62,7 @@ public struct AnySignature: Signature {
     }
     
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type).getValueError()
+        let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type).get()
         if algos.count == 1 {
             guard algos.first!.value == _sig.algorithm else {
                 throw Error.unsupportedCrypto(id: algos.first!.value)
@@ -78,30 +78,36 @@ public struct AnySignature: Signature {
     public static func algorithms(runtime: Runtime,
                                   id: NetworkType.LazyId) throws -> [CryptoTypeId]
     {
-        try Array(parseTypeInfo(runtime: runtime, typeId: id(runtime)).getValueError().values)
+        try Array(parseTypeInfo(runtime: runtime, typeId: id(runtime)).get().values)
     }
     
     public static func validate(runtime: Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
+                                type: NetworkType.Info) -> Result<Void, TypeError>
     {
-        parseTypeInfo(runtime: runtime, typeId: id).map{_ in}
+        parseTypeInfo(runtime: runtime, type: type.type).map{_ in}
+    }
+    
+    @inlinable public static func parseTypeInfo(
+        runtime: Runtime, typeId: NetworkType.Id
+    ) -> Result<[String: CryptoTypeId], TypeError> {
+        guard let type = runtime.resolve(type: typeId) else {
+            return .failure(.typeNotFound(for: Self.self, id: typeId))
+        }
+        return parseTypeInfo(runtime: runtime, type: type)
     }
     
     public static func parseTypeInfo(
-        runtime: Runtime, typeId: NetworkType.Id
-    ) -> Result<[String: CryptoTypeId], DynamicValidationError> {
-        guard let type = runtime.resolve(type: typeId) else {
-            return .failure(.typeNotFound(typeId))
-        }
+        runtime: Runtime, type: NetworkType
+    ) -> Result<[String: CryptoTypeId], TypeError> {
         switch type.definition {
         case .variant(variants: let variants):
-            let mapped: Result<[(String, CryptoTypeId)], DynamicValidationError> = variants.resultMap { item in
+            let mapped: Result<[(String, CryptoTypeId)], TypeError> = variants.resultMap { item in
                 if let id = CryptoTypeId.byName[item.name.lowercased()] {
                     return .success((item.name, id))
                 }
                 guard item.fields.count == 1 else {
-                    return .failure(.wrongValuesCount(in: type, expected: 1,
-                                                      for: "Signature"))
+                    return .failure(.wrongValuesCount(for: Self.self, expected: 1,
+                                                      in: type))
                 }
                 if let typeName = item.fields[0].typeName?.lowercased() {
                     if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
@@ -109,14 +115,15 @@ public struct AnySignature: Signature {
                     }
                 }
                 guard let type = runtime.resolve(type: item.fields[0].type) else {
-                    return .failure(.typeNotFound(item.fields[0].type))
+                    return .failure(.typeNotFound(for: Self.self, id: item.fields[0].type))
                 }
                 if let typeName = type.name?.lowercased() {
                     if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
                         return .success((item.name, CryptoTypeId.byName[name]!))
                     }
                 }
-                return .failure(.wrongType(got: type, for: "Signature"))
+                return .failure(.wrongType(for: Self.self, got: type,
+                                           reason: "Unknown signature type: \(type)"))
             }
             return mapped.map{Dictionary(uniqueKeysWithValues: $0)}
         case .composite(fields: let fields):
@@ -126,8 +133,7 @@ public struct AnySignature: Signature {
                 }
             }
             guard fields.count == 1 else {
-                return .failure(.wrongValuesCount(in: type, expected: 1,
-                                                  for: "Signature"))
+                return .failure(.wrongValuesCount(for: Self.self, expected: 1, in: type))
             }
             if let typeName = fields[0].typeName?.lowercased() {
                 if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
@@ -142,12 +148,12 @@ public struct AnySignature: Signature {
                 }
             }
             guard ids.count == 1 else {
-                return .failure(.wrongValuesCount(in: type, expected: 1,
-                                                  for: "Signature"))
+                return .failure(.wrongValuesCount(for: Self.self, expected: 1, in: type))
             }
             return parseTypeInfo(runtime: runtime, typeId: ids[0])
         default:
-            return .failure(.wrongType(got: type, for: "Signature"))
+            return .failure(.wrongType(for: Self.self, got: type,
+                                       reason: "Can't be parsed as signature"))
         }
     }
 }

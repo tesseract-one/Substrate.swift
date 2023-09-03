@@ -27,8 +27,8 @@ public struct AnyTransactionValidityError: CallError, CustomStringConvertible {
         self.init(value: value)
     }
     
-    public static func validate(runtime: Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
+    public static func validate(runtime: any Runtime,
+                                type: NetworkType.Info) -> Result<Void, TypeError> {
         .success(())
     }
     
@@ -37,7 +37,7 @@ public struct AnyTransactionValidityError: CallError, CustomStringConvertible {
     }
 }
 
-public struct AnyDispatchError: SomeDispatchError, CustomStringConvertible {
+public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, CustomStringConvertible {
     public typealias TModuleError = ModuleError
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
@@ -48,11 +48,7 @@ public struct AnyDispatchError: SomeDispatchError, CustomStringConvertible {
     public var isModuleError: Bool { value.variant?.name.contains("Module") ?? false }
     
     public var moduleError: TModuleError { get throws {
-        let variant = value.variant!
-        guard variant.name.contains("Module") else {
-            throw ModuleError.DecodingError.dispatchErrorIsNotModule(description: description)
-        }
-        return try ModuleError(variant: variant, runtime: _runtime)
+        try ModuleError(variant: value.variant!, runtime: _runtime)
     }}
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
@@ -80,22 +76,11 @@ public struct AnyDispatchError: SomeDispatchError, CustomStringConvertible {
         self._runtime = runtime
     }
     
-    public static func validate(runtime: Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
-    {
-        guard let info = runtime.resolve(type: id)?.flatten(runtime) else {
-            return .failure(.typeNotFound(id))
+    public static func validate(info: TypeInfo, type: NetworkType.Info, runtime: Runtime) -> Result<Void, TypeError> {
+        guard let module = info.first(where: { $0.name.contains("Module") }) else {
+            return .failure(.variantNotFound(for: Self.self, variant: "*Module*", in: type.type))
         }
-        guard case .variant(variants: let vars) = info.definition else {
-            return .failure(.wrongType(got: info, for: "DispatchError"))
-        }
-        guard let module = vars.first(where: { $0.name.contains("Module") }) else {
-            return .failure(.variantNotFound(name: "Module", in: info))
-        }
-        guard TModuleError.validate(variant: module, runtime: runtime) else {
-            return .failure(.wrongType(got: info, for: "DispatchError.Module"))
-        }
-        return .success(())
+        return TModuleError.validate(info: module, type: type.type, runtime: runtime)
     }
     
     public var description: String {

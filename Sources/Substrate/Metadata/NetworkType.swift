@@ -40,8 +40,14 @@ public struct NetworkType: ScaleCodec.Codable, Hashable, Equatable, CustomString
         try encoder.encode(docs)
     }
     
+    @inlinable
     var name: String? {
         !path.isEmpty ? path.joined(separator: ".") : nil
+    }
+    
+    @inlinable
+    public func i(_ id: Id) -> Info {
+        Info(id: id, type: self)
     }
     
     public var description: String {
@@ -66,6 +72,7 @@ public extension NetworkType {
         
         public let id: UInt32
         
+        @inlinable
         public var rawValue: UInt32 { id }
         
         public init(id: UInt32) {
@@ -88,6 +95,12 @@ public extension NetworkType {
             try encoder.encode(id, .compact)
         }
         
+        @inlinable
+        public func i(_ type: NetworkType) -> Info {
+            Info(id: self, type: type)
+        }
+        
+        @inlinable
         public var description: String { String(id) }
     }
 }

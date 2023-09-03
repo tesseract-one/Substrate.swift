@@ -58,7 +58,37 @@ public protocol IterableStorageKey: StorageKey {
     associatedtype TIterator: StorageKeyRootIterator<Self>
 }
 
-public protocol StaticStorageKey<TValue>: StorageKey, PalletType, RuntimeDecodable where TBaseParams == Void {
+public protocol PalletStorageKey: StorageKey, FrameType
+    where TBaseParams == Void
+{
+    static var pallet: String { get }
+}
+
+public extension PalletStorageKey {
+    @inlinable var pallet: String { Self.pallet }
+    @inlinable var frame: String { pallet }
+    @inlinable static var frame: String { pallet }
+    @inlinable static var frameTypeName: String { "StorageKey" }
+}
+
+public typealias StorageKeyTypeInfo = (keys: [(hasher: LastMetadata.StorageHasher, type: NetworkType.Info)],
+                                       value: NetworkType.Info)
+public typealias StorageKeyChildTypes = (keys: [(hasher: StaticHasher.Type, type: ValidatableType.Type)],
+                                         value: ValidatableType.Type)
+
+public extension PalletStorageKey where
+    Self: ComplexFrameType, TypeInfo == StorageKeyTypeInfo
+{
+    @inlinable
+    static func typeInfo(runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
+        guard let info = runtime.resolve(storage: name, pallet: pallet) else {
+            return .failure(.typeInfoNotFound(for: Self.self))
+        }
+        return .success((info.keys, info.value))
+    }
+}
+
+public protocol StaticStorageKey<TValue>: PalletStorageKey, RuntimeDecodable {
     init(_ params: TParams, runtime: any Runtime) throws
     init<D: ScaleCodec.Decoder>(decodingPath decoder: inout D, runtime: any Runtime) throws
     var pathHash: Data { get }
@@ -87,14 +117,14 @@ public extension StaticStorageKey {
     }
     
     static func validate(base: TBaseParams, runtime: any Runtime) throws {
-        if runtime.resolve(storage: Self.name, pallet: Self.pallet) == nil {
-            throw StorageKeyCodingError.storageNotFound(name: Self.name, pallet: Self.pallet)
+        if runtime.resolve(storage: name, pallet: pallet) == nil {
+            throw FrameTypeError.typeInfoNotFound(for: Self.self)
         }
     }
     
     static func defaultValue(base: TBaseParams, runtime: any Runtime) throws -> TValue {
-        guard let (_, _, data) = runtime.resolve(storage: Self.name, pallet: Self.pallet) else {
-            throw StorageKeyCodingError.storageNotFound(name: Self.name, pallet: Self.pallet)
+        guard let (_, _, data) = runtime.resolve(storage: name, pallet: pallet) else {
+            throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
         }
         var decoder = runtime.decoder(with: data)
         return try decode(valueFrom: &decoder, runtime: runtime)
@@ -111,8 +141,11 @@ public extension StaticStorageKey where TValue: RuntimeDecodable {
     }
 }
 
-public extension StorageKeyRootIterator where TKey: StaticStorageKey {
+public extension StorageKeyRootIterator where TKey: PalletStorageKey {
     @inlinable init() { self.init(base: ()) }
+}
+
+public extension StorageKeyRootIterator where TKey: StaticStorageKey {
     @inlinable var hash: Data { Self.hash }
     @inlinable static var hash: Data { TKey.prefix }
 }
@@ -120,6 +153,37 @@ public extension StorageKeyRootIterator where TKey: StaticStorageKey {
 public extension StorageKeyIterator where TKey: StaticStorageKey {
     func decode<D: ScaleCodec.Decoder>(keyFrom decoder: inout D, runtime: any Runtime) throws -> TKey {
         try TKey(from: &decoder, runtime: runtime)
+    }
+}
+
+public extension ComplexStaticFrameType
+    where TypeInfo == StorageKeyTypeInfo, ChildTypes == StorageKeyChildTypes
+{
+    static func validate(info: TypeInfo,
+                         runtime: any Runtime) -> Result<Void, FrameTypeError>
+    {
+        let ourTypes = childTypes
+        guard ourTypes.keys.count == info.keys.count else {
+            return .failure(.wrongFieldsCount(for: Self.self, expected: ourTypes.keys.count,
+                                              got: info.keys.count))
+        }
+        return zip(ourTypes.keys, info.keys).enumerated().voidErrorMap { index, zip in
+            let (our, info) = zip
+            guard our.hasher.hasherType == info.hasher else {
+                return .failure(
+                    .paramMismatch(for: Self.self, index: index,
+                                   expected: our.hasher.hasherType.name,
+                                   got: info.hasher.name)
+                )
+            }
+            return our.type.validate(runtime: runtime, type: info.type).mapError {
+                .childError(for: Self.self, index: index, error: $0)
+            }
+        }.flatMap {
+            ourTypes.value.validate(runtime: runtime, type: info.value) .mapError {
+                .childError(for: Self.self, index: -1, error: $0)
+            }
+        }
     }
 }
 
@@ -140,45 +204,6 @@ public protocol SomeStorageChangeSet<THash>: RuntimeSwiftDecodable {
     associatedtype THash: Hash
     var block: THash { get }
     var changes: [(key: Data, value: Data?)] { get }
-}
-
-public protocol ValidatableStorageKey: StaticStorageKey, RuntimeValidatable
-    where TValue: RuntimeDynamicValidatable
-{
-    static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] { get }
-}
-
-public extension ValidatableStorageKey {
-    static func validate(path: [(NetworkType.Id, MetadataV14.StorageHasher)],
-                         runtime: any Runtime) -> Result<Void, ValidationError>
-    {
-        let ownKp = keyPath
-        guard path.count == ownKp.count else {
-            return .failure(.wrongFieldsCount(for: Self.self,
-                                              expected: ownKp.count,
-                                              got: path.count))
-        }
-        return zip(ownKp, path).voidErrorMap { key, info in
-            guard key.1.name == info.1.hasher.name else {
-                return .failure(.paramMismatch(for: Self.self, expected: key.1.name,
-                                               got: info.1.hasher.name))
-            }
-            return key.0.validate(runtime: runtime, type: info.0).mapError {
-                .childError(for: Self.self, error: $0)
-            }
-        }
-    }
-    
-    static func validate(runtime: any Runtime) -> Result<Void, ValidationError> {
-        guard let info = runtime.resolve(storage: name, pallet: pallet) else {
-            return .failure(.infoNotFound(for: Self.self))
-        }
-        return validate(path: info.keys.map {($0.1.id, $0.0)}, runtime: runtime).flatMap {
-            TValue.validate(runtime: runtime, type: info.value.id).mapError {
-                .childError(for: Self.self, error: $0)
-            }
-        }
-    }
 }
 
 public enum StorageKeyCodingError: Error {

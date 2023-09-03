@@ -42,9 +42,17 @@ public protocol TupleStorageKeyPath: ListTuple
 }
 
 public protocol TupleStorageValidatableKeyPath: TupleStorageKeyPath where
-    First.TKey: RuntimeDynamicValidatable, Last.TKey: RuntimeDynamicValidatable
+    First.TKey: ValidatableType, Last.TKey: ValidatableType
 {
-    static var path: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] { get }
+    static var validatablePath: [(hasher: any StaticHasher.Type,
+                                  type: any ValidatableType.Type)] { get }
+}
+
+public protocol TupleStorageIdentifiableKeyPath: TupleStorageKeyPath where
+    First.TKey: IdentifiableType, Last.TKey: IdentifiableType
+{
+    static var identifiablePath: [(key: TypeDefinition,
+                                   hasher: LastMetadata.StorageHasher)] { get }
 }
 
 public protocol TupleStorageNKeyPath: TupleStorageKeyPath where DroppedFirst: TupleStorageKeyPath {}
@@ -73,10 +81,22 @@ public extension TupleStorageKeyBase {
     }
 }
 
-public extension TupleStorageKeyBase where TPath: TupleStorageValidatableKeyPath {
+public extension TupleStorageKeyBase where
+    Self: ComplexStaticFrameType, TPath: TupleStorageValidatableKeyPath,
+    ChildTypes == StorageKeyChildTypes, TValue: ValidatableType
+{
     @inlinable
-    static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] {
-        TPath.path
+    static var childTypes: ChildTypes {
+        (keys: TPath.validatablePath, value: TValue.self)
+    }
+}
+
+public extension TupleStorageKeyBase where
+    TPath: TupleStorageIdentifiableKeyPath, TValue: IdentifiableType
+{
+    @inlinable
+    static var definition: FrameTypeDefinition {
+        .storage(Self.self, keys: TPath.identifiablePath, value: TValue.definition)
     }
 }
 

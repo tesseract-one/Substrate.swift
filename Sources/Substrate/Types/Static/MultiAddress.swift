@@ -8,9 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public enum MultiAddress<Id, Index>: RuntimeDynamicValidatableStaticVariant
-    where Index: CompactCodable & ValueRepresentable & RuntimeDynamicValidatable,
-          Id: AccountId
+public enum MultiAddress<Id, Index>: IdentifiableType
+    where Index: CompactCodable & ValueRepresentable & IdentifiableType,
+          Id: StaticAccountId
 {
     case id(Id)
     case index(Index)
@@ -33,9 +33,12 @@ public enum MultiAddress<Id, Index>: RuntimeDynamicValidatableStaticVariant
         self = .index(index)
     }
     
-    public static var validatableVariants: [ValidatableStaticVariant] {
-        [(0, "Id", [Id.self]), (1, "Index", [Compact<Index>.self]), (2, "Raw", [Data.self]),
-         (3, "Address32", [Data.self]), (4, "Address20", [Data.self])]
+    public static var definition: TypeDefinition {
+        .variant(variants: [.s(0, "Id", Id.definition),
+                            .s(1, "Index", Compact<Index>.definition),
+                            .s(2, "Raw", Data.definition),
+                            .s(3, "Address32", .data(count: 32)),
+                            .s(4, "Address20", .data(count: 20))])
     }
 }
 
@@ -44,9 +47,9 @@ extension MultiAddress: Hashable where Id: Hashable, Index: Hashable {}
 
 extension MultiAddress: ValueRepresentable {
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let info = try Self._validate(runtime: runtime, type: type).getValueError()
-        guard case .variant(variants: let variants) = info.definition else {
-            throw ValueRepresentableError.wrongType(got: info, for: "MultiAddress")
+        let info = try Self.validate(runtime: runtime, type: type).get()
+        guard case .variant(variants: let variants) = info.type.definition else {
+            throw TypeError.wrongType(for: Self.self, got: info.type, reason: "Not a variant")
         }
         switch self {
         case .id(let id):

@@ -108,7 +108,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     
     open func validate() throws {
         try extrinsicManager.validate(runtime: self)
-        try config.pallets(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
+        try config.frames(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
         try config.runtimeCalls(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
     }
 }

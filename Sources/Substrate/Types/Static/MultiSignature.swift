@@ -9,15 +9,29 @@ import Foundation
 import ScaleCodec
 
 public enum MultiSignature: Hashable, Equatable, CustomStringConvertible,
-                            RuntimeDynamicValidatableStaticVariant
+                            VariantStaticValidatableType, IdentifiableType
 {
     case ed25519(Ed25519Signature)
     case sr25519(Sr25519Signature)
     case ecdsa(EcdsaSignature)
     
-    public static var validatableVariants: [ValidatableStaticVariant] {
+    public static func validate(runtime: Runtime, type: NetworkType.Info) -> Result<Void, TypeError> {
+        typeInfo(runtime: runtime, type: type).flatMap {
+            validate(info: $0, type: type, runtime: runtime)
+        }
+    }
+    
+    public static var childTypes: ChildTypes {
         [(0, "Ed25519", [Ed25519Signature.self]), (1, "Sr25519", [Sr25519Signature.self]),
          (2, "Ecdsa", [EcdsaSignature.self])]
+    }
+    
+    public static var definition: TypeDefinition {
+        .variant(variants: [
+            .s(0, "Ed25519", Ed25519Signature.definition),
+            .s(1, "Sr25519", Sr25519Signature.definition),
+            .s(2, "Ecdsa", EcdsaSignature.definition)
+        ])
     }
 }
 
@@ -63,9 +77,9 @@ extension MultiSignature: StaticSignature {
 
 extension MultiSignature: ValueRepresentable {
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let info = try Self._validate(runtime: runtime, type: type).getValueError()
-        guard case .variant(variants: let variants) = info.flatten(runtime).definition else {
-            throw ValueRepresentableError.wrongType(got: info, for: "MultiSignature")
+        let info = try Self.validate(runtime: runtime, type: type).get()
+        guard case .variant(variants: let variants) = info.type.flatten(runtime).definition else {
+            throw TypeError.wrongType(for: Self.self, got: info.type, reason: "Should be variant")
         }
         switch self {
         case .sr25519(let sig):

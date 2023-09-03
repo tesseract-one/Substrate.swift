@@ -20,8 +20,21 @@ public extension PlainStorageKey {
         self.init()
     }
     var pathHash: Data { Data() }
+}
+
+public extension PlainStorageKey where
+    Self: ComplexStaticFrameType, TValue: ValidatableType,
+    ChildTypes == StorageKeyChildTypes
+{
     @inlinable
-    static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] { [] }
+    static var childTypes: ChildTypes { (keys: [], value: TValue.self) }
+}
+
+public extension PlainStorageKey where TValue: IdentifiableType {
+    @inlinable
+    static var definition: FrameTypeDefinition {
+        .storage(Self.self, keys: [], value: TValue.definition)
+    }
 }
 
 public protocol MapStorageKey<TKH>: StaticStorageKey, IterableStorageKey where
@@ -48,15 +61,27 @@ public extension MapStorageKey {
     }
 }
 
-public extension MapStorageKey where TKH.TKey: RuntimeDynamicValidatable {
+public extension MapStorageKey where
+    Self: ComplexStaticFrameType, TKH.TKey: ValidatableType,
+    TValue: ValidatableType, ChildTypes == StorageKeyChildTypes
+{
     @inlinable
-    static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] {
-        [(TKH.TKey.self, TKH.THasher.self)]
+    static var childTypes: ChildTypes {
+        (keys: [(TKH.THasher.self, TKH.TKey.self)], value: TValue.self)
+    }
+}
+
+public extension MapStorageKey where TKH.TKey: IdentifiableType, TValue: IdentifiableType {
+    @inlinable
+    static var definition: FrameTypeDefinition {
+        .storage(Self.self, keys: [(key: TKH.TKey.definition, hasher: TKH.THasher.hasherType)],
+                 value: TValue.definition)
     }
 }
 
 public protocol DoubleMapStorageKey<TKH1, TKH2>: StaticStorageKey, IterableStorageKey where
-    TParams == (TKH1.TKey, TKH2.TKey), TIterator == MapStorageKeyIterator<Self>
+    TParams == (TKH1.TKey, TKH2.TKey), TIterator == MapStorageKeyIterator<Self>,
+    TKH1.TKey: IdentifiableType, TKH2.TKey: IdentifiableType
 {
     associatedtype TKH1: TupleStorageKeyHasherPair
     associatedtype TKH2: TupleStorageKeyHasherPair
@@ -88,11 +113,26 @@ public extension DoubleMapStorageKey {
 }
 
 public extension DoubleMapStorageKey where
-    TKH1.TKey: RuntimeDynamicValidatable, TKH2.TKey: RuntimeDynamicValidatable
+    Self: ComplexStaticFrameType, TKH1.TKey: ValidatableType,
+    TKH2.TKey: ValidatableType, TValue: ValidatableType,
+    ChildTypes == StorageKeyChildTypes
 {
     @inlinable
-    static var keyPath: [(any RuntimeDynamicValidatable.Type, any StaticHasher.Type)] {
-        [(TKH1.TKey.self, TKH1.THasher.self), (TKH2.TKey.self, TKH2.THasher.self)]
+    static var childTypes: ChildTypes {
+        (keys: [(TKH1.THasher.self, TKH1.TKey.self), (TKH2.THasher.self, TKH2.TKey.self)],
+         value: TValue.self)
+    }
+}
+
+public extension DoubleMapStorageKey where
+    TKH1.TKey: IdentifiableType, TKH2.TKey: IdentifiableType,
+    TValue: IdentifiableType
+{
+    @inlinable
+    static var definition: FrameTypeDefinition {
+        .storage(Self.self, keys: [(key: TKH1.TKey.definition, hasher: TKH1.THasher.hasherType),
+                                   (key: TKH2.TKey.definition, hasher: TKH2.THasher.hasherType)],
+                 value: TValue.definition)
     }
 }
 

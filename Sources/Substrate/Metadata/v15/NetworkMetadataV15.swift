@@ -61,6 +61,8 @@ public extension MetadataV15.Network {
     typealias Extrinsic = MetadataV14.Network.Extrinsic
     typealias PalletStorage = MetadataV14.Network.PalletStorage
     typealias PalletConstant = MetadataV14.Network.PalletConstant
+    typealias StorageHasher = MetadataV14.Network.StorageHasher
+    typealias StorageEntryModifier = MetadataV14.Network.StorageEntryModifier
     
     struct Pallet: ScaleCodec.Codable {
         public let name: String

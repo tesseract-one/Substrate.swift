@@ -103,22 +103,22 @@ final class StorageKeysTests: XCTestCase {
     func testFixedMapTupleStorageKey() throws {
         let runtime = try self.runtime()
         let value = UInt256(123456) << UInt(140)
-        let key = try TupleKey<Tuple1<FKH<UInt256, HBlake2b512>>>(value, runtime: runtime)
+        let key = try TupleKey<Tuple1<FKH<UInt256, HBlake2b256>>>(value, runtime: runtime)
         let prefix = keyPrefix(key: key)
-        let valHash = try hashValue(value, runtime: runtime, in: HBlake2b512.self)
+        let valHash = try hashValue(value, runtime: runtime, in: HBlake2b256.self)
         // Encode
         XCTAssertEqual(key.prefix.hex(), prefix.hex())
         XCTAssertEqual(key.pathHash.hex(), valHash.hex())
         XCTAssertEqual(key.hash.hex(), (prefix + valHash).hex())
         // Decode
         let decoded = try runtime.decode(from: prefix + valHash,
-                                         TupleKey<Tuple1<FKH<UInt256, HBlake2b512>>>.self)
+                                         TupleKey<Tuple1<FKH<UInt256, HBlake2b256>>>.self)
         XCTAssertEqual(decoded.hash.hex(), key.hash.hex())
         // Decode fail
         XCTAssertThrowsError(try runtime.decode(from: prefix + Data(repeating: 0, count: valHash.count - 1),
-                                                TupleKey<Tuple1<FKH<UInt256, HBlake2b512>>>.self))
+                                                TupleKey<Tuple1<FKH<UInt256, HBlake2b256>>>.self))
         // Iterator
-        let iterator = TupleKey<Tuple1<FKH<UInt256, HBlake2b512>>>.TIterator()
+        let iterator = TupleKey<Tuple1<FKH<UInt256, HBlake2b256>>>.TIterator()
         XCTAssertEqual(iterator.hash.hex(), prefix.hex())
         var decoder = runtime.decoder(with: prefix + valHash)
         let iterDecoded = try iterator.decode(keyFrom: &decoder, runtime: runtime)
@@ -406,7 +406,7 @@ final class StorageKeysTests: XCTestCase {
         XCTAssertEqual(TL(mapIterDecoded.keys), TL(key.keys))
     }
     
-    struct TupleKey<Path: TupleStorageKeyPath>: TupleStorageKey {
+    struct TupleKey<Path: TupleStorageIdentifiableKeyPath>: TupleStorageKey, IdentifiableFrameType {
         typealias TPath = Path
         typealias TParams = Path.TKeys.STuple
         typealias TValue = UInt32
@@ -418,16 +418,17 @@ final class StorageKeysTests: XCTestCase {
         init(path: TPath) { self.path = path }
     }
     
-    struct PlainKey: PlainStorageKey {
+    struct PlainKey: PlainStorageKey, IdentifiableFrameType {
         typealias TValue = String
         static var pallet: String { "Key" }
         static var name: String { "Plain" }
         init() {}
     }
     
-    struct FixedMapKey: MapStorageKey {
+    struct FixedMapKey: MapStorageKey, IdentifiableFrameType {
         typealias TKH = FKH<UInt256, HXX256>
         typealias TBaseParams = Void
+        typealias TypeInfo = StorageKeyTypeInfo
         typealias TParams = TKH.TKey
         typealias TValue = String
         
@@ -439,7 +440,8 @@ final class StorageKeysTests: XCTestCase {
         
     }
     
-    struct ConcatMapKey: MapStorageKey {
+    struct ConcatMapKey: MapStorageKey, IdentifiableFrameType {
+        typealias TypeInfo = StorageKeyTypeInfo
         typealias TKH = CKH<String, HXX64Concat>
         typealias TBaseParams = Void
         typealias TParams = TKH.TKey
@@ -452,9 +454,9 @@ final class StorageKeysTests: XCTestCase {
         static var name: String { "ConcatMapKey" }
     }
     
-    struct FixedDMapKey: DoubleMapStorageKey {
+    struct FixedDMapKey: DoubleMapStorageKey, IdentifiableFrameType {
         typealias TKH1 = FKH<UInt256, HXX256>
-        typealias TKH2 = FKH<Array<String>, HBlake2b512>
+        typealias TKH2 = FKH<Array<String>, HBlake2b256>
         typealias TBaseParams = Void
         typealias TParams = (TKH1.TKey, TKH2.TKey)
         typealias TValue = String
@@ -472,7 +474,7 @@ final class StorageKeysTests: XCTestCase {
         
     }
     
-    struct ConcatDMapKey: DoubleMapStorageKey {
+    struct ConcatDMapKey: DoubleMapStorageKey, IdentifiableFrameType {
         typealias TKH1 = CKH<Array<Int32>, HXX64Concat>
         typealias TKH2 = CKH<UInt128, HXX64Concat>
         typealias TBaseParams = Void

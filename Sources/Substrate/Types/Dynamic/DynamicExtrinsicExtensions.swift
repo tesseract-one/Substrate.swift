@@ -30,8 +30,8 @@ public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError> {
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             SBT<C>.Version.validate(runtime: runtime, type: additionalSigned)
         }
@@ -60,8 +60,8 @@ public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError> {
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             SBT<C>.Version.validate(runtime: runtime, type: additionalSigned)
         }
@@ -90,8 +90,8 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError> {
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             SBT<C>.Hash.validate(runtime: runtime, type: additionalSigned)
         }
@@ -117,8 +117,8 @@ public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError> {
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }
@@ -158,8 +158,8 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError> {
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError> {
         Compact<AnySigningParams<C>.TPartial.TNonce>.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }
@@ -199,8 +199,8 @@ public struct DynamicCheckMortalityExtension: DynamicExtrinsicExtension {
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError> {
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError> {
         AnySigningParams<C>.TPartial.TEra.validate(runtime: runtime, type: extra).flatMap {
             AnySigningParams<C>.TPartial.THash.validate(runtime: runtime, type: additionalSigned)
         }
@@ -227,8 +227,8 @@ public struct DynamicCheckWeightExtension: DynamicExtrinsicExtension {
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError> {
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }
@@ -264,8 +264,8 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError> {
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError> {
         AnySigningParams<C>.TPartial.TPayment.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }
@@ -300,8 +300,8 @@ public struct DynamicPrevalidateAttestsExtension: DynamicExtrinsicExtension {
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError> {
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError> {
         Nothing.validate(runtime: runtime, type: extra).flatMap {
             Nothing.validate(runtime: runtime, type: additionalSigned)
         }

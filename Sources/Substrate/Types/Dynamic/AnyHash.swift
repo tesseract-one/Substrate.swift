@@ -23,13 +23,15 @@ public struct AnyHash: Hash {
     {
         let type = try id()
         guard let info = metadata.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         guard let count = info.asBytes(metadata) else {
-            throw ValueRepresentableError.wrongType(got: info, for: "AnyHash")
+            throw TypeError.wrongType(for: Self.self, got: info,
+                                      reason: "Isn't bytes")
         }
         guard count == 0 || count == raw.count else {
-            throw SizeMismatchError(size: raw.count, expected: Int(count))
+            throw TypeError.wrongValuesCount(for: Self.self,
+                                             expected: raw.count, in: info)
         }
         self.raw = raw
     }
@@ -41,13 +43,7 @@ public struct AnyHash: Hash {
     }
     
     public static func validate(runtime: Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard info.asBytes(runtime) != nil else {
-            return .failure(.wrongType(got: info, for: "AnyHash"))
-        }
-        return .success(())
+                                type: NetworkType.Info) -> Result<Void, TypeError> {
+        Data.validate(runtime: runtime, type: type)
     }
 }

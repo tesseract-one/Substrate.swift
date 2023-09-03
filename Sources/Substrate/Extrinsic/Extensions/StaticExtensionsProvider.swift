@@ -39,7 +39,7 @@ public protocol StaticExtrinsicExtension: StaticExtrinsicExtensionBase, Extrinsi
         runtime: any Runtime,
         extra: NetworkType.Id,
         additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError>
+    ) -> Result<Void, TypeError>
 }
 
 public extension StaticExtrinsicExtension {
@@ -47,13 +47,13 @@ public extension StaticExtrinsicExtension {
 }
 
 public extension StaticExtrinsicExtension where
-    TExtra: RuntimeDynamicValidatable, TAdditionalSigned: RuntimeDynamicValidatable
+    TExtra: ValidatableType, TAdditionalSigned: ValidatableType
 {
     func validate(runtime: Runtime, extra: NetworkType.Id,
-                  additionalSigned: NetworkType.Id) -> Result<Void, DynamicValidationError>
+                  additionalSigned: NetworkType.Id) -> Result<Void, TypeError>
     {
-        TExtra.validate(runtime: runtime, type: extra).flatMap {
-            TAdditionalSigned.validate(runtime: runtime, type: additionalSigned)
+        TExtra.validate(runtime: runtime, type: extra).flatMap { _ in
+            TAdditionalSigned.validate(runtime: runtime, type: additionalSigned).map {_ in}
         }
     }
 }
@@ -66,7 +66,7 @@ public protocol StaticExtrinsicExtensions: StaticExtrinsicExtensionBase
     func validate(
         runtime: any Runtime,
         types: [ExtrinsicExtensionId: (extId: NetworkType.Id, addId: NetworkType.Id)]
-    ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>>
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeError>>
 }
 
 public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: SignedExtensionsProvider {
@@ -125,7 +125,7 @@ public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: Sig
     
     public func validate(
         runtime: any Runtime
-    ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>> {
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeError>> {
         guard runtime.metadata.extrinsic.version == version else {
             return .failure(.left(.badExtrinsicVersion(
                 supported: version,

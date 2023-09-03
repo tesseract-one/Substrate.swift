@@ -9,11 +9,10 @@ import Foundation
 import ScaleCodec
 
 public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
-                            RuntimeDynamicDecodable, RuntimeDynamicValidatableStaticComposite
+                            RuntimeDynamicDecodable, IdentifiableType
 {
     public struct Weight: ScaleCodec.Decodable, RuntimeDecodable,
-                          RuntimeDynamicDecodable,
-                          RuntimeDynamicValidatableStaticComposite
+                          RuntimeDynamicDecodable, IdentifiableType
     {
         public let refTime: UInt64
         public let proofSize: UInt64
@@ -23,13 +22,15 @@ public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
             proofSize = try decoder.decode(.compact)
         }
         
-        public static var validatableFields: [RuntimeDynamicValidatable.Type] {
-            [Compact<UInt64>.self, Compact<UInt64>.self]
+        @inlinable
+        public static var definition: TypeDefinition {
+            .composite(fields: [.v(Compact<UInt64>.definition),
+                                .v(Compact<UInt64>.definition)])
         }
     }
     
     public enum DispatchClass: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeDecodable,
-                               RuntimeDynamicDecodable, RuntimeDynamicValidatableStaticVariant
+                               RuntimeDynamicDecodable, IdentifiableType
     {
         case normal
         case operational
@@ -37,7 +38,7 @@ public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
     }
     
     public enum Pays: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeDecodable,
-                      RuntimeDynamicDecodable, RuntimeDynamicValidatableStaticVariant
+                      RuntimeDynamicDecodable, IdentifiableType
     {
         case yes
         case no
@@ -53,15 +54,18 @@ public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
         paysFee = try decoder.decode()
     }
     
-    public static var validatableFields: [RuntimeDynamicValidatable.Type] {
-        [Weight.self, DispatchClass.self, Pays.self]
+    @inlinable
+    public static var definition: TypeDefinition {
+        .composite(fields: [.v(Weight.definition),
+                            .v(DispatchClass.definition),
+                            .v(Pays.definition)])
     }
 }
 
 
 public struct RuntimeDispatchInfo<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
                                                                RuntimeDynamicDecodable,
-                                                               RuntimeDynamicValidatableStaticComposite
+                                                               IdentifiableType
 {
     public let weight: DispatchInfo.Weight
     public let clazz: DispatchInfo.DispatchClass
@@ -73,16 +77,18 @@ public struct RuntimeDispatchInfo<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
         partialFee = try runtime.decode(from: &decoder)
     }
     
-    public static var validatableFields: [RuntimeDynamicValidatable.Type] {
-        [DispatchInfo.Weight.self, DispatchInfo.DispatchClass.self, Bal.self]
+    @inlinable
+    public static var definition: TypeDefinition {
+        .composite(fields: [.v(DispatchInfo.Weight.definition),
+                            .v(DispatchInfo.DispatchClass.definition),
+                            .v(Bal.definition)])
     }
 }
 
-public struct FeeDetails<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
-                                                      RuntimeDynamicDecodable,
-                                                      RuntimeDynamicValidatableStaticComposite
+public struct FeeDetails<Bal>: RuntimeDecodable, RuntimeDynamicDecodable, IdentifiableType
+    where Bal: ConfigUnsignedInteger
 {
-    public struct InclusionFee: RuntimeDecodable, RuntimeDynamicValidatableStaticComposite {
+    public struct InclusionFee: RuntimeDecodable, IdentifiableType {
         /// minimum amount a user pays for a transaction.
         public let baseFee: Bal
         /// amount paid for the encoded length (in bytes) of the transaction.
@@ -102,8 +108,11 @@ public struct FeeDetails<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
             adjustedWeightFee = try runtime.decode(from: &decoder)
         }
         
-        public static var validatableFields: [RuntimeDynamicValidatable.Type] {
-            [Bal.self, Bal.self, Bal.self]
+        @inlinable
+        public static var definition: TypeDefinition {
+            .composite(fields: [.v(Bal.definition),
+                                .v(Bal.definition),
+                                .v(Bal.definition)])
         }
     }
     
@@ -117,7 +126,9 @@ public struct FeeDetails<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
         tip = try runtime.decode(from: &decoder)
     }
     
-    public static var validatableFields: [RuntimeDynamicValidatable.Type] {
-        [Optional<InclusionFee>.self, Bal.self]
+    @inlinable
+    public static var definition: TypeDefinition {
+        .composite(fields: [.v(Optional<InclusionFee>.definition),
+                            .v(Bal.definition)])
     }
 }

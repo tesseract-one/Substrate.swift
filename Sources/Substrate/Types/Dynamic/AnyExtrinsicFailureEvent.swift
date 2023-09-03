@@ -20,7 +20,7 @@ public struct AnyExtrinsicFailureEvent: SomeExtrinsicFailureEvent {
         self.error = ExtrinsicFailed(body: value)
     }
     
-    public static func validate(runtime: Runtime) -> Result<Void, ValidationError> {
+    public static func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
         .success(())
     }
     

@@ -43,7 +43,7 @@ public protocol SignedExtensionsProvider {
     
     func validate(
         runtime: any Runtime
-    ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>>
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeError>>
 }
 
 public protocol ExtrinsicSignedExtension {

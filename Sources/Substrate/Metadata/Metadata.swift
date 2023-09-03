@@ -8,6 +8,8 @@
 import Foundation
 import ScaleCodec
 
+public typealias LastMetadata = MetadataV15
+
 public protocol Metadata {
     var extrinsic: ExtrinsicMetadata { get }
     
@@ -38,10 +40,10 @@ public protocol PalletMetadata {
     
     func callName(index: UInt8) -> String?
     func callIndex(name: String) -> UInt8?
-    func callParams(name: String) -> [NetworkType.Field]?
+    func callParams(name: String) -> [(field: NetworkType.Field, type: NetworkType)]?
     func eventName(index: UInt8) -> String?
     func eventIndex(name: String) -> UInt8?
-    func eventParams(name: String) -> [NetworkType.Field]?
+    func eventParams(name: String) -> [(field: NetworkType.Field, type: NetworkType)]?
     
     func storage(name: String) -> StorageMetadata?
     func constant(name: String) -> ConstantMetadata?
@@ -49,8 +51,8 @@ public protocol PalletMetadata {
 
 public protocol StorageMetadata {
     var name: String { get }
-    var modifier: MetadataV14.StorageEntryModifier { get }
-    var types: (keys: [(MetadataV14.StorageHasher, NetworkType.Info)],
+    var modifier: LastMetadata.StorageEntryModifier { get }
+    var types: (keys: [(hasher: LastMetadata.StorageHasher, type: NetworkType.Info)],
                 value: NetworkType.Info) { get }
     var defaultValue: Data { get }
     var documentation: [String] { get }
@@ -86,7 +88,7 @@ public protocol RuntimeApiMetadata {
     
     func resolve(
         method name: String
-    ) -> (params: [(String, NetworkType.Info)], result: NetworkType.Info)?
+    ) -> (params: [(name: String, type: NetworkType.Info)], result: NetworkType.Info)?
 }
 
 public protocol OuterEnumsMetadata {
@@ -100,7 +102,7 @@ public enum MetadataError: Error {
     case storageNonCompositeKey(name: String, pallet: String, type: NetworkType.Info)
 }
 
-public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable {
+public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable, IdentifiableType {
     public let raw: Data
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
@@ -115,4 +117,6 @@ public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable {
         var decoder = config.decoder(data: raw)
         return try decoder.decode(VersionedNetworkMetadata.self).metadata.asMetadata()
     }
+    
+    public static var definition: TypeDefinition { .data }
 }

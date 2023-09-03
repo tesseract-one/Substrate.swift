@@ -23,8 +23,26 @@ public protocol DynamicExtrinsicExtension: ExtrinsicSignedExtension {
     
     func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Id, additionalSigned: NetworkType.Id
-    ) -> Result<Void, DynamicValidationError>
+        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+    ) -> Result<Void, TypeError>
+}
+
+public extension DynamicExtrinsicExtension {
+    @inlinable
+    func validate<C: BasicConfig>(
+        config: C.Type, runtime: any Runtime,
+        extra eId: NetworkType.Id,
+        additionalSigned aId: NetworkType.Id
+    ) -> Result<Void, TypeError> {
+        guard let eType = runtime.resolve(type: eId) else {
+            return .failure(.typeNotFound(for: Self.self, id: eId))
+        }
+        guard let aType = runtime.resolve(type: aId) else {
+            return .failure(.typeNotFound(for: Self.self, id: aId))
+        }
+        return validate(config: config, runtime: runtime,
+                        extra: eId.i(eType), additionalSigned: aId.i(aType))
+    }
 }
 
 public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsProvider {
@@ -108,18 +126,16 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
     
     public func validate(
         runtime: any Runtime
-    ) -> Result<Void, Either<ExtrinsicCodingError, DynamicValidationError>> {
+    ) -> Result<Void, Either<ExtrinsicCodingError, TypeError>> {
         _activeExtensions(runtime: runtime)
             .mapError {.left($0)}
             .flatMap { exts in
-                exts.reduce(.success(())) { p, ext in
-                    p.flatMap {
-                        ext.ext.validate(
-                            config: BC.self, runtime: runtime,
-                            extra: ext.extId, additionalSigned: ext.addId
-                        ).mapError{.right($0)}
-                    }
-                }
+                exts.voidErrorMap { ext in
+                    ext.ext.validate(
+                        config: BC.self, runtime: runtime,
+                        extra: ext.extId, additionalSigned: ext.addId
+                    )
+                }.mapError {.right($0)}
             }
     }
     

@@ -11,7 +11,7 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
     public enum HashType: Equatable, Hashable {
         case blake2b128
         case blake2b256
-        case blake2b512
+        //case blake2b512
         case xx128
         case xx256
         
@@ -19,7 +19,7 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
             switch name.lowercased() {
             case "blake2b128", "blaketwo128": self = .blake2b128
             case "blake2b256", "blaketwo256": self = .blake2b256
-            case "blake2b512", "blaketwo512": self = .blake2b512
+            //case "blake2b512", "blaketwo512": self = .blake2b512
             case "xx128", "twox128": self = .xx128
             case "xx256", "twox256": self = .xx256
             default: return nil
@@ -32,7 +32,7 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
             case .xx128: return HXX128.instance
             case .blake2b128: return HBlake2b128.instance
             case .blake2b256: return HBlake2b256.instance
-            case .blake2b512: return HBlake2b512.instance
+            //case .blake2b512: return HBlake2b512.instance
             }
         }
     }
@@ -57,7 +57,7 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
     }
     
     @inlinable
-    public var name: String { hasher.name }
+    public var type: LastMetadata.StorageHasher { hasher.type }
     @inlinable
     public var hashPartByteLength: Int { hasher.hashPartByteLength }
     @inlinable
@@ -66,17 +66,15 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
     public func hash(data: Data) -> Data { hasher.hash(data: data) }
     
     public static func == (lhs: AnyFixedHasher, rhs: AnyFixedHasher) -> Bool {
-        lhs.name == rhs.name
+        lhs.type == rhs.type
     }
     
     public static func validate(runtime: Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
+                                type: NetworkType.Info) -> Result<Void, TypeError>
     {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard let name = info.path.last, HashType(name: name) != nil else {
-            return .failure(.wrongType(got: info, for: String(describing: Self.self)))
+        guard let name = type.type.path.last, HashType(name: name) != nil else {
+            return .failure(.wrongType(for: Self.self, got: type.type,
+                                       reason: "Unknown hash: \(type.type)"))
         }
         return .success(())
     }

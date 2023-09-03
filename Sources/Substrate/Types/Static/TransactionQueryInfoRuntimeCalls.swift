@@ -8,8 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public protocol TransactionQueryRuntimeCallCommon: StaticRuntimeCall, RuntimeValidatableStaticComposite
-    where TReturn: RuntimeDynamicDecodable & RuntimeDynamicValidatable
+public protocol TransactionQueryRuntimeCallCommon: StaticRuntimeCall, ComplexStaticFrameType
+    where TReturn: RuntimeDynamicDecodable & ValidatableType,
+          TypeInfo == RuntimeCallTypeInfo, ChildTypes == RuntimeCallChildTypes
 {
     var extrinsic: Data { get }
 }
@@ -34,13 +35,12 @@ public extension TransactionQueryRuntimeCallCommon {
         }
     }
     
-    static var validatableFields: [RuntimeDynamicValidatable.Type] {
-        [Data.self, UInt32.self]
-    }
+    @inlinable
+    static var childTypes: ChildTypes { (params: [Data.self, UInt32.self], result: TReturn.self) }
 }
 
 public struct TransactionQueryInfoRuntimeCall<DI>: TransactionQueryRuntimeCallCommon
-    where DI: RuntimeDynamicDecodable & RuntimeDynamicValidatable
+    where DI: RuntimeDynamicDecodable & ValidatableType
 {
     public typealias TReturn = DI
     
@@ -55,7 +55,7 @@ public struct TransactionQueryInfoRuntimeCall<DI>: TransactionQueryRuntimeCallCo
 }
 
 public struct TransactionQueryFeeDetailsRuntimeCall<FD>: TransactionQueryRuntimeCallCommon
-    where FD: RuntimeDynamicDecodable & RuntimeDynamicValidatable
+    where FD: RuntimeDynamicDecodable & ValidatableType
 {
     public typealias TReturn = FD
     

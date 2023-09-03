@@ -30,7 +30,8 @@ public protocol Runtime: AnyObject {
     // Calls
     func resolve(callName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(callIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
-    func resolve(callParams name: String, pallet: String) -> [NetworkType.Field]?
+    func resolve(callParams name: String, pallet: String) -> [(field: NetworkType.Field,
+                                                               type: NetworkType)]?
     
     // Runtime Calls
     func resolve(
@@ -40,7 +41,8 @@ public protocol Runtime: AnyObject {
     // Events
     func resolve(eventName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(eventIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
-    func resolve(eventParams name: String, pallet: String) -> [NetworkType.Field]?
+    func resolve(eventParams name: String, pallet: String) -> [(field: NetworkType.Field,
+                                                                type: NetworkType)]?
     
     //Constants
     func resolve(
@@ -50,7 +52,9 @@ public protocol Runtime: AnyObject {
     // Storage
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(MetadataV14.StorageHasher, NetworkType.Info)], value: NetworkType.Info, `default`: Data)?
+    ) -> (keys: [(hasher: LastMetadata.StorageHasher, type: NetworkType.Info)],
+          value: NetworkType.Info,
+          `default`: Data)?
 }
 
 public extension Runtime {
@@ -79,7 +83,9 @@ public extension Runtime {
     }
     
     @inlinable
-    func resolve(callParams name: String, pallet: String) -> [NetworkType.Field]? {
+    func resolve(callParams name: String, pallet: String) -> [(field: NetworkType.Field,
+                                                               type: NetworkType)]?
+    {
         metadata.resolve(pallet: pallet)?.callParams(name: name)
     }
     
@@ -105,7 +111,9 @@ public extension Runtime {
     }
     
     @inlinable
-    func resolve(eventParams name: String, pallet: String) -> [NetworkType.Field]? {
+    func resolve(eventParams name: String, pallet: String) -> [(field: NetworkType.Field,
+                                                                type: NetworkType)]?
+    {
         metadata.resolve(pallet: pallet)?.eventParams(name: name)
     }
     
@@ -132,10 +140,12 @@ public extension Runtime {
     @inlinable
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(MetadataV14.StorageHasher, NetworkType.Info)], value: NetworkType.Info, `default`: Data)? {
+    ) -> (keys: [(hasher: LastMetadata.StorageHasher, type: NetworkType.Info)],
+          value: NetworkType.Info,
+          `default`: Data)?
+    {
         metadata.resolve(pallet: pallet)?.storage(name: name).flatMap {
-            let (keys, value) = $0.types
-            return (keys.map { ($0.0, $0.1) }, value, $0.defaultValue)
+            ($0.types.keys, $0.types.value, $0.defaultValue)
         }
     }
 }

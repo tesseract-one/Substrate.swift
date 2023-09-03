@@ -278,21 +278,12 @@ extension CustomDecoderFactory where T == BitSequence {
 
 extension BitSequence: ValueRepresentable {
     public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        try Self.validate(runtime: runtime, type: type).getValueError()
+        let _ = try Self.validate(runtime: runtime, type: type).get()
         return .bits(self, type)
     }
 }
 
-extension BitSequence: RuntimeDynamicValidatable {
-    public static func validate(runtime: Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
-    {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard info.isBitSequence(runtime) else {
-            return .failure(.wrongType(got: info, for: "BitSequence"))
-        }
-        return .success(())
-    }
+extension BitSequence: IdentifiableType {
+    @inlinable
+    public static var definition: TypeDefinition { .bitsequence }
 }

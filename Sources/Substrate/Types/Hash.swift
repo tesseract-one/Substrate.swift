@@ -11,7 +11,7 @@ import ContextCodable
 
 public protocol Hash: ContextDecodable, Swift.Encodable,
                       ValueRepresentable, VoidValueRepresentable,
-                      RuntimeDynamicValidatable, Equatable, CustomStringConvertible
+                      ValidatableType, Equatable, CustomStringConvertible
     where DecodingContext == (metadata: any Metadata, id: () throws -> NetworkType.Id)
 {
     var raw: Data { get }
@@ -39,14 +39,14 @@ public extension Hash {
     
     func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let info = runtime.resolve(type: type) else {
-            throw ValueRepresentableError.typeNotFound(type)
+            throw TypeError.typeNotFound(for: Self.self, id: type)
         }
         guard let count = info.asBytes(runtime) else {
-            throw ValueRepresentableError.wrongType(got: info, for: String(describing: Self.self))
+            throw TypeError.wrongType(for: Self.self, got: info,
+                                      reason: "isn't byte array")
         }
         guard count == 0 || raw.count == count else {
-            throw ValueRepresentableError.wrongValuesCount(in: info, expected: raw.count,
-                                                           for: String(describing: Self.self))
+            throw TypeError.wrongValuesCount(for: Self.self, expected: raw.count, in: info)
         }
         return .bytes(raw, type)
     }
@@ -56,7 +56,7 @@ public extension Hash {
      }
 }
 
-public protocol StaticHash: Hash, FixedDataCodable, RuntimeCodable, Swift.Decodable {
+public protocol StaticHash: Hash, IdentifiableType, FixedDataCodable, RuntimeCodable, Swift.Decodable {
     init(raw: Data) throws
 }
 
@@ -88,19 +88,9 @@ public extension StaticHash {
     @inlinable
     func serialize() -> Data { raw }
     
-    static func validate(runtime: any Runtime,
-                         type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
-        guard let info = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(id))
-        }
-        guard let count = info.asBytes(runtime) else {
-            return .failure(.wrongType(got: info, for: String(describing: Self.self)))
-        }
-        guard Self.fixedBytesCount == count else {
-            return .failure(.wrongValuesCount(in: info, expected: Self.fixedBytesCount,
-                                              for: String(describing: Self.self)))
-        }
-        return .success(())
+    @inlinable
+    static var definition: TypeDefinition {
+        .data(count: UInt32(Self.fixedBytesCount))
     }
 }
 

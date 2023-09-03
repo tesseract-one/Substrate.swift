@@ -17,7 +17,7 @@ public struct HBlake2b128: StaticFixedHasher, Equatable {
         try! Hash128(raw: Blake2b.hash(size: Self.bitWidth / 8, data: data))
     }
     
-    public static let name = "Blake2_128"
+    public static let hasherType: LastMetadata.StorageHasher = .blake2b128
     public static let bitWidth: Int = 128
     public static let instance = Self()
 }
@@ -28,7 +28,7 @@ public struct HBlake2b128Concat: StaticConcatHasher, Equatable {
         try! Blake2b.hash(size: Self.hashPartBitWidth / 8, data: data) + data
     }
     
-    public static let name = "Blake2_128Concat"
+    public static let hasherType: LastMetadata.StorageHasher = .blake2b128concat
     public static let hashPartBitWidth: Int = 128
     public static let instance = Self()
 }
@@ -41,20 +41,19 @@ public struct HBlake2b256: StaticFixedHasher, Equatable {
         try! Hash256(raw: Blake2b.hash(size: Self.bitWidth / 8, data: data))
     }
     
-    public static let name = "Blake2_256"
+    public static let hasherType: LastMetadata.StorageHasher = .blake2b256
     public static let bitWidth: Int = 256
     public static let instance = Self()
 }
 
-public struct HBlake2b512: StaticFixedHasher, Equatable {
+public struct HBlake2b512: Equatable {
     public typealias THash = Hash512
-    
+
     @inlinable
     public func hash(data: Data) -> THash {
         try! Hash512(raw: Blake2b.hash(size: Self.bitWidth / 8, data: data))
     }
-    
-    public static let name = "Blake2_512"
+
     public static let bitWidth: Int = 512
     public static let instance = Self()
 }
@@ -64,7 +63,7 @@ public struct HXX64Concat: StaticConcatHasher, Equatable {
         xxHash(data: data, bitWidth: Self.hashPartBitWidth) + data
     }
     
-    public static let name = "Twox64Concat"
+    public static let hasherType: LastMetadata.StorageHasher = .xx64concat
     public static let hashPartBitWidth: Int = 64
     public static let instance = Self()
 }
@@ -76,7 +75,7 @@ public struct HXX128: StaticFixedHasher, Equatable {
         try! Hash128(raw: xxHash(data: data, bitWidth: Self.bitWidth))
     }
     
-    public static let name = "Twox128"
+    public static let hasherType: LastMetadata.StorageHasher = .xx128
     public static let bitWidth: Int = 128
     public static let instance = Self()
 }
@@ -88,7 +87,7 @@ public struct HXX256: StaticFixedHasher, Equatable {
         try! Hash256(raw: xxHash(data: data, bitWidth: Self.bitWidth))
     }
     
-    public static let name = "Twox256"
+    public static let hasherType: LastMetadata.StorageHasher = .xx256
     public static let bitWidth: Int = 256
     public static let instance = Self()
 }
@@ -99,7 +98,7 @@ public struct HIdentity: StaticConcatHasher, Equatable {
         return data
     }
     
-    public static let name = "Identity"
+    public static let hasherType: LastMetadata.StorageHasher = .identity
     public static let hashPartBitWidth: Int = 0
     public static let instance = Self()
 }

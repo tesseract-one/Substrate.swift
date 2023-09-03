@@ -8,7 +8,8 @@
 import Foundation
 import ScaleCodec
 
-public protocol BatchCallCommon: SomeBatchCall, RuntimeValidatableStaticComposite {}
+public protocol BatchCallCommon: SomeBatchCall, ComplexStaticFrameType
+    where TypeInfo == CallTypeInfo, ChildTypes == CallChildTypes {}
 
 public extension BatchCallCommon {
     func add(_ call: any Call) -> Self { Self(calls: calls + [call]) }
@@ -19,11 +20,10 @@ public extension BatchCallCommon {
         let modIndex = try decoder.decode(.enumCaseId)
         let callIndex = try decoder.decode(.enumCaseId)
         guard let info = runtime.resolve(callName: callIndex, pallet: modIndex) else {
-            throw CallCodingError.callNotFound(index: callIndex, pallet: modIndex)
+            throw FrameTypeError.typeInfoNotFound(for: Self.self, index: callIndex, frame: modIndex)
         }
         guard Self.pallet == info.pallet && Self.name == info.name else {
-            throw CallCodingError.foundWrongCall(found: (name: info.name, pallet: info.pallet),
-                                                 expected: (name: Self.name, pallet: Self.pallet))
+            throw FrameTypeError.foundWrongType(for: Self.self, name: info.name, frame: info.pallet)
         }
         let calls = try Array<AnyCall<NetworkType.Id>>(from: &decoder) { decoder in
             try AnyCall(from: &decoder, as: type, runtime: runtime)
@@ -33,7 +33,7 @@ public extension BatchCallCommon {
     
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E, as type: NetworkType.Id, runtime: Runtime) throws {
         guard let info = runtime.resolve(callIndex: name, pallet: pallet) else {
-            throw CallCodingError.callNotFound(name: name, pallet: pallet)
+            throw FrameTypeError.typeInfoNotFound(for: Self.self)
         }
         try encoder.encode(info.pallet, .enumCaseId)
         try encoder.encode(info.index, .enumCaseId)
@@ -42,10 +42,11 @@ public extension BatchCallCommon {
         }
     }
     
-    static var validatableFields: [RuntimeDynamicValidatable.Type] { [AnyCall<NetworkType.Id>.self] }
+    @inlinable
+    static var childTypes: ChildTypes { [Array<AnyCall<NetworkType.Id>>.self] }
 }
 
-public struct BatchCall: BatchCallCommon {
+public struct BatchCall: BatchCallCommon {    
     public let calls: [any Call]
     public init(calls: [any Call]) {
         self.calls = calls

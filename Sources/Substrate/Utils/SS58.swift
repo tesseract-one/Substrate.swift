@@ -209,7 +209,7 @@ public struct SS58 {
         }
         
         public static func hash(data: Data) -> Data {
-            HBlake2b512.instance.hash(data: Self.prefix + data)
+            HBlake2b512.instance.hash(data: Self.prefix + data).raw
         }
         
         public static func checksumLength(for dataLength: Int, prefix: Int) throws -> Int {

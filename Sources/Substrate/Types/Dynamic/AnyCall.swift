@@ -25,32 +25,34 @@ public struct AnyCall<C>: Call {
                                               runtime: Runtime) throws
     {
         guard let callParams = runtime.resolve(callParams: name, pallet: pallet) else {
-            throw CallCodingError.callNotFound(name: name, pallet: pallet)
+            throw FrameTypeError.typeInfoNotFound(for: errorTypeName)
         }
         guard callParams.count == _params.count else {
-            throw CallCodingError.wrongParametersCount(in: asVoid(), expected: callParams.count)
+            throw FrameTypeError.wrongFieldsCount(for: errorTypeName,
+                                                  expected: callParams.count,
+                                                  got: _params.count)
         }
         let variant: Value<NetworkType.Id>
-        if callParams.first?.name != nil { // Map
+        if callParams.first?.field.name != nil { // Map
             let pairs = try callParams.enumerated().map { (idx, el) in
                 let value: any ValueRepresentable
-                if let val = _params[el.name!] {
+                if let val = _params[el.field.name!] {
                     value = val
                 } else if let val = _params[String(idx)] {
                     value = val
                 } else {
-                    throw CallCodingError.valueNotFound(key: el.name!)
+                    throw FrameTypeError.valueNotFound(for: errorTypeName, key:el.field.name!)
                 }
-                return try (el.name!, value.asValue(runtime: runtime, type: el.type))
+                return try (el.field.name!, value.asValue(runtime: runtime, type: el.field.type))
             }
             let map = Dictionary(uniqueKeysWithValues: pairs)
             variant = Value(value: .variant(.map(name: name, fields: map)), context: type)
         } else { // Sequence
             let values = try callParams.enumerated().map { (idx, el) in
                 guard let value = _params[String(idx)] else {
-                    throw CallCodingError.valueNotFound(key: String(idx))
+                    throw FrameTypeError.valueNotFound(for: errorTypeName, key: String(idx))
                 }
-                return try value.asValue(runtime: runtime, type: el.type)
+                return try value.asValue(runtime: runtime, type: el.field.type)
             }
             variant = Value(value: .variant(.sequence(name: name, values: values)), context: type)
         }
@@ -60,6 +62,10 @@ public struct AnyCall<C>: Call {
     
     public func asVoid() -> AnyCall<Void> {
         AnyCall<Void>(name: name, pallet: pallet, _params: _params)
+    }
+    
+    public var errorTypeName: String {
+        "Call: \(pallet).\(name)"
     }
 }
 
@@ -84,13 +90,17 @@ public extension AnyCall where C == Void {
     }
 }
 
-extension AnyCall: RuntimeDynamicValidatable {
+extension AnyCall: ValidatableType {
     public static func validate(runtime: Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError>
+                                type: NetworkType.Info) -> Result<Void, TypeError>
     {
         return Result { try runtime.types.call }
-            .mapError { .runtimeTypeLookupFailed(name: "call", reason: $0) }
-            .flatMap { $0.id == id ? .success(()) : .failure(.typeIdMismatch(got: id, has: $0.id)) }
+            .mapError { .runtimeTypeLookupFailed(for: Self.self, type: "call", reason: $0) }
+            .flatMap {
+                $0.type == type.type ? .success(()) :
+                    .failure(.wrongType(for: Self.self, got: type.type,
+                                        reason: "call types is different"))
+            }
     }
 }
 
@@ -128,17 +138,22 @@ public extension AnyCall where C == NetworkType.Id {
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
             guard values.count == 1 else {
-                throw CallCodingError.wrongFieldCountInVariant(variant: value, expected: 1)
+                throw FrameTypeError.wrongFieldsCount(for: "AnyCall",
+                                                      expected: 1, got: values.count)
             }
             pallet = name
             value = values.first!
         case .variant(.map(name: let name, fields: let fields)):
             guard fields.count == 1 else {
-                throw CallCodingError.wrongFieldCountInVariant(variant: value, expected: 1)
+                throw FrameTypeError.wrongFieldsCount(for: "AnyCall",
+                                                      expected: 1, got: fields.count)
             }
             pallet = name
-            value = fields.values.first!
-        default: throw CallCodingError.decodedNonVariantValue(value)
+            value = fields.first!.value
+        default: throw FrameTypeError.paramMismatch(for: "AnyCall",
+                                                    index: 0,
+                                                    expected: "Value.Variant",
+                                                    got: call.description)
         }
         try self.init(pallet: pallet, call: value)
     }
@@ -154,7 +169,10 @@ public extension AnyCall where C == NetworkType.Id {
             self.init(name: name,
                       pallet: pallet,
                       params: fields)
-        default: throw CallCodingError.decodedNonVariantValue(call)
+        default: throw FrameTypeError.paramMismatch(for: "AnyCall: \(pallet)",
+                                                    index: 0,
+                                                    expected: "Value.Variant",
+                                                    got: call.description)
         }
     }
 }

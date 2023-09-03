@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol SomeBlockEvents: RuntimeDynamicDecodable, RuntimeDynamicValidatable, Default {
+public protocol SomeBlockEvents: RuntimeDynamicDecodable, ValidatableType, Default {
     associatedtype ER: SomeEventRecord
     var events: [ER] { get }
     func events(extrinsic index: UInt32) -> [ER]
@@ -27,11 +27,11 @@ public extension SomeBlockEvents {
         } != nil
     }
     
-    func has<E: IdentifiableEvent>(_ type: E.Type) -> Bool {
+    func has<E: PalletEvent>(_ type: E.Type) -> Bool {
         has(event: E.name, pallet: E.pallet)
     }
     
-    func has<E: IdentifiableEvent>(_ type: E.Type, extrinsic index: UInt32) -> Bool {
+    func has<E: PalletEvent>(_ type: E.Type, extrinsic index: UInt32) -> Bool {
         has(event: E.name, pallet: E.pallet, extrinsic: index)
     }
     
@@ -47,11 +47,11 @@ public extension SomeBlockEvents {
         }
     }
     
-    func all<E: IdentifiableEvent>(records type: E.Type) -> [ER] {
+    func all<E: PalletEvent>(records type: E.Type) -> [ER] {
         all(records: E.name, pallet: E.pallet)
     }
     
-    func all<E: IdentifiableEvent>(records type: E.Type, extrinsic index: UInt32) -> [ER] {
+    func all<E: PalletEvent>(records type: E.Type, extrinsic index: UInt32) -> [ER] {
         all(records: E.name, pallet: E.pallet, extrinsic: index)
     }
     
@@ -63,11 +63,11 @@ public extension SomeBlockEvents {
         try all(records: event, pallet: pallet, extrinsic: index).map { try $0.any }
     }
     
-    func all<E: IdentifiableEvent>(events type: E.Type) throws -> [E] {
+    func all<E: PalletEvent>(events type: E.Type) throws -> [E] {
         try all(records: E.name, pallet: E.pallet).map { try $0.typed(type) }
     }
     
-    func all<E: IdentifiableEvent>(events type: E.Type, extrinsic index: UInt32) throws -> [E] {
+    func all<E: PalletEvent>(events type: E.Type, extrinsic index: UInt32) throws -> [E] {
         try all(records: E.name, pallet: E.pallet, extrinsic: index).map { try $0.typed(type) }
     }
     
@@ -83,11 +83,11 @@ public extension SomeBlockEvents {
         }
     }
     
-    func first<E: IdentifiableEvent>(record type: E.Type) -> ER? {
+    func first<E: PalletEvent>(record type: E.Type) -> ER? {
         first(record: E.name, pallet: E.pallet)
     }
     
-    func first<E: IdentifiableEvent>(record type: E.Type, extrinsic index: UInt32) -> ER? {
+    func first<E: PalletEvent>(record type: E.Type, extrinsic index: UInt32) -> ER? {
         first(record: E.name, pallet: E.pallet, extrinsic: index)
     }
     
@@ -99,11 +99,11 @@ public extension SomeBlockEvents {
         try first(record: name, pallet: pallet, extrinsic: index).map{try $0.any}
     }
     
-    func first<E: IdentifiableEvent>(event type: E.Type) throws -> E? {
+    func first<E: PalletEvent>(event type: E.Type) throws -> E? {
         try first(record: type).map{try $0.typed(type)}
     }
     
-    func first<E: IdentifiableEvent>(event type: E.Type, extrinsic index: UInt32) throws -> E? {
+    func first<E: PalletEvent>(event type: E.Type, extrinsic index: UInt32) throws -> E? {
         try first(record: type, extrinsic: index).map{try $0.typed(type)}
     }
     
@@ -119,11 +119,11 @@ public extension SomeBlockEvents {
         }
     }
     
-    func last<E: IdentifiableEvent>(record type: E.Type) -> ER? {
+    func last<E: PalletEvent>(record type: E.Type) -> ER? {
         last(record: E.name, pallet: E.pallet)
     }
     
-    func last<E: IdentifiableEvent>(record type: E.Type, extrinsic index: UInt32) -> ER? {
+    func last<E: PalletEvent>(record type: E.Type, extrinsic index: UInt32) -> ER? {
         last(record: E.name, pallet: E.pallet, extrinsic: index)
     }
     
@@ -135,11 +135,11 @@ public extension SomeBlockEvents {
         try last(record: name, pallet: pallet, extrinsic: index).map{try $0.any}
     }
     
-    func last<E: IdentifiableEvent>(event type: E.Type) throws -> E? {
+    func last<E: PalletEvent>(event type: E.Type) throws -> E? {
         try last(record: type).map{try $0.typed(type)}
     }
     
-    func last<E: IdentifiableEvent>(event type: E.Type, extrinsic index: UInt32) throws -> E? {
+    func last<E: PalletEvent>(event type: E.Type, extrinsic index: UInt32) throws -> E? {
         try last(record: type, extrinsic: index).map{try $0.typed(type)}
     }
     

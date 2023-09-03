@@ -8,7 +8,8 @@
 import Foundation
 import ScaleCodec
 
-public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringConvertible {
+public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CompositeStaticValidatableType,
+                                                CustomStringConvertible {
     public typealias ER = ER
     
     public let events: [ER]
@@ -38,28 +39,20 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CustomStringCon
     
     public static func recordTypeId(metadata: any Metadata, events id: NetworkType.Id) throws -> NetworkType.Id {
         guard let typeInfo = metadata.resolve(type: id)?.flatten(metadata) else {
-            throw DynamicCodableError.typeNotFound(id)
+            throw TypeError.typeNotFound(for: Self.self, id: id)
         }
         switch typeInfo.definition {
         case .sequence(of: let recordId):
             return recordId
         default:
-            throw DynamicCodableError.wrongType(got: typeInfo,
-                                                       for: "Array<EventRecord>")
+            throw TypeError.wrongType(for: Self.self, got: typeInfo,
+                                      reason: "Not a sequence")
         }
     }
     
-    public static func validate(runtime: any Runtime,
-                                type id: NetworkType.Id) -> Result<Void, DynamicValidationError> {
-        guard let typeInfo = runtime.resolve(type: id)?.flatten(runtime) else {
-            return .failure(.typeNotFound(id))
-        }
-        switch typeInfo.definition {
-        case .sequence(of: let recordId):
-            return ER.validate(runtime: runtime, type: recordId)
-        default:
-            return .failure(.wrongType(got: typeInfo, for: "Array<EventRecord>"))
-        }
+    @inlinable
+    public static var childTypes: ChildTypes {
+        [Array<ER>.self]
     }
     
     public static var `default`: Self { Self(events: []) }

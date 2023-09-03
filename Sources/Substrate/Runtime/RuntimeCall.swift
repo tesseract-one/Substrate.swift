@@ -22,14 +22,61 @@ public extension RuntimeCall {
     var fullName: String { "\(api)_\(method)" }
 }
 
-public protocol StaticRuntimeCall<TReturn>: RuntimeCall {
+public protocol StaticRuntimeCall<TReturn>: RuntimeCall, FrameType {
     static var api: String { get }
     static var method: String { get }
 }
 
 public extension StaticRuntimeCall {
-    var api: String { Self.api }
-    var method: String { Self.method }
+    @inlinable var method: String { Self.method }
+    @inlinable var api: String { Self.api }
+    @inlinable var frame: String { api }
+    @inlinable static var frame: String { api }
+    @inlinable var name: String { method }
+    @inlinable static var name: String { method }
+    @inlinable static var frameTypeName: String { "RuntimeCall" }
+}
+
+public typealias RuntimeCallTypeInfo = (params: [(name: String, type: NetworkType.Info)],
+                                        result: NetworkType.Info)
+public typealias RuntimeCallChildTypes = (params: [ValidatableType.Type],
+                                          result: ValidatableType.Type)
+
+public extension StaticRuntimeCall where
+    Self: ComplexFrameType, TypeInfo == RuntimeCallTypeInfo
+{
+    @inlinable
+    static func typeInfo(runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
+        guard let info = runtime.resolve(runtimeCall: method, api: api) else {
+            return .failure(.typeInfoNotFound(for: Self.self))
+        }
+        return .success(info)
+    }
+}
+
+public extension ComplexStaticFrameType where
+    TypeInfo == RuntimeCallTypeInfo,
+    ChildTypes == RuntimeCallChildTypes
+{
+    static func validate(info: TypeInfo,
+                         runtime: any Runtime) -> Result<Void, FrameTypeError>
+    {
+        let ourTypes = childTypes
+        guard ourTypes.params.count == info.params.count else {
+            return .failure(.wrongFieldsCount(for: Self.self, expected: ourTypes.params.count,
+                                              got: info.params.count))
+        }
+        return zip(ourTypes.params, info.params).enumerated().voidErrorMap { index, zip in
+            let (our, info) = zip
+            return our.validate(runtime: runtime, type: info.type).mapError {
+                .childError(for: Self.self, index: index, error: $0)
+            }
+        }.flatMap {
+            ourTypes.result.validate(runtime: runtime, type: info.result).mapError {
+                .childError(for: Self.self, index: -1, error: $0)
+            }
+        }
+    }
 }
 
 public extension StaticRuntimeCall where TReturn: RuntimeDecodable {
@@ -38,7 +85,9 @@ public extension StaticRuntimeCall where TReturn: RuntimeDecodable {
     }
 }
 
-public protocol StaticCodableRuntimeCall<TReturn>: StaticRuntimeCall where TReturn: ScaleCodec.Decodable {
+public protocol StaticCodableRuntimeCall<TReturn>: StaticRuntimeCall
+    where TReturn: ScaleCodec.Decodable
+{
     func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws
     func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D) throws -> TReturn
 }
@@ -62,17 +111,4 @@ public enum RuntimeCallCodingError: Error {
     case wrongParametersCount(params: [String: any ValueRepresentable],
                               expected: [(String, NetworkType.Info)])
     case parameterNotFound(name: String, inParams: [String: any ValueRepresentable])
-}
-
-public extension StaticRuntimeCall where
-    Self: RuntimeValidatableComposite, TReturn: RuntimeDynamicValidatable
-{
-    static func validatableFieldIds(runtime: any Runtime) -> Result<[NetworkType.Id], ValidationError> {
-        guard let info = runtime.resolve(runtimeCall: method, api: api) else {
-            return .failure(.infoNotFound(for: Self.self))
-        }
-        return TReturn.validate(runtime: runtime, type: info.result.id)
-            .mapError { .childError(for: Self.self, error: $0) }
-            .map { info.params.map{$0.type.id} }
-    }
 }

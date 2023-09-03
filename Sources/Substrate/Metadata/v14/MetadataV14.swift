@@ -60,6 +60,9 @@ public final class MetadataV14: Metadata {
 
 public extension MetadataV14 {
     final class Pallet: PalletMetadata {
+        public typealias FieldInfo = (field: NetworkType.Field, type: NetworkType)
+        public typealias VariantInfo = (index: UInt8, fields: [FieldInfo])
+        
         public let name: String
         public let index: UInt8
         public let call: NetworkType.Info?
@@ -67,10 +70,10 @@ public extension MetadataV14 {
         public let error: NetworkType.Info?
         
         public let callNameByIdx: [UInt8: String]?
-        public let callByName: [String: NetworkType.Variant]?
+        public let callByName: [String: VariantInfo]?
         
         public let eventNameByIdx: [UInt8: String]?
-        public let eventByName: [String: NetworkType.Variant]?
+        public let eventByName: [String: VariantInfo]?
         
         public let storageByName: [String: Storage]?
         public var storage: [String] {
@@ -89,19 +92,19 @@ public extension MetadataV14 {
             self.call = network.call.map { NetworkType.Info(id: $0, type: types[$0]!) }
             self.event = network.event.map { NetworkType.Info(id: $0, type: types[$0]!) }
             self.error = network.error.map { NetworkType.Info(id: $0, type: types[$0]!) }
-            let calls = self.call.flatMap { Self.variants(for: $0.type.definition) }
+            let calls = self.call.flatMap { Self.variants(for: $0.type.definition, types: types) }
             self.callNameByIdx = calls.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
             }
             self.callByName = calls.map {
-                Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0) })
+                Dictionary(uniqueKeysWithValues: $0.map { ($0.name, ($0.index, $0.fields)) })
             }
-            let events = self.event.flatMap { Self.variants(for:$0.type.definition) }
+            let events = self.event.flatMap { Self.variants(for:$0.type.definition, types: types) }
             self.eventNameByIdx = events.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
             }
             self.eventByName = events.map {
-                Dictionary(uniqueKeysWithValues: $0.map { ($0.name, $0) })
+                Dictionary(uniqueKeysWithValues: $0.map { ($0.name, ($0.index, $0.fields)) })
             }
             self.storageByName = try network.storage
                 .flatMap {
@@ -123,7 +126,7 @@ public extension MetadataV14 {
         public func callIndex(name: String) -> UInt8? { callByName?[name]?.index }
         
         @inlinable
-        public func callParams(name: String) -> [NetworkType.Field]? { callByName?[name]?.fields }
+        public func callParams(name: String) -> [FieldInfo]? { callByName?[name]?.fields }
         
         @inlinable
         public func eventName(index: UInt8) -> String? { eventNameByIdx?[index] }
@@ -132,7 +135,7 @@ public extension MetadataV14 {
         public func eventIndex(name: String) -> UInt8? { eventByName?[name]?.index }
         
         @inlinable
-        public func eventParams(name: String) -> [NetworkType.Field]? { eventByName?[name]?.fields }
+        public func eventParams(name: String) -> [FieldInfo]? { eventByName?[name]?.fields }
         
         @inlinable
         public func constant(name: String) -> ConstantMetadata? { constantByName[name] }
@@ -141,10 +144,14 @@ public extension MetadataV14 {
         public func storage(name: String) -> StorageMetadata? { storageByName?[name] }
         
         private static func variants(
-            for def: NetworkType.Definition
-        ) -> [NetworkType.Variant]? {
+            for def: NetworkType.Definition, types: [NetworkType.Id: NetworkType]
+        ) -> [(index: UInt8, name: String, fields: [FieldInfo])]? {
             switch def {
-            case .variant(variants: let vars): return vars
+            case .variant(variants: let vars):
+                return vars.map {
+                    (index: $0.index, name: $0.name,
+                     fields: $0.fields.map{($0, types[$0.type]!)})
+                }
             default: return nil
             }
         }
@@ -158,7 +165,7 @@ public extension MetadataV14 {
     struct Storage: StorageMetadata {
         public let name: String
         public let modifier: StorageEntryModifier
-        public let types: (keys: [(StorageHasher, NetworkType.Info)],
+        public let types: (keys: [(hasher: StorageHasher, type: NetworkType.Info)],
                            value: NetworkType.Info)
         public let defaultValue: Data
         public let documentation: [String]
