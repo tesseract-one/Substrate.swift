@@ -112,9 +112,32 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     }
     
     open func validate() throws {
+        // Basic types
+        try validate(type: ST<RC>.AccountId.self, info: types.account,
+                     isStatic: ST<RC>.AccountId.self is any StaticAccountId.Type)
+        try validate(type: ST<RC>.Block.self, info: types.block,
+                     isStatic: ST<RC>.Block.self is any StaticBlock.Type)
+        try validate(type: ST<RC>.Hash.self, info: types.hash,
+                     isStatic: ST<RC>.Hash.self is any StaticHash.Type)
+        try validate(type: ST<RC>.DispatchError.self, info: types.dispatchError,
+                     isStatic: ST<RC>.DispatchError.self is any StaticCallError.Type)
+        try validate(type: ST<RC>.TransactionValidityError.self,
+                     info: types.transactionValidityError,
+                     isStatic: ST<RC>.TransactionValidityError.self is any StaticCallError.Type)
+        // Extrinsic and Extenstions
         try extrinsicManager.validate(runtime: self)
+        // Static types provided by Config
         try config.frames(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
         try config.runtimeCalls(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
+    }
+    
+    public func validate<T: ValidatableType>(type: T.Type, info: DynamicTypes.Maybe<NetworkType.Info>,
+                                             isStatic: Bool) throws
+    {
+        switch info {
+        case .success(let info): try type.validate(runtime: self, type: info).get()
+        case .failure(let err): guard isStatic else { throw err }
+        }
     }
 }
 

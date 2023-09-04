@@ -62,7 +62,7 @@ extension Either: ExtrinsicExtra where Left: ExtrinsicExtra, Right: ExtrinsicExt
     }
 }
 
-public protocol OpaqueExtrinsic<THash, TSignedExtra, TUnsignedExtra>: RuntimeSwiftDecodable {
+public protocol OpaqueExtrinsic<THash, TSignedExtra, TUnsignedExtra>: RuntimeSwiftDecodable, ValidatableType {
     associatedtype THash: Hash
     associatedtype TSignedExtra: ExtrinsicExtra
     associatedtype TUnsignedExtra: ExtrinsicExtra
@@ -106,23 +106,22 @@ public protocol SomeDispatchError: CallError {
     var moduleError: TModuleError { get throws }
 }
 
-public struct ModuleError: Error {
+public struct ModuleError: Error, IdentifiableType {
     public let pallet: PalletMetadata
     public let error: NetworkType.Variant
     
-    public init(variant: Value<NetworkType.Id>.Variant, runtime: any Runtime) throws {
-        let fields = variant.values
-        guard fields.count == 2 else {
-            throw FrameTypeError.wrongFieldsCount(for: "Error", expected: 2,
-                                                  got: fields.count)
+    public init(values: [Value<NetworkType.Id>], runtime: any Runtime) throws {
+        guard values.count == 2 else {
+            throw FrameTypeError.wrongFieldsCount(for: "ModuleError", expected: 2,
+                                                  got: values.count)
         }
-        guard let index = fields[0].uint.flatMap({UInt8(exactly: $0)}) else {
+        guard let index = values[0].uint.flatMap({UInt8(exactly: $0)}) else {
             throw FrameTypeError.paramMismatch(for: "Error", index: 0,
-                                               expected: "UInt8", got: fields[0].description)
+                                               expected: "UInt8", got: values[0].description)
         }
-        guard let bytes = fields[1].bytes, bytes.count > 0 else {
+        guard let bytes = values[1].bytes, bytes.count > 0 else {
             throw FrameTypeError.paramMismatch(for: "Error", index: 1,
-                                               expected: "Data", got: fields[1].description)
+                                               expected: "Data", got: values[1].description)
         }
         try self.init(pallet: index, error: bytes[0], metadata: runtime.metadata)
     }
@@ -148,25 +147,8 @@ public struct ModuleError: Error {
         self.error = error
     }
     
-    public static func validate(info: (index: UInt8, name: String,
-                                       fields: [(name: String?, type: NetworkType.Info)]),
-                                type: NetworkType,
-                                runtime: any Runtime) -> Result<Void, TypeError>
-    {
-        guard info.fields.count == 2 else {
-            return .failure(.wrongVariantFieldsCount(for: Self.self,
-                                                     variant: info.name,
-                                                     expected: 2, in: type))
-        }
-        guard info.fields[0].type.type.asPrimitive(runtime)?.isUInt == 8 else {
-            return .failure(.wrongType(for: Self.self, got: type,
-                                       reason: "field[0] is not UInt8"))
-        }
-        guard info.fields[1].type.type.asBytes(runtime) ?? 0 > 0 else {
-            return .failure(.wrongType(for: Self.self, got: type,
-                                       reason: "field[1] is not byte array"))
-        }
-        return .success(())
+    public static var definition: TypeDefinition {
+        .composite(fields: [.v(UInt8.definition), .v(.data(count: 4))])
     }
 }
 

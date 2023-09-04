@@ -121,9 +121,11 @@ public extension TransactionValidityError {
         /// malicious validator or a buggy `provide_inherent`. In any case, it can result in
         /// dangerously overweight blocks and therefore if found, invalidates the block.
         case badMandatory
-        /// A transaction with a mandatory dispatch. This is invalid; only inherent extrinsics are
-        /// allowed to have mandatory dispatches.
-        case mandatoryDispatch
+        /// An extrinsic with a mandatory dispatch tried to be validated.
+        /// This is invalid; only inherent extrinsics are allowed to have mandatory dispatches.
+        case mandatoryValidation
+        /// The sending address is disabled or known to be invalid.
+        case badSigner
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             let id = try decoder.decode(.enumCaseId)
@@ -137,7 +139,8 @@ public extension TransactionValidityError {
             case 6: self = .exhaustsResources
             case 7: self = try .custom(decoder.decode())
             case 8: self = .badMandatory
-            case 9: self = .mandatoryDispatch
+            case 9: self = .mandatoryValidation
+            case 10: self = .badSigner
             default: throw decoder.enumCaseError(for: id)
             }
         }
@@ -155,7 +158,8 @@ public extension TransactionValidityError {
                 try encoder.encode(7, .enumCaseId)
                 try encoder.encode(e)
             case .badMandatory: try encoder.encode(8, .enumCaseId)
-            case .mandatoryDispatch: try encoder.encode(9, .enumCaseId)
+            case .mandatoryValidation: try encoder.encode(9, .enumCaseId)
+            case .badSigner: try encoder.encode(10, .enumCaseId)
             }
         }
         
@@ -171,7 +175,8 @@ public extension TransactionValidityError {
                 case "AncientBirthBlock": self = .ancientBirthBlock
                 case "ExhaustsResources": self = .exhaustsResources
                 case "BadMandatory": self = .badMandatory
-                case "MandatoryDispatch": self = .mandatoryDispatch
+                case "MandatoryValidation": self = .mandatoryValidation
+                case "BadSigner": self = .badSigner
                 default:
                     throw Swift.DecodingError.dataCorruptedError(
                         in: container1, debugDescription: "Unknown case \(simple)"
@@ -220,9 +225,12 @@ public extension TransactionValidityError {
             case .badMandatory:
                 var container = encoder.singleValueContainer()
                 try container.encode("BadMandatory")
-            case .mandatoryDispatch:
+            case .mandatoryValidation:
                 var container = encoder.singleValueContainer()
-                try container.encode("MandatoryDispatch")
+                try container.encode("MandatoryValidation")
+            case .badSigner:
+                var container = encoder.singleValueContainer()
+                try container.encode("BadSigner")
             case .custom(let id):
                 var container = encoder.container(keyedBy: CodableComplexKey<Self>.self)
                 try container.encode(id, forKey: .custom)
@@ -234,7 +242,8 @@ public extension TransactionValidityError {
             .variant(variants: [
                 .e(0, "Call"), .e(1, "Payment"), .e(2, "Future"), .e(3, "Stale"),
                 .e(4, "BadProof"), .e(5, "AncientBirthBlock"), .e(6, "ExhaustsResources"),
-                .s(7, "Custom", UInt8.definition), .e(8, "BadMandatory"), .e(9, "MandatoryDispatch")
+                .s(7, "Custom", UInt8.definition), .e(8, "BadMandatory"), .e(9, "MandatoryValidation"),
+                .e(10, "BadSigner")
             ])
         }
     }

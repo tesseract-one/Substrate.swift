@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import ContextCodable
 
-public protocol SomeBlock: RuntimeDynamicSwiftDecodable {
+public protocol SomeBlock: RuntimeDynamicSwiftDecodable, ValidatableType {
     associatedtype THeader: SomeBlockHeader
     associatedtype TExtrinsic: OpaqueExtrinsic
     
@@ -25,8 +25,8 @@ public extension SomeBlock {
     var hash: THeader.THasher.THash { header.hash }
 }
 
-public protocol SomeBlockHeader: RuntimeDynamicSwiftDecodable {
-    associatedtype TNumber: UnsignedInteger & DataConvertible
+public protocol SomeBlockHeader: RuntimeDynamicSwiftDecodable, ValidatableType {
+    associatedtype TNumber: UnsignedInteger & DataConvertible & ValidatableType
     associatedtype THasher: FixedHasher
     
     var number: TNumber { get }

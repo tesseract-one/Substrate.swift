@@ -48,7 +48,17 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
     public var isModuleError: Bool { value.variant?.name.contains("Module") ?? false }
     
     public var moduleError: TModuleError { get throws {
-        try ModuleError(variant: value.variant!, runtime: _runtime)
+        let fields = value.variant!.values
+        guard fields.count == 1 else {
+            throw FrameTypeError.wrongFieldsCount(for: "DispatchError.\(value.variant!.name)",
+                                                  expected: 1, got: fields.count)
+        }
+        guard let values = fields[0].sequence else {
+            throw FrameTypeError.paramMismatch(for: "DispatchError.\(value.variant!.name)",
+                                               index: 0, expected: "Composite",
+                                               got: fields[0].description)
+        }
+        return try ModuleError(values: values, runtime: _runtime)
     }}
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
@@ -80,7 +90,10 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
         guard let module = info.first(where: { $0.name.contains("Module") }) else {
             return .failure(.variantNotFound(for: Self.self, variant: "*Module*", in: type.type))
         }
-        return TModuleError.validate(info: module, type: type.type, runtime: runtime)
+        guard module.fields.count == 1 else {
+            return .failure(.wrongValuesCount(for: Self.self, expected: 1, in: type.type))
+        }
+        return TModuleError.validate(runtime: runtime, type: module.fields[0].type)
     }
     
     public var description: String {

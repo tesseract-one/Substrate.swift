@@ -12,8 +12,9 @@ import Tuples
 public typealias ConsensusEnngineId = Tuple4<UInt8, UInt8, UInt8, UInt8>
 
 public struct SubstrateBlock<H: StaticFixedHasher,
-                             N: UnsignedInteger & DataConvertible & Swift.Decodable & ScaleCodec.Encodable,
-                             E: OpaqueExtrinsic>: StaticBlock, CustomStringConvertible
+                             N: ConfigUnsignedInteger,
+                             E: OpaqueExtrinsic & IdentifiableType>: StaticBlock, IdentifiableType,
+                                                                     CustomStringConvertible
 {
     public typealias THeader = Header
     public typealias TExtrinsic = E
@@ -35,10 +36,16 @@ public struct SubstrateBlock<H: StaticFixedHasher,
         header = try container.decode(THeader.self, forKey: .header, context: .init(runtime: runtime))
         extrinsics = try container.decode([TExtrinsic].self, forKey: .extrinsics, context: .init(runtime: runtime))
     }
+    
+    public static var definition: TypeDefinition {
+        .composite(fields: [.kv("header", Header.definition), .kv("extrinsics", [E].definition)])
+    }
 }
 
 public extension SubstrateBlock {
-    struct Header: SomeBlockHeader, RuntimeSwiftDecodable, RuntimeEncodable, CustomStringConvertible {
+    struct Header: SomeBlockHeader, RuntimeSwiftDecodable, RuntimeEncodable,
+                   IdentifiableType, CustomStringConvertible
+    {
         public typealias TNumber = N
         public typealias THasher = H
         
@@ -74,8 +81,8 @@ public extension SubstrateBlock {
         }
         
         public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
-            try encoder.encode(number)
             try encoder.encode(parentHash)
+            try encoder.encode(number, .compact)
             try encoder.encode(stateRoot)
             try encoder.encode(extrinsicsRoot)
             try encoder.encode(digest)
@@ -85,11 +92,23 @@ public extension SubstrateBlock {
             "{number: \(number), parentHash: \(parentHash), stateRoot: \(stateRoot), " +
             "extrinsicsRoot: \(extrinsicsRoot), digest: \(digest)}"
         }
+        
+        public static var definition: TypeDefinition {
+            .composite(fields: [
+                .kv("parentHash", THasher.THash.definition),
+                .kv("number", Compact<N>.definition),
+                .kv("stateRoot", THasher.THash.definition),
+                .kv("extrinsicsRoot", THasher.THash.definition),
+                .kv("digest", Digest.definition)
+            ])
+        }
     }
 }
 
 public extension SubstrateBlock.Header {
-    struct Digest: RuntimeSwiftDecodable, ScaleCodec.Encodable, CustomStringConvertible {
+    struct Digest: RuntimeSwiftDecodable, ScaleCodec.Encodable,
+                   IdentifiableType, CustomStringConvertible
+    {
         public let logs: [DigestItem]
         
         enum CodingKeys: CodingKey {
@@ -107,9 +126,15 @@ public extension SubstrateBlock.Header {
         }
         
         public var description: String { logs.description }
+        
+        public static var definition: TypeDefinition {
+            .sequence(of: DigestItem.definition)
+        }
     }
     
-    enum DigestItem: ScaleCodec.Codable, RuntimeCodable, CustomStringConvertible {
+    enum DigestItem: ScaleCodec.Codable, RuntimeCodable,
+                     IdentifiableType, CustomStringConvertible
+    {
         public enum ItemType: UInt8 {
             case other = 0
             case consensus = 4
@@ -178,6 +203,16 @@ public extension SubstrateBlock.Header {
             case .runtimeEnvironmentUpdated:
                 return "RuntimeEnvironmentUpdated"
             }
+        }
+        
+        public static var definition: TypeDefinition {
+            .variant(variants: [
+                .m(ItemType.preRuntime.rawValue, "PreRuntime", [ConsensusEnngineId.definition, .data]),
+                .m(ItemType.consensus.rawValue, "Consensus", [ConsensusEnngineId.definition, .data]),
+                .m(ItemType.seal.rawValue, "Seal", [ConsensusEnngineId.definition, .data]),
+                .s(ItemType.other.rawValue, "Other", .data),
+                .e(ItemType.runtimeEnvironmentUpdated.rawValue, "RuntimeEnvironmentUpdated")
+            ])
         }
     }
 }

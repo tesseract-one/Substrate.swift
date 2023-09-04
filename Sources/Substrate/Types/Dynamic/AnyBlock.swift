@@ -8,12 +8,10 @@
 import Foundation
 import ScaleCodec
 
-public struct AnyBlock<H: FixedHasher, N: UnsignedInteger & DataConvertible, E: OpaqueExtrinsic>: SomeBlock {
-    public enum TypeError: Error {
-        case blockNotFound(id: NetworkType.Id)
-        case headerNotFound(inBlock: NetworkType.Info)
-    }
-    
+public struct AnyBlock<H: FixedHasher,
+                       N: UnsignedInteger & CompactCodable & DataConvertible & ValidatableType,
+                       E: OpaqueExtrinsic>: SomeBlock
+{
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     public typealias THeader = Header
     public typealias TExtrinsic = E
@@ -71,29 +69,39 @@ public struct AnyBlock<H: FixedHasher, N: UnsignedInteger & DataConvertible, E: 
         }.flatMap { Dictionary(uniqueKeysWithValues: $0) }
     }
     
+    public static func validate(runtime: Runtime,
+                                type: NetworkType.Info) -> Result<Void, TypeError> {
+        let fields = Self.fieldTypes(info: type, runtime: runtime)
+        guard let header = fields.header else {
+            return .failure(.fieldNotFound(for: Self.self, field: "header", in: type.type))
+        }
+        guard let extrinsic = fields.extrinsic else {
+            return .failure(.fieldNotFound(for: Self.self, field: "extrinsic", in: type.type))
+        }
+        return Header.validate(runtime: runtime, type: header.1).flatMap { _ in
+            E.validate(runtime: runtime, type: extrinsic.1).map{_ in }
+        }
+    }
+    
     public static func headerType(runtime: Runtime,
                                   block id: NetworkType.Id) throws -> NetworkType.Id
     {
         guard let info = Self.fieldTypes(id: id, runtime: runtime) else {
-            throw TypeError.blockNotFound(id: id)
+            throw TypeError.typeNotFound(for: Self.self, id: id)
         }
         guard let header = info.header else {
-            throw TypeError.headerNotFound(inBlock: info.info)
+            throw TypeError.fieldNotFound(for: Self.self, field: "header", in: info.info.type)
         }
         return header.1
     }
     
     private static func fieldTypes(
-        id: NetworkType.Id, runtime: any Runtime
+        info: NetworkType.Info, runtime: any Runtime
     ) -> (info: NetworkType.Info, header: (AnyCodableCodingKey, NetworkType.Id)?,
           extrinsic: (AnyCodableCodingKey, NetworkType.Id)?,
-          other: [AnyCodableCodingKey: NetworkType.Id]?)?
+          other: [AnyCodableCodingKey: NetworkType.Id]?)
     {
-        guard let type = runtime.resolve(type: id) else {
-            return nil
-        }
-        let info = NetworkType.Info(id: id, type: type)
-        switch type.definition {
+        switch info.type.definition {
         case .composite(fields: let fields):
             guard fields.count >= 2 else {
                 return (info: info, header: nil, extrinsic: nil, other: nil)
@@ -137,6 +145,18 @@ public struct AnyBlock<H: FixedHasher, N: UnsignedInteger & DataConvertible, E: 
         }
     }
     
+    private static func fieldTypes(
+        id: NetworkType.Id, runtime: any Runtime
+    ) -> (info: NetworkType.Info, header: (AnyCodableCodingKey, NetworkType.Id)?,
+          extrinsic: (AnyCodableCodingKey, NetworkType.Id)?,
+          other: [AnyCodableCodingKey: NetworkType.Id]?)?
+    {
+        guard let type = runtime.resolve(type: id) else {
+            return nil
+        }
+        return fieldTypes(info: id.i(type), runtime: runtime)
+    }
+    
     @inlinable public static var headerKey: String { "header" }
     @inlinable public static var extrinsicsKey: String { "extrinsics" }
 }
@@ -175,6 +195,19 @@ public extension AnyBlock {
                 throw try container.newError("Header number \(value) can't be stored in: \(TNumber.self)")
             }
             self.number = converted
+        }
+        
+        public static func validate(runtime: Runtime,
+                                    type: NetworkType.Info) -> Result<Void, TypeError>
+        {
+            guard case .composite(fields: let fields) = type.type.flatten(runtime).definition else {
+                return .failure(.wrongType(for: Self.self, got: type.type,
+                                           reason: "Isn't composite"))
+            }
+            guard let n = fields.first(where: {$0.name == "number"}) else {
+                return .failure(.fieldNotFound(for: Self.self, field: "number", in: type.type))
+            }
+            return Compact<N>.validate(runtime: runtime, type: n.type).map{_ in}
         }
     }
 }

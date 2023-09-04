@@ -7,7 +7,9 @@
 
 import Foundation
 
-public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic, CustomStringConvertible, CustomDebugStringConvertible {
+public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic, IdentifiableType,
+                                                   CustomStringConvertible, CustomDebugStringConvertible
+{
     public typealias THash = M.TConfig.THasher.THash
     public typealias TSignedExtra = M.TSignedExtra
     public typealias TUnsignedExtra = M.TUnsignedExtra
@@ -44,4 +46,5 @@ public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic, CustomString
     }
     
     public static var version: UInt8 { M.version }
+    public static var definition: TypeDefinition { .data }
 }
