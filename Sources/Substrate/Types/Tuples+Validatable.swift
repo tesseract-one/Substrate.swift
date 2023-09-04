@@ -10,7 +10,7 @@ import Tuples
 
 public protocol ValidatableTuple: ValidatableType, SomeTuple {
     static func validate(type: NetworkType.Info,
-                         fields: [NetworkType.Info],
+                         fields: inout [NetworkType.Info],
                          runtime: any Runtime) -> Result<Void, TypeError>
 }
 
@@ -25,7 +25,7 @@ public extension SomeTuple0 {
     }
     
     static func validate(type: NetworkType.Info,
-                         fields: [NetworkType.Info],
+                         fields: inout [NetworkType.Info],
                          runtime: any Runtime) -> Result<Void, TypeError>
     {
         fields.count == 0 ? .success(()) : .failure(.wrongValuesCount(for: Self.self,
@@ -48,8 +48,9 @@ public extension ListTuple where DroppedLast: ValidatableTuple, Last: Validatabl
             guard let chType = runtime.resolve(type: id) else {
                 return .failure(.typeNotFound(for: Self.self, id: id))
             }
+            var fields = Array(repeating: chType.i(id), count: Int(count))
             return validate(type: type,
-                            fields: Array(repeating: chType.i(id), count: Int(count)),
+                            fields: &fields,
                             runtime: runtime)
         case .tuple(components: let ids):
             guard ids.count == self.count else {
@@ -61,7 +62,10 @@ public extension ListTuple where DroppedLast: ValidatableTuple, Last: Validatabl
                     return .failure(.typeNotFound(for: Self.self, id: id))
                 }
                 return .success(chType.i(id))
-            }.flatMap { validate(type: type, fields: $0, runtime: runtime) }
+            }.flatMap { (fields: [NetworkType.Info]) in
+                var fields = fields
+                return validate(type: type, fields: &fields, runtime: runtime)
+            }
         case .composite(fields: let fields):
             guard fields.count == self.count else {
                 return .failure(.wrongValuesCount(for: Self.self,
@@ -72,7 +76,10 @@ public extension ListTuple where DroppedLast: ValidatableTuple, Last: Validatabl
                     return .failure(.typeNotFound(for: Self.self, id: field.type))
                 }
                 return .success(chType.i(field.type))
-            }.flatMap { validate(type: type, fields: $0, runtime: runtime) }
+            }.flatMap { (fields: [NetworkType.Info]) in
+                var fields = fields
+                return validate(type: type, fields: &fields, runtime: runtime)
+            }
         default:
             return .failure(.wrongType(for: Self.self,
                                        got: type.type,
@@ -81,16 +88,15 @@ public extension ListTuple where DroppedLast: ValidatableTuple, Last: Validatabl
     }
     
     static func validate(type: NetworkType.Info,
-                         fields: [NetworkType.Info],
+                         fields: inout [NetworkType.Info],
                          runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard fields.count == self.count else {
             return .failure(.wrongValuesCount(for: Self.self,
                                               expected: self.count, in: type.type))
         }
-        var fields = fields
         let ltype = fields.removeLast()
-        return DroppedLast.validate(type: type, fields: fields, runtime: runtime).flatMap {
+        return DroppedLast.validate(type: type, fields: &fields, runtime: runtime).flatMap {
             Last.validate(runtime: runtime, type: ltype)
         }
     }

@@ -9,14 +9,14 @@ import Foundation
 import Tuples
 
 public protocol IdentifiableTuple: IdentifiableType, SomeTuple {
-    static var elementsFieldDefinifions: [TypeDefinition.Field] { get }
+    static func fillFieldDefinifions(defs: inout [TypeDefinition.Field])
 }
 
 public extension SomeTuple0 {
     @inlinable
     static var definition: TypeDefinition { .void }
     @inlinable
-    static var elementsFieldDefinifions: [TypeDefinition.Field] { [] }
+    static func fillFieldDefinifions(defs: inout [TypeDefinition.Field]) {}
 }
 
 public extension ListTuple where Self: IdentifiableTuple,
@@ -24,12 +24,16 @@ public extension ListTuple where Self: IdentifiableTuple,
 {
     @inlinable
     static var definition: TypeDefinition {
-        .composite(fields: elementsFieldDefinifions)
+        var fieldDefs = Array<TypeDefinition.Field>()
+        fieldDefs.reserveCapacity(count)
+        fillFieldDefinifions(defs: &fieldDefs)
+        return .composite(fields: fieldDefs)
     }
     
     @inlinable
-    static var elementsFieldDefinifions: [TypeDefinition.Field] {
-        DroppedLast.elementsFieldDefinifions + [.init(nil, Last.definition)]
+    static func fillFieldDefinifions(defs: inout [TypeDefinition.Field]) {
+        DroppedLast.fillFieldDefinifions(defs: &defs)
+        defs.append(.v(Last.definition))
     }
 }
 

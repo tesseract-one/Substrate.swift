@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CompositeStaticValidatableType,
+public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
                                                 CustomStringConvertible {
     public typealias ER = ER
     
@@ -50,9 +50,9 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents, CompositeStatic
         }
     }
     
-    @inlinable
-    public static var childTypes: ChildTypes {
-        [Array<ER>.self]
+    public static func validate(runtime: any Runtime,
+                                type: NetworkType.Info) -> Result<Void, TypeError> {
+        Array<ER>.validate(runtime: runtime, type: type)
     }
     
     public static var `default`: Self { Self(events: []) }
