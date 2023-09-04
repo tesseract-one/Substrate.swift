@@ -14,7 +14,7 @@ public indirect enum TypeDefinition: CustomStringConvertible, Hashable, Equatabl
     case array(count: UInt32, of: Self)
     case compact(of: Self)
     case primitive(is: NetworkType.Primitive)
-    case bitsequence
+    case bitsequence(store: BitSequence.Format.Store, order: BitSequence.Format.Order)
     case void
 }
 
@@ -137,7 +137,12 @@ public extension TypeDefinition {
     {
         switch network.flatten(metadata: runtime.metadata) {
         case .primitive(is: let p): return .success(.primitive(is: p))
-        case .bitsequence(store: _, order: _): return .success(.bitsequence)
+        case .bitsequence(store: let s, order: let o):
+            return BitSequence.Format.Store.from(type: s, runtime: runtime).flatMap { st in
+                BitSequence.Format.Order.from(type: o, runtime: runtime).map {
+                    .bitsequence(store: st, order: $0)
+                }
+            }
         case .array(count: let count, of: let id):
             return from(type: id, runtime: runtime).map{.array(count: count, of: $0)}
         case .compact(of: let id):
@@ -191,61 +196,89 @@ public extension TypeDefinition {
                   path: inout [Self]) -> Result<Void, TypeError>
     {
         path.append(self); defer { let _ = path.dropLast() }
-        switch (self, type.flatten(runtime).definition) {
-        case (.array(count: let scount, of: let stype),
-              .array(count: let tcount, of: let ttype)):
-            guard scount == tcount else {
-                return .failure(.wrongValuesCount(path: path,
-                                                  expected: Int(scount), in: type))
-            }
-            return stype.validate(runtime: runtime,
-                                  type: ttype,
-                                  path: &path)
-        case (.sequence(of: let stype), .sequence(of: let ttype)):
-            return stype.validate(runtime: runtime,
-                                  type: ttype, path: &path)
+        let flat = type.flatten(runtime)
+        switch (self, flat.definition) {
+        case (.array(count: let count, of: let stype), _):
+            return validate(arrayOf: stype, count: count, type: flat,
+                            runtime: runtime, path: &path)
+        case (.composite(fields: let fields), _):
+            return validate(composite: fields, type: flat,
+                            runtime: runtime, path: &path)
+        case (.variant(variants: let vars), _):
+            return validate(variant: vars, type: flat,
+                            runtime: runtime, path: &path)
+        case (.void, _):
+            return validate(void: flat, runtime: runtime, path: &path)
         case (.compact(of: let stype), .compact(of: let ttype)):
             return validate(compact: stype, runtime: runtime,
                             type: ttype, path: &path)
+        case (.sequence(of: let stype), .sequence(of: let ttype)):
+            return stype.validate(runtime: runtime,
+                                  type: ttype, path: &path)
         case (.primitive(is: let sprim), .primitive(is: let tprim)):
-            return sprim == tprim
-                ? .success(())
+            return sprim == tprim ? .success(())
                 : .failure(.wrongType(path: path, got: type,
                                       reason: "Expected \(sprim)"))
-        case (.bitsequence, .bitsequence(store: _, order: _)): return .success(())
-        case (.void, .composite(fields: let fields)):
-            return fields.count == 0
-                ? .success(())
-                : .failure(.wrongType(path: path, got: type,
-                                      reason: "Expected empty fields for void"))
-        case (.void, .tuple(components: let components)):
-            return components.count == 0
-                ? .success(())
-                : .failure(.wrongType(path: path, got: type,
-                                      reason: "Expected empty components for void"))
-        case (.composite(fields: let sfields), .composite(fields: let tfields)):
-            guard sfields.count == tfields.count else {
+        case (.bitsequence(store: let ss, order: let so),
+              .bitsequence(store: let tsId, order: let toId)):
+            return BitSequence.Format.Store.from(type: tsId, runtime: runtime).flatMap { ts in
+                BitSequence.Format.Order.from(type: toId, runtime: runtime).flatMap {
+                    guard ss == ts else {
+                        return .failure(.wrongType(path: path, got: type,
+                                                   reason: "Expected \(ss) store format"))
+                    }
+                    return so == $0 ? .success(()) :
+                        .failure(.wrongType(path: path, got: type,
+                                            reason: "Expected \(so) order"))
+                }
+            }
+        default:
+            return .failure(.wrongType(path: path, got: type,
+                                       reason: "Types can't be matched"))
+        }
+    }
+    
+    func validate(arrayOf stype: Self, count: UInt32, type: NetworkType,
+                  runtime: any Runtime, path: inout [Self]) -> Result<Void, TypeError>
+    {
+        switch type.definition {
+        case .array(count: let tcount, of: let ttype):
+            guard count == tcount else {
                 return .failure(.wrongValuesCount(path: path,
-                                                  expected: sfields.count, in: type))
+                                                  expected: Int(count), in: type))
             }
-            return zip(sfields, tfields).voidErrorMap { sfield, tfield in
-                sfield.type.validate(runtime: runtime,
-                                     type: tfield.type, path: &path)
+            return stype.validate(runtime: runtime, type: ttype, path: &path)
+        case .composite(fields: let tfields):
+            guard count == tfields.count else {
+                return .failure(.wrongValuesCount(path: path,
+                                                  expected: Int(count), in: type))
             }
-        case (.composite(fields: let sfields), .tuple(components: let ids)):
-            guard sfields.count == ids.count else {
-                return .failure(.wrongValuesCount(path: path, expected: sfields.count, in: type))
+            return tfields.voidErrorMap { info in
+                stype.validate(runtime: runtime, type: info.type, path: &path)
             }
-            return zip(sfields, ids).voidErrorMap { sfield, id in
-                sfield.type.validate(runtime: runtime,
-                                     type: id, path: &path)
+        case .tuple(components: let ids):
+            guard count == ids.count else {
+                return .failure(.wrongValuesCount(path: path,
+                                                  expected: Int(count), in: type))
             }
-        case (.variant(variants: let svars), .variant(variants: let tvars)):
-            guard svars.count == tvars.count else {
-                return .failure(.wrongValuesCount(path: path, expected: svars.count, in: type))
+            return ids.voidErrorMap { id in
+                stype.validate(runtime: runtime, type: id, path: &path)
+            }
+        default: return .failure(.wrongType(path: path, got: type,
+                                            reason: "Type isn't array compatible"))
+        }
+    }
+    
+    func validate(variant vars: [Variant], type: NetworkType,
+                  runtime: any Runtime, path: inout [Self]) -> Result<Void, TypeError>
+    {
+        switch type.definition {
+        case .variant(variants: let tvars):
+            guard vars.count == tvars.count else {
+                return .failure(.wrongValuesCount(path: path, expected: vars.count, in: type))
             }
             let tvarsDict = Dictionary(uniqueKeysWithValues: tvars.map { ($0.name, $0) })
-            return svars.voidErrorMap { svar in
+            return vars.voidErrorMap { svar in
                 guard let inVariant = tvarsDict[svar.name] else {
                     return .failure(.variantNotFound(path: path, variant: svar.name, in: type))
                 }
@@ -264,40 +297,101 @@ public extension TypeDefinition {
                                         type: info.type, path: &path)
                 }
             }
+        default: return .failure(.wrongType(path: path, got: type,
+                                            reason: "Type isn't variant compatible"))
+        }
+    }
+    
+    func validate(composite fields: [Field], type: NetworkType,
+                  runtime: any Runtime, path: inout [Self]) -> Result<Void, TypeError>
+    {
+        switch type.definition {
+        case .composite(fields: let tfields):
+            guard fields.count == tfields.count else {
+                return .failure(.wrongValuesCount(path: path,
+                                                  expected: fields.count, in: type))
+            }
+            return zip(fields, tfields).voidErrorMap { sfield, tfield in
+                sfield.type.validate(runtime: runtime,
+                                     type: tfield.type, path: &path)
+            }
+        case .tuple(components: let ids):
+            guard fields.count == ids.count else {
+                return .failure(.wrongValuesCount(path: path, expected: fields.count, in: type))
+            }
+            return zip(fields, ids).voidErrorMap { sfield, id in
+                sfield.type.validate(runtime: runtime,
+                                     type: id, path: &path)
+            }
+        case .array(count: let count, of: let id):
+            guard fields.count == count else {
+                return .failure(.wrongValuesCount(path: path, expected: fields.count, in: type))
+            }
+            return fields.voidErrorMap { sfield in
+                sfield.type.validate(runtime: runtime, type: id, path: &path)
+            }
+        default: return .failure(.wrongType(path: path, got: type,
+                                            reason: "Type isn't composite compatible"))
+        }
+    }
+    
+    func validate(void type: NetworkType, runtime: any Runtime,
+                  path: inout [Self]) -> Result<Void, TypeError>
+    {
+        switch type.definition {
+        case .tuple(components: let components):
+            return components.count == 0
+                ? .success(())
+                : .failure(.wrongType(path: path, got: type,
+                                      reason: "Expected empty components for void"))
+        case .composite(fields: let fields):
+            return fields.count == 0
+                ? .success(())
+                : .failure(.wrongType(path: path, got: type,
+                                      reason: "Expected empty fields for void"))
+        case .variant(variants: let vars):
+            return vars.count == 0
+                ? .success(())
+                : .failure(.wrongType(path: path, got: type,
+                                      reason: "Expected empty variants for void"))
+        case .array(count: let count, of: _):
+            return count == 0
+                ? .success(())
+                : .failure(.wrongType(path: path, got: type,
+                                      reason: "Expected 0 elements for void"))
+        default: return .failure(.wrongType(path: path, got: type,
+                                            reason: "Type isn't void compatible"))
+        }
+    }
+    
+    func validate(compact: Self, runtime: any Runtime,
+                  type id: NetworkType.Id, path: inout [Self]) -> Result<Void, TypeError>
+    {
+        path.append(compact); defer { let _ = path.dropLast() }
+        guard let type = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(path: path, id: id))
+        }
+        switch (compact, type.flatten(runtime).definition) {
+        case (.primitive(is: let sprim), .primitive(is: let iprim)):
+            guard let suint = sprim.isUInt, let iuint = iprim.isUInt else {
+                return .failure(.wrongType(path: path,
+                                           got: type,
+                                           reason: "primitive is not UInt"))
+            }
+            guard iuint <= suint else {
+                return .failure(.wrongType(path: path, got: type,
+                                           reason: "UInt\(suint) can't store\(iuint) bits"))
+            }
+        case (.void, let t):
+            guard t.isEmpty(metadata: runtime.metadata) else {
+                return .failure(.wrongType(path: path, got: type,
+                                           reason: "Got type for Compact<Void>"))
+            }
         default:
             return .failure(.wrongType(path: path, got: type,
-                                       reason: "Types can't be matched"))
+                                       reason: "Can't be Compact"))
         }
-        
-        func validate(compact: Self, runtime: any Runtime,
-                      type id: NetworkType.Id, path: inout [Self]) -> Result<Void, TypeError>
-        {
-            path.append(compact); defer { let _ = path.dropLast() }
-            guard let type = runtime.resolve(type: id) else {
-                return .failure(.typeNotFound(path: path, id: id))
-            }
-            switch (compact, type.flatten(runtime).definition) {
-            case (.primitive(is: let sprim), .primitive(is: let iprim)):
-                guard let suint = sprim.isUInt, let iuint = iprim.isUInt else {
-                    return .failure(.wrongType(path: path,
-                                               got: type,
-                                               reason: "primitive is not UInt"))
-                }
-                guard iuint <= suint else {
-                    return .failure(.wrongType(path: path, got: type,
-                                               reason: "UInt\(suint) can't store\(iuint) bits"))
-                }
-            case (.void, let t):
-                guard t.isEmpty(metadata: runtime.metadata) else {
-                    return .failure(.wrongType(path: path, got: type,
-                                               reason: "Got type for Compact<Void>"))
-                }
-            default:
-                return .failure(.wrongType(path: path, got: type,
-                                           reason: "Can't be Compact"))
-            }
-            return .success(())
-        }
+        return .success(())
     }
 }
 

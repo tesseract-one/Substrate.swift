@@ -64,13 +64,6 @@ extension BitSequence {
             case u64 = 64
         }
         
-        public enum Error: Swift.Error {
-            case storeFormatNotFound(NetworkType.Id)
-            case orderFormatNotFound(NetworkType.Id)
-            case storeFormatNotSupported(NetworkType)
-            case orderFormatNotSupported(NetworkType)
-        }
-        
         public let store: Store
         public let order: Order
         
@@ -229,33 +222,68 @@ extension BitSequence.Format {
 }
 
 extension BitSequence.Format.Store {
+    @inlinable
     public init(type: NetworkType.Id, runtime: Runtime) throws {
+        self = try Self.from(type: type, runtime: runtime).get()
+    }
+    
+    @inlinable
+    public init(type: NetworkType, runtime: Runtime) throws {
+        self = try Self.from(type: type, runtime: runtime).get()
+    }
+    
+    @inlinable
+    public static func from(type: NetworkType.Id, runtime: Runtime) -> Result<Self, TypeError> {
         guard let bitStore = runtime.resolve(type: type) else {
-            throw BitSequence.Format.Error.storeFormatNotFound(type)
+            return .failure(.typeNotFound(for: Self.self, id: type))
         }
-        switch bitStore.definition {
-        case .primitive(is: .u8): self = .u8
-        case .primitive(is: .u16): self = .u16
-        case .primitive(is: .u32): self = .u32
-        case .primitive(is: .u64): self = .u64
-        default: throw BitSequence.Format.Error.storeFormatNotSupported(bitStore)
+        return from(type: bitStore, runtime: runtime)
+    }
+    
+    @inlinable
+    public static func from(type: NetworkType, runtime: Runtime) -> Result<Self, TypeError> {
+        switch type.definition {
+        case .primitive(is: .u8): return .success(.u8)
+        case .primitive(is: .u16): return .success(.u16)
+        case .primitive(is: .u32): return .success(.u32)
+        case .primitive(is: .u64): return .success(.u64)
+        default: return .failure(TypeError.wrongType(for: Self.self, got: type,
+                                                     reason: "Unsupported store format"))
         }
     }
     
+    @inlinable
     public var bits: UInt32 {
         UInt32(self.rawValue)
     }
 }
 
 extension BitSequence.Format.Order {
+    @inlinable
     public init(type: NetworkType.Id, runtime: Runtime) throws {
+        self = try Self.from(type: type, runtime: runtime).get()
+    }
+    
+    @inlinable
+    public init(type: NetworkType, runtime: Runtime) throws {
+        self = try Self.from(type: type, runtime: runtime).get()
+    }
+    
+    @inlinable
+    public static func from(type: NetworkType.Id, runtime: Runtime) -> Result<Self, TypeError> {
         guard let orderStore = runtime.resolve(type: type) else {
-            throw BitSequence.Format.Error.orderFormatNotFound(type)
+            return .failure(.typeNotFound(for: Self.self, id: type))
         }
-        switch orderStore.path.last {
-        case .some("Lsb0"): self = .lsb0
-        case .some("Msb0"): self = .msb0
-        default: throw BitSequence.Format.Error.orderFormatNotSupported(orderStore)
+        return from(type: orderStore, runtime: runtime)
+    }
+    
+    @inlinable
+    public static func from(type: NetworkType, runtime: Runtime) -> Result<Self, TypeError> {
+        switch type.path.last {
+        case .some("Lsb0"): return .success(.lsb0)
+        case .some("Msb0"): return .success(.msb0)
+        default: return .failure(.wrongType(for: Self.self, got: type,
+                                            reason: "Order format is not supported"))
         }
     }
 }
@@ -283,7 +311,44 @@ extension BitSequence: ValueRepresentable {
     }
 }
 
-extension BitSequence: IdentifiableType {
+extension BitSequence: ValidatableType {
     @inlinable
-    public static var definition: TypeDefinition { .bitsequence }
+    public static func validate(format: Format, runtime: Runtime,
+                                type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
+    {
+        guard let type = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(for: Self.self, id: id))
+        }
+        return validate(format: format, runtime: runtime, type: id.i(type)).map{id.i(type)}
+    }
+    
+    public static func validate(format: Format, runtime: Runtime,
+                                type: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        guard case .bitsequence(store: let s, order: let o) = type.type.flatten(runtime).definition else {
+            return .failure(.wrongType(for: Self.self, got: type.type, reason: "Is not BitSequence"))
+        }
+        return Format.Store.from(type: s, runtime: runtime).flatMap { store in
+            Format.Order.from(type: o, runtime: runtime).flatMap {
+                guard store == format.store else {
+                    return .failure(.wrongType(for: Self.self, got: type.type,
+                                               reason: "Expected \(format.store) store format"))
+                }
+                return $0 == format.order ? .success(()) :
+                    .failure(.wrongType(for: Self.self, got: type.type,
+                                        reason: "Expected \(format.order) order"))
+            }
+        }
+    }
+    
+    public static func validate(runtime: Runtime,
+                                type: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        guard case .bitsequence(store: let s, order: let o) = type.type.flatten(runtime).definition else {
+            return .failure(.wrongType(for: Self.self, got: type.type, reason: "Is not BitSequence"))
+        }
+        return Format.Store.from(type: s, runtime: runtime).flatMap { _ in
+            Format.Order.from(type: o, runtime: runtime).map {_ in}
+        }
+    }
 }

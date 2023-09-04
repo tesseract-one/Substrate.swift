@@ -23,21 +23,21 @@ public enum ConstantsApiError: Error {
     case constantNotFound(name: String, pallet: String)
 }
 
-public class ConstantsApiRegistry<RAPI: RootApi>: RootApiAware {
+public class ConstantsApiRegistry<R: RootApi>: RootApiAware {
     private let _apis: Synced<[String: any ConstantsApi]>
     
-    public weak var rootApi: RAPI!
+    public weak var rootApi: R!
     
-    public init(api: RAPI? = nil) {
+    public init(api: R? = nil) {
         self.rootApi = api
         self._apis = Synced(value: [:])
     }
     
-    public func setRootApi(api: RAPI) {
+    public func setRootApi(api: R) {
         self.rootApi = api
     }
     
-    public func getApi<A>(_ t: A.Type) -> A where A: ConstantsApi, A.R == RAPI {
+    public func getApi<A>(_ t: A.Type) -> A where A: ConstantsApi, A.R == R {
         _apis.sync { apis in
             if let api = apis[A.id] as? A {
                 return api

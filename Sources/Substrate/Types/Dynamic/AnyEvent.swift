@@ -77,10 +77,7 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
                                 type: NetworkType.Info) -> Result<Void, TypeError>
     {
         TypeDefinition.from(network: type.type.definition, runtime: runtime).flatMap { own in
-            TypeDefinition.from(network: runtime.types.event.type.definition, runtime: runtime).flatMap {
-                own == $0 ? .success(()) : .failure(.wrongType(for: Self.self, got: type.type,
-                                                               reason: "event types is different"))
-            }
+            own.validate(runtime: runtime, type: runtime.types.event.type)
         }
     }
     
