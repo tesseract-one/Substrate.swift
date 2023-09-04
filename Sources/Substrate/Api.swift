@@ -75,11 +75,16 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
                             at hash: ST<RC>.Hash? = nil) async throws {
         // Obtain initial data
         let metadata = try await client.metadata(at: hash, config: config)
-        async let runtimeVersion = await client.runtimeVersion(at: hash, metadata: metadata, config: config)
-        async let properties = await client.systemProperties(metadata: metadata, config: config)
-        async let genesisHash = await client.block(hash: 0, metadata: metadata, config: config)!
+        let types = try config.dynamicTypes(metadata: metadata)
+        async let runtimeVersion = await client.runtimeVersion(at: hash, metadata: metadata,
+                                                               config: config, types: types)
+        async let properties = await client.systemProperties(metadata: metadata,
+                                                             config: config, types: types)
+        async let genesisHash = await client.block(hash: 0, metadata: metadata,
+                                                   config: config, types: types)!
         let runtime = try await ExtendedRuntime(config: config,
                                                 metadata: metadata,
+                                                types: types,
                                                 metadataHash: hash,
                                                 genesisHash: genesisHash,
                                                 version: runtimeVersion,

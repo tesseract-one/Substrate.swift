@@ -7,7 +7,7 @@
 
 import Foundation
 
-public indirect enum TypeDefinition: CustomStringConvertible {
+public indirect enum TypeDefinition: CustomStringConvertible, Hashable, Equatable {
     case composite(fields: [Field])
     case variant(variants: [Variant])
     case sequence(of: Self)
@@ -41,7 +41,7 @@ public extension TypeDefinition {
 }
 
 public extension TypeDefinition {
-    struct Field: CustomStringConvertible {
+    struct Field: CustomStringConvertible, Hashable, Equatable {
         public let name: String?
         public let type: TypeDefinition
         
@@ -62,7 +62,7 @@ public extension TypeDefinition {
 }
 
 public extension TypeDefinition {
-    struct Variant: CustomStringConvertible {
+    struct Variant: CustomStringConvertible, Hashable, Equatable {
         public let index: UInt8
         public let name: String
         public let fields: [Field]
@@ -305,13 +305,11 @@ public extension TypeError {
     static func typeNotFound(path: [TypeDefinition], id: NetworkType.Id) -> Self {
         .typeNotFound(for: path.pathString, id: id)
     }
-    static func runtimeTypeLookupFailed(path: [TypeDefinition], type: String, reason: Error) -> Self {
-        .runtimeTypeLookupFailed(for: path.pathString, type: type, reason: reason)
-    }
     
     static func wrongType(path: [TypeDefinition], got: NetworkType, reason: String) -> Self {
         .wrongType(for: path.pathString, got: got, reason: reason)
     }
+    
     static func wrongValuesCount(path: [TypeDefinition], expected: Int, in: NetworkType) -> Self {
         .wrongValuesCount(for: path.pathString, expected: expected, in: `in`)
     }

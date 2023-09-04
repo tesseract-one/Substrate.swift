@@ -78,7 +78,7 @@ public extension Configs {
         
         public init(runtime: any Runtime, config: C) throws {
             if let batch = config as? any BatchSupportedConfig,
-               batch.isBatchSupported(metadata: runtime.metadata)
+               batch.isBatchSupported(types: runtime.types, metadata: runtime.metadata)
             {
                 self.calls = try batch.batchCalls(runtime: runtime)
             } else {

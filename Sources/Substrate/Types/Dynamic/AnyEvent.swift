@@ -76,11 +76,12 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
     public static func validate(runtime: Runtime,
                                 type: NetworkType.Info) -> Result<Void, TypeError>
     {
-        return Result { try runtime.types.event }
-            .mapError { .runtimeTypeLookupFailed(for: Self.self, type: "event", reason: $0) }
-            .flatMap { $0.type == type.type ? .success(()) :
-                    .failure(.wrongType(for: Self.self, got: type.type,
-                                        reason: "event types is different")) }
+        TypeDefinition.from(network: type.type.definition, runtime: runtime).flatMap { own in
+            TypeDefinition.from(network: runtime.types.event.type.definition, runtime: runtime).flatMap {
+                own == $0 ? .success(()) : .failure(.wrongType(for: Self.self, got: type.type,
+                                                               reason: "event types is different"))
+            }
+        }
     }
     
     public var description: String {

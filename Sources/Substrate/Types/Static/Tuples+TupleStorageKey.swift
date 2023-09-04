@@ -38,7 +38,7 @@ public extension SomeTuple1 where Self: TupleStorageValidatableKeyPath {
 public extension SomeTuple1 where Self: TupleStorageIdentifiableKeyPath {
     @inlinable
     static var identifiablePath: [(key: TypeDefinition,
-                                   hasher: LastMetadata.StorageHasher)]
+                                   hasher: LatestMetadata.StorageHasher)]
     {
         [(T1.TKey.definition, T1.THasher.hasherType)]
     }
@@ -83,7 +83,7 @@ public extension ListTuple where
 {
     @inlinable
     static var identifiablePath: [(key: TypeDefinition,
-                                   hasher: LastMetadata.StorageHasher)]
+                                   hasher: LatestMetadata.StorageHasher)]
     {
         [(First.TKey.definition, First.THasher.hasherType)] + DroppedFirst.identifiablePath
     }

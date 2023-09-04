@@ -27,7 +27,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     public let version: ST<RC>.RuntimeVersion
     public let properties: ST<RC>.SystemProperties
     public let metadataHash: ST<RC>.Hash?
-    public let types: any RuntimeNetworkTypes
+    public let types: DynamicTypes
     public let isBatchSupported: Bool
     public let customCoders: [RuntimeCustomDynamicCoder]
     
@@ -83,6 +83,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     }
     
     public init(config: RC, metadata: any Metadata,
+                types: DynamicTypes,
                 metadataHash: ST<RC>.Hash?,
                 genesisHash: ST<RC>.Hash,
                 version: ST<RC>.RuntimeVersion,
@@ -95,12 +96,16 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         self.version = version
         self.properties = properties
         self.addressFormat = properties.ss58Format ?? .default
-        self.customCoders = try config.customCoders()
-        self.typedHasher = try config.hasher(metadata: metadata)
-        self.extrinsicManager = try config.extrinsicManager()
-        self.types = LazyRuntimeNetworkTypes(config: config, metadata: metadata)
+        self.types = types
+        self.customCoders = try config.customCoders(types: types, metadata: metadata)
+        self.extrinsicManager = try config.extrinsicManager(types: types, metadata: metadata)
+        guard let hasher = ST<RC>.Hasher(type: types.hasher.value) else {
+            let hasher = try types.hasher.get()
+            throw DynamicTypes.LookupError.unknownHasherType(type: hasher.hasher.type.name)
+        }
+        self.typedHasher = hasher
         if let bc = config as? any BatchSupportedConfig {
-            self.isBatchSupported = bc.isBatchSupported(metadata: metadata)
+            self.isBatchSupported = bc.isBatchSupported(types: types, metadata: metadata)
         } else {
             self.isBatchSupported = false
         }
@@ -148,107 +153,4 @@ public extension ExtendedRuntime {
     func hash(data: Data) throws -> ST<RC>.Hash {
         try typedHasher.hash(data: data, runtime: self)
     }
-}
-
-public struct LazyRuntimeNetworkTypes<RC: Config>: RuntimeNetworkTypes {
-    private struct State {
-        var block: Result<NetworkType.Info, Error>?
-        var account: Result<NetworkType.Info, Error>?
-        var extrinsic: Result<(call: NetworkType.Info, addr: NetworkType.Info,
-                               signature: NetworkType.Info, extra: NetworkType.Info), Error>?
-        var hash: Result<NetworkType.Info, Error>?
-        var dispatchError: Result<NetworkType.Info, Error>?
-        var event: Result<NetworkType.Info, Error>?
-        var transactionValidityError: Result<NetworkType.Info, Error>?
-    }
-    
-    private var _state: Synced<State>
-    private var _config: RC
-    private var _metadata: any Metadata
-    
-    public init(config: RC, metadata: any Metadata) {
-        self._state = Synced(value: State())
-        self._config = config
-        self._metadata = metadata
-    }
-    
-    public var block: NetworkType.Info { get throws {
-        try _state.sync { state in
-            if let res = state.block { return try res.get() }
-            state.block = Result { try self._config.blockType(metadata: self._metadata) }
-            return try state.block!.get()
-        }
-    }}
-    
-    public var account: NetworkType.Info { get throws {
-        let address = try self.address
-        return try _state.sync { state in
-            if let res = state.account { return try res.get() }
-            state.account = Result { try self._config.accountType(metadata: self._metadata, address: address) }
-            return try state.account!.get()
-        }
-    }}
-    
-    public var call: NetworkType.Info { get throws { try _extrinsic.call }}
-    public var address: NetworkType.Info { get throws { try _extrinsic.addr } }
-    public var signature: NetworkType.Info { get throws { try _extrinsic.signature }}
-    public var extrinsicExtra: NetworkType.Info { get throws { try _extrinsic.extra }}
-    
-    public var event: NetworkType.Info { get throws {
-        try _state.sync { state in
-            if let res = state.event { return try res.get() }
-            if let event = self._metadata.outerEnums?.eventType {
-                state.event = .success(event)
-            } else {
-                state.event = Result { try self._config.eventType(metadata: self._metadata) }
-            }
-            return try state.event!.get()
-        }
-    }}
-    
-    public var dispatchError: NetworkType.Info { get throws {
-        try _state.sync { state in
-            if let res = state.dispatchError { return try res.get() }
-            state.dispatchError = Result { try self._config.dispatchErrorType(metadata: self._metadata) }
-            return try state.dispatchError!.get()
-        }
-    }}
-
-    public var transactionValidityError: NetworkType.Info { get throws {
-        try _state.sync { state in
-            if let res = state.transactionValidityError { return try res.get() }
-            state.transactionValidityError = Result {
-                try self._config.transactionValidityErrorType(metadata: self._metadata)
-            }
-            return try state.transactionValidityError!.get()
-        }
-    }}
-    
-    public var hash: NetworkType.Info { get throws {
-        try _state.sync { state in
-            if let res = state.hash { return try res.get() }
-            state.hash = Result {
-                try self._config.hashType(metadata: self._metadata)
-            }
-            return try state.hash!.get()
-        }
-    }}
-    
-    private var _extrinsic: (call: NetworkType.Info, addr: NetworkType.Info,
-                             signature: NetworkType.Info, extra: NetworkType.Info)
-    { get throws {
-        try _state.sync { state in
-            if let res = state.extrinsic { return try res.get() }
-            if let call = _metadata.extrinsic.callType,
-               let addr = _metadata.extrinsic.addressType,
-               let signature = _metadata.extrinsic.signatureType,
-               let extra = _metadata.extrinsic.extraType
-            {
-                state.extrinsic = .success((call, addr, signature, extra))
-            } else {
-                state.extrinsic = Result { try self._config.extrinsicTypes(metadata: self._metadata) }
-            }
-            return try state.extrinsic!.get()
-        }
-    }}
 }

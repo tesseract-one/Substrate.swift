@@ -19,7 +19,9 @@ public struct StorageChangeSet<H: Hash>: SomeStorageChangeSet {
     
     public init(from decoder: Decoder, runtime: any Runtime) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        let hashContext = H.DecodingContext(metadata: runtime.metadata) { try runtime.types.hash.id }
+        let hashContext = H.DecodingContext(metadata: runtime.metadata) {
+            try runtime.types.hash.get().id
+        }
         let block = try container.decode(H.self, forKey: .block, context: hashContext)
         var changesContainer = try container.nestedUnkeyedContainer(forKey: .changes)
         var changes: [(key: Data, value: Data?)] = []

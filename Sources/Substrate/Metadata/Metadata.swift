@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public typealias LastMetadata = MetadataV15
+public typealias LatestMetadata = MetadataV15
 
 public protocol Metadata {
     var extrinsic: ExtrinsicMetadata { get }
@@ -20,10 +20,16 @@ public protocol Metadata {
     var pallets: [String] { get }
     var apis: [String] { get }
     
-    // Search is O(n). Try to resolve directly by path
-    func search(type cb: (String) -> Bool) -> NetworkType.Info?
     func resolve(type id: NetworkType.Id) -> NetworkType?
-    func resolve(type path: [String]) -> NetworkType.Info?
+    // Path is joined by "."
+    func resolve(type path: String) -> NetworkType.Info?
+    // Search and reduce is O(n). Try to resolve by id or by path
+    func search(type cb: (String) -> Bool) -> NetworkType.Info?
+    func reduce<R>(
+        types into: R,
+        _ cb: (inout R, NetworkType.Info) throws -> Void
+    ) rethrows -> R
+    
     func resolve(pallet index: UInt8) -> PalletMetadata?
     func resolve(pallet name: String) -> PalletMetadata?
     func resolve(api name: String) -> RuntimeApiMetadata?
@@ -51,8 +57,8 @@ public protocol PalletMetadata {
 
 public protocol StorageMetadata {
     var name: String { get }
-    var modifier: LastMetadata.StorageEntryModifier { get }
-    var types: (keys: [(hasher: LastMetadata.StorageHasher, type: NetworkType.Info)],
+    var modifier: LatestMetadata.StorageEntryModifier { get }
+    var types: (keys: [(hasher: LatestMetadata.StorageHasher, type: NetworkType.Info)],
                 value: NetworkType.Info) { get }
     var defaultValue: Data { get }
     var documentation: [String] { get }
@@ -98,6 +104,7 @@ public protocol OuterEnumsMetadata {
 }
 
 public enum MetadataError: Error {
+    case typeNotFound(id: NetworkType.Id)
     case storageBadHashersCount(expected: Int, got: Int, name: String, pallet: String)
     case storageNonCompositeKey(name: String, pallet: String, type: NetworkType.Info)
 }
@@ -119,4 +126,14 @@ public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable, Identifiable
     }
     
     public static var definition: TypeDefinition { .data }
+}
+
+public extension Dictionary where Key == NetworkType.Id, Value == NetworkType {
+    @inlinable
+    func get(_ id: NetworkType.Id) throws -> NetworkType {
+        guard let val = self[id] else {
+            throw MetadataError.typeNotFound(id: id)
+        }
+        return val
+    }
 }

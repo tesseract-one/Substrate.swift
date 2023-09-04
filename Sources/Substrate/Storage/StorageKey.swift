@@ -71,7 +71,7 @@ public extension PalletStorageKey {
     @inlinable static var frameTypeName: String { "StorageKey" }
 }
 
-public typealias StorageKeyTypeInfo = (keys: [(hasher: LastMetadata.StorageHasher, type: NetworkType.Info)],
+public typealias StorageKeyTypeInfo = (keys: [(hasher: LatestMetadata.StorageHasher, type: NetworkType.Info)],
                                        value: NetworkType.Info)
 public typealias StorageKeyChildTypes = (keys: [(hasher: StaticHasher.Type, type: ValidatableType.Type)],
                                          value: ValidatableType.Type)

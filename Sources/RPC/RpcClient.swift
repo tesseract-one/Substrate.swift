@@ -79,7 +79,7 @@ extension RpcClient: Client {
         id: ST<C>.AccountId, runtime: ExtendedRuntime<C>
     ) async throws -> ST<C>.Index {
         let context = ST<C>.AccountId.EncodingContext(runtime: runtime) {
-            try $0.types.account.id
+            try $0.types.account.get().id
         }
         return try await call(method: "system_accountNextIndex",
                               params: [id.any(context: context)])
@@ -87,13 +87,15 @@ extension RpcClient: Client {
     
     @inlinable
     public func runtimeVersion(
-        at hash: ST<C>.Hash?, metadata: any Metadata, config: C
+        at hash: ST<C>.Hash?, metadata: any Metadata,
+        config: C, types: DynamicTypes
     ) async throws -> ST<C>.RuntimeVersion {
         return try await call(method: "state_getRuntimeVersion", params: Params(hash), context: metadata)
     }
     
     @inlinable
-    public func metadata(at hash: ST<C>.Hash?, config: C) async throws -> Metadata {
+    public func metadata(at hash: ST<C>.Hash?, config: C) async throws -> Metadata
+    {
         do {
             return try await metadataFromRuntimeApi(at: hash, config: config)
         } catch {
@@ -104,17 +106,18 @@ extension RpcClient: Client {
     
     @inlinable
     public func systemProperties(
-        metadata: any Metadata, config: C
+        metadata: any Metadata, config: C, types: DynamicTypes
     ) async throws -> ST<C>.SystemProperties {
         try await call(method: "system_properties", params: Params(), context: metadata)
     }
     
     @inlinable
     public func block(
-        hash index: ST<C>.BlockNumber?, metadata: any Metadata, config: C
+        hash index: ST<C>.BlockNumber?, metadata: any Metadata,
+        config: C, types: DynamicTypes
     ) async throws ->ST<C>.Hash? {
         try await call(method: "chain_getBlockHash", params: Params(index.map(UIntHex.init)),
-                       context: (metadata, { try config.hashType(metadata: metadata).id }))
+                       context: (metadata, { try types.hash.get().id }))
     }
     
     @inlinable
@@ -122,7 +125,7 @@ extension RpcClient: Client {
         at hash: ST<C>.Hash? = nil, runtime: ExtendedRuntime<C>
     ) async throws -> ST<C>.ChainBlock? {
         try await call(method: "chain_getBlock", params: Params(hash),
-                       context: (runtime, { try $0.types.block.id }))
+                       context: (runtime, { try $0.types.block.get().id }))
     }
     
     @inlinable
@@ -130,7 +133,7 @@ extension RpcClient: Client {
         header hash: ST<C>.Hash?, runtime: ExtendedRuntime<C>
     ) async throws -> ST<C>.BlockHeader? {
         let context = ST<C>.BlockHeader.DecodingContext(runtime: runtime) {
-            try ST<C>.Block.headerType(runtime: $0, block: $0.types.block.id)
+            try ST<C>.Block.headerType(runtime: $0, block: $0.types.block.get().id)
         }
         return try await call(method: "chain_getHeader", params: Params(hash),
                               context: context)
@@ -151,10 +154,10 @@ extension RpcClient: Client {
         var encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
         let dispatchErrorCtx = ST<C>.DispatchError.DecodingContext(runtime: runtime) {
-            try $0.types.dispatchError.id
+            try $0.types.dispatchError.get().id
         }
         let transactionErrorCtx = ST<C>.TransactionValidityError.DecodingContext(runtime: runtime) {
-            try $0.types.transactionValidityError.id
+            try $0.types.transactionValidityError.get().id
         }
         let nothingCtx = RuntimeSwiftCodableContext(runtime: runtime)
         let context = Either<ST<C>.TransactionValidityError, Either<ST<C>.DispatchError, Nothing>>
@@ -173,8 +176,7 @@ extension RpcClient: Client {
     }
     
     public func execute<RT: ScaleCodec.Decodable>(call: any StaticCodableRuntimeCall<RT>,
-                                                  at hash: ST<C>.Hash?,
-                                                  config: C) async throws -> RT
+                                                  at hash: ST<C>.Hash?, config: C) async throws -> RT
     {
         var encoder = config.encoder()
         try call.encodeParams(in: &encoder)
@@ -202,7 +204,7 @@ extension RpcClient: Client {
         var encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
         return try await call(method: "author_submitExtrinsic", params: Params(encoder.output),
-                              context: (runtime.metadata, { try runtime.types.hash.id }))
+                              context: (runtime.metadata, { try runtime.types.hash.get().id }))
     }
     
     public func storage<V>(value key: any StorageKey<V>,
@@ -281,8 +283,7 @@ extension RpcClient: Client {
                     description: "Unsupported metadata versions \(versions)"))
         }
         let metadata = try await execute(call: config.metadataAtVersionCall(version: max),
-                                         at: hash,
-                                         config: config)
+                                         at: hash, config: config)
         guard let metadata = metadata else {
             throw ScaleCodec.DecodingError.dataCorrupted(
                 ScaleCodec.DecodingError.Context(

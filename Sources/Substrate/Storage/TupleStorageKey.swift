@@ -52,7 +52,7 @@ public protocol TupleStorageIdentifiableKeyPath: TupleStorageKeyPath where
     First.TKey: IdentifiableType, Last.TKey: IdentifiableType
 {
     static var identifiablePath: [(key: TypeDefinition,
-                                   hasher: LastMetadata.StorageHasher)] { get }
+                                   hasher: LatestMetadata.StorageHasher)] { get }
 }
 
 public protocol TupleStorageNKeyPath: TupleStorageKeyPath where DroppedFirst: TupleStorageKeyPath {}

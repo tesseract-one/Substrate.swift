@@ -53,10 +53,53 @@ public extension Configs {
 
         public typealias TExtrinsicManager = ExtrinsicV4Manager<StaticSignedExtensionsProvider<Extensions>>
         
-        public init() {}
+        public let runtimeCustomCoders: [RuntimeCustomDynamicCoder]
+        public let blockSelector: NSRegularExpression
+        public let headerSelector: NSRegularExpression
+        public let accountSelector: NSRegularExpression
+        public let dispatchErrorSelector: NSRegularExpression
+        public let transactionValidityErrorSelector: NSRegularExpression
+        
+        public init(customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
+                    blockSelector: String = "^.*Block$",
+                    headerSelector: String = "^.*Header$",
+                    accountSelector: String = "^.*AccountId[0-9]*$",
+                    dispatchErrorSelector: String = "^.*DispatchError$",
+                    transactionValidityErrorSelector: String = "^.*TransactionValidityError$") throws
+        {
+            self.runtimeCustomCoders = customCoders
+            self.blockSelector = try NSRegularExpression(pattern: blockSelector)
+            self.accountSelector = try NSRegularExpression(pattern: accountSelector)
+            self.headerSelector = try NSRegularExpression(pattern: headerSelector)
+            self.dispatchErrorSelector = try NSRegularExpression(pattern: dispatchErrorSelector)
+            self.transactionValidityErrorSelector = try NSRegularExpression(
+                pattern: transactionValidityErrorSelector
+            )
+        }
+        
+        @inlinable
+        public func customCoders(types: DynamicTypes,
+                                 metadata: any Metadata) throws -> [RuntimeCustomDynamicCoder]
+        {
+            runtimeCustomCoders
+        }
+        
+        @inlinable
+        public func dynamicTypes(metadata: any Metadata) throws -> DynamicTypes {
+            try .tryParse(
+                from: metadata, blockEvents: ST<Self>.BlockEvents.self,
+                blockEventsKey: (EventsStorageKey<ST<Self>.BlockEvents>.name,
+                                 EventsStorageKey<ST<Self>.BlockEvents>.pallet),
+                accountSelector: accountSelector, blockSelector: blockSelector,
+                headerSelector: headerSelector, dispatchErrorSelector: dispatchErrorSelector,
+                transactionValidityErrorSelector: transactionValidityErrorSelector
+            )
+        }
 
         @inlinable
-        public func extrinsicManager() throws -> TExtrinsicManager {
+        public func extrinsicManager(types: DynamicTypes,
+                                     metadata: any Metadata) throws -> TExtrinsicManager
+        {
             let provider = StaticSignedExtensionsProvider(extensions: Extensions(),
                                                           version: TExtrinsicManager.version)
             return TExtrinsicManager(extensions: provider)
@@ -69,5 +112,19 @@ public extension Configs.Registry where
     Ext == Void
 {
     @inlinable
-    static var substrate: Self { Self(config: .init()) }
+    static func substrate(
+        customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
+        blockSelector: String = "^.*Block$", headerSelector: String = "^.*Header$",
+        accountSelector: String = "^.*AccountId[0-9]*$",
+        dispatchErrorSelector: String = "^.*DispatchError$",
+        transactionValidityErrorSelector: String = "^.*TransactionValidityError$"
+    ) throws -> Self {
+        try Self(config: .init(customCoders: customCoders, blockSelector: blockSelector,
+                               headerSelector: headerSelector, accountSelector: accountSelector,
+                               dispatchErrorSelector: dispatchErrorSelector,
+                               transactionValidityErrorSelector: transactionValidityErrorSelector))
+    }
+    
+    @inlinable
+    static var substrate: Self { Self(config: try! .init()) }
 }

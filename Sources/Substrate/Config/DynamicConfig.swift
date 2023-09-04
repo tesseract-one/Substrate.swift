@@ -51,7 +51,7 @@ public extension Configs {
         public let transactionValidityErrorSelector: NSRegularExpression
         
         public init(extensions: [DynamicExtrinsicExtension] = Configs.dynamicSignedExtensions,
-                    customCoders: [RuntimeCustomDynamicCoder] = Configs.customCoders,
+                    customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
                     defaultPayment: ST<Self>.ExtrinsicPayment? = nil,
                     blockSelector: String = "^.*Block$",
                     headerSelector: String = "^.*Header$",
@@ -83,16 +83,14 @@ public extension Configs {
         DynamicChargeTransactionPaymentExtension(),
         DynamicPrevalidateAttestsExtension()
     ]
-    
-    static var customCoders: [RuntimeCustomDynamicCoder] = [
-        ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")
-    ]
 }
 
 // Object getters and properties
 public extension Configs.Dynamic {
     @inlinable
-    func extrinsicManager() throws -> TExtrinsicManager {
+    func extrinsicManager(types: DynamicTypes,
+                          metadata: any Metadata) throws -> TExtrinsicManager
+    {
         let provider = DynamicSignedExtensionsProvider<SBC<Self>>(
             extensions: extensions, version: ST<Self>.ExtrinsicManager.version
         )
@@ -100,50 +98,31 @@ public extension Configs.Dynamic {
     }
     
     @inlinable
-    func customCoders() throws -> [RuntimeCustomDynamicCoder] { runtimeCustomCoders }
-    
-    func headerType(metadata: any Metadata) throws -> NetworkType.Info {
-        if let block = try? blockType(metadata: metadata) {
-            let headerType = block.type.parameters.first{ $0.name.lowercased() == "header" }?.type
-            if let id = headerType, let type = metadata.resolve(type: id) {
-                return NetworkType.Info(id: id, type: type)
-            }
-        }
-        guard let type = metadata.search(type: { headerSelector.matches($0) }) else {
-            throw ConfigTypeLookupError.typeNotFound(name: "Header",
-                                                     selector: headerSelector.pattern)
-        }
-        return type
+    func customCoders(types: DynamicTypes,
+                      metadata: any Metadata) throws -> [RuntimeCustomDynamicCoder]
+    {
+        runtimeCustomCoders
     }
     
-    func hashType(metadata: any Metadata) throws -> NetworkType.Info {
-        let header = try headerType(metadata: metadata)
-        guard case .composite(let fields) = header.type.definition else {
-            throw ConfigTypeLookupError.badHeaderType(header: header)
-        }
-        let hashType = fields.first { $0.typeName?.lowercased().contains("hash") ?? false }?.type
-        guard let hashType = hashType, let hashInfo = metadata.resolve(type: hashType) else {
-            throw ConfigTypeLookupError.hashTypeNotFound
-        }
-        return NetworkType.Info(id: hashType, type: hashInfo)
-    }
-    
-    func hasher(metadata: Metadata) throws -> ST<Self>.Hasher {
-        let header = try headerType(metadata: metadata)
-        let hashType = header.type.parameters.first { $0.name.lowercased() == "hash" }?.type
-        guard let hashType = hashType, let hashName = metadata.resolve(type: hashType)?.path.last else {
-            throw ConfigTypeLookupError.hashTypeNotFound
-        }
-        guard let hasher = AnyFixedHasher(name: hashName) else {
-            throw ConfigTypeLookupError.unknownHashName(hashName)
-        }
-        return hasher
+    @inlinable
+    func dynamicTypes(metadata: any Metadata) throws -> DynamicTypes {
+        try .tryParse(
+            from: metadata, blockEvents: ST<Self>.BlockEvents.self,
+            blockEventsKey: (EventsStorageKey<ST<Self>.BlockEvents>.name,
+                             EventsStorageKey<ST<Self>.BlockEvents>.pallet),
+            accountSelector: accountSelector, blockSelector: blockSelector,
+            headerSelector: headerSelector, dispatchErrorSelector: dispatchErrorSelector,
+            transactionValidityErrorSelector: transactionValidityErrorSelector
+        )
     }
     
     func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment {
         if let def = payment { return def }
         guard let type = DynamicChargeTransactionPaymentExtension.tipType(runtime: runtime) else {
-            throw ConfigTypeLookupError.paymentTypeNotFound
+            throw DynamicTypes.LookupError.typeNotFound(
+                name: "Tip",
+                selector: ExtrinsicExtensionId.chargeTransactionPayment.rawValue
+            )
         }
         switch type.type.flatten(runtime).definition {
         case .compact(of: _): return .uint(.default)
@@ -155,50 +134,10 @@ public extension Configs.Dynamic {
             case .char: return .char(.default)
             case .str: return .string(.default)
             }
-        default: throw ConfigTypeLookupError.cantProvideDefaultPayment(forType: type)
+        default:
+            throw DynamicTypes.LookupError.wrongType(name: type.description,
+                                                           reason: "Can't provide default value")
         }
-    }
-}
-
-// Type lookups
-public extension Configs.Dynamic {
-    func blockType(metadata: any Metadata) throws -> NetworkType.Info {
-        guard let type = metadata.search(type: { blockSelector.matches($0) }) else {
-            throw ConfigTypeLookupError.typeNotFound(name: "Block", selector:
-                                                     blockSelector.pattern)
-        }
-        return type
-    }
-    
-    func accountType(metadata: any Metadata,
-                     address: NetworkType.Info) throws -> NetworkType.Info
-    {
-        let selectors = ["accountid", "t::accountid", "account", "acc", "a"]
-        let accid = address.type.parameters.first{selectors.contains($0.name.lowercased())}?.type
-        if let id = accid, let info = metadata.resolve(type: id) {
-            return NetworkType.Info(id: id, type: info)
-        }
-        guard let type = metadata.search(type: {accountSelector.matches($0)}) else {
-            throw ConfigTypeLookupError.typeNotFound(name: "AccountId",
-                                                     selector: accountSelector.pattern)
-        }
-        return type
-    }
-    
-    func dispatchErrorType(metadata: any Metadata) throws -> NetworkType.Info {
-        guard let type = metadata.search(type: {dispatchErrorSelector.matches($0)}) else {
-            throw ConfigTypeLookupError.typeNotFound(name: "DispatchError",
-                                                     selector: dispatchErrorSelector.pattern)
-        }
-        return type
-    }
-    
-    func transactionValidityErrorType(metadata: any Metadata) throws -> NetworkType.Info {
-        guard let type = metadata.search(type: {transactionValidityErrorSelector.matches($0)}) else {
-            throw ConfigTypeLookupError.typeNotFound(name: "TransactionValidityError",
-                                                     selector: transactionValidityErrorSelector.pattern)
-        }
-        return type
     }
 }
 
@@ -206,7 +145,7 @@ public extension Configs.Dynamic {
 public extension Configs.Registry where C == Configs.Dynamic, Ext == Void {
     @inlinable
     static func dynamic(extensions: [DynamicExtrinsicExtension] = Configs.dynamicSignedExtensions,
-                        customCoders: [RuntimeCustomDynamicCoder] = Configs.customCoders,
+                        customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
                         defaultPayment: ST<C>.ExtrinsicPayment? = nil,
                         blockSelector: String = "^.*Block$",
                         headerSelector: String = "^.*Header$",

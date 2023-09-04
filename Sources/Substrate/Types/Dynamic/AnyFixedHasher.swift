@@ -26,7 +26,7 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
             }
         }
         
-        public var hasher: any Hasher {
+        public var hasher: any FixedHasher {
             switch self {
             case .xx256: return HXX256.instance
             case .xx128: return HXX128.instance
@@ -39,7 +39,7 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
     
     public typealias THash = AnyHash
     
-    public let hasher: any Hasher
+    public let hasher: any FixedHasher
     
     public init?(name: String) {
         guard let type = HashType(name: name) else {
@@ -52,12 +52,19 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
         self.hasher = type.hasher
     }
     
+    public init?(type: HashType?) {
+        guard let type = type else { return nil }
+        self.init(type: type)
+    }
+    
     public func hash(data: Data, runtime: any Runtime) throws -> THash {
         try runtime.create(hash: THash.self, raw: hasher.hash(data: data))
     }
     
     @inlinable
-    public var type: LastMetadata.StorageHasher { hasher.type }
+    public var type: LatestMetadata.StorageHasher { hasher.type }
+    @inlinable
+    public var fixedType: HashType { hasher.fixedType }
     @inlinable
     public var hashPartByteLength: Int { hasher.hashPartByteLength }
     @inlinable

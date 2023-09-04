@@ -14,14 +14,15 @@ public protocol Runtime: AnyObject {
     var hasher: any Hasher { get }
     var extrinsicDecoder: any ExtrinsicDecoder { get }
     
-    var types: RuntimeNetworkTypes { get }
+    var types: DynamicTypes { get }
     
     func encoder() -> any ScaleCodec.Encoder
     func encoder(reservedCapacity: Int) -> any ScaleCodec.Encoder
     func decoder(with data: Data) -> any ScaleCodec.Decoder
     
     func resolve(type id: NetworkType.Id) -> NetworkType?
-    func resolve(type path: [String]) -> NetworkType.Info?
+    // Joined by "."
+    func resolve(type path: String) -> NetworkType.Info?
     func resolve(palletName index: UInt8) -> String?
     func resolve(palletIndex name: String) -> UInt8?
     
@@ -52,7 +53,7 @@ public protocol Runtime: AnyObject {
     // Storage
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(hasher: LastMetadata.StorageHasher, type: NetworkType.Info)],
+    ) -> (keys: [(hasher: LatestMetadata.StorageHasher, type: NetworkType.Info)],
           value: NetworkType.Info,
           `default`: Data)?
 }
@@ -64,7 +65,7 @@ public extension Runtime {
     }
     
     @inlinable
-    func resolve(type path: [String]) -> NetworkType.Info? {
+    func resolve(type path: String) -> NetworkType.Info? {
         metadata.resolve(type: path)
     }
     
@@ -140,7 +141,7 @@ public extension Runtime {
     @inlinable
     func resolve(
         storage name: String, pallet: String
-    ) -> (keys: [(hasher: LastMetadata.StorageHasher, type: NetworkType.Info)],
+    ) -> (keys: [(hasher: LatestMetadata.StorageHasher, type: NetworkType.Info)],
           value: NetworkType.Info,
           `default`: Data)?
     {

@@ -19,7 +19,6 @@ public protocol ValidatableType {
 
 public enum TypeError: Error {
     case typeNotFound(for: String, id: NetworkType.Id)
-    case runtimeTypeLookupFailed(for: String, type: String, reason: Error)
     case wrongType(for: String, got: NetworkType, reason: String)
     case wrongValuesCount(for: String, expected: Int, in: NetworkType)
     case fieldNotFound(for: String, field: String, in: NetworkType)
@@ -173,9 +172,6 @@ public extension VariantStaticValidatableType {
 public extension TypeError {
     static func typeNotFound(for type: Any.Type, id: NetworkType.Id) -> Self {
         .typeNotFound(for: String(describing: type), id: id)
-    }
-    static func runtimeTypeLookupFailed(for t: Any.Type, type: String, reason: Error) -> Self {
-        .runtimeTypeLookupFailed(for: String(describing: t), type: type, reason: reason)
     }
     
     static func wrongType(for type: Any.Type, got: NetworkType, reason: String) -> Self {

@@ -94,13 +94,13 @@ extension AnyCall: ValidatableType {
     public static func validate(runtime: Runtime,
                                 type: NetworkType.Info) -> Result<Void, TypeError>
     {
-        return Result { try runtime.types.call }
-            .mapError { .runtimeTypeLookupFailed(for: Self.self, type: "call", reason: $0) }
-            .flatMap {
-                $0.type == type.type ? .success(()) :
-                    .failure(.wrongType(for: Self.self, got: type.type,
-                                        reason: "call types is different"))
+        // We should convert it to type definition so different ids will not tamper check
+        TypeDefinition.from(network: type.type.definition, runtime: runtime).flatMap { own in
+            TypeDefinition.from(network: runtime.types.call.type.definition, runtime: runtime).flatMap {
+                own == $0 ? .success(()) : .failure(.wrongType(for: Self.self, got: type.type,
+                                                               reason: "call types is different"))
             }
+        }
     }
 }
 

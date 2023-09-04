@@ -15,7 +15,7 @@ public final class MetadataV15: Metadata {
     public var apis: [String] { Array(apisByName.keys) }
     
     public let types: [NetworkType.Id: NetworkType]
-    public let typesByPath: [String: NetworkType.Info] // joined by "."
+    public let typesByPath: [String: NetworkType.Id] // joined by "."
     public let palletsByIndex: [UInt8: Pallet]
     public let palletsByName: [String: Pallet]
     public let apisByName: [String: RuntimeApi]!
@@ -25,7 +25,7 @@ public final class MetadataV15: Metadata {
             uniqueKeysWithValues: network.types.map { ($0.id, $0.type) }
         )
         self.types = types
-        let byPathPairs = network.types.compactMap { i in i.type.name.map { ($0, i) } }
+        let byPathPairs = network.types.compactMap { i in i.type.name.map { ($0, i.id) } }
         self.typesByPath = Dictionary(byPathPairs) { (l, r) in l }
         self.extrinsic = Extrinsic(network: network.extrinsic, types: types)
         let pallets = try network.pallets.map { try Pallet(network: $0, types: types) }
@@ -44,13 +44,20 @@ public final class MetadataV15: Metadata {
     public func resolve(type id: NetworkType.Id) -> NetworkType? { types[id] }
     
     @inlinable
-    public func resolve(type path: [String]) -> NetworkType.Info? {
-        typesByPath[path.joined(separator: ".")]
+    public func resolve(type path: String) -> NetworkType.Info? {
+        typesByPath[path].flatMap{types[$0]?.i($0)}
     }
     
     @inlinable
     public func search(type cb: (String) -> Bool) -> NetworkType.Info? {
-        typesByPath.first { cb($0.key) }?.value
+        typesByPath.first{cb($0.key)}.flatMap{types[$0.value]?.i($0.value)}
+    }
+    
+    @inlinable public func reduce<R>(
+        types into: R,
+        _ cb: (inout R, NetworkType.Info) throws -> Void
+    ) rethrows -> R {
+        try types.reduce(into: into) { r, e in try cb(&r, e.key.i(e.value)) }
     }
     
     @inlinable

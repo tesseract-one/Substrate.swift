@@ -10,18 +10,18 @@ import Foundation
 public protocol Hasher {
     var hashPartByteLength: Int { get }
     var isConcat: Bool { get }
-    var type: LastMetadata.StorageHasher { get }
+    var type: LatestMetadata.StorageHasher { get }
     
     func hash(data: Data) -> Data
 }
 
 public protocol StaticHasher: Hasher, ValidatableType {
-    static var hasherType: LastMetadata.StorageHasher { get }
+    static var hasherType: LatestMetadata.StorageHasher { get }
     static var instance: Self { get }
 }
 
 public extension StaticHasher {
-    @inlinable var type: LastMetadata.StorageHasher { Self.hasherType }
+    @inlinable var type: LatestMetadata.StorageHasher { Self.hasherType }
     
     static func validate(runtime: any Runtime,
                          type: NetworkType.Info) -> Result<Void, TypeError>
@@ -37,9 +37,12 @@ public extension StaticHasher {
 public protocol FixedHasher: Hasher, ValidatableType {
     associatedtype THash: Hash
     
+    init?(type: AnyFixedHasher.HashType?)
+    
     func hash(data: Data, runtime: any Runtime) throws -> THash
     
     var bitWidth: Int { get }
+    var fixedType: AnyFixedHasher.HashType { get }
 }
 
 public extension FixedHasher {
@@ -49,11 +52,18 @@ public extension FixedHasher {
 
 public protocol StaticFixedHasher: FixedHasher, StaticHasher where THash: StaticHash {
     func hash(data: Data) -> THash
+    static var fixedHasherType: AnyFixedHasher.HashType { get }
     static var bitWidth: Int { get }
 }
 
 public extension StaticFixedHasher {
+    @inlinable var fixedType: AnyFixedHasher.HashType { Self.fixedHasherType }
     @inlinable var bitWidth: Int { Self.bitWidth }
+    
+    init?(type: AnyFixedHasher.HashType?) {
+        guard type == nil || type == Self.fixedHasherType else { return nil }
+        self = Self.instance
+    }
     
     @inlinable func hash(data: Data) -> Data {
         hash(data: data).raw

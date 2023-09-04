@@ -36,7 +36,7 @@ public enum FrameTypeDefinition {
     case constant(FrameType.Type, type: TypeDefinition)
     case runtime(FrameType.Type, params: [TypeDefinition.Field], return: TypeDefinition)
     case storage(FrameType.Type,
-                 keys: [(key: TypeDefinition, hasher: LastMetadata.StorageHasher)],
+                 keys: [(key: TypeDefinition, hasher: LatestMetadata.StorageHasher)],
                  value: TypeDefinition)
 }
 

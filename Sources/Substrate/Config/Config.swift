@@ -39,31 +39,40 @@ public protocol Config {
     associatedtype TStorageChangeSet: SomeStorageChangeSet<TBlock.THeader.THasher.THash>
     associatedtype TExtrinsicManager: ExtrinsicManager<BC>
     
-    // Metadata Info Providers
-    func blockType(metadata: any Metadata) throws -> NetworkType.Info
-    func hashType(metadata: any Metadata) throws -> NetworkType.Info
-    func dispatchErrorType(metadata: any Metadata) throws -> NetworkType.Info
-    func transactionValidityErrorType(metadata: any Metadata) throws -> NetworkType.Info
-    func accountType(metadata: any Metadata, address: NetworkType.Info) throws -> NetworkType.Info
-    // Сan be safely removed after removing metadata v14 (v15 has them)
-    func eventType(metadata: any Metadata) throws -> NetworkType.Info
-    func extrinsicTypes(metadata: any Metadata) throws -> (call: NetworkType.Info, addr: NetworkType.Info,
-                                                           signature: NetworkType.Info, extra: NetworkType.Info)
-    // Object Builders
-    func hasher(metadata: any Metadata) throws -> ST<Self>.Hasher
-    func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment
+    // Parse and return dynamic types from metadata
+    func dynamicTypes(metadata: any Metadata) throws -> DynamicTypes
+    
+    // Extrinsic manager factory method
+    func extrinsicManager(types: DynamicTypes,
+                          metadata: any Metadata) throws -> TExtrinsicManager
+    
+    // Metadata calls. Should be fully static
+    func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]>
+    func metadataAtVersionCall(
+        version: UInt32
+    ) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>>
+    
+    // Custom coders for dynamic coding. Usefull when type definition isn't equal to encoding
+    func customCoders(types: DynamicTypes,
+                      metadata: any Metadata) throws -> [RuntimeCustomDynamicCoder]
+    
+    // Storage key for Events
     func eventsStorageKey(runtime: any Runtime) throws -> any StorageKey<TBlockEvents>
+    
+    // Info Calls
     func queryInfoCall(extrinsic: Data,
                        runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.RuntimeDispatchInfo>
     func queryFeeDetailsCall(extrinsic: Data,
                              runtime: any Runtime) throws -> any RuntimeCall<ST<Self>.FeeDetails>
-    func metadataVersionsCall() throws -> any StaticCodableRuntimeCall<[UInt32]>
-    func metadataAtVersionCall(version: UInt32) throws -> any StaticCodableRuntimeCall<Optional<OpaqueMetadata>>
-    func extrinsicManager() throws -> TExtrinsicManager
-    func customCoders() throws -> [RuntimeCustomDynamicCoder]
-    // Return Config pallets list for validation
+    
+    // Provides default value for payment
+    func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment
+    
+    // Pallets list for validation
     func frames(runtime: any Runtime) throws -> [Frame]
+    // Runtime calls for validation
     func runtimeCalls(runtime: any Runtime) throws -> [any StaticRuntimeCall.Type]
+    
     // If you want your own Scale Codec coders
     func encoder() -> ScaleCodec.Encoder
     func encoder(reservedCapacity count: Int) -> ScaleCodec.Encoder
@@ -75,9 +84,13 @@ public protocol BatchSupportedConfig: Config {
     associatedtype TBatchCall: SomeBatchCall
     associatedtype TBatchAllCall: SomeBatchCall
     
-    func isBatchSupported(metadata: any Metadata) -> Bool
+    // Checks is batch supported dynamically
+    func isBatchSupported(types: DynamicTypes,
+                          metadata: any Metadata) -> Bool
+    // Batch calls for validation
     func batchCalls(runtime: any Runtime) throws -> [any SomeBatchCall.Type]
 }
+
 
 @frozen public struct SBT<C: BasicConfig> {
     public typealias Hasher = C.THasher
@@ -147,7 +160,9 @@ public extension ST where C: BatchSupportedConfig {
 
 // Default isBatchSupported implementation
 public extension BatchSupportedConfig {
-    func isBatchSupported(metadata: Metadata) -> Bool {
+    func isBatchSupported(types: DynamicTypes,
+                          metadata: any Metadata) -> Bool
+    {
         metadata.resolve(pallet: TBatchCall.pallet)?.callIndex(name: TBatchCall.name) != nil &&
         metadata.resolve(pallet: TBatchAllCall.pallet)?.callIndex(name: TBatchAllCall.name) != nil
     }
@@ -165,13 +180,21 @@ public extension BatchSupportedConfig {
         @inlinable public init(config: C) { self.config = config }
     }
     
+    private init() {}
+    
+    public static var defaultCustomCoders: [RuntimeCustomDynamicCoder] = [
+        ExtrinsicCustomDynamicCoder(name: "UncheckedExtrinsic")
+    ]
+    
     @inlinable
-    static func defaultFrames<C: Config>(runtime: any Runtime, config: C) throws -> [Frame] {
+    public static func defaultFrames<C: Config>(runtime: any Runtime,
+                                                config: C) throws -> [Frame]
+    {
         try [BaseSystemFrame<C>(runtime: runtime, config: config)]
     }
     
     @inlinable
-    static func defaultRuntimeCalls<C: Config>(
+    public static func defaultRuntimeCalls<C: Config>(
         runtime: any Runtime, config: C
     ) -> [any StaticRuntimeCall.Type] {
         [TransactionQueryInfoRuntimeCall<ST<C>.RuntimeDispatchInfo>.self,
@@ -203,8 +226,10 @@ public extension Config {
     }
     
     @inlinable
-    func customCoders() throws -> [RuntimeCustomDynamicCoder] {
-        Configs.customCoders
+    func customCoders(types: DynamicTypes,
+                      metadata: any Metadata) throws -> [RuntimeCustomDynamicCoder]
+    {
+        Configs.defaultCustomCoders
     }
     
     @inlinable
@@ -233,96 +258,14 @@ public extension Config {
     func runtimeCalls(runtime: any Runtime) throws -> [any StaticRuntimeCall.Type] {
         Configs.defaultRuntimeCalls(runtime: runtime, config: self)
     }
-}
-
-// Сan be safely removed after removing metadata v14 (v15 has types inside)
-public extension Config {
-    func extrinsicTypes(metadata: any Metadata) throws -> (call: NetworkType.Info, addr: NetworkType.Info,
-                                                           signature: NetworkType.Info, extra: NetworkType.Info)
-    {
-        var addressTypeId: NetworkType.Id? = nil
-        var sigTypeId: NetworkType.Id? = nil
-        var extraTypeId: NetworkType.Id? = nil
-        var callTypeId: NetworkType.Id? = nil
-        for param in metadata.extrinsic.type.type.parameters {
-            switch param.name.lowercased() {
-            case "address": addressTypeId = param.type
-            case "signature": sigTypeId = param.type
-            case "extra": extraTypeId = param.type
-            case "call": callTypeId = param.type
-            default: continue
-            }
-        }
-        guard let addressTypeId = addressTypeId,
-              let sigTypeId = sigTypeId,
-              let extraTypeId = extraTypeId,
-              let callTypeId = callTypeId,
-              let addressType = metadata.resolve(type: addressTypeId),
-              let sigType = metadata.resolve(type: sigTypeId),
-              let extraType = metadata.resolve(type: extraTypeId),
-              let callType = metadata.resolve(type: callTypeId) else
-        {
-            throw ConfigTypeLookupError.extrinsicTypesNotFound
-        }
-        return (call: NetworkType.Info(id: callTypeId, type: callType),
-                addr: NetworkType.Info(id: addressTypeId, type: addressType),
-                signature: NetworkType.Info(id: sigTypeId, type: sigType),
-                extra: NetworkType.Info(id: extraTypeId, type: extraType))
-    }
     
-    func eventType(metadata: any Metadata) throws -> NetworkType.Info {
-        let eventsName = EventsStorageKey<ST<Self>.BlockEvents>.name
-        let eventsPallet = EventsStorageKey<ST<Self>.BlockEvents>.pallet
-        guard let beStorage = metadata.resolve(pallet: eventsPallet)?.storage(name: eventsName) else {
-            throw ConfigTypeLookupError.typeNotFound(name: eventsName,
-                                                     selector: "\(eventsPallet).Storage")
-        }
-        guard let id = ST<Self>.BlockEvents.eventTypeId(metadata: metadata,
-                                                        events: beStorage.types.value.id) else {
-            throw ConfigTypeLookupError.typeNotFound(name: "Event",
-                                                     selector: "EventRecord.event")
-        }
-        guard let info = metadata.resolve(type: id) else {
-            throw ConfigTypeLookupError.typeNotFound(id: id)
-        }
-        return NetworkType.Info(id: id, type: info)
-    }
-}
-
-public extension Config where ST<Self>.Hasher: StaticHasher {
-    // Static hasher creates Hash without type lookup
-    func hashType(metadata: any Metadata) throws -> NetworkType.Info {
-        throw NetworkType.IdNeverCalledError()
-    }
-    // Static Hasher can be returned by singleton instance
-    func hasher(metadata: Metadata) throws -> ST<Self>.Hasher { ST<Self>.Hasher.instance }
-}
-
-// Static Block doesn't need runtime type
-public extension Config where TBlock: StaticBlock {
-    func blockType(metadata: Metadata) throws -> NetworkType.Info {
-        throw NetworkType.IdNeverCalledError()
-    }
-}
-
-// Static Transaction Validity Error doesn't need runtime type
-public extension Config where TTransactionValidityError: StaticCallError {
-    func transactionValidityErrorType(metadata: any Metadata) throws -> NetworkType.Info {
-        throw NetworkType.IdNeverCalledError()
-    }
-}
-
-// Static Dispatch Error doesn't need runtime type
-public extension Config where TDispatchError: StaticCallError {
-    func dispatchErrorType(metadata: any Metadata) throws -> NetworkType.Info {
-        throw NetworkType.IdNeverCalledError()
-    }
-}
-
-// Static Account doesn't need runtime type
-public extension Config where ST<Self>.AccountId: StaticAccountId {
-    func accountType(metadata: any Metadata, address: NetworkType.Info) throws -> NetworkType.Info {
-        throw NetworkType.IdNeverCalledError()
+    @inlinable
+    func dynamicTypes(metadata: any Metadata) throws -> DynamicTypes {
+        try .tryParse(
+            from: metadata, blockEvents: ST<Self>.BlockEvents.self,
+            blockEventsKey: (EventsStorageKey<ST<Self>.BlockEvents>.name,
+                             EventsStorageKey<ST<Self>.BlockEvents>.pallet)
+        )
     }
 }
 
@@ -330,15 +273,4 @@ public extension Config where ST<Self>.ExtrinsicPayment: Default {
     func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment {
         .default
     }
-}
-
-public enum ConfigTypeLookupError: Error {
-    case paymentTypeNotFound
-    case extrinsicTypesNotFound
-    case hashTypeNotFound
-    case badHeaderType(header: NetworkType.Info)
-    case typeNotFound(id: NetworkType.Id)
-    case typeNotFound(name: String, selector: String)
-    case cantProvideDefaultPayment(forType: NetworkType.Info)
-    case unknownHashName(String)
 }

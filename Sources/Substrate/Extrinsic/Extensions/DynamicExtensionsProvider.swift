@@ -78,7 +78,7 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
         for ext in extensions {
             try await extra.append(ext.ext.extra(api: api, params: params, id: ext.extId))
         }
-        return try Value(value: .sequence(extra), context: api.runtime.types.extrinsicExtra.id)
+        return Value(value: .sequence(extra), context: api.runtime.types.extrinsicExtra.id)
     }
     
     public func additionalSigned<R: RootApi>(

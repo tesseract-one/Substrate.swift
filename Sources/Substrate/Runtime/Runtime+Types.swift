@@ -1,5 +1,5 @@
 //
-//  RuntimeNetworkTypes.swift
+//  Runtime+Types.swift
 //  
 //
 //  Created by Yehor Popovych on 07/07/2023.
@@ -19,114 +19,101 @@ public extension NetworkType {
     static func IdNever(_ r: Runtime) throws -> NetworkType.Id { throw IdNeverCalledError() }
 }
 
-public protocol RuntimeNetworkTypes {
-    var block: NetworkType.Info { get throws }
-    var account: NetworkType.Info { get throws }
-    var address: NetworkType.Info { get throws }
-    var signature: NetworkType.Info { get throws }
-    var hash: NetworkType.Info { get throws }
-    var call: NetworkType.Info { get throws }
-    var extrinsicExtra: NetworkType.Info { get throws }
-    var event: NetworkType.Info { get throws }
-    var dispatchError: NetworkType.Info { get throws }
-    var transactionValidityError: NetworkType.Info { get throws }
-}
-
 public extension Runtime {
     @inlinable
     func create<A: AccountId>(account: A.Type, pub: any PublicKey) throws -> A {
-        try A(pub: pub, runtime: self) { try $0.types.account.id }
+        try A(pub: pub, runtime: self) { try $0.types.account.get().id }
     }
     
     @inlinable
     func create<A: AccountId>(account: A.Type, raw: Data) throws -> A {
-        try A(raw: raw, runtime: self) { try $0.types.account.id }
+        try A(raw: raw, runtime: self) { try $0.types.account.get().id }
     }
     
     @inlinable
     func create<A: AccountId>(account: A.Type, from string: String) throws -> A {
-        try A(from: string, runtime: self) { try $0.types.account.id }
+        try A(from: string, runtime: self) { try $0.types.account.get().id }
     }
     
     @inlinable
     func create<A: Address>(address: A.Type, account: A.TAccountId) throws -> A {
-        try A(accountId: account, runtime: self) { try $0.types.account.id }
+        try A(accountId: account, runtime: self) { try $0.types.account.get().id }
     }
     
     @inlinable
     func create<H: Hash>(hash: H.Type, raw: Data) throws -> H {
-        try H(raw: raw, runtime: self) { try $0.types.hash.id }
+        try H(raw: raw, runtime: self) { try $0.types.hash.get().id }
     }
     
     @inlinable
     func create<S: Signature>(signature: S.Type, raw: Data, algorithm: CryptoTypeId) throws -> S {
-        try S(raw: raw, algorithm: algorithm, runtime: self) { try $0.types.signature.id }
+        try S(raw: raw, algorithm: algorithm, runtime: self) { $0.types.signature.id }
     }
     
     @inlinable
     func create<S: Signature>(fakeSignature: S.Type, algorithm: CryptoTypeId) throws -> S {
-        try S(fake: algorithm, runtime: self) { try $0.types.signature.id }
+        try S(fake: algorithm, runtime: self) { $0.types.signature.id }
     }
     
     @inlinable
     func algorithms<S: Signature>(signature: S.Type) throws -> [CryptoTypeId] {
-        try S.algorithms(runtime: self) { try $0.types.signature.id }
+        try S.algorithms(runtime: self) { $0.types.signature.id }
     }
     
     @inlinable
     func decode<A: AccountId, D: ScaleCodec.Decoder>(
         account: A.Type, from decoder: inout D
     ) throws -> A {
-        try decode(from: &decoder) { try $0.types.account.id }
+        try decode(from: &decoder) { try $0.types.account.get().id }
     }
     
     @inlinable
     func encode<A: AccountId, E: ScaleCodec.Encoder>(
         account: A, in encoder: inout E
     ) throws {
-        try encode(value: account, in: &encoder) { try $0.types.account.id }
+        try encode(value: account, in: &encoder) { try $0.types.account.get().id }
     }
     
     @inlinable
     func decode<A: Address, D: ScaleCodec.Decoder>(
         address: A.Type, from decoder: inout D
     ) throws -> A {
-        try decode(from: &decoder) { try $0.types.address.id }
+        try decode(from: &decoder) { $0.types.address.id }
     }
     
     @inlinable
     func encode<A: Address, E: ScaleCodec.Encoder>(
         address: A, in encoder: inout E
     ) throws {
-        try encode(value: address, in: &encoder) { try $0.types.address.id }
+        try encode(value: address, in: &encoder) { $0.types.address.id }
     }
     
     @inlinable
     func decode<S: Signature, D: ScaleCodec.Decoder>(
         signature: S.Type, from decoder: inout D
     ) throws -> S {
-        try decode(from: &decoder) { try $0.types.signature.id }
+        try decode(from: &decoder) { $0.types.signature.id }
     }
     
     @inlinable
     func encode<S: Signature, E: ScaleCodec.Encoder>(
         signature: S, in encoder: inout E
     ) throws {
-        try encode(value: signature, in: &encoder) { try $0.types.signature.id }
+        try encode(value: signature, in: &encoder) { $0.types.signature.id }
     }
     
     @inlinable
     func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
         call: C.Type, from decoder: inout D
     ) throws -> C {
-        try decode(from: &decoder) { try $0.types.call.id }
+        try decode(from: &decoder) { $0.types.call.id }
     }
     
     @inlinable
     func encode<C: Call, E: ScaleCodec.Encoder>(
         call: C, in encoder: inout E
     ) throws {
-        try encode(value: call, in: &encoder) { try $0.types.call.id }
+        try encode(value: call, in: &encoder) { $0.types.call.id }
     }
     
     @inlinable

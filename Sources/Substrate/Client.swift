@@ -15,13 +15,14 @@ public protocol Client<C> {
     
     func metadata(at hash: ST<C>.Hash?, config: C) async throws -> (any Metadata)
     
-    func runtimeVersion(at hash: ST<C>.Hash?,
-                        metadata: any Metadata, config: C) async throws -> ST<C>.RuntimeVersion
+    func runtimeVersion(at hash: ST<C>.Hash?, metadata: any Metadata, config: C,
+                        types: DynamicTypes) async throws -> ST<C>.RuntimeVersion
     
-    func systemProperties(metadata: any Metadata, config: C) async throws -> ST<C>.SystemProperties
+    func systemProperties(metadata: any Metadata, config: C,
+                          types: DynamicTypes) async throws -> ST<C>.SystemProperties
     
-    func block(hash index: ST<C>.BlockNumber?,
-               metadata: any Metadata, config: C) async throws -> ST<C>.Hash?
+    func block(hash index: ST<C>.BlockNumber?, metadata: any Metadata,
+               config: C, types: DynamicTypes) async throws -> ST<C>.Hash?
     
     func block(at hash: ST<C>.Hash?,
                runtime: ExtendedRuntime<C>) async throws -> ST<C>.ChainBlock?
@@ -99,6 +100,7 @@ public extension Client {
     @inlinable
     func block(hash index: ST<C>.BlockNumber?,
                runtime: ExtendedRuntime<C>) async throws -> ST<C>.Hash? {
-        try await block(hash: index, metadata: runtime.metadata, config: runtime.config)
+        try await block(hash: index, metadata: runtime.metadata,
+                        config: runtime.config, types: runtime.types)
     }
 }

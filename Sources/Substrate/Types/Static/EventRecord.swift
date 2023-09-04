@@ -84,7 +84,7 @@ extension EventRecord.EventPhase: ScaleCodec.Decodable {
 
 extension EventRecord: RuntimeDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
-        let eventType = try runtime.types.event
+        let eventType = runtime.types.event
         self._runtime = runtime
         self.phase = try decoder.decode()
         let info = try AnyEvent.fetchEventData(from: &decoder, runtime: runtime, type: eventType.id)
