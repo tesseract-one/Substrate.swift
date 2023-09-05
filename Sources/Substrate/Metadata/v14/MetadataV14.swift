@@ -8,6 +8,7 @@
 import Foundation
 
 public final class MetadataV14: Metadata {
+    public let version: UInt8
     public let extrinsic: ExtrinsicMetadata
     public var outerEnums: OuterEnumsMetadata? { nil }
     public var customTypes: Dictionary<String, (NetworkType.Id, Data)>? { nil }
@@ -24,6 +25,7 @@ public final class MetadataV14: Metadata {
             uniqueKeysWithValues: network.types.map { ($0.id, $0.type) }
         )
         self.types = types
+        self.version = network.version
         let byPathPairs = network.types.compactMap { i in i.type.name.map { ($0, i.id) } }
         self.typesByPath = Dictionary(byPathPairs) { (l, r) in l }
         self.extrinsic = try Extrinsic(network: network.extrinsic, types: types)

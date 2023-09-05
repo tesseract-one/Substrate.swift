@@ -197,8 +197,10 @@ public extension BatchSupportedConfig {
     public static func defaultRuntimeCalls<C: Config>(
         runtime: any Runtime, config: C
     ) -> [any StaticRuntimeCall.Type] {
-        [TransactionQueryInfoRuntimeCall<ST<C>.RuntimeDispatchInfo>.self,
-         TransactionQueryFeeDetailsRuntimeCall<ST<C>.FeeDetails>.self]
+        runtime.metadata.version < 15
+            ? []
+            : [TransactionQueryInfoRuntimeCall<ST<C>.RuntimeDispatchInfo>.self,
+               TransactionQueryFeeDetailsRuntimeCall<ST<C>.FeeDetails>.self]
     }
 }
 

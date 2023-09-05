@@ -11,6 +11,7 @@ import ScaleCodec
 public typealias LatestMetadata = MetadataV15
 
 public protocol Metadata {
+    var version: UInt8 { get }
     var extrinsic: ExtrinsicMetadata { get }
     
     // Swith to non optional after v14 drop
