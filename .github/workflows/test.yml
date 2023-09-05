@@ -2,6 +2,7 @@ name: Build & Tests
 on: [push, pull_request]
 env:
   NODE_REPO: paritytech/substrate-contracts-node
+  NODE_BIN_FILENAME: substrate-contracts-node
   NODE_FILENAME_MAC: substrate-contracts-node-mac-universal.tar.gz
   NODE_FILENAME_LINUX: substrate-contracts-node-linux.tar.gz
 jobs:
@@ -33,7 +34,7 @@ jobs:
           file: ${{ env.NODE_FILENAME_MAC }}
       - name: Unpack Substrate Node
         run: |
-          NODE_BIN=$(tar -xvzf ${{ env.NODE_FILENAME_MAC }} 2>&1 | sed -n "s|^x[[:blank:]]*\(.*node.*\)$|\1|p")
+          NODE_BIN=$(tar -xvzf ${{ env.NODE_FILENAME_MAC }} 2>&1 | sed -n "s|^x[[:blank:]]*\(.*${{ env.NODE_BIN_FILENAME }}\)$|\1|p")
           echo "NODE_BIN=${NODE_BIN}" >> "$GITHUB_ENV"
       - name: Build & Test SPM
         run: Tests/with-node.sh '${NODE_BIN}' 'xcrun swift test' 'node_log.txt'
@@ -91,7 +92,7 @@ jobs:
           file: ${{ env.NODE_FILENAME_LINUX }}
       - name: Unpack Substrate Node
         run: |
-          NODE_BIN=$(tar -xvzf ${{ env.NODE_FILENAME_LINUX }} 2>&1 | sed -n "s|^x[[:blank:]]*\(.*node.*\)$|\1|p")
+          NODE_BIN=$(tar -xvzf ${{ env.NODE_FILENAME_LINUX }} 2>&1 | sed -n "s|^[[:blank:]]*\(.*${{ env.NODE_BIN_FILENAME }}\)$|\1|p")
           echo "NODE_BIN=${NODE_BIN}" >> "$GITHUB_ENV"
       - name: Build and Test
         run: Tests/with-node.sh '${NODE_BIN}' 'swift test' 'node_log.txt'
