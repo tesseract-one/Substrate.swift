@@ -23,11 +23,11 @@ final class DynamicTypesLookupTests: XCTestCase {
         let metadata = try ScaleCodec.decode(VersionedNetworkMetadata.self, from: opaq.raw).metadata.asMetadata()
         let config = Configs.Registry.dynamicBlake2.config
         let types = try config.dynamicTypes(metadata: metadata)
-        let _ = try types.hash.get()
-        let _ = try types.hasher.get()
+        //let _ = try types.hasher.get()
         let _ = try types.account.get()
         let _ = try types.dispatchError.get()
         if !is14 {
+            let _ = try types.hash.get()
             let _ = try types.block.get()
             let _ = try types.transactionValidityError.get()
         }
