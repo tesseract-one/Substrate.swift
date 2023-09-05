@@ -13,13 +13,13 @@ import Tuples
 final class StorageKeysTests: XCTestCase {
     func testEncDecAnyKey() throws {
         let keys = [
-            "0x5f3e4907f716ac89b6347d15ececedca8bde0a0ea8864605e3b68ed9cb2da01b50c62cd3172a7c6c041a000003adc196911e491e08264834504a64ace1373f0c8ed5d57381ddf54a2f67a318fa42b1352681606d",
-            "0x5f3e4907f716ac89b6347d15ececedca8bde0a0ea8864605e3b68ed9cb2da01b50c62cd3172a7c6c041a000016d5103a6adeae4fc21ad1e5198cc0dc3b0f9f43a50f292678f63235ea321e59385d7ee45a720836",
-            "0x5f3e4907f716ac89b6347d15ececedca8bde0a0ea8864605e3b68ed9cb2da01b50c62cd3172a7c6c041a00002a47718370fccca6c6332dd72fc6d33bf202a531e66cfaf46e6161640f91864f23f82b31b38c5f11",
-            "0x5f3e4907f716ac89b6347d15ececedca8bde0a0ea8864605e3b68ed9cb2da01b50c62cd3172a7c6c041a00003635b95e2a31e59704b42c45250880695e6cec68c5adce35a0e2ec60ed46b77b734ad6020b991658",
-            "0x5f3e4907f716ac89b6347d15ececedca8bde0a0ea8864605e3b68ed9cb2da01b50c62cd3172a7c6c041a00003ecb31e90f8870f218164fa6f9ce28792fb781185e8de4e6eaae34c0f545e5864952fe23c183df0c",
-            "0x5f3e4907f716ac89b6347d15ececedca8bde0a0ea8864605e3b68ed9cb2da01b50c62cd3172a7c6c041a00004245138345ca3fd8aebb0211dbb07b4d335a657257b8ac5e53794c901e4f616d4a254f2490c43934",
-            "0x5f3e4907f716ac89b6347d15ececedca8bde0a0ea8864605e3b68ed9cb2da01b50c62cd3172a7c6c041a00004f0f0dc89f14ad14767f36484b1e2acf5c265c7a64bfb46e95259c66a8189bbcd216195def436852"
+            "0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9007cbc1270b5b091758f9c42f5915b3e8ac59e11963af19174d0b94d5d78041c233f55d2e19324665bafdfb62925af2d",
+            "0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da94f9aea1afa791265fae359272badc1cf8eaf04151687736326c9fea17e25fc5287613693c912909cb226aa4794f26a48",
+            "0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da98578796c363c105114787203e4d93ca6101191192fc877c24d725b337120fa3edc63d227bbc92705db1e2cb65f56981a",
+            "0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da923a05cabf6d3bde7ca3ef0d11596b5611cbd2d43530a44705ad088af313e18f80b53ef16b36177cd4b77b846f2a5f07c",
+            "0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da96f2e33376834a63c86a195bcf685aebbfe65717dad0447d715f660a0a58411de509b42e6efb8375f562f58a554d5860e",
+            "0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9f3f619a1c2956443880db9cc9a13d058e860f1b1c7227f7c22602f53f15af80747814dffd839719731ee3bba6edc126c",
+            "0x26aa394eea5630e07c48ae0c9558cef7b99d880ec681799c0cf30e8886371da9e5e802737cce3a54b0bc9e3d3e6be26e306721211d5404bd9da88e0204360a1a9ab8b87c66c1bc2fcdd37f3c2222cc20"
         ]
         
         let runtime = try self.runtime()
@@ -27,7 +27,7 @@ final class StorageKeysTests: XCTestCase {
         for hex in keys {
             var decoder = ScaleCodec.decoder(from: Data(hex: hex)!)
             let key = try AnyValueStorageKey(from: &decoder,
-                                             base: (name: "ErasStakers", pallet: "Staking"),
+                                             base: (name: "Account", pallet: "System"),
                                              runtime: runtime)
             XCTAssertEqual(key.hash.hex(), hex)
         }

@@ -29,8 +29,7 @@ jobs:
           file: ${{ env.NODE_FILENAME }}
       - name: Unpack Substrate Node
         run: |
-          NODE_BIN=$(tar -xvzf ${{ env.NODE_FILENAME }} 2>&1 | \
-            sed -n "s|^x[[:blank:]]*\(.*${{ env.NODE_BIN_FILENAME }}\)$|\1|p")
+          NODE_BIN=$(tar -xvzf ${{ env.NODE_FILENAME }} 2>&1 | sed -n "s|^x[[:blank:]]*\(.*${{ env.NODE_BIN_FILENAME }}\)$|\1|p")
           echo "NODE_BIN=${NODE_BIN}" >> "$GITHUB_ENV"
       - name: Update CocoaPods repo
         run: pod repo update
@@ -46,7 +45,7 @@ jobs:
         env:
           COCOAPODS_TRUNK_TOKEN: ${{ secrets.COCOAPODS_TRUNK_TOKEN }}
         run: |
-          Tests/with-node.sh '${NODE_BIN}' \
+          Tests/with-node.sh "${NODE_BIN}" \
             'pod trunk push --allow-warnings --synchronous Substrate-RPC.podspec' \
             'node_log.txt'
       - name: Upload node log
