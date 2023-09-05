@@ -25,7 +25,8 @@ DerivedData/
 !default.perspectivev3
 
 # Substrate node files
-/node*
+/node-template
+/substrate-contracts-node
 
 ## Obj-C/Swift specific
 *.hmap
