@@ -25,7 +25,7 @@ public extension Configs {
         public typealias TRuntimeVersion = AnyRuntimeVersion<UInt32>
     }
     
-    struct Substrate: Config {
+    struct Substrate: Config, BatchSupportedConfig {
         public typealias BC = BaseSubstrate
 
         public typealias TBlock = SubstrateBlock<BC.THasher, BC.TIndex, BlockExtrinsic<TExtrinsicManager>>
@@ -36,6 +36,9 @@ public extension Configs {
         public typealias TTransactionValidityError = TransactionValidityError
         public typealias TTransactionStatus = TransactionStatus<BC.THasher.THash, BC.THasher.THash>
         public typealias TStorageChangeSet = StorageChangeSet<BC.THasher.THash>
+        
+        public typealias TBatchCall = BatchCall
+        public typealias TBatchAllCall = BatchAllCall
         
         public typealias Params = SubstrateSigningParameters<BC.TExtrinsicEra, BC.THasher.THash,
                                                              BC.TAccountId, BC.TIndex,

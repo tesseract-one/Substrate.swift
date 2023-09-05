@@ -60,7 +60,7 @@ final class DynamicTests: XCTestCase {
             let substrate = try await Api(rpc: self.httpClient, config: .dynamicBlake2)
             let block = try await substrate.client.block(runtime: substrate.runtime)
             XCTAssertNotNil(block)
-            let parsed = try block!.block.extrinsics.parsed()
+            let _ = try block!.block.extrinsics.parsed()
         }
     }
     

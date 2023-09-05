@@ -36,8 +36,9 @@ final class StaticTests: XCTestCase {
     func testStorageValueCall() {
         runAsyncTest(withTimeout: 30) {
             let substrate = try await Api(rpc: self.httpClient, config: .substrate)
-            let entry = try substrate.query.dynamic(name: "Events", pallet: "System")
-            let value = try await entry.value()
+            let entry = try substrate.query.dynamic(name: "Account", pallet: "System")
+            let alice = try self.env.kpAlice.pubKey.account(in: substrate)
+            let value = try await entry.value([alice])
             XCTAssertNotNil(value)
         }
     }
@@ -78,29 +79,29 @@ final class StaticTests: XCTestCase {
         }
     }
     
-//    func testTransferBatchTx() {
-//        runAsyncTest(withTimeout: 30) {
-//            let substrate = try await Api(rpc: self.httpClient, config: .substrate)
-//            guard substrate.runtime.isBatchSupported else {
-//                print("Batch is not supported in the current runtime")
-//                return
-//            }
-//            let from = self.env.fundedKeyPairs.someElement()!
-//            let toKp1 = self.env.keyPairs.someElement(without: [from])!
-//            let toKp2 = self.env.keyPairs.someElement(without: [from, toKp1])!
-//
-//            let to1 = try toKp1.address(in: substrate)
-//            let to2 = try toKp2.address(in: substrate)
-//            let call1 = AnyCall(name: "transfer_allow_death",
-//                                pallet: "Balances",
-//                                params: ["dest": to1, "value": 15383812800])
-//            let call2 = AnyCall(name: "transfer_allow_death",
-//                                pallet: "Balances",
-//                                params: ["dest": to2, "value": 15583812810])
-//            let tx = try await substrate.tx.batchAll([call1, call2])
-//            let _ = try await tx.signAndSend(signer: from)
-//        }
-//    }
+    func testTransferBatchTx() {
+        runAsyncTest(withTimeout: 30) {
+            let substrate = try await Api(rpc: self.httpClient, config: .substrate)
+            guard substrate.runtime.isBatchSupported else {
+                print("Batch is not supported in the current runtime")
+                return
+            }
+            let from = self.env.fundedKeyPairs.someElement()!
+            let toKp1 = self.env.keyPairs.someElement(without: [from])!
+            let toKp2 = self.env.keyPairs.someElement(without: [from, toKp1])!
+
+            let to1 = try toKp1.address(in: substrate)
+            let to2 = try toKp2.address(in: substrate)
+            let call1 = AnyCall(name: "transfer_allow_death",
+                                pallet: "Balances",
+                                params: ["dest": to1, "value": 15383812800])
+            let call2 = AnyCall(name: "transfer_allow_death",
+                                pallet: "Balances",
+                                params: ["dest": to2, "value": 15583812810])
+            let tx = try await substrate.tx.batchAll([call1, call2])
+            let _ = try await tx.signAndSend(signer: from)
+        }
+    }
     
     func testQueryPaymentInfo() {
         runAsyncTest(withTimeout: 30) {
@@ -142,39 +143,39 @@ final class StaticTests: XCTestCase {
                                params: ["dest": to, "value": 15483812850])
             let tx = try await substrate.tx.new(call)
             let events = try await tx.signSendAndWatch(signer: from)
-                .waitForFinalized()
+                .waitForInBlock()
                 .success()
             XCTAssert(events.events.count > 0)
             print("Events: \(try events.parsed())")
         }
     }
     
-//    func testTransferAndWatchBatchTx() {
-//        runAsyncTest(withTimeout: 300) {
-//            let substrate = try await Api(rpc: self.wsClient, config: .substrate)
-//            guard substrate.runtime.isBatchSupported else {
-//                print("Batch is not supported in the current runtime")
-//                return
-//            }
-//            let from = self.env.fundedKeyPairs.someElement()!
-//            let toKp1 = self.env.keyPairs.someElement(without: [from])!
-//            let toKp2 = self.env.keyPairs.someElement(without: [from, toKp1])!
-//
-//            let to1 = try toKp1.address(in: substrate)
-//            let to2 = try toKp2.address(in: substrate)
-//            let call1 = AnyCall(name: "transfer_allow_death",
-//                                pallet: "Balances",
-//                                params: ["dest": to1, "value": 15383812800])
-//            let call2 = AnyCall(name: "transfer_allow_death",
-//                                pallet: "Balances",
-//                                params: ["dest": to2, "value": 15583812810])
-//            let tx = try await substrate.tx.batchAll([call1, call2])
-//            let events = try await tx.signSendAndWatch(signer: from)
-//                .waitForFinalized()
-//                .success()
-//            XCTAssert(events.events.count > 0)
-//            print("Events: \(try events.parsed())")
-//        }
-//    }
+    func testTransferAndWatchBatchTx() {
+        runAsyncTest(withTimeout: 300) {
+            let substrate = try await Api(rpc: self.wsClient, config: .substrate)
+            guard substrate.runtime.isBatchSupported else {
+                print("Batch is not supported in the current runtime")
+                return
+            }
+            let from = self.env.fundedKeyPairs.someElement()!
+            let toKp1 = self.env.keyPairs.someElement(without: [from])!
+            let toKp2 = self.env.keyPairs.someElement(without: [from, toKp1])!
+
+            let to1 = try toKp1.address(in: substrate)
+            let to2 = try toKp2.address(in: substrate)
+            let call1 = AnyCall(name: "transfer_allow_death",
+                                pallet: "Balances",
+                                params: ["dest": to1, "value": 15383812800])
+            let call2 = AnyCall(name: "transfer_allow_death",
+                                pallet: "Balances",
+                                params: ["dest": to2, "value": 15583812810])
+            let tx = try await substrate.tx.batchAll([call1, call2])
+            let events = try await tx.signSendAndWatch(signer: from)
+                .waitForInBlock()
+                .success()
+            XCTAssert(events.events.count > 0)
+            print("Events: \(try events.parsed())")
+        }
+    }
     #endif
 }
