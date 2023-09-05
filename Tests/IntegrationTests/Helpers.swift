@@ -49,7 +49,7 @@ struct Environment {
     
     init() {
         self.mnemonic = ProcessInfo.processInfo.environment["TEST_MNEMONIC"] ?? DEFAULT_DEV_PHRASE
-        self.httpUrlString = ProcessInfo.processInfo.environment["NODE_HTTP_URL"] ?? "http://127.0.0.1:9933"
+        self.httpUrlString = ProcessInfo.processInfo.environment["NODE_HTTP_URL"] ?? "http://127.0.0.1:9944"
         self.wsUrlString = ProcessInfo.processInfo.environment["NODE_WS_URL"] ?? "ws://127.0.0.1:9944"
     }
     

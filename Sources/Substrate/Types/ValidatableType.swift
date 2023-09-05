@@ -19,6 +19,7 @@ public protocol ValidatableType {
 
 public enum TypeError: Error {
     case typeNotFound(for: String, id: NetworkType.Id)
+    case recursiveType(path: [NetworkType.Id])
     case wrongType(for: String, got: NetworkType, reason: String)
     case wrongValuesCount(for: String, expected: Int, in: NetworkType)
     case fieldNotFound(for: String, field: String, in: NetworkType)

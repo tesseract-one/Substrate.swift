@@ -94,10 +94,9 @@ extension AnyCall: ValidatableType {
     public static func validate(runtime: Runtime,
                                 type: NetworkType.Info) -> Result<Void, TypeError>
     {
-        // We should convert it to type definition so different ids will not tamper check
-        TypeDefinition.from(network: type.type.definition, runtime: runtime).flatMap { own in
-            own.validate(runtime: runtime, type: runtime.types.call.type)
-        }
+        type == runtime.types.call ? .success(()) :
+            .failure(.wrongType(for: Self.self, got: type.type,
+                                reason: "Top level call has different info"))
     }
 }
 

@@ -16,8 +16,8 @@ public extension MetadataV15 {
         public let extrinsic: Extrinsic
         public let runtimeType: NetworkType.Id
         public let apis: [RuntimeApi]
-        public let outerEnums: OuterEnums?
-        public let custom: Dictionary<String, (NetworkType.Id, Data)>?
+        public let outerEnums: OuterEnums
+        public let custom: Dictionary<String, (NetworkType.Id, Data)>
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             types = try decoder.decode()
@@ -25,12 +25,7 @@ public extension MetadataV15 {
             extrinsic = try decoder.decode()
             runtimeType = try decoder.decode()
             apis = try decoder.decode()
-            guard decoder.length > 0 else {
-                self.outerEnums = nil
-                self.custom = nil
-                return
-            }
-            outerEnums = try decoder.decode()
+            outerEnums = try decoder.decode(OuterEnums.self)
             custom = try Dictionary(from: &decoder, lreader: { try $0.decode() }) { try ($0.decode(), $0.decode()) }
         }
         
@@ -40,12 +35,10 @@ public extension MetadataV15 {
             try encoder.encode(extrinsic)
             try encoder.encode(runtimeType)
             try encoder.encode(apis)
-            if let enums = outerEnums, let custom = self.custom {
-                try encoder.encode(enums)
-                try custom.encode(in: &encoder, lwriter: { try $1.encode($0) }) { tuple, encoder in
-                    try encoder.encode(tuple.0)
-                    try encoder.encode(tuple.1)
-                }
+            try encoder.encode(outerEnums)
+            try custom.encode(in: &encoder, lwriter: { try $1.encode($0) }) { tuple, encoder in
+                try encoder.encode(tuple.0)
+                try encoder.encode(tuple.1)
             }
         }
         
@@ -53,16 +46,16 @@ public extension MetadataV15 {
             try MetadataV15(network: self)
         }
         
-        public static var versions: Set<UInt32> { [15, UInt32.max] }
+        public static var versions: Set<UInt32> { [15] }
     }
 }
 
 public extension MetadataV15.Network {
-    typealias Extrinsic = MetadataV14.Network.Extrinsic
     typealias PalletStorage = MetadataV14.Network.PalletStorage
     typealias PalletConstant = MetadataV14.Network.PalletConstant
     typealias StorageHasher = MetadataV14.Network.StorageHasher
     typealias StorageEntryModifier = MetadataV14.Network.StorageEntryModifier
+    typealias ExtrinsicSignedExtension = MetadataV14.Network.ExtrinsicSignedExtension
     
     struct Pallet: ScaleCodec.Codable {
         public let name: String
@@ -94,6 +87,35 @@ public extension MetadataV15.Network {
             try encoder.encode(error)
             try encoder.encode(index)
             try encoder.encode(docs)
+        }
+    }
+}
+
+public extension MetadataV15.Network {
+    struct Extrinsic: ScaleCodec.Codable {
+        public let version: UInt8
+        public let addressType: NetworkType.Id
+        public let callType: NetworkType.Id
+        public let signatureType: NetworkType.Id
+        public let extraType: NetworkType.Id
+        public let signedExtensions: [ExtrinsicSignedExtension]
+        
+        public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
+            version = try decoder.decode()
+            addressType = try decoder.decode()
+            callType = try decoder.decode()
+            signatureType = try decoder.decode()
+            extraType = try decoder.decode()
+            signedExtensions = try decoder.decode()
+        }
+        
+        public func encode<E: ScaleCodec.Encoder>(in encoder: inout E) throws {
+            try encoder.encode(version)
+            try encoder.encode(addressType)
+            try encoder.encode(callType)
+            try encoder.encode(signatureType)
+            try encoder.encode(extraType)
+            try encoder.encode(signedExtensions)
         }
     }
 }

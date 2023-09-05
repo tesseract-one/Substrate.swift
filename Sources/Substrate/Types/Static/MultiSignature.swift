@@ -8,8 +8,8 @@
 import Foundation
 import ScaleCodec
 
-public enum MultiSignature: Hashable, Equatable, CustomStringConvertible,
-                            VariantStaticValidatableType, IdentifiableType
+public enum MultiSignature: Hashable, Equatable, IdentifiableType,
+                            VariantStaticValidatableType
 {
     case ed25519(Ed25519Signature)
     case sr25519(Sr25519Signature)

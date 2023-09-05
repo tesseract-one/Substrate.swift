@@ -27,16 +27,16 @@ public final class MetadataV15: Metadata {
         self.types = types
         let byPathPairs = network.types.compactMap { i in i.type.name.map { ($0, i.id) } }
         self.typesByPath = Dictionary(byPathPairs) { (l, r) in l }
-        self.extrinsic = Extrinsic(network: network.extrinsic, types: types)
+        self.extrinsic = try Extrinsic(network: network.extrinsic, types: types)
         let pallets = try network.pallets.map { try Pallet(network: $0, types: types) }
         self.palletsByName = Dictionary(uniqueKeysWithValues: pallets.map { ($0.name, $0) })
         self.palletsByIndex = Dictionary(uniqueKeysWithValues: pallets.map { ($0.index, $0) })
-        self.apisByName = Dictionary(
+        self.apisByName = try Dictionary(
             uniqueKeysWithValues: network.apis.map {
-                ($0.name, RuntimeApi(network: $0, types: types))
+                try ($0.name, RuntimeApi(network: $0, types: types))
             }
         )
-        self.outerEnums = network.outerEnums.map { OuterEnums(network: $0, types: types) }
+        self.outerEnums = try OuterEnums(network: network.outerEnums, types: types)
         self.customTypes = network.custom
     }
     
@@ -73,7 +73,7 @@ public final class MetadataV15: Metadata {
 public extension MetadataV15 {
     typealias Constant = MetadataV14.Constant
     typealias Storage = MetadataV14.Storage
-    typealias Extrinsic = MetadataV14.Extrinsic
+    typealias ExtrinsicExtension = MetadataV14.ExtrinsicExtension
     typealias StorageEntryModifier = Network.StorageEntryModifier
     typealias StorageHasher = Network.StorageHasher
     
@@ -106,17 +106,17 @@ public extension MetadataV15 {
         public init(network: Network.Pallet, types: [NetworkType.Id: NetworkType]) throws {
             self.name = network.name
             self.index = network.index
-            self.call = network.call.map { NetworkType.Info(id: $0, type: types[$0]!) }
-            self.event = network.event.map { NetworkType.Info(id: $0, type: types[$0]!) }
-            self.error = network.error.map { NetworkType.Info(id: $0, type: types[$0]!) }
-            let calls = self.call.flatMap { Self.variants(for: $0.type.definition, types: types) }
+            self.call = try network.call.map { try $0.i(types.get($0)) }
+            self.event = try network.event.map { try $0.i(types.get($0)) }
+            self.error = try network.error.map { try $0.i(types.get($0)) }
+            let calls = try self.call.flatMap { try Self.variants(for: $0.type.definition, types: types) }
             self.callByName = calls.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.name, ($0.index, $0.fields)) })
             }
             self.callNameByIdx = calls.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
             }
-            let events = self.event.flatMap { Self.variants(for:$0.type.definition, types: types) }
+            let events = try self.event.flatMap { try Self.variants(for:$0.type.definition, types: types) }
             self.eventByName = events.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.name, ($0.index, $0.fields)) })
             }
@@ -129,9 +129,9 @@ public extension MetadataV15 {
                         try ($0.name, MetadataV14.Storage(network: $0, pallet: network.name, types: types))
                     }
                 }.flatMap { Dictionary(uniqueKeysWithValues: $0) }
-            self.constantByName = Dictionary(
+            self.constantByName = try Dictionary(
                 uniqueKeysWithValues: network.constants.map {
-                    ($0.name, MetadataV14.Constant(network: $0, types: types))
+                    ($0.name, try MetadataV14.Constant(network: $0, types: types))
                 }
             )
         }
@@ -162,14 +162,38 @@ public extension MetadataV15 {
         
         private static func variants(
             for def: NetworkType.Definition, types: [NetworkType.Id: NetworkType]
-        ) -> [(index: UInt8, name: String, fields: [FieldInfo])]? {
+        ) throws -> [(index: UInt8, name: String, fields: [FieldInfo])]? {
             switch def {
             case .variant(variants: let vars):
-                return vars.map {
-                    (index: $0.index, name: $0.name,
-                     fields: $0.fields.map{($0, types[$0.type]!)})
+                return try vars.map {
+                    try (index: $0.index, name: $0.name,
+                         fields: $0.fields.map{try ($0, types.get($0.type))})
                 }
             default: return nil
+            }
+        }
+    }
+}
+
+public extension MetadataV15 {
+    struct Extrinsic: ExtrinsicMetadata {
+        public let version: UInt8
+        public let addressType: NetworkType.Info?
+        public let callType: NetworkType.Info?
+        public let signatureType: NetworkType.Info?
+        public let extraType: NetworkType.Info?
+        public let extensions: [ExtrinsicExtensionMetadata]
+        
+        public var type: NetworkType.Info? { nil }
+        
+        public init(network: Network.Extrinsic, types: [NetworkType.Id: NetworkType]) throws {
+            self.version = network.version
+            self.addressType = try network.addressType.i(types.get(network.addressType))
+            self.callType = try network.callType.i(types.get(network.callType))
+            self.signatureType = try network.signatureType.i(types.get(network.signatureType))
+            self.extraType = try network.extraType.i(types.get(network.extraType))
+            self.extensions = try network.signedExtensions.map {
+                try ExtrinsicExtension(network: $0, types: types)
             }
         }
     }
@@ -183,14 +207,14 @@ public extension MetadataV15 {
         public let methodsByName:
             [String: (params: [(name: String, type: NetworkType.Info)], result: NetworkType.Info)]
         
-        public init(network: Network.RuntimeApi, types: [NetworkType.Id: NetworkType]) {
+        public init(network: Network.RuntimeApi, types: [NetworkType.Id: NetworkType]) throws {
             self.name = network.name
-            self.methodsByName = Dictionary(
+            self.methodsByName = try Dictionary(
                 uniqueKeysWithValues: network.methods.map { method in
-                    let params = method.inputs.map {
-                        ($0.name, NetworkType.Info(id: $0.type, type: types[$0.type]!))
+                    let params = try method.inputs.map {
+                        try ($0.name, $0.type.i(types.get($0.type)))
                     }
-                    let result = NetworkType.Info(id: method.output, type: types[method.output]!)
+                    let result = try method.output.i(types.get(method.output))
                     return (method.name, (params, result))
                 }
             )
@@ -210,13 +234,10 @@ public extension MetadataV15 {
         public let eventType: NetworkType.Info
         public let moduleErrorType: NetworkType.Info
         
-        public init(network: Network.OuterEnums, types: [NetworkType.Id: NetworkType]) {
-            self.callType = NetworkType.Info(id: network.callEnumType,
-                                             type: types[network.callEnumType]!)
-            self.eventType = NetworkType.Info(id: network.eventEnumType,
-                                              type: types[network.eventEnumType]!)
-            self.moduleErrorType = NetworkType.Info(id: network.moduleErrorEnumType,
-                                                    type: types[network.moduleErrorEnumType]!)
+        public init(network: Network.OuterEnums, types: [NetworkType.Id: NetworkType]) throws {
+            self.callType = try network.callEnumType.i(types.get(network.callEnumType))
+            self.eventType = try network.eventEnumType.i(types.get(network.eventEnumType))
+            self.moduleErrorType = try network.moduleErrorEnumType.i(types.get(network.moduleErrorEnumType))
         }
     }
 }

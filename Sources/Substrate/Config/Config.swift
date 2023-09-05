@@ -175,7 +175,7 @@ public extension BatchSupportedConfig {
 // namespace for Configs declaration
 @frozen public struct Configs {
     // Type for Config registrations. Provides better constructors for Api
-    @frozen public struct Registry<C: Config, Ext> {
+    @frozen public struct Registry<C: Config> {
         public let config: C
         @inlinable public init(config: C) { self.config = config }
     }

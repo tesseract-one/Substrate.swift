@@ -11,10 +11,10 @@ import ContextCodable
 import Serializable
 
 public extension Configs {
-    struct BaseDynamic: BasicConfig {
-        public typealias THasher = AnyFixedHasher
+    struct BaseDynamic<A: AccountId, H: FixedHasher>: BasicConfig {
+        public typealias THasher = H
         public typealias TIndex = UInt256
-        public typealias TAccountId = AccountId32
+        public typealias TAccountId = A
         public typealias TAddress =  AnyAddress<TAccountId>
         public typealias TSignature = AnySignature
         public typealias TExtrinsicEra = ExtrinsicEra
@@ -25,8 +25,8 @@ public extension Configs {
         public typealias TRuntimeDispatchInfo = Value<NetworkType.Id>
     }
     
-    struct Dynamic: Config, BatchSupportedConfig {
-        public typealias BC = BaseDynamic
+    struct Dynamic<A: AccountId, H: FixedHasher>: Config, BatchSupportedConfig {
+        public typealias BC = BaseDynamic<A, H>
         
         public typealias TBlock = AnyBlock<BC.THasher, BC.TIndex, BlockExtrinsic<TExtrinsicManager>>
         public typealias TChainBlock = AnyChainBlock<TBlock>
@@ -142,26 +142,34 @@ public extension Configs.Dynamic {
 }
 
 // ConfigRegistry helpers
-public extension Configs.Registry where C == Configs.Dynamic, Ext == Void {
+public extension Configs.Registry {
     @inlinable
-    static func dynamic(extensions: [DynamicExtrinsicExtension] = Configs.dynamicSignedExtensions,
-                        customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
-                        defaultPayment: ST<C>.ExtrinsicPayment? = nil,
-                        blockSelector: String = "^.*Block$",
-                        headerSelector: String = "^.*Header$",
-                        accountSelector: String = "^.*AccountId[0-9]*$",
-                        dispatchErrorSelector: String = "^.*DispatchError$",
-                        transactionValidityErrorSelector: String = "^.*TransactionValidityError$"
-    ) throws -> Self {
-        let config = try Configs.Dynamic(extensions: extensions, customCoders: customCoders,
-                                         defaultPayment: defaultPayment,
-                                         blockSelector: blockSelector,
-                                         headerSelector: headerSelector,
-                                         accountSelector: accountSelector,
-                                         dispatchErrorSelector: dispatchErrorSelector,
-                                         transactionValidityErrorSelector: transactionValidityErrorSelector)
-        return Self(config: config)
+    static func dynamic<H: FixedHasher, A: AccountId>(
+        account: A.Type, hasher: H.Type,
+        extensions: [DynamicExtrinsicExtension] = Configs.dynamicSignedExtensions,
+        customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
+        defaultPayment: ST<Configs.Dynamic<A, H>>.ExtrinsicPayment? = nil,
+        blockSelector: String = "^.*Block$", headerSelector: String = "^.*Header$",
+        accountSelector: String = "^.*AccountId[0-9]*$",
+        dispatchErrorSelector: String = "^.*DispatchError$",
+        transactionValidityErrorSelector: String = "^.*TransactionValidityError$"
+    ) throws -> Configs.Registry<Configs.Dynamic<A, H>> {
+        let config = try Configs.Dynamic<A, H>(
+            extensions: extensions, customCoders: customCoders,
+            defaultPayment: defaultPayment, blockSelector: blockSelector,
+            headerSelector: headerSelector, accountSelector: accountSelector,
+            dispatchErrorSelector: dispatchErrorSelector,
+            transactionValidityErrorSelector: transactionValidityErrorSelector)
+        return Configs.Registry(config: config)
     }
+}
 
-    @inlinable static var dynamic: Self { try! dynamic() }
+public extension Configs.Registry where C == Configs.Dynamic<AccountId32, HBlake2b256> {
+    @inlinable static var dynamicBlake2: Self { try! dynamic(account: AccountId32.self,
+                                                             hasher: HBlake2b256.self) }
+}
+
+public extension Configs.Registry where C == Configs.Dynamic<AccountId32, AnyFixedHasher> {
+    @inlinable static var dynamicAnyHasher: Self { try! dynamic(account: AccountId32.self,
+                                                                hasher: AnyFixedHasher.self) }
 }

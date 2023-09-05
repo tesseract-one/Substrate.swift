@@ -66,7 +66,8 @@ public protocol StorageMetadata {
 
 public protocol ExtrinsicMetadata {
     var version: UInt8 { get }
-    var type: NetworkType.Info { get }
+    // remove after v14 drop
+    var type: NetworkType.Info? { get }
     var extensions: [ExtrinsicExtensionMetadata] { get }
     // Make non optional after v14 metadata drop
     var addressType: NetworkType.Info? { get }

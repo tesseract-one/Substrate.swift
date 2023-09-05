@@ -40,7 +40,7 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
     /// Some resource (e.g. a preimage) is unavailable right now. This might fix itself later.
     case unavailable
     /// Root origin is not allowed.
-    //  case rootNotAllowed
+    case rootNotAllowed
     
     public typealias TModuleError = ModuleError
     
@@ -80,7 +80,7 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
         case 10: self = .exhausted
         case 11: self = .corruption
         case 12: self = .unavailable
-//        case 13: self = .rootNotAllowed
+        case 13: self = .rootNotAllowed
         default: throw decoder.enumCaseError(for: id)
         }
     }
@@ -108,7 +108,7 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
         case .exhausted: try encoder.encode(10, .enumCaseId)
         case .corruption: try encoder.encode(11, .enumCaseId)
         case .unavailable: try encoder.encode(12, .enumCaseId)
-//        case .rootNotAllowed: try encoder.encode(13, .enumCaseId)
+        case .rootNotAllowed: try encoder.encode(13, .enumCaseId)
         }
     }
     
@@ -120,8 +120,8 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
             .s(7, "Token", TokenError.definition),
             .s(8, "Arithmetic", ArithmeticError.definition),
             .s(9, "Transactional", TransactionalError.definition),
-            .e(10, "Exhausted"), .e(11, "Corruption"), .e(12, "Unavailable")
-            //(13, "RootNotAllowed", [])
+            .e(10, "Exhausted"), .e(11, "Corruption"), .e(12, "Unavailable"),
+            .e(13, "RootNotAllowed")
         ])
     }
 }
@@ -194,7 +194,7 @@ public extension DispatchError {
         /// Withdrawal would cause unwanted loss of account.
         case notExpendable
 //        /// Account cannot receive the assets.
-//        case blocked
+        case blocked
     }
 
     enum ArithmeticError: UInt8, CaseIterable, ScaleCodec.Codable,
@@ -230,7 +230,7 @@ extension DispatchError: RuntimeSwiftCodable, Swift.Encodable {
             case "Exhausted": self = .exhausted
             case "Corruption": self = .corruption
             case "Unavailable": self = .unavailable
-            //case "RootNotAllowed": self = .rootNotAllowed
+            case "RootNotAllowed": self = .rootNotAllowed
             default:
                 throw Swift.DecodingError.dataCorruptedError(in: container1,
                                                              debugDescription: "Unknown case \(simple)")
@@ -290,9 +290,9 @@ extension DispatchError: RuntimeSwiftCodable, Swift.Encodable {
         case .unavailable:
             var container = encoder.singleValueContainer()
             try container.encode("Unavailable")
-//        case .rootNotAllowed:
-//            var container = encoder.singleValueContainer()
-//            try container.encode("RootNotAllowed")
+        case .rootNotAllowed:
+            var container = encoder.singleValueContainer()
+            try container.encode("RootNotAllowed")
         case .module(let data):
             var container = encoder.container(keyedBy: CodableComplexKey<Self>.self)
             try container.encode(data, forKey: .module)

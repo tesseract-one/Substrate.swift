@@ -26,7 +26,7 @@ public final class MetadataV14: Metadata {
         self.types = types
         let byPathPairs = network.types.compactMap { i in i.type.name.map { ($0, i.id) } }
         self.typesByPath = Dictionary(byPathPairs) { (l, r) in l }
-        self.extrinsic = Extrinsic(network: network.extrinsic, types: types)
+        self.extrinsic = try Extrinsic(network: network.extrinsic, types: types)
         let pallets = try network.pallets.map { try Pallet(network: $0, types: types) }
         self.palletsByName = Dictionary(uniqueKeysWithValues: pallets.map { ($0.name, $0) })
         self.palletsByIndex = Dictionary(uniqueKeysWithValues: pallets.map { ($0.index, $0) })
@@ -93,17 +93,17 @@ public extension MetadataV14 {
                     types: [NetworkType.Id: NetworkType]) throws {
             self.name = network.name
             self.index = network.index
-            self.call = network.call.map { NetworkType.Info(id: $0, type: types[$0]!) }
-            self.event = network.event.map { NetworkType.Info(id: $0, type: types[$0]!) }
-            self.error = network.error.map { NetworkType.Info(id: $0, type: types[$0]!) }
-            let calls = self.call.flatMap { Self.variants(for: $0.type.definition, types: types) }
+            self.call = try network.call.map { try $0.i(types.get($0)) }
+            self.event = try network.event.map { try $0.i(types.get($0)) }
+            self.error = try network.error.map { try $0.i(types.get($0)) }
+            let calls = try self.call.flatMap { try Self.variants(for: $0.type.definition, types: types) }
             self.callNameByIdx = calls.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
             }
             self.callByName = calls.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.name, ($0.index, $0.fields)) })
             }
-            let events = self.event.flatMap { Self.variants(for:$0.type.definition, types: types) }
+            let events = try self.event.flatMap { try Self.variants(for:$0.type.definition, types: types) }
             self.eventNameByIdx = events.map {
                 Dictionary(uniqueKeysWithValues: $0.map { ($0.index, $0.name) })
             }
@@ -116,9 +116,9 @@ public extension MetadataV14 {
                         try ($0.name, Storage(network: $0, pallet: network.name, types: types))
                     }
                 }.flatMap { Dictionary(uniqueKeysWithValues: $0) }
-            self.constantByName = Dictionary(
+            self.constantByName = try Dictionary(
                 uniqueKeysWithValues: network.constants.map {
-                    ($0.name, Constant(network: $0, types: types))
+                    try ($0.name, Constant(network: $0, types: types))
                 }
             )
         }
@@ -149,12 +149,12 @@ public extension MetadataV14 {
         
         private static func variants(
             for def: NetworkType.Definition, types: [NetworkType.Id: NetworkType]
-        ) -> [(index: UInt8, name: String, fields: [FieldInfo])]? {
+        ) throws -> [(index: UInt8, name: String, fields: [FieldInfo])]? {
             switch def {
             case .variant(variants: let vars):
-                return vars.map {
-                    (index: $0.index, name: $0.name,
-                     fields: $0.fields.map{($0, types[$0.type]!)})
+                return try vars.map {
+                    try (index: $0.index, name: $0.name,
+                         fields: $0.fields.map{try ($0, types.get($0.type))})
                 }
             default: return nil
             }
@@ -197,7 +197,7 @@ public extension MetadataV14 {
                                                                name: network.name,
                                                                pallet: pallet)
                 case 1:
-                    keys = [(hashers[0], NetworkType.Info(id: kType, type: types[kType]!))]
+                    keys = try [(hashers[0], kType.i(types.get(kType)))]
                 default:
                     switch types[kType]!.definition {
                     case .tuple(components: let fields): // DoubleMap / NMap
@@ -207,8 +207,8 @@ public extension MetadataV14 {
                                                                        name: network.name,
                                                                        pallet: pallet)
                         }
-                        keys = zip(hashers, fields).map { hash, field in
-                            (hash, NetworkType.Info(id: field, type: types[field]!))
+                        keys = try zip(hashers, fields).map { hash, field in
+                            try (hash, field.i(types.get(field)))
                         }
                     case .composite(fields: let fields): // Array / Struct
                         guard hashers.count == fields.count else {
@@ -217,18 +217,19 @@ public extension MetadataV14 {
                                                                        name: network.name,
                                                                        pallet: pallet)
                         }
-                        keys = zip(hashers, fields).map { hash, field in
-                            (hash, NetworkType.Info(id: field.type, type: types[field.type]!))
+                        keys = try zip(hashers, fields).map { hash, field in
+                            try (hash, field.type.i(types.get(field.type)))
                         }
                     default:
-                        throw MetadataError.storageNonCompositeKey(
+                        throw try MetadataError.storageNonCompositeKey(
                             name: network.name, pallet: pallet,
-                            type: NetworkType.Info(id: kType, type: types[kType]!))
+                            type: kType.i(types.get(kType))
+                        )
                     }
                 }
             }
-            self.types = (keys: keys,
-                          value: NetworkType.Info(id: valueType, type: types[valueType]!))
+            self.types = try (keys: keys,
+                              value: valueType.i(types.get(valueType)))
         }
     }
 }
@@ -241,12 +242,12 @@ public extension MetadataV14 {
         public let documentation: [String]
         
         public init(network: Network.PalletConstant,
-                    types: [NetworkType.Id: NetworkType])
+                    types: [NetworkType.Id: NetworkType]) throws
         {
             self.name = network.name
             self.value = network.value
             self.documentation = network.documentation
-            self.type = NetworkType.Info(id: network.type, type: types[network.type]!)
+            self.type = try network.type.i(types.get(network.type))
         }
     }
 }
@@ -254,7 +255,7 @@ public extension MetadataV14 {
 public extension MetadataV14 {
     struct Extrinsic: ExtrinsicMetadata {
         public let version: UInt8
-        public let type: NetworkType.Info
+        public let type: NetworkType.Info?
         public let extensions: [ExtrinsicExtensionMetadata]
         
         public var addressType: NetworkType.Info? { nil }
@@ -262,11 +263,11 @@ public extension MetadataV14 {
         public var signatureType: NetworkType.Info? { nil }
         public var extraType: NetworkType.Info? { nil }
         
-        public init(network: Network.Extrinsic, types: [NetworkType.Id: NetworkType]) {
+        public init(network: Network.Extrinsic, types: [NetworkType.Id: NetworkType]) throws {
             self.version = network.version
-            self.type = NetworkType.Info(id: network.type, type: types[network.type]!)
-            self.extensions = network.signedExtensions.map {
-                ExtrinsicExtension(network: $0, types: types)
+            self.type = try network.type.i(types.get(network.type))
+            self.extensions = try network.signedExtensions.map {
+                try ExtrinsicExtension(network: $0, types: types)
             }
         }
     }
@@ -279,12 +280,11 @@ public extension MetadataV14 {
         public let additionalSigned: NetworkType.Info
         
         public init(network: Network.ExtrinsicSignedExtension,
-                    types: [NetworkType.Id: NetworkType])
+                    types: [NetworkType.Id: NetworkType]) throws
         {
             self.identifier = network.identifier
-            self.type = NetworkType.Info(id: network.type, type: types[network.type]!)
-            self.additionalSigned = NetworkType.Info(id: network.additionalSigned,
-                                                     type: types[network.additionalSigned]!)
+            self.type = try network.type.i(types.get(network.type))
+            self.additionalSigned = try network.additionalSigned.i(types.get(network.additionalSigned))
         }
     }
 }

@@ -164,11 +164,15 @@ public extension DynamicTypes {
     ) -> Result<(call: NetworkType.Info, address: NetworkType.Info,
                  signature: NetworkType.Info, extra: NetworkType.Info), LookupError>
     {
+        guard let metaType = metadata.extrinsic.type else {
+            return .failure(.typeNotFound(name: "NetworkType.Info", in: "Metadata",
+                                          selector: ".extrinsic.type"))
+        }
         var addressId: NetworkType.Id? = nil
         var sigId: NetworkType.Id? = nil
         var extraId: NetworkType.Id? = nil
         var callId: NetworkType.Id? = nil
-        for param in metadata.extrinsic.type.type.parameters {
+        for param in metaType.type.parameters {
             switch param.name.lowercased() {
             case "address": addressId = param.type
             case "signature": sigId = param.type

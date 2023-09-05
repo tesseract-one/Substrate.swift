@@ -76,9 +76,9 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
     public static func validate(runtime: Runtime,
                                 type: NetworkType.Info) -> Result<Void, TypeError>
     {
-        TypeDefinition.from(network: type.type.definition, runtime: runtime).flatMap { own in
-            own.validate(runtime: runtime, type: runtime.types.event.type)
-        }
+        type == runtime.types.event ? .success(()) :
+            .failure(.wrongType(for: Self.self, got: type.type,
+                                reason: "Top level event has different info"))
     }
     
     public var description: String {

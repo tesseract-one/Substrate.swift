@@ -29,22 +29,23 @@ final class DynamicTests: XCTestCase {
     
     func testInitialization() {
         runAsyncTest(withTimeout: 30) {
-            let _ = try await Api(rpc: self.httpClient, config: .dynamic)
+            let _ = try await Api(rpc: self.httpClient, config: .dynamicBlake2)
         }
     }
     
     func testStorageValueCall() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
-            let entry = try substrate.query.dynamic(name: "Events", pallet: "System")
-            let value = try await entry.value()
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamicBlake2)
+            let entry = try substrate.query.dynamic(name: "Account", pallet: "System")
+            let alice = try self.env.kpAlice.pubKey.account(in: substrate)
+            let value = try await entry.value([alice])
             XCTAssertNotNil(value)
         }
     }
     
     func testStorageIteration() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamicBlake2)
             let entry = try substrate.query.dynamic(name: "Account", pallet: "System")
             var found = false
             for try await _ in entry.entries().prefix(2) {
@@ -56,10 +57,10 @@ final class DynamicTests: XCTestCase {
     
     func testBlock() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamicBlake2)
             let block = try await substrate.client.block(runtime: substrate.runtime)
             XCTAssertNotNil(block)
-            let _ = try block!.block.extrinsics.parsed()
+            let parsed = try block!.block.extrinsics.parsed()
         }
     }
     
@@ -67,7 +68,7 @@ final class DynamicTests: XCTestCase {
         runAsyncTest(withTimeout: 30) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
-            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamicBlake2)
             let to = try toKp.address(in: substrate)
             let call = AnyCall(name: "transfer_allow_death",
                                pallet: "Balances",
@@ -79,7 +80,7 @@ final class DynamicTests: XCTestCase {
     
     func testTransferBatchTx() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamicBlake2)
             guard substrate.runtime.isBatchSupported else {
                 print("Batch is not supported in the current runtime")
                 return
@@ -105,7 +106,7 @@ final class DynamicTests: XCTestCase {
         runAsyncTest(withTimeout: 30) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
-            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamicBlake2)
             let to = try toKp.address(in: substrate)
             let call = AnyCall(name: "transfer_allow_death",
                                pallet: "Balances",
@@ -119,7 +120,7 @@ final class DynamicTests: XCTestCase {
         runAsyncTest(withTimeout: 30) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
-            let substrate = try await Api(rpc: self.httpClient, config: .dynamic)
+            let substrate = try await Api(rpc: self.httpClient, config: .dynamicBlake2)
             let to = try toKp.address(in: substrate)
             let call = AnyCall(name: "transfer_allow_death",
                                pallet: "Balances",
@@ -134,14 +135,14 @@ final class DynamicTests: XCTestCase {
         runAsyncTest(withTimeout: 300) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
-            let substrate = try await Api(rpc: self.wsClient, config: .dynamic)
+            let substrate = try await Api(rpc: self.wsClient, config: .dynamicBlake2)
             let to = try toKp.address(in: substrate)
             let call = AnyCall(name: "transfer_allow_death",
                                pallet: "Balances",
                                params: ["dest": to, "value": 15483812850])
             let tx = try await substrate.tx.new(call)
             let events = try await tx.signSendAndWatch(signer: from)
-                .waitForFinalized()
+                .waitForInBlock()
                 .success()
             XCTAssert(events.events.count > 0)
             print("Events: \(try events.parsed())")
@@ -150,7 +151,7 @@ final class DynamicTests: XCTestCase {
     
     func testTransferAndWatchBatchTx() {
         runAsyncTest(withTimeout: 300) {
-            let substrate = try await Api(rpc: self.wsClient, config: .dynamic)
+            let substrate = try await Api(rpc: self.wsClient, config: .dynamicBlake2)
             guard substrate.runtime.isBatchSupported else {
                 print("Batch is not supported in the current runtime")
                 return
@@ -169,7 +170,7 @@ final class DynamicTests: XCTestCase {
                                 params: ["dest": to2, "value": 15583812810])
             let tx = try await substrate.tx.batchAll([call1, call2])
             let events = try await tx.signSendAndWatch(signer: from)
-                .waitForFinalized()
+                .waitForInBlock()
                 .success()
             XCTAssert(events.events.count > 0)
             print("Events: \(try events.parsed())")

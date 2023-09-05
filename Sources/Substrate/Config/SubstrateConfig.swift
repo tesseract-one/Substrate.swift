@@ -107,10 +107,7 @@ public extension Configs {
     }
 }
 
-public extension Configs.Registry where
-    C == Configs.Substrate,
-    Ext == Void
-{
+public extension Configs.Registry where C == Configs.Substrate {
     @inlinable
     static func substrate(
         customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,

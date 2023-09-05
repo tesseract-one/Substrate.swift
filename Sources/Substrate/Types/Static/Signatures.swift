@@ -9,8 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol SingleTypeStaticSignature: StaticSignature, FixedDataCodable, VoidValueRepresentable,
-                                           IdentifiableType, Hashable, Equatable,
-                                           CustomStringConvertible
+                                           IdentifiableType, Hashable, Equatable
 {
     var raw: Data { get }
     static var algorithm: CryptoTypeId { get }

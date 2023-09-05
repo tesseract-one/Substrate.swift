@@ -493,17 +493,17 @@ final class StorageKeysTests: XCTestCase {
         static var name: String { "ConcatDMapKey" }
     }
     
-    private func runtime() throws -> ExtendedRuntime<Configs.Dynamic> {
+    private func runtime() throws -> ExtendedRuntime<Configs.Dynamic<AccountId32, HBlake2b256>> {
         let data = Resources.inst.metadadav15()
         let opaq = try ScaleCodec.decode(Optional<OpaqueMetadata>.self, from: data)!
         let versioned = try ScaleCodec.decode(VersionedNetworkMetadata.self, from: opaq.raw)
-        let config = try Configs.Dynamic()
+        let config = Configs.Registry.dynamicBlake2.config
         let metadata = try versioned.metadata.asMetadata()
         let types = try config.dynamicTypes(metadata: metadata)
-        return try ExtendedRuntime(config: try Configs.Dynamic(),
+        return try ExtendedRuntime(config: config,
                                    metadata: metadata, types: types,
                                    metadataHash: nil,
-                                   genesisHash: AnyHash(unchecked: Data()),
+                                   genesisHash: Hash256(decoding: Data(repeating: 0, count: 32)),
                                    version: AnyRuntimeVersion(specVersion: 0,
                                                               transactionVersion: 4,
                                                               other: [:]),

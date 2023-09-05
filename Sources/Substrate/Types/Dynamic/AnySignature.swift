@@ -40,7 +40,7 @@ public struct AnySignature: Signature {
             guard let algo = algos[variant.name] else {
                 throw Error.unsupportedCrypto(name: variant.name)
             }
-            guard let bytes = variant.values.first?.bytes else {
+            guard let bytes = variant.values.first?.flatten(runtime: runtime).bytes else {
                 throw Error.variantIsNotBytes(variant)
             }
             _sig = try MultiSignature(raw: bytes, algorithm: algo, runtime: runtime)

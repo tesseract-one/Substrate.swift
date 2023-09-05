@@ -16,8 +16,8 @@ public extension Api {
         try await self.init(client: systemClient, config: config, signer: signer, at: hash)
     }
     
-    convenience init<RPC, Ext>(
-        rpc client: RPC, config: Configs.Registry<RC, Ext>, signer: Signer? = nil, at hash: ST<RC>.Hash? = nil
+    convenience init<RPC>(
+        rpc client: RPC, config: Configs.Registry<RC>, signer: Signer? = nil, at hash: ST<RC>.Hash? = nil
     ) async throws where RPC: RpcCallableClient, CL == RpcClient<RC, RPC> {
         let systemClient = RpcClient<RC, RPC>(client: client)
         try await self.init(client: systemClient, config: config, signer: signer, at: hash)

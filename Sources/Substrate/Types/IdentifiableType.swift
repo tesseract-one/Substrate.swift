@@ -113,11 +113,6 @@ public extension IdentifiableType {
 
 public extension TypeDefinition {
     @inlinable
-    init(network: NetworkType.Definition, runtime: any Runtime) throws {
-        self = try Self.from(network: network, runtime: runtime).get()
-    }
-    
-    @inlinable
     init(type id: NetworkType.Id, runtime: any Runtime) throws {
         self = try Self.from(type: id, runtime: runtime).get()
     }
@@ -129,12 +124,39 @@ public extension TypeDefinition {
         guard let type = runtime.resolve(type: id) else {
             return .failure(.typeNotFound(path: [], id: id))
         }
-        return from(network: type.definition, runtime: runtime)
+        return from(type: id.i(type), runtime: runtime)
+    }
+    
+    @inlinable
+    static func from(type: NetworkType.Info,
+                     runtime: any Runtime) -> Result<Self, TypeError>
+    {
+        var path: [NetworkType.Id] = [type.id]
+        defer { let _ = path.removeLast() }
+        return from(network: type.type.definition, runtime: runtime, path: &path)
+    }
+    
+    @inlinable
+    static func from(type id: NetworkType.Id,
+                     runtime: any Runtime,
+                     path: inout [NetworkType.Id]) -> Result<Self, TypeError>
+    {
+        guard !path.contains(id) else {
+            path.append(id)
+            return .failure(.recursiveType(path: path))
+        }
+        guard let type = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(path: [], id: id))
+        }
+        path.append(id); defer { let _ = path.removeLast() }
+        return from(network: type.definition, runtime: runtime, path: &path)
     }
     
     static func from(network: NetworkType.Definition,
-                     runtime: any Runtime) -> Result<Self, TypeError>
+                     runtime: any Runtime,
+                     path: inout [NetworkType.Id]) -> Result<Self, TypeError>
     {
+        
         switch network.flatten(metadata: runtime.metadata) {
         case .primitive(is: let p): return .success(.primitive(is: p))
         case .bitsequence(store: let s, order: let o):
@@ -144,23 +166,28 @@ public extension TypeDefinition {
                 }
             }
         case .array(count: let count, of: let id):
-            return from(type: id, runtime: runtime).map{.array(count: count, of: $0)}
+            return from(type: id, runtime: runtime,
+                        path: &path).map{.array(count: count, of: $0)}
         case .compact(of: let id):
-            return from(type: id, runtime: runtime).map{.compact(of: $0)}
+            return from(type: id, runtime: runtime,
+                        path: &path).map{.compact(of: $0)}
         case .sequence(of: let id):
-            return from(type: id, runtime: runtime).map{.sequence(of: $0)}
+            return from(type: id, runtime: runtime,
+                        path: &path).map{.sequence(of: $0)}
         case .tuple(components: let ids):
             return ids.resultMap {
-                from(type: $0, runtime: runtime).map{.v($0)}
+                from(type: $0, runtime: runtime, path: &path).map{.v($0)}
             }.map { .composite(fields: $0) }
         case .composite(fields: let fields):
             return fields.resultMap { field in
-                from(type: field.type, runtime: runtime).map{.init(field.name, $0)}
+                from(type: field.type, runtime: runtime,
+                     path: &path).map{.init(field.name, $0)}
             }.map { .composite(fields: $0) }
         case .variant(variants: let variants):
             return variants.resultMap { variant in
                 return variant.fields.resultMap { field in
-                    from(type: field.type, runtime: runtime).map{.init(field.name, $0)}
+                    from(type: field.type, runtime: runtime,
+                         path: &path).map{.init(field.name, $0)}
                 }.map { .m(variant.index, variant.name, $0) }
             }.map { .variant(variants: $0) }
         }

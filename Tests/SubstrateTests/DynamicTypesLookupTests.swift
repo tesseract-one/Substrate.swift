@@ -21,7 +21,7 @@ final class DynamicTypesLookupTests: XCTestCase {
     func metadataTest(data: Data, is14: Bool) throws {
         let opaq = try ScaleCodec.decode(Optional<OpaqueMetadata>.self, from: data)!
         let metadata = try ScaleCodec.decode(VersionedNetworkMetadata.self, from: opaq.raw).metadata.asMetadata()
-        let config = try Configs.Dynamic()
+        let config = Configs.Registry.dynamicBlake2.config
         let types = try config.dynamicTypes(metadata: metadata)
         let _ = try types.hash.get()
         let _ = try types.hasher.get()
