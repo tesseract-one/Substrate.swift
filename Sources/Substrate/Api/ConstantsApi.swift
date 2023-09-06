@@ -92,7 +92,7 @@ public extension StaticConstant where TValue: RuntimeDecodable {
     }
 }
 
-public extension StaticConstant where TValue: ValidatableType {
+public extension StaticConstant where TValue: StaticValidatableType {
     static func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
         guard let info = runtime.resolve(constant: name, pallet: pallet) else {
             return .failure(.typeInfoNotFound(for: Self.self))

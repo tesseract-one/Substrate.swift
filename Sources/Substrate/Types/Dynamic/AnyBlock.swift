@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public struct AnyBlock<H: FixedHasher,
-                       N: UnsignedInteger & CompactCodable & DataConvertible & ValidatableType,
+                       N: UnsignedInteger & CompactCodable & DataConvertible,
                        E: OpaqueExtrinsic>: SomeBlock
 {
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext

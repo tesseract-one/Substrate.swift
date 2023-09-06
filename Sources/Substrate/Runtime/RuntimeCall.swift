@@ -39,8 +39,8 @@ public extension StaticRuntimeCall {
 
 public typealias RuntimeCallTypeInfo = (params: [(name: String, type: NetworkType.Info)],
                                         result: NetworkType.Info)
-public typealias RuntimeCallChildTypes = (params: [ValidatableType.Type],
-                                          result: ValidatableType.Type)
+public typealias RuntimeCallChildTypes = (params: [StaticValidatableType.Type],
+                                          result: StaticValidatableType.Type)
 
 public extension StaticRuntimeCall where
     Self: ComplexFrameType, TypeInfo == RuntimeCallTypeInfo

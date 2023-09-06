@@ -42,10 +42,10 @@ public protocol TupleStorageKeyPath: ListTuple
 }
 
 public protocol TupleStorageValidatableKeyPath: TupleStorageKeyPath where
-    First.TKey: ValidatableType, Last.TKey: ValidatableType
+    First.TKey: StaticValidatableType, Last.TKey: StaticValidatableType
 {
     static var validatablePath: [(hasher: any StaticHasher.Type,
-                                  type: any ValidatableType.Type)] { get }
+                                  type: any StaticValidatableType.Type)] { get }
 }
 
 public protocol TupleStorageIdentifiableKeyPath: TupleStorageKeyPath where
@@ -83,7 +83,7 @@ public extension TupleStorageKeyBase {
 
 public extension TupleStorageKeyBase where
     Self: ComplexStaticFrameType, TPath: TupleStorageValidatableKeyPath,
-    ChildTypes == StorageKeyChildTypes, TValue: ValidatableType
+    ChildTypes == StorageKeyChildTypes, TValue: StaticValidatableType
 {
     @inlinable
     static var childTypes: ChildTypes {

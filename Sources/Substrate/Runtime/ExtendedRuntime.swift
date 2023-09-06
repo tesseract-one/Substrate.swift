@@ -131,8 +131,8 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         try config.runtimeCalls(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
     }
     
-    public func validate<T: ValidatableType>(type: T.Type, info: DynamicTypes.Maybe<NetworkType.Info>,
-                                             isStatic: Bool) throws
+    public func validate<T: StaticValidatableType>(type: T.Type, info: DynamicTypes.Maybe<NetworkType.Info>,
+                                                   isStatic: Bool) throws
     {
         switch info {
         case .success(let info): try type.validate(runtime: self, type: info).get()

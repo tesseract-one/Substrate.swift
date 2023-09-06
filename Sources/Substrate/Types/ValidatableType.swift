@@ -17,13 +17,15 @@ public protocol DynamicValidatableType {
                   type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
 }
 
-public protocol ValidatableType {
+public protocol StaticValidatableType {
     static func validate(runtime: any Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError>
     
     static func validate(runtime: any Runtime,
                          type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
 }
+
+public typealias ValidatableType = DynamicValidatableType & StaticValidatableType
 
 public enum TypeError: Error {
     case typeNotFound(for: String, id: NetworkType.Id)
@@ -50,7 +52,7 @@ public extension DynamicValidatableType {
     }
 }
 
-public extension ValidatableType {
+public extension StaticValidatableType {
     @inlinable
     func validate(runtime: any Runtime,
                   type info: NetworkType.Info) -> Result<Void, TypeError>
@@ -69,7 +71,7 @@ public extension ValidatableType {
     }
 }
 
-public protocol ComplexValidatableType: ValidatableType {
+public protocol ComplexValidatableType: StaticValidatableType {
     associatedtype TypeInfo
     
     static func typeInfo(runtime: any Runtime,
@@ -122,7 +124,7 @@ public extension CompositeValidatableType {
 
 public protocol CompositeStaticValidatableType: CompositeValidatableType,
                                                 ComplexStaticValidatableType
-    where ChildTypes == [ValidatableType.Type] {}
+    where ChildTypes == [StaticValidatableType.Type] {}
 
 public extension CompositeStaticValidatableType {
     static func validate(info sinfo: TypeInfo, type tinfo: NetworkType.Info,
@@ -165,7 +167,7 @@ public extension VariantValidatableType {
 
 public protocol VariantStaticValidatableType: VariantValidatableType,
                                               ComplexStaticValidatableType
-    where ChildTypes == [(index: UInt8, name: String, fields: [ValidatableType.Type])] {}
+    where ChildTypes == [(index: UInt8, name: String, fields: [StaticValidatableType.Type])] {}
 
 public extension VariantStaticValidatableType {
     static func validate(info sinfo: TypeInfo, type tinfo: NetworkType.Info,

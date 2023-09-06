@@ -219,7 +219,7 @@ extension AnyCall: DynamicValidatableType {
     }
 }
 
-extension AnyCall: ValidatableType {
+extension AnyCall: StaticValidatableType {
     public static func validate(runtime: Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
     {

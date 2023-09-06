@@ -136,7 +136,7 @@ extension Data: DynamicValidatableType {
     }
 }
 
-extension Data: ValidatableType {
+extension Data: StaticValidatableType {
     public static func validate(runtime: Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
     {
@@ -162,7 +162,7 @@ extension Data: ValidatableType {
     }
 }
 
-extension Compact: ValidatableType {
+extension Compact: StaticValidatableType {
     public static func validate(runtime: any Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
     {
@@ -192,7 +192,7 @@ extension Compact: ValidatableType {
     }
 }
 
-extension Array: ValidatableType where Element: ValidatableType {
+extension Array: StaticValidatableType where Element: StaticValidatableType {
     public static func validate(runtime: Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
     {
@@ -214,7 +214,7 @@ extension Array: ValidatableType where Element: ValidatableType {
     }
 }
 
-extension Optional: ValidatableType where Wrapped: ValidatableType {
+extension Optional: StaticValidatableType where Wrapped: StaticValidatableType {
     public static func validate(runtime: Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
     {
@@ -226,7 +226,7 @@ extension Optional: ValidatableType where Wrapped: ValidatableType {
     }
 }
 
-extension Either: ValidatableType where Left: ValidatableType, Right: ValidatableType {
+extension Either: StaticValidatableType where Left: StaticValidatableType, Right: StaticValidatableType {
     public static func validate(runtime: Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
     {

@@ -23,7 +23,7 @@ public extension PlainStorageKey {
 }
 
 public extension PlainStorageKey where
-    Self: ComplexStaticFrameType, TValue: ValidatableType,
+    Self: ComplexStaticFrameType, TValue: StaticValidatableType,
     ChildTypes == StorageKeyChildTypes
 {
     @inlinable
@@ -62,8 +62,8 @@ public extension MapStorageKey {
 }
 
 public extension MapStorageKey where
-    Self: ComplexStaticFrameType, TKH.TKey: ValidatableType,
-    TValue: ValidatableType, ChildTypes == StorageKeyChildTypes
+    Self: ComplexStaticFrameType, TKH.TKey: StaticValidatableType,
+    TValue: StaticValidatableType, ChildTypes == StorageKeyChildTypes
 {
     @inlinable
     static var childTypes: ChildTypes {
@@ -113,8 +113,8 @@ public extension DoubleMapStorageKey {
 }
 
 public extension DoubleMapStorageKey where
-    Self: ComplexStaticFrameType, TKH1.TKey: ValidatableType,
-    TKH2.TKey: ValidatableType, TValue: ValidatableType,
+    Self: ComplexStaticFrameType, TKH1.TKey: StaticValidatableType,
+    TKH2.TKey: StaticValidatableType, TValue: StaticValidatableType,
     ChildTypes == StorageKeyChildTypes
 {
     @inlinable

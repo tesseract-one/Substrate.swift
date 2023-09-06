@@ -47,7 +47,7 @@ public extension StaticExtrinsicExtension {
 }
 
 public extension StaticExtrinsicExtension where
-    TExtra: ValidatableType, TAdditionalSigned: ValidatableType
+    TExtra: StaticValidatableType, TAdditionalSigned: StaticValidatableType
 {
     func validate(runtime: Runtime, extra: NetworkType.Id,
                   additionalSigned: NetworkType.Id) -> Result<Void, TypeError>

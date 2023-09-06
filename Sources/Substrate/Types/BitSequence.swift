@@ -323,7 +323,7 @@ extension BitSequence: ValueRepresentable {
     }
 }
 
-extension BitSequence: ValidatableType {
+extension BitSequence: StaticValidatableType {
     @inlinable
     public static func validate(format: Format, runtime: Runtime,
                                 type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>

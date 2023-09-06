@@ -29,7 +29,7 @@ public extension SomeTuple1 where
 public extension SomeTuple1 where Self: TupleStorageValidatableKeyPath {
     @inlinable
     static var validatablePath: [(hasher: StaticHasher.Type,
-                                  type: ValidatableType.Type)]
+                                  type: StaticValidatableType.Type)]
     {
         [(T1.THasher.self, T1.TKey.self)]
     }
@@ -71,7 +71,7 @@ public extension ListTuple where
     DroppedFirst: TupleStorageValidatableKeyPath
 {
     static var validatablePath: [(hasher: StaticHasher.Type,
-                                  type: ValidatableType.Type)]
+                                  type: StaticValidatableType.Type)]
     {
         [(First.THasher.self, First.TKey.self)] + DroppedFirst.validatablePath
     }
@@ -95,7 +95,7 @@ extension Tuple1: TupleStorageKeyPath where T1: TupleStorageKeyHasherPair {
     public typealias THashes = Tuple1<Data>
 }
 extension Tuple1: TupleStorageValidatableKeyPath where
-    Self: TupleStorageKeyPath, T1.TKey: ValidatableType {}
+    Self: TupleStorageKeyPath, T1.TKey: StaticValidatableType {}
 extension Tuple1: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType {}
     
@@ -107,8 +107,8 @@ extension Tuple2: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple2<Data, Data>
 }
 extension Tuple2: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType {}
 extension Tuple2: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType {}
@@ -122,8 +122,8 @@ extension Tuple3: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple3<Data, Data, Data>
 }
 extension Tuple3: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType {}
 extension Tuple3: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType {}
@@ -138,9 +138,9 @@ extension Tuple4: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple4<Data, Data, Data, Data>
 }
 extension Tuple4: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType {}
 extension Tuple4: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -157,9 +157,9 @@ extension Tuple5: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple5<Data, Data, Data, Data, Data>
 }
 extension Tuple5: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType {}
 extension Tuple5: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -176,10 +176,10 @@ extension Tuple6: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple6<Data, Data, Data, Data, Data, Data>
 }
 extension Tuple6: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType {}
 extension Tuple6: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -200,10 +200,10 @@ extension Tuple7: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple7<Data, Data, Data, Data, Data, Data, Data>
 }
 extension Tuple7: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType, T7.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType, T7.TKey: StaticValidatableType {}
 extension Tuple7: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -224,11 +224,11 @@ extension Tuple8: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple8<Data, Data, Data, Data, Data, Data, Data, Data>
 }
 extension Tuple8: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType, T7.TKey: ValidatableType,
-    T8.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType, T7.TKey: StaticValidatableType,
+    T8.TKey: StaticValidatableType {}
 extension Tuple8: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -251,11 +251,11 @@ extension Tuple9: TupleStorageNKeyPath, TupleStorageKeyPath where
     public typealias THashes = Tuple9<Data, Data, Data, Data, Data, Data, Data, Data, Data>
 }
 extension Tuple9: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType, T7.TKey: ValidatableType,
-    T8.TKey: ValidatableType, T9.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType, T7.TKey: StaticValidatableType,
+    T8.TKey: StaticValidatableType, T9.TKey: StaticValidatableType {}
 extension Tuple9: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -280,12 +280,12 @@ extension Tuple10: TupleStorageNKeyPath, TupleStorageKeyPath where
                                        Data>
 }
 extension Tuple10: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType, T7.TKey: ValidatableType,
-    T8.TKey: ValidatableType, T9.TKey: ValidatableType,
-    T10.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType, T7.TKey: StaticValidatableType,
+    T8.TKey: StaticValidatableType, T9.TKey: StaticValidatableType,
+    T10.TKey: StaticValidatableType {}
 extension Tuple10: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -312,12 +312,12 @@ extension Tuple11: TupleStorageNKeyPath, TupleStorageKeyPath where
                                        Data, Data>
 }
 extension Tuple11: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType, T7.TKey: ValidatableType,
-    T8.TKey: ValidatableType, T9.TKey: ValidatableType,
-    T10.TKey: ValidatableType, T11.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType, T7.TKey: StaticValidatableType,
+    T8.TKey: StaticValidatableType, T9.TKey: StaticValidatableType,
+    T10.TKey: StaticValidatableType, T11.TKey: StaticValidatableType {}
 extension Tuple11: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -344,13 +344,13 @@ extension Tuple12: TupleStorageNKeyPath, TupleStorageKeyPath where
                                        Data, Data, Data>
 }
 extension Tuple12: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType, T7.TKey: ValidatableType,
-    T8.TKey: ValidatableType, T9.TKey: ValidatableType,
-    T10.TKey: ValidatableType, T11.TKey: ValidatableType,
-    T12.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType, T7.TKey: StaticValidatableType,
+    T8.TKey: StaticValidatableType, T9.TKey: StaticValidatableType,
+    T10.TKey: StaticValidatableType, T11.TKey: StaticValidatableType,
+    T12.TKey: StaticValidatableType {}
 extension Tuple12: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -381,13 +381,13 @@ extension Tuple13: TupleStorageNKeyPath, TupleStorageKeyPath where
                                        Data, Data, Data, Data>
 }
 extension Tuple13: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType, T7.TKey: ValidatableType,
-    T8.TKey: ValidatableType, T9.TKey: ValidatableType,
-    T10.TKey: ValidatableType, T11.TKey: ValidatableType,
-    T12.TKey: ValidatableType, T13.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType, T7.TKey: StaticValidatableType,
+    T8.TKey: StaticValidatableType, T9.TKey: StaticValidatableType,
+    T10.TKey: StaticValidatableType, T11.TKey: StaticValidatableType,
+    T12.TKey: StaticValidatableType, T13.TKey: StaticValidatableType {}
 extension Tuple13: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -418,14 +418,14 @@ extension Tuple14: TupleStorageNKeyPath, TupleStorageKeyPath where
                                        Data, Data, Data, Data, Data>
 }
 extension Tuple14: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType, T7.TKey: ValidatableType,
-    T8.TKey: ValidatableType, T9.TKey: ValidatableType,
-    T10.TKey: ValidatableType, T11.TKey: ValidatableType,
-    T12.TKey: ValidatableType, T13.TKey: ValidatableType,
-    T14.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType, T7.TKey: StaticValidatableType,
+    T8.TKey: StaticValidatableType, T9.TKey: StaticValidatableType,
+    T10.TKey: StaticValidatableType, T11.TKey: StaticValidatableType,
+    T12.TKey: StaticValidatableType, T13.TKey: StaticValidatableType,
+    T14.TKey: StaticValidatableType {}
 extension Tuple14: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,
@@ -458,14 +458,14 @@ extension Tuple15: TupleStorageNKeyPath, TupleStorageKeyPath where
                                        Data, Data, Data, Data, Data, Data>
 }
 extension Tuple15: TupleStorageValidatableKeyPath where
-    Self: TupleStorageNKeyPath, T1.TKey: ValidatableType,
-    T2.TKey: ValidatableType, T3.TKey: ValidatableType,
-    T4.TKey: ValidatableType, T5.TKey: ValidatableType,
-    T6.TKey: ValidatableType, T7.TKey: ValidatableType,
-    T8.TKey: ValidatableType, T9.TKey: ValidatableType,
-    T10.TKey: ValidatableType, T11.TKey: ValidatableType,
-    T12.TKey: ValidatableType, T13.TKey: ValidatableType,
-    T14.TKey: ValidatableType, T15.TKey: ValidatableType {}
+    Self: TupleStorageNKeyPath, T1.TKey: StaticValidatableType,
+    T2.TKey: StaticValidatableType, T3.TKey: StaticValidatableType,
+    T4.TKey: StaticValidatableType, T5.TKey: StaticValidatableType,
+    T6.TKey: StaticValidatableType, T7.TKey: StaticValidatableType,
+    T8.TKey: StaticValidatableType, T9.TKey: StaticValidatableType,
+    T10.TKey: StaticValidatableType, T11.TKey: StaticValidatableType,
+    T12.TKey: StaticValidatableType, T13.TKey: StaticValidatableType,
+    T14.TKey: StaticValidatableType, T15.TKey: StaticValidatableType {}
 extension Tuple15: TupleStorageIdentifiableKeyPath where
     Self: TupleStorageKeyPath, T1.TKey: IdentifiableType,
     T2.TKey: IdentifiableType, T3.TKey: IdentifiableType,

@@ -8,7 +8,7 @@
 import Foundation
 import Tuples
 
-public protocol ValidatableTuple: ValidatableType, SomeTuple {
+public protocol StaticValidatableTuple: StaticValidatableType, SomeTuple {
     static func validate(type: NetworkType.Info,
                          fields: inout [NetworkType.Info],
                          runtime: any Runtime) -> Result<Void, TypeError>
@@ -35,7 +35,7 @@ public extension SomeTuple0 {
     }
 }
 
-public extension ListTuple where DroppedLast: ValidatableTuple, Last: ValidatableType {
+public extension ListTuple where DroppedLast: StaticValidatableTuple, Last: StaticValidatableType {
     static func validateTuple(runtime: Runtime,
                               type: NetworkType.Info) -> Result<Void, TypeError>
     {
@@ -103,7 +103,7 @@ public extension ListTuple where DroppedLast: ValidatableTuple, Last: Validatabl
     }
 }
 
-extension Tuple0: ValidatableTuple {
+extension Tuple0: StaticValidatableTuple {
     public static func validate(runtime: Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
     {
@@ -111,7 +111,7 @@ extension Tuple0: ValidatableTuple {
     }
 }
 
-extension Tuple1: ValidatableTuple, ValidatableType where T1: ValidatableType {
+extension Tuple1: StaticValidatableTuple, StaticValidatableType where T1: StaticValidatableType {
     @inlinable
     public static func validate(runtime: Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -119,8 +119,8 @@ extension Tuple1: ValidatableTuple, ValidatableType where T1: ValidatableType {
     }
 }
 
-extension Tuple2: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType
+extension Tuple2: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -130,8 +130,8 @@ extension Tuple2: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple3: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType
+extension Tuple3: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -141,8 +141,8 @@ extension Tuple3: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple4: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType
+extension Tuple4: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -152,9 +152,9 @@ extension Tuple4: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple5: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType
+extension Tuple5: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -164,9 +164,9 @@ extension Tuple5: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple6: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType
+extension Tuple6: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType
 {
     public static func validate(runtime: Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
@@ -175,21 +175,9 @@ extension Tuple6: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple7: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType
-{
-    @inlinable
-    public static func validate(runtime: Runtime,
-                                type info: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        validateTuple(runtime: runtime, type: info)
-    }
-}
-
-extension Tuple8: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType
+extension Tuple7: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType, T7: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -199,10 +187,9 @@ extension Tuple8: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple9: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType
+extension Tuple8: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType, T7: StaticValidatableType, T8: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -212,10 +199,10 @@ extension Tuple9: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple10: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType, T10: ValidatableType
+extension Tuple9: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType, T7: StaticValidatableType, T8: StaticValidatableType,
+    T9: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -225,10 +212,10 @@ extension Tuple10: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple11: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType, T10: ValidatableType, T11: ValidatableType
+extension Tuple10: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType, T7: StaticValidatableType, T8: StaticValidatableType,
+    T9: StaticValidatableType, T10: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -238,10 +225,10 @@ extension Tuple11: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple12: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType, T10: ValidatableType, T11: ValidatableType, T12: ValidatableType
+extension Tuple11: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType, T7: StaticValidatableType, T8: StaticValidatableType,
+    T9: StaticValidatableType, T10: StaticValidatableType, T11: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -251,11 +238,10 @@ extension Tuple12: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple13: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType, T10: ValidatableType, T11: ValidatableType, T12: ValidatableType,
-    T13: ValidatableType
+extension Tuple12: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType, T7: StaticValidatableType, T8: StaticValidatableType,
+    T9: StaticValidatableType, T10: StaticValidatableType, T11: StaticValidatableType, T12: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -265,11 +251,11 @@ extension Tuple13: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple14: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType, T10: ValidatableType, T11: ValidatableType, T12: ValidatableType,
-    T13: ValidatableType, T14: ValidatableType
+extension Tuple13: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType, T7: StaticValidatableType, T8: StaticValidatableType,
+    T9: StaticValidatableType, T10: StaticValidatableType, T11: StaticValidatableType, T12: StaticValidatableType,
+    T13: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,
@@ -279,11 +265,25 @@ extension Tuple14: ValidatableTuple, ValidatableType where
     }
 }
 
-extension Tuple15: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType, T10: ValidatableType, T11: ValidatableType, T12: ValidatableType,
-    T13: ValidatableType, T14: ValidatableType, T15: ValidatableType
+extension Tuple14: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType, T7: StaticValidatableType, T8: StaticValidatableType,
+    T9: StaticValidatableType, T10: StaticValidatableType, T11: StaticValidatableType, T12: StaticValidatableType,
+    T13: StaticValidatableType, T14: StaticValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
+
+extension Tuple15: StaticValidatableTuple, StaticValidatableType where
+    T1: StaticValidatableType, T2: StaticValidatableType, T3: StaticValidatableType, T4: StaticValidatableType,
+    T5: StaticValidatableType, T6: StaticValidatableType, T7: StaticValidatableType, T8: StaticValidatableType,
+    T9: StaticValidatableType, T10: StaticValidatableType, T11: StaticValidatableType, T12: StaticValidatableType,
+    T13: StaticValidatableType, T14: StaticValidatableType, T15: StaticValidatableType
 {
     @inlinable
     public static func validate(runtime: Runtime,

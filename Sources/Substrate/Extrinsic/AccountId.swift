@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
-                           ValueRepresentable, DynamicValidatableType, ValidatableType
+                           ValueRepresentable, ValidatableType
 {
     init(from string: String, runtime: any Runtime,
          id: NetworkType.LazyId) throws

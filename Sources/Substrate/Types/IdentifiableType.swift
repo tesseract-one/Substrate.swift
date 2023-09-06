@@ -98,7 +98,7 @@ public extension TypeDefinition {
     }
 }
 
-public protocol IdentifiableType: ValidatableType {
+public protocol IdentifiableType: StaticValidatableType {
     static var definition: TypeDefinition { get }
 }
 
