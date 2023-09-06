@@ -8,7 +8,7 @@
 import Foundation
 import Tuples
 
-public protocol IdentifiableTuple: IdentifiableType, SomeTuple {
+public protocol IdentifiableTuple: IdentifiableTypeStatic, SomeTuple {
     static func fillFieldDefinifions(defs: inout [TypeDefinition.Field])
 }
 
@@ -20,7 +20,7 @@ public extension SomeTuple0 {
 }
 
 public extension ListTuple where Self: IdentifiableTuple,
-    DroppedLast: IdentifiableTuple, Last: IdentifiableType
+    DroppedLast: IdentifiableTuple, Last: IdentifiableTypeStatic
 {
     @inlinable
     static var definition: TypeDefinition {
@@ -39,76 +39,76 @@ public extension ListTuple where Self: IdentifiableTuple,
 
 extension Tuple0: IdentifiableTuple {}
 
-extension Tuple1: IdentifiableTuple, IdentifiableType where T1: IdentifiableType {}
+extension Tuple1: IdentifiableTuple, IdentifiableTypeStatic where T1: IdentifiableTypeStatic {}
 
-extension Tuple2: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType {}
+extension Tuple2: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic {}
 
-extension Tuple3: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType {}
+extension Tuple3: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic {}
 
-extension Tuple4: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType {}
+extension Tuple4: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic {}
 
-extension Tuple5: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType {}
+extension Tuple5: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic {}
 
-extension Tuple6: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType {}
+extension Tuple6: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic {}
 
-extension Tuple7: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType {}
+extension Tuple7: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic,
+    T7: IdentifiableTypeStatic {}
 
-extension Tuple8: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType {}
+extension Tuple8: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic,
+    T7: IdentifiableTypeStatic, T8: IdentifiableTypeStatic {}
 
-extension Tuple9: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType {}
+extension Tuple9: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic,
+    T7: IdentifiableTypeStatic, T8: IdentifiableTypeStatic, T9: IdentifiableTypeStatic {}
 
-extension Tuple10: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
-    T10: IdentifiableType {}
+extension Tuple10: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic,
+    T7: IdentifiableTypeStatic, T8: IdentifiableTypeStatic, T9: IdentifiableTypeStatic,
+    T10: IdentifiableTypeStatic {}
 
-extension Tuple11: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
-    T10: IdentifiableType, T11: IdentifiableType {}
+extension Tuple11: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic,
+    T7: IdentifiableTypeStatic, T8: IdentifiableTypeStatic, T9: IdentifiableTypeStatic,
+    T10: IdentifiableTypeStatic, T11: IdentifiableTypeStatic {}
 
-extension Tuple12: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
-    T10: IdentifiableType, T11: IdentifiableType, T12: IdentifiableType {}
+extension Tuple12: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic,
+    T7: IdentifiableTypeStatic, T8: IdentifiableTypeStatic, T9: IdentifiableTypeStatic,
+    T10: IdentifiableTypeStatic, T11: IdentifiableTypeStatic, T12: IdentifiableTypeStatic {}
 
-extension Tuple13: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
-    T10: IdentifiableType, T11: IdentifiableType, T12: IdentifiableType,
-    T13: IdentifiableType {}
+extension Tuple13: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic,
+    T7: IdentifiableTypeStatic, T8: IdentifiableTypeStatic, T9: IdentifiableTypeStatic,
+    T10: IdentifiableTypeStatic, T11: IdentifiableTypeStatic, T12: IdentifiableTypeStatic,
+    T13: IdentifiableTypeStatic {}
 
-extension Tuple14: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
-    T10: IdentifiableType, T11: IdentifiableType, T12: IdentifiableType,
-    T13: IdentifiableType, T14: IdentifiableType {}
+extension Tuple14: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic,
+    T7: IdentifiableTypeStatic, T8: IdentifiableTypeStatic, T9: IdentifiableTypeStatic,
+    T10: IdentifiableTypeStatic, T11: IdentifiableTypeStatic, T12: IdentifiableTypeStatic,
+    T13: IdentifiableTypeStatic, T14: IdentifiableTypeStatic {}
 
-extension Tuple15: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
-    T10: IdentifiableType, T11: IdentifiableType, T12: IdentifiableType,
-    T13: IdentifiableType, T14: IdentifiableType, T15: IdentifiableType {}
+extension Tuple15: IdentifiableTuple, IdentifiableTypeStatic where
+    T1: IdentifiableTypeStatic, T2: IdentifiableTypeStatic, T3: IdentifiableTypeStatic,
+    T4: IdentifiableTypeStatic, T5: IdentifiableTypeStatic, T6: IdentifiableTypeStatic,
+    T7: IdentifiableTypeStatic, T8: IdentifiableTypeStatic, T9: IdentifiableTypeStatic,
+    T10: IdentifiableTypeStatic, T11: IdentifiableTypeStatic, T12: IdentifiableTypeStatic,
+    T13: IdentifiableTypeStatic, T14: IdentifiableTypeStatic, T15: IdentifiableTypeStatic {}

@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import Numberick
 
-public protocol DynamicValidatableType {
+public protocol ValidatableTypeDynamic {
     func validate(runtime: any Runtime,
                   type info: NetworkType.Info) -> Result<Void, TypeError>
     
@@ -17,7 +17,7 @@ public protocol DynamicValidatableType {
                   type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
 }
 
-public protocol StaticValidatableType {
+public protocol ValidatableTypeStatic {
     static func validate(runtime: any Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError>
     
@@ -25,7 +25,7 @@ public protocol StaticValidatableType {
                          type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
 }
 
-public typealias ValidatableType = DynamicValidatableType & StaticValidatableType
+public typealias ValidatableType = ValidatableTypeDynamic & ValidatableTypeStatic
 
 public enum TypeError: Error {
     case typeNotFound(for: String, id: NetworkType.Id)
@@ -40,7 +40,7 @@ public enum TypeError: Error {
                                  expected: Int, in: NetworkType)
 }
 
-public extension DynamicValidatableType {
+public extension ValidatableTypeDynamic {
     @inlinable
     func validate(runtime: any Runtime,
                   type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
@@ -52,7 +52,7 @@ public extension DynamicValidatableType {
     }
 }
 
-public extension StaticValidatableType {
+public extension ValidatableTypeStatic {
     @inlinable
     func validate(runtime: any Runtime,
                   type info: NetworkType.Info) -> Result<Void, TypeError>
@@ -71,7 +71,7 @@ public extension StaticValidatableType {
     }
 }
 
-public protocol ComplexValidatableType: StaticValidatableType {
+public protocol ComplexValidatableType: ValidatableTypeStatic {
     associatedtype TypeInfo
     
     static func typeInfo(runtime: any Runtime,
@@ -124,7 +124,7 @@ public extension CompositeValidatableType {
 
 public protocol CompositeStaticValidatableType: CompositeValidatableType,
                                                 ComplexStaticValidatableType
-    where ChildTypes == [StaticValidatableType.Type] {}
+    where ChildTypes == [ValidatableTypeStatic.Type] {}
 
 public extension CompositeStaticValidatableType {
     static func validate(info sinfo: TypeInfo, type tinfo: NetworkType.Info,
@@ -167,7 +167,7 @@ public extension VariantValidatableType {
 
 public protocol VariantStaticValidatableType: VariantValidatableType,
                                               ComplexStaticValidatableType
-    where ChildTypes == [(index: UInt8, name: String, fields: [StaticValidatableType.Type])] {}
+    where ChildTypes == [(index: UInt8, name: String, fields: [ValidatableTypeStatic.Type])] {}
 
 public extension VariantStaticValidatableType {
     static func validate(info sinfo: TypeInfo, type tinfo: NetworkType.Info,

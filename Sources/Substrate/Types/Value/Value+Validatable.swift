@@ -8,7 +8,7 @@
 import Foundation
 
 // Static validation is always good. We can represent all types
-extension Value: StaticValidatableType {
+extension Value: ValidatableTypeStatic {
     @inlinable
     public static func validate(runtime: any Runtime,
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
@@ -17,7 +17,7 @@ extension Value: StaticValidatableType {
     }
 }
 
-extension Value: DynamicValidatableType {
+extension Value: ValidatableTypeDynamic {
     public func validate(runtime: any Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError>
     {

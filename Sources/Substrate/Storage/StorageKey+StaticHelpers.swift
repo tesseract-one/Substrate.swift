@@ -23,14 +23,14 @@ public extension PlainStorageKey {
 }
 
 public extension PlainStorageKey where
-    Self: ComplexStaticFrameType, TValue: StaticValidatableType,
+    Self: ComplexStaticFrameType, TValue: ValidatableTypeStatic,
     ChildTypes == StorageKeyChildTypes
 {
     @inlinable
     static var childTypes: ChildTypes { (keys: [], value: TValue.self) }
 }
 
-public extension PlainStorageKey where TValue: IdentifiableType {
+public extension PlainStorageKey where TValue: IdentifiableTypeStatic {
     @inlinable
     static var definition: FrameTypeDefinition {
         .storage(Self.self, keys: [], value: TValue.definition)
@@ -62,8 +62,8 @@ public extension MapStorageKey {
 }
 
 public extension MapStorageKey where
-    Self: ComplexStaticFrameType, TKH.TKey: StaticValidatableType,
-    TValue: StaticValidatableType, ChildTypes == StorageKeyChildTypes
+    Self: ComplexStaticFrameType, TKH.TKey: ValidatableTypeStatic,
+    TValue: ValidatableTypeStatic, ChildTypes == StorageKeyChildTypes
 {
     @inlinable
     static var childTypes: ChildTypes {
@@ -71,7 +71,7 @@ public extension MapStorageKey where
     }
 }
 
-public extension MapStorageKey where TKH.TKey: IdentifiableType, TValue: IdentifiableType {
+public extension MapStorageKey where TKH.TKey: IdentifiableTypeStatic, TValue: IdentifiableTypeStatic {
     @inlinable
     static var definition: FrameTypeDefinition {
         .storage(Self.self, keys: [(key: TKH.TKey.definition, hasher: TKH.THasher.hasherType)],
@@ -81,7 +81,7 @@ public extension MapStorageKey where TKH.TKey: IdentifiableType, TValue: Identif
 
 public protocol DoubleMapStorageKey<TKH1, TKH2>: StaticStorageKey, IterableStorageKey where
     TParams == (TKH1.TKey, TKH2.TKey), TIterator == MapStorageKeyIterator<Self>,
-    TKH1.TKey: IdentifiableType, TKH2.TKey: IdentifiableType
+    TKH1.TKey: IdentifiableTypeStatic, TKH2.TKey: IdentifiableTypeStatic
 {
     associatedtype TKH1: TupleStorageKeyHasherPair
     associatedtype TKH2: TupleStorageKeyHasherPair
@@ -113,8 +113,8 @@ public extension DoubleMapStorageKey {
 }
 
 public extension DoubleMapStorageKey where
-    Self: ComplexStaticFrameType, TKH1.TKey: StaticValidatableType,
-    TKH2.TKey: StaticValidatableType, TValue: StaticValidatableType,
+    Self: ComplexStaticFrameType, TKH1.TKey: ValidatableTypeStatic,
+    TKH2.TKey: ValidatableTypeStatic, TValue: ValidatableTypeStatic,
     ChildTypes == StorageKeyChildTypes
 {
     @inlinable
@@ -125,8 +125,8 @@ public extension DoubleMapStorageKey where
 }
 
 public extension DoubleMapStorageKey where
-    TKH1.TKey: IdentifiableType, TKH2.TKey: IdentifiableType,
-    TValue: IdentifiableType
+    TKH1.TKey: IdentifiableTypeStatic, TKH2.TKey: IdentifiableTypeStatic,
+    TValue: IdentifiableTypeStatic
 {
     @inlinable
     static var definition: FrameTypeDefinition {

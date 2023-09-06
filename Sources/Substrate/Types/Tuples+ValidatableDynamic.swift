@@ -1,5 +1,5 @@
 //
-//  Tuples+DynamicValidatable.swift
+//  Tuples+ValidatableDynamic.swift
 //  
 //
 //  Created by Yehor Popovych on 05/09/2023.
@@ -8,7 +8,7 @@
 import Foundation
 import Tuples
 
-public protocol DynamicValidatableTuple: DynamicValidatableType, SomeTuple {
+public protocol ValidatableTupleDynamic: ValidatableTypeDynamic, SomeTuple {
     func validate(runtime: any Runtime,
                   type: NetworkType.Info,
                   fields: inout [NetworkType.Info]) -> Result<Void, TypeError>
@@ -35,8 +35,8 @@ public extension SomeTuple0 {
     }
 }
 
-public extension ListTuple where DroppedLast: DynamicValidatableTuple,
-                                 Last: DynamicValidatableType
+public extension ListTuple where DroppedLast: ValidatableTupleDynamic,
+                                 Last: ValidatableTypeDynamic
 {
     func dynamicValidateTuple(runtime: Runtime,
                               type: NetworkType.Info) -> Result<Void, TypeError>
@@ -103,9 +103,9 @@ public extension ListTuple where DroppedLast: DynamicValidatableTuple,
     }
 }
 
-extension Tuple0: DynamicValidatableTuple {}
+extension Tuple0: ValidatableTupleDynamic {}
 
-extension Tuple1: DynamicValidatableTuple, DynamicValidatableType where T1: DynamicValidatableType {
+extension Tuple1: ValidatableTupleDynamic, ValidatableTypeDynamic where T1: ValidatableTypeDynamic {
     @inlinable
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -113,18 +113,8 @@ extension Tuple1: DynamicValidatableTuple, DynamicValidatableType where T1: Dyna
     }
 }
 
-extension Tuple2: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType
-{
-    @inlinable
-    public func validate(runtime: Runtime,
-                         type info: NetworkType.Info) -> Result<Void, TypeError> {
-        dynamicValidateTuple(runtime: runtime, type: info)
-    }
-}
-
-extension Tuple3: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType
+extension Tuple2: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic
 {
     @inlinable
     public func validate(runtime: Runtime,
@@ -133,9 +123,19 @@ extension Tuple3: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple4: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType
+extension Tuple3: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic
+{
+    @inlinable
+    public func validate(runtime: Runtime,
+                         type info: NetworkType.Info) -> Result<Void, TypeError> {
+        dynamicValidateTuple(runtime: runtime, type: info)
+    }
+}
+
+extension Tuple4: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -143,9 +143,9 @@ extension Tuple4: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple5: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType
+extension Tuple5: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -153,9 +153,9 @@ extension Tuple5: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple6: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType
+extension Tuple6: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -163,10 +163,10 @@ extension Tuple6: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple7: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType,
-    T7: DynamicValidatableType
+extension Tuple7: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic,
+    T7: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -174,10 +174,10 @@ extension Tuple7: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple8: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType,
-    T7: DynamicValidatableType, T8: DynamicValidatableType
+extension Tuple8: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic,
+    T7: ValidatableTypeDynamic, T8: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -185,10 +185,10 @@ extension Tuple8: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple9: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType,
-    T7: DynamicValidatableType, T8: DynamicValidatableType, T9: DynamicValidatableType
+extension Tuple9: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic,
+    T7: ValidatableTypeDynamic, T8: ValidatableTypeDynamic, T9: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -196,11 +196,11 @@ extension Tuple9: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple10: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType,
-    T7: DynamicValidatableType, T8: DynamicValidatableType, T9: DynamicValidatableType,
-    T10: DynamicValidatableType
+extension Tuple10: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic,
+    T7: ValidatableTypeDynamic, T8: ValidatableTypeDynamic, T9: ValidatableTypeDynamic,
+    T10: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -208,11 +208,11 @@ extension Tuple10: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple11: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType,
-    T7: DynamicValidatableType, T8: DynamicValidatableType, T9: DynamicValidatableType,
-    T10: DynamicValidatableType, T11: DynamicValidatableType
+extension Tuple11: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic,
+    T7: ValidatableTypeDynamic, T8: ValidatableTypeDynamic, T9: ValidatableTypeDynamic,
+    T10: ValidatableTypeDynamic, T11: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -220,11 +220,11 @@ extension Tuple11: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple12: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType,
-    T7: DynamicValidatableType, T8: DynamicValidatableType, T9: DynamicValidatableType,
-    T10: DynamicValidatableType, T11: DynamicValidatableType, T12: DynamicValidatableType
+extension Tuple12: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic,
+    T7: ValidatableTypeDynamic, T8: ValidatableTypeDynamic, T9: ValidatableTypeDynamic,
+    T10: ValidatableTypeDynamic, T11: ValidatableTypeDynamic, T12: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -232,12 +232,12 @@ extension Tuple12: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple13: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType,
-    T7: DynamicValidatableType, T8: DynamicValidatableType, T9: DynamicValidatableType,
-    T10: DynamicValidatableType, T11: DynamicValidatableType, T12: DynamicValidatableType,
-    T13: DynamicValidatableType
+extension Tuple13: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic,
+    T7: ValidatableTypeDynamic, T8: ValidatableTypeDynamic, T9: ValidatableTypeDynamic,
+    T10: ValidatableTypeDynamic, T11: ValidatableTypeDynamic, T12: ValidatableTypeDynamic,
+    T13: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -245,12 +245,12 @@ extension Tuple13: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple14: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType,
-    T7: DynamicValidatableType, T8: DynamicValidatableType, T9: DynamicValidatableType,
-    T10: DynamicValidatableType, T11: DynamicValidatableType, T12: DynamicValidatableType,
-    T13: DynamicValidatableType, T14: DynamicValidatableType
+extension Tuple14: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic,
+    T7: ValidatableTypeDynamic, T8: ValidatableTypeDynamic, T9: ValidatableTypeDynamic,
+    T10: ValidatableTypeDynamic, T11: ValidatableTypeDynamic, T12: ValidatableTypeDynamic,
+    T13: ValidatableTypeDynamic, T14: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
@@ -258,12 +258,12 @@ extension Tuple14: DynamicValidatableTuple, DynamicValidatableType where
     }
 }
 
-extension Tuple15: DynamicValidatableTuple, DynamicValidatableType where
-    T1: DynamicValidatableType, T2: DynamicValidatableType, T3: DynamicValidatableType,
-    T4: DynamicValidatableType, T5: DynamicValidatableType, T6: DynamicValidatableType,
-    T7: DynamicValidatableType, T8: DynamicValidatableType, T9: DynamicValidatableType,
-    T10: DynamicValidatableType, T11: DynamicValidatableType, T12: DynamicValidatableType,
-    T13: DynamicValidatableType, T14: DynamicValidatableType, T15: DynamicValidatableType
+extension Tuple15: ValidatableTupleDynamic, ValidatableTypeDynamic where
+    T1: ValidatableTypeDynamic, T2: ValidatableTypeDynamic, T3: ValidatableTypeDynamic,
+    T4: ValidatableTypeDynamic, T5: ValidatableTypeDynamic, T6: ValidatableTypeDynamic,
+    T7: ValidatableTypeDynamic, T8: ValidatableTypeDynamic, T9: ValidatableTypeDynamic,
+    T10: ValidatableTypeDynamic, T11: ValidatableTypeDynamic, T12: ValidatableTypeDynamic,
+    T13: ValidatableTypeDynamic, T14: ValidatableTypeDynamic, T15: ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {

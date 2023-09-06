@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import Numberick
 
-public extension FixedWidthInteger where Self: DynamicValidatableType {
+public extension FixedWidthInteger where Self: ValidatableTypeDynamic {
     func asValue() -> Value<Void> {
         Self.isSigned ?  .int(Int256(self)) : .uint(UInt256(self))
     }
@@ -156,10 +156,10 @@ public extension Sequence where Element == VoidValueRepresentable {
     func asValue() -> Value<Void> {.sequence(self)}
 }
 
-extension Array: ValueRepresentable, DynamicValidatableType where Element == ValueRepresentable {}
+extension Array: ValueRepresentable, ValidatableTypeDynamic where Element == ValueRepresentable {}
 extension Array: VoidValueRepresentable where Element == VoidValueRepresentable {}
 
-extension Dictionary: ValueRepresentable, DynamicValidatableType where Key == String,
+extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == String,
                                                                        Value == ValueRepresentable
 {
     public func validate(runtime: Runtime,
@@ -288,7 +288,7 @@ extension Dictionary: VoidValueRepresentable where Key: StringProtocol, Value ==
     }
 }
 
-extension Optional: ValueRepresentable, DynamicValidatableType where Wrapped == ValueRepresentable {
+extension Optional: ValueRepresentable, ValidatableTypeDynamic where Wrapped == ValueRepresentable {
     public func validate(runtime: Runtime,
                          type info: NetworkType.Info) -> Result<Void, TypeError> {
         if let value = self {
@@ -326,7 +326,7 @@ extension Optional: VoidValueRepresentable where Wrapped == VoidValueRepresentab
     }
 }
 
-extension Either: ValueRepresentable, DynamicValidatableType
+extension Either: ValueRepresentable, ValidatableTypeDynamic
     where Left == ValueRepresentable, Right == ValueRepresentable
 {
     public func validate(runtime: Runtime, type info: NetworkType.Info) -> Result<Void, TypeError> {

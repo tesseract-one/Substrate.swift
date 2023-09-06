@@ -25,7 +25,7 @@ public extension PalletEvent {
 }
 
 public typealias EventTypeInfo = [(field: NetworkType.Field, type: NetworkType)]
-public typealias EventChildTypes = [StaticValidatableType.Type]
+public typealias EventChildTypes = [ValidatableTypeStatic.Type]
 
 public extension PalletEvent where
     Self: ComplexFrameType, TypeInfo == EventTypeInfo

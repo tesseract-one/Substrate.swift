@@ -25,7 +25,7 @@ public extension PalletCall {
 }
 
 public typealias CallTypeInfo = [(field: NetworkType.Field, type: NetworkType)]
-public typealias CallChildTypes = [StaticValidatableType.Type]
+public typealias CallChildTypes = [ValidatableTypeStatic.Type]
 
 public extension PalletCall where
     Self: ComplexFrameType, TypeInfo == CallTypeInfo

@@ -42,14 +42,14 @@ public protocol TupleStorageKeyPath: ListTuple
 }
 
 public protocol TupleStorageValidatableKeyPath: TupleStorageKeyPath where
-    First.TKey: StaticValidatableType, Last.TKey: StaticValidatableType
+    First.TKey: ValidatableTypeStatic, Last.TKey: ValidatableTypeStatic
 {
     static var validatablePath: [(hasher: any StaticHasher.Type,
-                                  type: any StaticValidatableType.Type)] { get }
+                                  type: any ValidatableTypeStatic.Type)] { get }
 }
 
 public protocol TupleStorageIdentifiableKeyPath: TupleStorageKeyPath where
-    First.TKey: IdentifiableType, Last.TKey: IdentifiableType
+    First.TKey: IdentifiableTypeStatic, Last.TKey: IdentifiableTypeStatic
 {
     static var identifiablePath: [(key: TypeDefinition,
                                    hasher: LatestMetadata.StorageHasher)] { get }
@@ -83,7 +83,7 @@ public extension TupleStorageKeyBase {
 
 public extension TupleStorageKeyBase where
     Self: ComplexStaticFrameType, TPath: TupleStorageValidatableKeyPath,
-    ChildTypes == StorageKeyChildTypes, TValue: StaticValidatableType
+    ChildTypes == StorageKeyChildTypes, TValue: ValidatableTypeStatic
 {
     @inlinable
     static var childTypes: ChildTypes {
@@ -92,7 +92,7 @@ public extension TupleStorageKeyBase where
 }
 
 public extension TupleStorageKeyBase where
-    TPath: TupleStorageIdentifiableKeyPath, TValue: IdentifiableType
+    TPath: TupleStorageIdentifiableKeyPath, TValue: IdentifiableTypeStatic
 {
     @inlinable
     static var definition: FrameTypeDefinition {

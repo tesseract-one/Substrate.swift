@@ -392,7 +392,7 @@ extension Value.Primitive: CustomStringConvertible {
     }
 }
 
-public protocol ValueRepresentable: DynamicValidatableType {
+public protocol ValueRepresentable: ValidatableTypeDynamic {
     func asValue(runtime: any Runtime, type id: NetworkType.Id) throws -> Value<NetworkType.Id>
     func asValue(runtime: any Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id>
 }

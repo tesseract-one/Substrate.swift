@@ -38,7 +38,7 @@ public struct EventRecord<H: Hash>: SomeEventRecord, CompositeStaticValidatableT
     }
     
     @inlinable
-    public static var childTypes: Array<StaticValidatableType.Type> {
+    public static var childTypes: Array<ValidatableTypeStatic.Type> {
         [EventPhase.self, AnyEvent.self, Array<H>.self]
     }
 }

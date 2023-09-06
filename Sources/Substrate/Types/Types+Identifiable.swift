@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 import Numberick
 
-public extension CaseIterable where Self: IdentifiableType {
+public extension CaseIterable where Self: IdentifiableTypeStatic {
     @inlinable
     static var definition: TypeDefinition {
         .variant(variants: allCases.enumerated().map { (idx, cs) in
@@ -18,29 +18,29 @@ public extension CaseIterable where Self: IdentifiableType {
     }
 }
 
-extension UInt8: IdentifiableType {
+extension UInt8: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .u8) }
 }
-extension UInt16: IdentifiableType {
+extension UInt16: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .u16) }
 }
-extension UInt32: IdentifiableType {
+extension UInt32: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .u32) }
 }
-extension UInt64: IdentifiableType {
+extension UInt64: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .u64) }
 }
-extension UInt: IdentifiableType {
+extension UInt: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition {
         MemoryLayout<UInt>.size == 4 ? .primitive(is: .u32) : .primitive(is: .u64)
     }
 }
-extension NBKDoubleWidth: IdentifiableType {
+extension NBKDoubleWidth: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition {
         switch bitWidth {
@@ -50,69 +50,69 @@ extension NBKDoubleWidth: IdentifiableType {
         }
     }
 }
-extension Int8: IdentifiableType {
+extension Int8: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .i8) }
 }
-extension Int16: IdentifiableType {
+extension Int16: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .i16) }
 }
-extension Int32: IdentifiableType {
+extension Int32: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .i32) }
 }
-extension Int64: IdentifiableType {
+extension Int64: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .i64) }
 }
-extension Int: IdentifiableType {
+extension Int: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition {
         MemoryLayout<UInt>.size == 4 ? .primitive(is: .i32) : .primitive(is: .i64)
     }
 }
 
-extension Bool: IdentifiableType {
+extension Bool: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .bool) }
 }
 
-extension String: IdentifiableType {
+extension String: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .str) }
 }
 
-extension Data: IdentifiableType {
+extension Data: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .data }
 }
 
-extension Compact: IdentifiableType where T: IdentifiableType {
+extension Compact: IdentifiableTypeStatic where T: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition {
         .compact(of: T.definition)
     }
 }
 
-extension Character: IdentifiableType {
+extension Character: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .primitive(is: .char) }
 }
 
-extension Array: IdentifiableType where Element: IdentifiableType {
+extension Array: IdentifiableTypeStatic where Element: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition { .sequence(of: Element.definition) }
 }
 
-extension Optional: IdentifiableType where Wrapped: IdentifiableType {
+extension Optional: IdentifiableTypeStatic where Wrapped: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition {
         .variant(variants: [.e(0, "None"), .s(1, "Some", Wrapped.definition)])
     }
 }
 
-extension Either: IdentifiableType where Left: IdentifiableType, Right: IdentifiableType {
+extension Either: IdentifiableTypeStatic where Left: IdentifiableTypeStatic, Right: IdentifiableTypeStatic {
     @inlinable
     public static var definition: TypeDefinition {
         .variant(variants: [.s(0, "Ok", Right.definition),

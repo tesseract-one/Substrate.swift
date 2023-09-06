@@ -14,7 +14,7 @@ public typealias ConsensusEnngineId = Tuple4<UInt8, UInt8, UInt8, UInt8>
 public struct SubstrateBlock<H: StaticFixedHasher,
                              N: ConfigUnsignedInteger,
                              E: OpaqueExtrinsic & IdentifiableType>: StaticBlock, IdentifiableType,
-                                                                     CustomStringConvertible
+                                                                         CustomStringConvertible
 {    
     public typealias THeader = Header
     public typealias TExtrinsic = E

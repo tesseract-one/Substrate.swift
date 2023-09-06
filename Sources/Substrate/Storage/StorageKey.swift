@@ -73,8 +73,8 @@ public extension PalletStorageKey {
 
 public typealias StorageKeyTypeInfo = (keys: [(hasher: LatestMetadata.StorageHasher, type: NetworkType.Info)],
                                        value: NetworkType.Info)
-public typealias StorageKeyChildTypes = (keys: [(hasher: StaticHasher.Type, type: StaticValidatableType.Type)],
-                                         value: StaticValidatableType.Type)
+public typealias StorageKeyChildTypes = (keys: [(hasher: StaticHasher.Type, type: ValidatableTypeStatic.Type)],
+                                         value: ValidatableTypeStatic.Type)
 
 public extension PalletStorageKey where
     Self: ComplexFrameType, TypeInfo == StorageKeyTypeInfo

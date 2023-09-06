@@ -98,18 +98,20 @@ public extension TypeDefinition {
     }
 }
 
-public protocol IdentifiableType: StaticValidatableType {
+public protocol IdentifiableTypeStatic: ValidatableTypeStatic {
     static var definition: TypeDefinition { get }
 }
 
 
-public extension IdentifiableType {
+public extension IdentifiableTypeStatic {
     static func validate(runtime: any Runtime,
                          type: NetworkType.Info) -> Result<Void, TypeError>
     {
         definition.validate(runtime: runtime, type: type.type)
     }
 }
+
+public typealias IdentifiableType = IdentifiableTypeStatic & ValidatableType
 
 public extension TypeDefinition {
     @inlinable

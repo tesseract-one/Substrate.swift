@@ -65,7 +65,6 @@ public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
 
 public struct RuntimeDispatchInfo<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
                                                                RuntimeDynamicDecodable,
-                                                               ValidatableType,
                                                                IdentifiableType
 {
     public let weight: DispatchInfo.Weight
@@ -86,7 +85,7 @@ public struct RuntimeDispatchInfo<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
     }
 }
 
-public struct FeeDetails<Bal>: RuntimeDecodable, RuntimeDynamicDecodable, ValidatableType, IdentifiableType
+public struct FeeDetails<Bal>: RuntimeDecodable, RuntimeDynamicDecodable, IdentifiableType
     where Bal: ConfigUnsignedInteger
 {
     public struct InclusionFee: RuntimeDecodable, IdentifiableType {
