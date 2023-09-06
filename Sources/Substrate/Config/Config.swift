@@ -69,7 +69,7 @@ public protocol Config {
     func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment
     
     // Pallets list for validation
-    func frames(runtime: any Runtime) throws -> [Frame]
+    func frames(runtime: any Runtime) throws -> [RuntimeValidatableType]
     // Runtime calls for validation
     func runtimeCalls(runtime: any Runtime) throws -> [any StaticRuntimeCall.Type]
     
@@ -87,8 +87,9 @@ public protocol BatchSupportedConfig: Config {
     // Checks is batch supported dynamically
     func isBatchSupported(types: DynamicTypes,
                           metadata: any Metadata) -> Bool
+    
     // Batch calls for validation
-    func batchCalls(runtime: any Runtime) throws -> [any SomeBatchCall.Type]
+    static var batchCalls: [any SomeBatchCall.Type] { get }
 }
 
 
@@ -167,9 +168,8 @@ public extension BatchSupportedConfig {
         metadata.resolve(pallet: TBatchAllCall.pallet)?.callIndex(name: TBatchAllCall.name) != nil
     }
     
-    func batchCalls(runtime: any Runtime) throws -> [any SomeBatchCall.Type] {
-        [TBatchCall.self, TBatchAllCall.self]
-    }
+    @inlinable
+    static var batchCalls: [any SomeBatchCall.Type] { [TBatchCall.self, TBatchAllCall.self] }
 }
 
 // namespace for Configs declaration
@@ -187,10 +187,9 @@ public extension BatchSupportedConfig {
     ]
     
     @inlinable
-    public static func defaultFrames<C: Config>(runtime: any Runtime,
-                                                config: C) throws -> [Frame]
+    public static func defaultFrames<C: Config>(_: C.Type) -> [any RuntimeValidatableType]
     {
-        try [BaseSystemFrame<C>(runtime: runtime, config: config)]
+        [BaseSystemFrame<C>()]
     }
     
     @inlinable
@@ -252,8 +251,8 @@ public extension Config {
     }
     
     @inlinable
-    func frames(runtime: any Runtime) throws -> [Frame] {
-        try Configs.defaultFrames(runtime: runtime, config: self)
+    func frames(runtime: any Runtime) throws -> [RuntimeValidatableType] {
+        Configs.defaultFrames(Self.self)
     }
     
     @inlinable
@@ -264,7 +263,8 @@ public extension Config {
     @inlinable
     func dynamicTypes(metadata: any Metadata) throws -> DynamicTypes {
         try .tryParse(
-            from: metadata, blockEvents: ST<Self>.BlockEvents.self,
+            from: metadata, block: ST<Self>.Block.self,
+            blockEvents: ST<Self>.BlockEvents.self,
             blockEventsKey: (EventsStorageKey<ST<Self>.BlockEvents>.name,
                              EventsStorageKey<ST<Self>.BlockEvents>.pallet)
         )

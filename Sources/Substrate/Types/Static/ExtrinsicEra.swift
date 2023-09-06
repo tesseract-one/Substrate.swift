@@ -129,17 +129,17 @@ extension ExtrinsicEra: IdentifiableType {
 }
 
 extension ExtrinsicEra: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let info = try Self.validate(runtime: runtime, type: type).get()
+    public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
+        try validate(runtime: runtime, type: info).get()
         guard case .variant(variants: let vars) = info.type.flatten(runtime).definition else {
             throw TypeError.wrongType(for: Self.self, got: info.type, reason: "Not a variant")
         }
         let bodyType = vars[1].fields[0].type
         switch self {
-        case .immortal: return .variant(name: "Immortal", values: [], type)
+        case .immortal: return .variant(name: "Immortal", values: [], info.id)
         case .mortal(period: _, phase: _):
             let (first, second) = self.serialize()
-            return .variant(name: "Mortal\(first)", values: [.uint(UInt256(second!), bodyType)], type)
+            return .variant(name: "Mortal\(first)", values: [.uint(UInt256(second!), bodyType)], info.id)
         }
     }
 }

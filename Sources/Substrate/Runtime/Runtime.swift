@@ -13,6 +13,7 @@ public protocol Runtime: AnyObject {
     var metadata: any Metadata { get }
     var hasher: any Hasher { get }
     var extrinsicDecoder: any ExtrinsicDecoder { get }
+    var isBatchSupported: Bool { get }
     
     var types: DynamicTypes { get }
     
@@ -25,10 +26,14 @@ public protocol Runtime: AnyObject {
     func resolve(type path: String) -> NetworkType.Info?
     func resolve(palletName index: UInt8) -> String?
     func resolve(palletIndex name: String) -> UInt8?
+    func resolve(palletError index: UInt8) -> (pallet: String, type: NetworkType.Info)?
+    func resolve(palletError name: String) -> (pallet: UInt8, type: NetworkType.Info)?
     
-    func custom(coder type: NetworkType.Id) -> RuntimeCustomDynamicCoder?
+    func custom(coder info: NetworkType.Info) -> RuntimeCustomDynamicCoder?
     
     // Calls
+    func resolve(palletCall name: String) -> (pallet: UInt8, type: NetworkType.Info)?
+    func resolve(palletCall index: UInt8) -> (pallet: String, type: NetworkType.Info)?
     func resolve(callName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(callIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
     func resolve(callParams name: String, pallet: String) -> [(field: NetworkType.Field,
@@ -40,11 +45,12 @@ public protocol Runtime: AnyObject {
     ) -> (params: [(name: String, type: NetworkType.Info)], result: NetworkType.Info)?
     
     // Events
+    func resolve(palletEvent name: String) -> (pallet: UInt8, type: NetworkType.Info)?
+    func resolve(palletEvent index: UInt8) -> (pallet: String, type: NetworkType.Info)?
     func resolve(eventName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)?
     func resolve(eventIndex name: String, pallet: String) -> (pallet: UInt8, index: UInt8)?
     func resolve(eventParams name: String, pallet: String) -> [(field: NetworkType.Field,
                                                                 type: NetworkType)]?
-    
     //Constants
     func resolve(
         constant name: String, pallet: String
@@ -67,6 +73,16 @@ public extension Runtime {
     @inlinable
     func resolve(type path: String) -> NetworkType.Info? {
         metadata.resolve(type: path)
+    }
+    
+    @inlinable
+    func resolve(palletCall name: String) -> (pallet: UInt8, type: NetworkType.Info)? {
+        metadata.resolve(pallet: name).flatMap{p in p.call.map{(p.index, $0)}}
+    }
+    
+    @inlinable
+    func resolve(palletCall index: UInt8) -> (pallet: String, type: NetworkType.Info)? {
+        metadata.resolve(pallet: index).flatMap{p in p.call.map{(p.name, $0)}}
     }
     
     @inlinable
@@ -98,6 +114,16 @@ public extension Runtime {
     }
     
     @inlinable
+    func resolve(palletEvent name: String) -> (pallet: UInt8, type: NetworkType.Info)? {
+        metadata.resolve(pallet: name).flatMap{p in p.event.map{(p.index, $0)}}
+    }
+    
+    @inlinable
+    func resolve(palletEvent index: UInt8) -> (pallet: String, type: NetworkType.Info)? {
+        metadata.resolve(pallet: index).flatMap{p in p.event.map{(p.name, $0)}}
+    }
+    
+    @inlinable
     func resolve(eventName index: UInt8, pallet: UInt8) -> (pallet: String, name: String)? {
         metadata.resolve(pallet: pallet).flatMap { pallet in
             pallet.eventName(index: index).map { (pallet.name, $0) }
@@ -126,6 +152,16 @@ public extension Runtime {
     @inlinable
     func resolve(palletIndex name: String) -> UInt8? {
         metadata.resolve(pallet: name)?.index
+    }
+    
+    @inlinable
+    func resolve(palletError index: UInt8) -> (pallet: String, type: NetworkType.Info)? {
+        metadata.resolve(pallet: index).flatMap{p in p.error.map{(p.name, $0)}}
+    }
+    
+    @inlinable
+    func resolve(palletError name: String) -> (pallet: UInt8, type: NetworkType.Info)? {
+        metadata.resolve(pallet: name).flatMap{p in p.error.map{(p.index, $0)}}
     }
     
     @inlinable

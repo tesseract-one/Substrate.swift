@@ -21,44 +21,52 @@ extension Value {
 extension Value: RuntimeDynamicDecodable where C == NetworkType.Id {
     @inlinable
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       `as` type: NetworkType.Id,
+                                       as info: NetworkType.Info,
                                        runtime: Runtime) throws
     {
-        try self.init(from: &decoder, as: type, runtime: runtime, custom: true)
+        try self.init(from: &decoder, as: info, runtime: runtime, custom: true)
+    }
+    
+    @inlinable
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
+                                       `as` id: NetworkType.Id,
+                                       runtime: Runtime, custom: Bool) throws
+    {
+        guard let type = runtime.resolve(type: id) else {
+            throw DecodingError.typeNotFound(id)
+        }
+        try self.init(from: &decoder, as: id.i(type), runtime: runtime, custom: custom)
     }
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       `as` type: NetworkType.Id,
+                                       `as` info: NetworkType.Info,
                                        runtime: Runtime,
                                        custom: Bool) throws
     {
-        if custom, let coder = runtime.custom(coder: type) {
-            self = try coder.decode(from: &decoder, as: type, runtime: runtime)
+        if custom, let coder = runtime.custom(coder: info) {
+            self = try coder.decode(from: &decoder, as: info, runtime: runtime)
             return
         }
-        guard let typeInfo = runtime.resolve(type: type) else {
-            throw DecodingError.typeNotFound(type)
-        }
-        switch typeInfo.definition {
+        switch info.type.definition {
         case .composite(fields: let fields):
-            self = try Self._decodeComposite(from: &decoder, type: type, fields: fields, runtime: runtime)
+            self = try Self._decodeComposite(from: &decoder, type: info.id, fields: fields, runtime: runtime)
         case .sequence(of: let vType):
-            self = try Self._decodeSequence(from: &decoder, type: type, valueType: vType, runtime: runtime)
+            self = try Self._decodeSequence(from: &decoder, type: info.id, valueType: vType, runtime: runtime)
         case .variant(variants: let vars):
-            self = try Self._decodeVariant(from: &decoder, type: type, variants: vars, runtime: runtime)
+            self = try Self._decodeVariant(from: &decoder, type: info.id, variants: vars, runtime: runtime)
         case .array(count: let count, of: let vType):
             self = try Self._decodeArray(
-                from: &decoder, type: type, valueType: vType, count: count, runtime: runtime
+                from: &decoder, type: info.id, valueType: vType, count: count, runtime: runtime
             )
         case .tuple(components: let fields):
-            self = try Self._decodeTuple(from: &decoder, type: type, fields: fields, runtime: runtime)
+            self = try Self._decodeTuple(from: &decoder, type: info.id, fields: fields, runtime: runtime)
         case .primitive(is: let pType):
-            self = try Self._decodePrimitive(from: &decoder, type: type, prim: pType)
+            self = try Self._decodePrimitive(from: &decoder, type: info.id, prim: pType)
         case .compact(of: let cType):
-            self = try Self._decodeCompact(from: &decoder, type: type, of: cType, runtime: runtime)
+            self = try Self._decodeCompact(from: &decoder, type: info.id, of: cType, runtime: runtime)
         case .bitsequence(store: let store, order: let order):
             self = try Self._decodeBitSequence(
-                from: &decoder, type: type, store: store, order: order, runtime: runtime
+                from: &decoder, type: info.id, store: store, order: order, runtime: runtime
             )
         }
     }

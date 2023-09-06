@@ -17,18 +17,18 @@ public struct AnyTransactionValidityError: CallError, CustomStringConvertible {
         self.value = value
     }
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
-        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as info: NetworkType.Info, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: &decoder, as: info, runtime: runtime)
         self.init(value: value)
     }
     
-    public init(from decoder: Swift.Decoder, as type: NetworkType.Id, runtime: Runtime) throws {
-        let value = try Value<NetworkType.Id>(from: decoder, as: type, runtime: runtime)
+    public init(from decoder: Swift.Decoder, as info: NetworkType.Info, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: decoder, as: info, runtime: runtime)
         self.init(value: value)
     }
     
     public static func validate(runtime: any Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError> {
+                                type info: NetworkType.Info) -> Result<Void, TypeError> {
         .success(())
     }
     
@@ -61,8 +61,8 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
         return try ModuleError(values: values, runtime: _runtime)
     }}
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
-        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as info: NetworkType.Info, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: &decoder, as: info, runtime: runtime)
         guard value.variant != nil else {
             throw ScaleCodec.DecodingError.typeMismatch(
                 Value<NetworkType.Id>.self,
@@ -73,8 +73,8 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
         self._runtime = runtime
     }
     
-    public init(from decoder: Swift.Decoder, as type: NetworkType.Id, runtime: Runtime) throws {
-        let value = try Value<NetworkType.Id>(from: decoder, as: type, runtime: runtime)
+    public init(from decoder: Swift.Decoder, as info: NetworkType.Info, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: decoder, as: info, runtime: runtime)
         guard value.variant != nil else {
             throw Swift.DecodingError.typeMismatch(
                 Value<NetworkType.Id>.self,
@@ -86,12 +86,14 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
         self._runtime = runtime
     }
     
-    public static func validate(info: TypeInfo, type: NetworkType.Info, runtime: Runtime) -> Result<Void, TypeError> {
+    public static func validate(info: TypeInfo, type tinfo: NetworkType.Info,
+                                runtime: Runtime) -> Result<Void, TypeError>
+    {
         guard let module = info.first(where: { $0.name.contains("Module") }) else {
-            return .failure(.variantNotFound(for: Self.self, variant: "*Module*", in: type.type))
+            return .failure(.variantNotFound(for: Self.self, variant: "*Module*", in: tinfo.type))
         }
         guard module.fields.count == 1 else {
-            return .failure(.wrongValuesCount(for: Self.self, expected: 1, in: type.type))
+            return .failure(.wrongValuesCount(for: Self.self, expected: 1, in: tinfo.type))
         }
         return TModuleError.validate(runtime: runtime, type: module.fields[0].type)
     }

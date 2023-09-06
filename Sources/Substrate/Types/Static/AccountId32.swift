@@ -42,9 +42,9 @@ public struct AccountId32: StaticAccountId, Hashable, Equatable {
 }
 
 extension AccountId32: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let _ = try Self.validate(runtime: runtime, type: type).get()
-        return .bytes(raw, type)
+    public func asValue(runtime: Runtime, type: NetworkType.Info) throws -> Value<NetworkType.Id> {
+        try validate(runtime: runtime, type: type).get()
+        return .bytes(raw, type.id)
     }
 }
 

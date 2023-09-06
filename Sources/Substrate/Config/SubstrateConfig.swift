@@ -63,7 +63,8 @@ public extension Configs {
         public let dispatchErrorSelector: NSRegularExpression
         public let transactionValidityErrorSelector: NSRegularExpression
         
-        public init(customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
+        public init(
+                    customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
                     blockSelector: String = "^.*Block$",
                     headerSelector: String = "^.*Header$",
                     accountSelector: String = "^.*AccountId[0-9]*$",
@@ -90,7 +91,8 @@ public extension Configs {
         @inlinable
         public func dynamicTypes(metadata: any Metadata) throws -> DynamicTypes {
             try .tryParse(
-                from: metadata, blockEvents: ST<Self>.BlockEvents.self,
+                from: metadata, block: ST<Self>.Block.self,
+                blockEvents: ST<Self>.BlockEvents.self,
                 blockEventsKey: (EventsStorageKey<ST<Self>.BlockEvents>.name,
                                  EventsStorageKey<ST<Self>.BlockEvents>.pallet),
                 accountSelector: accountSelector, blockSelector: blockSelector,

@@ -7,18 +7,19 @@
 
 import Foundation
 
-public protocol Frame {
+public protocol Frame: RuntimeValidatableType {
+    var name: String { get }
     static var name: String { get }
     
     var calls: [PalletCall.Type] { get }
     var events: [PalletEvent.Type] { get }
     var storageKeys: [any PalletStorageKey.Type] { get }
     var constants: [any StaticConstant.Type] { get }
-    
-    func validate(runtime: any Runtime) -> Result<Void, FrameTypeError>
 }
 
 public extension Frame {
+    @inlinable var name: String { Self.name }
+    
     func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
         calls.voidErrorMap { $0.validate(runtime: runtime) }
             .flatMap { events.voidErrorMap { $0.validate(runtime: runtime) } }
@@ -35,7 +36,7 @@ public extension FrameCall {
     static var pallet: String { TFrame.name }
 }
 
-public protocol FrameEvent: Event, FrameType {
+public protocol FrameEvent: PalletEvent {
     associatedtype TFrame: Frame
 }
 
@@ -43,7 +44,7 @@ public extension FrameEvent {
     static var pallet: String { TFrame.name }
 }
 
-public protocol FrameStorageKey: StorageKey, FrameType {
+public protocol FrameStorageKey: PalletStorageKey {
     associatedtype TFrame: Frame
 }
 
@@ -60,30 +61,28 @@ public extension FrameConstant {
 }
 
 public extension Configs {
-    struct BaseSystemFrame<C: Config>: Frame {
+    struct BaseSystemFrame<C: Config>: RuntimeValidatableType {
         @inlinable
-        public static var name: String { "System" }
+        public var name: String { "System" }
         @inlinable
-        public var events: [PalletEvent.Type] {
-            [ST<C>.ExtrinsicFailureEvent.self]
-        }
-        @inlinable
-        public var storageKeys: [any PalletStorageKey.Type] {
-            [EventsStorageKey<ST<C>.BlockEvents>.self]
-        }
-        @inlinable
-        public var constants: [any StaticConstant.Type] { [] }
+        public var frame: String { name }
         
-        public let calls: [PalletCall.Type]
-        
-        public init(runtime: any Runtime, config: C) throws {
-            if let batch = config as? any BatchSupportedConfig,
-               batch.isBatchSupported(types: runtime.types, metadata: runtime.metadata)
-            {
-                self.calls = try batch.batchCalls(runtime: runtime)
-            } else {
-                self.calls = []
+        public func validate(runtime: Runtime) -> Result<Void, FrameTypeError> {
+            ST<C>.ExtrinsicFailureEvent.validate(runtime: runtime).flatMap {
+                EventsStorageKey<ST<C>.BlockEvents>.validate(runtime: runtime)
+            }.flatMap {
+                if let config = C.self as? any BatchSupportedConfig.Type,
+                   runtime.isBatchSupported
+                {
+                    return config.batchCalls.voidErrorMap { call in
+                        call.validate(runtime: runtime)
+                    }
+                } else {
+                    return .success(())
+                }
             }
         }
+        
+        public init() {}
     }
 }

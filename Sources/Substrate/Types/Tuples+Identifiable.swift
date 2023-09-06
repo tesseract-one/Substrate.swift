@@ -37,188 +37,78 @@ public extension ListTuple where Self: IdentifiableTuple,
     }
 }
 
-extension Tuple0: IdentifiableTuple {
-    public static func validate(runtime: any Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+extension Tuple0: IdentifiableTuple {}
 
-extension Tuple1: IdentifiableTuple, IdentifiableType where T1: IdentifiableType {
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+extension Tuple1: IdentifiableTuple, IdentifiableType where T1: IdentifiableType {}
 
 extension Tuple2: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T1: IdentifiableType, T2: IdentifiableType {}
 
 extension Tuple3: IdentifiableTuple, IdentifiableType where
-    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType {}
 
 extension Tuple4: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T4: IdentifiableType {}
 
 extension Tuple5: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T4: IdentifiableType, T5: IdentifiableType {}
 
 extension Tuple6: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
-    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType {}
 
 extension Tuple7: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
     T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T7: IdentifiableType {}
 
 extension Tuple8: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
     T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T7: IdentifiableType, T8: IdentifiableType {}
 
 extension Tuple9: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
     T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
-    T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType {}
 
 extension Tuple10: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
     T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
     T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
-    T10: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T10: IdentifiableType {}
 
 extension Tuple11: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
     T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
     T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
-    T10: IdentifiableType, T11: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T10: IdentifiableType, T11: IdentifiableType {}
 
 extension Tuple12: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
     T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
     T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
-    T10: IdentifiableType, T11: IdentifiableType, T12: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T10: IdentifiableType, T11: IdentifiableType, T12: IdentifiableType {}
 
 extension Tuple13: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
     T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
     T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
     T10: IdentifiableType, T11: IdentifiableType, T12: IdentifiableType,
-    T13: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T13: IdentifiableType {}
 
 extension Tuple14: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
     T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
     T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
     T10: IdentifiableType, T11: IdentifiableType, T12: IdentifiableType,
-    T13: IdentifiableType, T14: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T13: IdentifiableType, T14: IdentifiableType {}
 
 extension Tuple15: IdentifiableTuple, IdentifiableType where
     T1: IdentifiableType, T2: IdentifiableType, T3: IdentifiableType,
     T4: IdentifiableType, T5: IdentifiableType, T6: IdentifiableType,
     T7: IdentifiableType, T8: IdentifiableType, T9: IdentifiableType,
     T10: IdentifiableType, T11: IdentifiableType, T12: IdentifiableType,
-    T13: IdentifiableType, T14: IdentifiableType, T15: IdentifiableType
-{
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
-    {
-        definition.validate(runtime: runtime, type: type.type)
-    }
-}
+    T13: IdentifiableType, T14: IdentifiableType, T15: IdentifiableType {}

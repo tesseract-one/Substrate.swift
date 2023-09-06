@@ -38,9 +38,9 @@ public extension SingleTypeStaticSignature {
     @inlinable
     static var fixedBytesCount: Int { algorithm.signatureBytesCount }
     
-    func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let _ = try Self.validate(runtime: runtime, type: type).get()
-        return .bytes(raw, type)
+    func asValue(runtime: Runtime, type: NetworkType.Info) throws -> Value<NetworkType.Id> {
+        try validate(runtime: runtime, type: type).get()
+        return .bytes(raw, type.id)
     }
     
     func asValue() -> Value<Void> { .bytes(raw) }

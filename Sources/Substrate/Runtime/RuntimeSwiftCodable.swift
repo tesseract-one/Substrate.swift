@@ -57,13 +57,41 @@ public typealias RuntimeSwiftCodable = RuntimeSwiftDecodable & RuntimeSwiftEncod
 public protocol RuntimeDynamicSwiftDecodable: ContextDecodable where
     DecodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
-    init(from decoder: Decoder, `as` type: NetworkType.Id, runtime: Runtime) throws
+    init(from decoder: Decoder, `as` id: NetworkType.Id, runtime: Runtime) throws
+    init(from decoder: Decoder, `as` info: NetworkType.Info, runtime: Runtime) throws
 }
 
 public protocol RuntimeDynamicSwiftEncodable: ContextEncodable where
     EncodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
-    func encode(to encoder: Encoder, `as` type: NetworkType.Id, runtime: any Runtime) throws
+    func encode(to encoder: Encoder, `as` id: NetworkType.Id, runtime: any Runtime) throws
+    func encode(to encoder: Encoder, `as` info: NetworkType.Info, runtime: any Runtime) throws
+}
+
+public extension RuntimeDynamicSwiftDecodable {
+    @inlinable
+    init(from decoder: Decoder, `as` id: NetworkType.Id, runtime: Runtime) throws {
+        guard let type = runtime.resolve(type: id) else {
+            throw DecodingError.valueNotFound(
+                NetworkType.Id.self,
+                .init(codingPath: decoder.codingPath,
+                      debugDescription: "Type id \(id) is not found in runtime")
+            )
+        }
+        try self.init(from: decoder, as: id.i(type), runtime: runtime)
+    }
+}
+
+public extension RuntimeDynamicSwiftEncodable {
+    @inlinable
+    func encode(to encoder: Encoder, `as` id: NetworkType.Id, runtime: any Runtime) throws {
+        guard let type = runtime.resolve(type: id) else {
+            throw EncodingError.invalidValue(
+                id, .init(codingPath: encoder.codingPath,
+                          debugDescription: "Type is not found in runtime"))
+        }
+        try encode(to: encoder, as: id.i(type), runtime: runtime)
+    }
 }
 
 public typealias RuntimeDynamicSwiftCodable = RuntimeDynamicSwiftDecodable & RuntimeDynamicSwiftEncodable
@@ -93,7 +121,7 @@ public extension RuntimeSwiftDecodable where
     DecodingContext == RuntimeSwiftCodableContext
 {
     @inlinable
-    init(from decoder: Decoder, `as` type: NetworkType.Id, runtime: Runtime) throws {
+    init(from decoder: Decoder, `as` info: NetworkType.Info, runtime: Runtime) throws {
         try self.init(from: decoder, runtime: runtime)
     }
 }
@@ -105,7 +133,7 @@ public extension RuntimeSwiftEncodable {
     }
     
     @inlinable
-    func encode(to encoder: Encoder, `as` type: NetworkType.Id, runtime: any Runtime) throws {
+    func encode(to encoder: Encoder, `as` info: NetworkType.Info, runtime: any Runtime) throws {
         try encode(to: encoder, runtime: runtime)
     }
 }

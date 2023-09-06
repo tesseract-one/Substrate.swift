@@ -16,14 +16,15 @@ public protocol ValidatableTuple: ValidatableType, SomeTuple {
 
 public extension SomeTuple0 {
     @inlinable
-    static func validate(runtime: Runtime,
-                         type: NetworkType.Info) -> Result<Void, TypeError>
+    static func validateTuple(runtime: Runtime,
+                              type: NetworkType.Info) -> Result<Void, TypeError>
     {
         type.type.isEmpty(runtime) ?
             .success(()) : .failure(.wrongType(for: Self.self, got: type.type,
                                                reason: "Expected ()"))
     }
     
+    @inlinable
     static func validate(type: NetworkType.Info,
                          fields: inout [NetworkType.Info],
                          runtime: any Runtime) -> Result<Void, TypeError>
@@ -35,9 +36,8 @@ public extension SomeTuple0 {
 }
 
 public extension ListTuple where DroppedLast: ValidatableTuple, Last: ValidatableType {
-    @inlinable
-    static func validate(runtime: Runtime,
-                         type: NetworkType.Info) -> Result<Void, TypeError>
+    static func validateTuple(runtime: Runtime,
+                              type: NetworkType.Info) -> Result<Void, TypeError>
     {
         switch type.type.definition {
         case .array(count: let count, of: let id):
@@ -87,6 +87,7 @@ public extension ListTuple where DroppedLast: ValidatableTuple, Last: Validatabl
         }
     }
     
+    @inlinable
     static func validate(type: NetworkType.Info,
                          fields: inout [NetworkType.Info],
                          runtime: any Runtime) -> Result<Void, TypeError>
@@ -102,69 +103,192 @@ public extension ListTuple where DroppedLast: ValidatableTuple, Last: Validatabl
     }
 }
 
-extension Tuple0: ValidatableTuple {}
+extension Tuple0: ValidatableTuple {
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
-extension Tuple1: ValidatableTuple, ValidatableType where T1: ValidatableType {}
+extension Tuple1: ValidatableTuple, ValidatableType where T1: ValidatableType {
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError> {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple2: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType {}
+    T1: ValidatableType, T2: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple3: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType {}
+    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple4: ValidatableTuple, ValidatableType where
-    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType {}
+    T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple5: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType {}
+    T5: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple6: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType {}
+    T5: ValidatableType, T6: ValidatableType
+{
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple7: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType {}
+    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple8: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
-    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType {}
+    T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple9: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
     T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType {}
+    T9: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple10: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
     T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType, T10: ValidatableType {}
+    T9: ValidatableType, T10: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple11: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
     T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType, T10: ValidatableType, T11: ValidatableType {}
+    T9: ValidatableType, T10: ValidatableType, T11: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple12: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
     T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
-    T9: ValidatableType, T10: ValidatableType, T11: ValidatableType, T12: ValidatableType {}
+    T9: ValidatableType, T10: ValidatableType, T11: ValidatableType, T12: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple13: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
     T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
     T9: ValidatableType, T10: ValidatableType, T11: ValidatableType, T12: ValidatableType,
-    T13: ValidatableType {}
+    T13: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple14: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
     T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
     T9: ValidatableType, T10: ValidatableType, T11: ValidatableType, T12: ValidatableType,
-    T13: ValidatableType, T14: ValidatableType {}
+    T13: ValidatableType, T14: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}
 
 extension Tuple15: ValidatableTuple, ValidatableType where
     T1: ValidatableType, T2: ValidatableType, T3: ValidatableType, T4: ValidatableType,
     T5: ValidatableType, T6: ValidatableType, T7: ValidatableType, T8: ValidatableType,
     T9: ValidatableType, T10: ValidatableType, T11: ValidatableType, T12: ValidatableType,
-    T13: ValidatableType, T14: ValidatableType, T15: ValidatableType {}
+    T13: ValidatableType, T14: ValidatableType, T15: ValidatableType
+{
+    @inlinable
+    public static func validate(runtime: Runtime,
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        validateTuple(runtime: runtime, type: info)
+    }
+}

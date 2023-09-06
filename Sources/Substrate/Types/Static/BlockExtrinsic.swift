@@ -29,7 +29,7 @@ public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic, Identifiable
         try! runtime.hash(type: THash.self, data: data)
     }
     
-    public func decode<C: Call & RuntimeDynamicDecodable>() throws -> AnyExtrinsic<C> {
+    public func decode<C: Call & RuntimeDecodable>() throws -> AnyExtrinsic<C> {
         var decoder = runtime.decoder(with: data)
         return try runtime.decode(extrinsic: AnyExtrinsic<C>.self, from: &decoder)
     }

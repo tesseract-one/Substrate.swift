@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol ExtrinsicDecoder {
-    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
+    func extrinsic<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
         from decoder: inout D, runtime: any Runtime
     ) throws -> Extrinsic<C, Extra>
     
@@ -47,7 +47,7 @@ public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder {
                                                 in encoder: inout E,
                                                 runtime: any Runtime) throws
     
-    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
+    func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
         payload decoder: inout D, runtime: any Runtime
     ) throws -> ExtrinsicSignPayload<C, TSigningExtra>
     
@@ -60,7 +60,7 @@ public protocol ExtrinsicManager<TConfig>: ExtrinsicDecoder {
                                                 in encoder: inout E,
                                                 runtime: any Runtime) throws
     
-    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
+    func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
         from decoder: inout D, runtime: any Runtime
     ) throws -> AnyExtrinsic<C>
     
@@ -74,7 +74,7 @@ public extension ExtrinsicManager {
     
     var version: UInt8 { Self.version }
     
-    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
+    func extrinsic<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
         from decoder: inout D, runtime: any Runtime
     ) throws -> Extrinsic<C, Extra> {
         guard Extrinsic<C, Extra>.self == AnyExtrinsic<C>.self else {

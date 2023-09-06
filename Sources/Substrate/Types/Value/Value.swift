@@ -392,8 +392,19 @@ extension Value.Primitive: CustomStringConvertible {
     }
 }
 
-public protocol ValueRepresentable {
-    func asValue(runtime: any Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id>
+public protocol ValueRepresentable: DynamicValidatableType {
+    func asValue(runtime: any Runtime, type id: NetworkType.Id) throws -> Value<NetworkType.Id>
+    func asValue(runtime: any Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id>
+}
+
+public extension ValueRepresentable {
+    @inlinable
+    func asValue(runtime: any Runtime, type id: NetworkType.Id) throws -> Value<NetworkType.Id> {
+        guard let type = runtime.resolve(type: id) else {
+            throw TypeError.typeNotFound(for: Self.self, id: id)
+        }
+        return try asValue(runtime: runtime, type: id.i(type))
+    }
 }
 
 public protocol VoidValueRepresentable {

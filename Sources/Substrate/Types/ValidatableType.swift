@@ -9,9 +9,17 @@ import Foundation
 import ScaleCodec
 import Numberick
 
+public protocol DynamicValidatableType {
+    func validate(runtime: any Runtime,
+                  type info: NetworkType.Info) -> Result<Void, TypeError>
+    
+    func validate(runtime: any Runtime,
+                  type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
+}
+
 public protocol ValidatableType {
     static func validate(runtime: any Runtime,
-                         type: NetworkType.Info) -> Result<Void, TypeError>
+                         type info: NetworkType.Info) -> Result<Void, TypeError>
     
     static func validate(runtime: any Runtime,
                          type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
@@ -30,7 +38,26 @@ public enum TypeError: Error {
                                  expected: Int, in: NetworkType)
 }
 
+public extension DynamicValidatableType {
+    @inlinable
+    func validate(runtime: any Runtime,
+                  type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
+    {
+        guard let type = runtime.resolve(type: id) else {
+            return .failure(.typeNotFound(for: Self.self, id: id))
+        }
+        return validate(runtime: runtime, type: id.i(type)).map{id.i(type)}
+    }
+}
+
 public extension ValidatableType {
+    @inlinable
+    func validate(runtime: any Runtime,
+                  type info: NetworkType.Info) -> Result<Void, TypeError>
+    {
+        Self.validate(runtime: runtime, type: info)
+    }
+    
     @inlinable
     static func validate(runtime: any Runtime,
                          type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
@@ -47,16 +74,16 @@ public protocol ComplexValidatableType: ValidatableType {
     
     static func typeInfo(runtime: any Runtime,
                          type: NetworkType.Info) -> Result<TypeInfo, TypeError>
-    static func validate(info: TypeInfo, type: NetworkType.Info,
+    static func validate(info sinfo: TypeInfo, type tinfo: NetworkType.Info,
                          runtime: any Runtime) -> Result<Void, TypeError>
 }
 
 public extension ComplexValidatableType {
     @inlinable static func validate(runtime: any Runtime,
-                                    type: NetworkType.Info) -> Result<Void, TypeError>
+                                    type info: NetworkType.Info) -> Result<Void, TypeError>
     {
-        typeInfo(runtime: runtime, type: type).flatMap {
-            validate(info: $0, type: type, runtime: runtime)
+        typeInfo(runtime: runtime, type: info).flatMap {
+            validate(info: $0, type: info, runtime: runtime)
         }
     }
 }
@@ -71,9 +98,9 @@ public protocol CompositeValidatableType: ComplexValidatableType
 
 public extension CompositeValidatableType {
     static func typeInfo(runtime: any Runtime,
-                         type: NetworkType.Info) -> Result<TypeInfo, TypeError>
+                         type info: NetworkType.Info) -> Result<TypeInfo, TypeError>
     {
-        switch type.type.flatten(runtime).definition {
+        switch info.type.flatten(runtime).definition {
         case .composite(fields: let fs):
             return fs.resultMap {
                 guard let type = runtime.resolve(type: $0.type) else {
@@ -88,7 +115,7 @@ public extension CompositeValidatableType {
                 }
                 return .success((nil, $0.i(type)))
             }
-        default: return .success([(nil, type)]) // Composite wrapper over simple type
+        default: return .success([(nil, info)]) // Composite wrapper over simple type
         }
     }
 }
@@ -98,16 +125,16 @@ public protocol CompositeStaticValidatableType: CompositeValidatableType,
     where ChildTypes == [ValidatableType.Type] {}
 
 public extension CompositeStaticValidatableType {
-    static func validate(info: TypeInfo, type: NetworkType.Info,
+    static func validate(info sinfo: TypeInfo, type tinfo: NetworkType.Info,
                          runtime: any Runtime) -> Result<Void, TypeError>
     {
         let ourFields = childTypes
-        guard ourFields.count == info.count else {
+        guard ourFields.count == sinfo.count else {
             return .failure(.wrongValuesCount(for: Self.self,
                                               expected: ourFields.count,
-                                              in: type.type))
+                                              in: tinfo.type))
         }
-        return zip(ourFields, info).voidErrorMap { field, info in
+        return zip(ourFields, sinfo).voidErrorMap { field, info in
             field.validate(runtime: runtime, type: info.type)
         }
     }
@@ -119,10 +146,10 @@ public protocol VariantValidatableType: ComplexValidatableType
 
 public extension VariantValidatableType {
     static func typeInfo(runtime: any Runtime,
-                         type: NetworkType.Info) -> Result<TypeInfo, TypeError>
+                         type info: NetworkType.Info) -> Result<TypeInfo, TypeError>
     {
-        guard case .variant(variants: let variants) = type.type.definition else {
-            return .failure(.wrongType(for: Self.self, got: type.type,
+        guard case .variant(variants: let variants) = info.type.definition else {
+            return .failure(.wrongType(for: Self.self, got: info.type,
                                        reason: "Type isn't Variant"))
         }
         return variants.resultMap { variant in
@@ -141,27 +168,27 @@ public protocol VariantStaticValidatableType: VariantValidatableType,
     where ChildTypes == [(index: UInt8, name: String, fields: [ValidatableType.Type])] {}
 
 public extension VariantStaticValidatableType {
-    static func validate(info: TypeInfo, type: NetworkType.Info,
+    static func validate(info sinfo: TypeInfo, type tinfo: NetworkType.Info,
                          runtime: any Runtime) -> Result<Void, TypeError>
     {
         let ourVariants = childTypes
-        guard ourVariants.count == info.count else {
+        guard ourVariants.count == sinfo.count else {
             return .failure(.wrongValuesCount(for: Self.self,
                                               expected: ourVariants.count,
-                                              in: type.type))
+                                              in: tinfo.type))
         }
-        let variantsDict = Dictionary(uniqueKeysWithValues: info.map { ($0.name, $0) })
+        let variantsDict = Dictionary(uniqueKeysWithValues: sinfo.map { ($0.name, $0) })
         return ourVariants.voidErrorMap { variant in
             guard let inVariant = variantsDict[variant.name] else {
-                return .failure(.variantNotFound(for: Self.self, variant: variant.name, in: type.type))
+                return .failure(.variantNotFound(for: Self.self, variant: variant.name, in: tinfo.type))
             }
             guard variant.index == inVariant.index else {
                 return .failure(.wrongVariantIndex(for: Self.self, variant: variant.name,
-                                                   expected: variant.index, in: type.type))
+                                                   expected: variant.index, in: tinfo.type))
             }
             guard variant.fields.count == inVariant.fields.count else {
                 return .failure(.wrongVariantFieldsCount(for: Self.self, variant: variant.name,
-                                                         expected: variant.fields.count, in: type.type))
+                                                         expected: variant.fields.count, in: tinfo.type))
             }
             return zip(variant.fields, inVariant.fields).voidErrorMap { field, info in
                 field.validate(runtime: runtime, type: info.type)

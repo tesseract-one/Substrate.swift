@@ -46,8 +46,8 @@ extension MultiAddress: Equatable where Id: Equatable, Index: Equatable {}
 extension MultiAddress: Hashable where Id: Hashable, Index: Hashable {}
 
 extension MultiAddress: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let info = try Self.validate(runtime: runtime, type: type).get()
+    public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
+        try validate(runtime: runtime, type: info).get()
         guard case .variant(variants: let variants) = info.type.definition else {
             throw TypeError.wrongType(for: Self.self, got: info.type, reason: "Not a variant")
         }
@@ -56,27 +56,27 @@ extension MultiAddress: ValueRepresentable {
             return try .variant(name: variants[0].name,
                                 values: [id.asValue(runtime: runtime,
                                                     type: variants[0].fields[0].type)],
-                                type)
+                                info.id)
         case .index(let index):
             return try .variant(name: variants[1].name,
                                 values: [index.asValue(runtime: runtime,
                                                        type: variants[1].fields[0].type)],
-                                type)
+                                info.id)
         case .address20(let data):
             return try .variant(name: variants[2].name,
                                 values: [data.asValue(runtime: runtime,
                                                       type: variants[2].fields[0].type)],
-                                type)
+                                info.id)
         case .raw(let data):
             return try .variant(name: variants[3].name,
                                 values: [data.asValue(runtime: runtime,
                                                       type: variants[3].fields[0].type)],
-                                type)
+                                info.id)
         case .address32(let data):
             return try .variant(name: variants[4].name,
                                 values: [data.asValue(runtime: runtime,
                                                       type: variants[4].fields[0].type)],
-                                type)
+                                info.id)
         }
     }
 }

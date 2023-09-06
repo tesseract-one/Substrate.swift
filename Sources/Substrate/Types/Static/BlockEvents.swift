@@ -19,10 +19,10 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
     }
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: NetworkType.Id,
+                                       as info: NetworkType.Info,
                                        runtime: Runtime) throws
     {
-        let recordId = try Self.recordTypeId(metadata: runtime.metadata, events: type)
+        let recordId = try Self.recordTypeId(metadata: runtime.metadata, events: info)
         let events = try Array<ER>(from: &decoder) { decoder in
             try runtime.decode(from: &decoder) { _ in recordId }
         }
@@ -37,15 +37,12 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
         events.description
     }
     
-    public static func recordTypeId(metadata: any Metadata, events id: NetworkType.Id) throws -> NetworkType.Id {
-        guard let typeInfo = metadata.resolve(type: id)?.flatten(metadata) else {
-            throw TypeError.typeNotFound(for: Self.self, id: id)
-        }
-        switch typeInfo.definition {
+    public static func recordTypeId(metadata: any Metadata, events info: NetworkType.Info) throws -> NetworkType.Id {
+        switch info.type.flatten(metadata).definition {
         case .sequence(of: let recordId):
             return recordId
         default:
-            throw TypeError.wrongType(for: Self.self, got: typeInfo,
+            throw TypeError.wrongType(for: Self.self, got: info.type,
                                       reason: "Not a sequence")
         }
     }
@@ -66,8 +63,8 @@ extension BlockEvents: RuntimeDecodable where ER: RuntimeDecodable {
 
 // Can be removed after dropping Metadata V14
 public extension SomeBlockEvents {
-    static func eventTypeId(metadata: any Metadata, events id: NetworkType.Id) -> NetworkType.Id? {
-        (try? BlockEvents<ER>.recordTypeId(metadata: metadata, events: id)).flatMap {
+    static func eventTypeId(metadata: any Metadata, events info: NetworkType.Info) -> NetworkType.Id? {
+        (try? BlockEvents<ER>.recordTypeId(metadata: metadata, events: info)).flatMap {
             ER.eventTypeId(metadata: metadata, record: $0)
         }
     }

@@ -69,7 +69,7 @@ public protocol OpaqueExtrinsic<THash, TSignedExtra, TUnsignedExtra>: RuntimeSwi
     
     func hash() -> THash
     
-    func decode<C: Call & RuntimeDynamicDecodable>() throws -> Extrinsic<C, Either<TUnsignedExtra, TSignedExtra>>
+    func decode<C: Call & RuntimeDecodable>() throws -> Extrinsic<C, Either<TUnsignedExtra, TSignedExtra>>
     
     static var version: UInt8 { get }
 }
@@ -136,12 +136,13 @@ public struct ModuleError: Error, IdentifiableType {
                                                got: "nil")
         }
         guard case .variant(variants: let variants) = palletError.type.definition else {
-            throw FrameTypeError.paramMismatch(for: "\(pallet.name).error",
-                                               index: -1, expected: "Variant",
-                                               got: palletError.type.description)
+            throw FrameTypeError.wrongType(for: "\(pallet.name).error",
+                                           got: palletError.type.description,
+                                           reason: "Should be Variant")
         }
         guard let error = variants.first(where: { $0.index == error }) else {
-            throw FrameTypeError.typeInfoNotFound(for: "Error", index: error, frame: pallet.index)
+            throw FrameTypeError.typeInfoNotFound(for: "Error", index: error,
+                                                  frame: pallet.index)
         }
         self.pallet = pallet
         self.error = error

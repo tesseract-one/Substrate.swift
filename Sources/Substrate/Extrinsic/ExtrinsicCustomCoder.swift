@@ -15,19 +15,25 @@ public struct ExtrinsicCustomDynamicCoder: RuntimeCustomDynamicCoder {
         self.name = name
     }
     
-    public func checkType(id: NetworkType.Id, runtime: Runtime) throws -> Bool {
-        guard let definition = runtime.resolve(type: id) else {
-            throw Value<NetworkType.Id>.DecodingError.typeNotFound(id)
-        }
-        return definition.path.last == name
+    public func checkType(info: NetworkType.Info, runtime: Runtime) throws -> Bool {
+        info.type.path.last == name
     }
     
     public func encode<C, E: ScaleCodec.Encoder>(
-        value: Value<C>, in encoder: inout E, as id: NetworkType.Id, runtime: Runtime
+        value: Value<C>, in encoder: inout E, as info: NetworkType.Info, runtime: Runtime
     ) throws {
         guard let bytes = value.bytes else {
-            throw Value.EncodingError.wrongShape(actual: value, expected: id)
+            throw Value.EncodingError.wrongShape(actual: value, expected: info.id)
         }
         try encoder.encode(bytes, .fixed(UInt(bytes.count)))
+    }
+    
+    public func validate<C>(
+        value: Value<C>, as info: NetworkType.Info, runtime: Runtime
+    ) -> Result<Void, TypeError> {
+        value.bytes != nil
+            ? .success(())
+            : .failure(.wrongType(for: value.description, got: info.type,
+                                  reason: "Isn't bytes"))
     }
 }

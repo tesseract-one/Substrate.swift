@@ -10,6 +10,7 @@ import ScaleCodec
 
 
 public extension Value {
+    @inlinable
     static func calculateSize(
         in decoder: ScaleCodec.Decoder, for id: NetworkType.Id, runtime: any Runtime
     ) throws -> Int {
@@ -17,13 +18,28 @@ public extension Value {
         return try calculateSize(in: &skippable, for: id, runtime: runtime)
     }
     
+    @inlinable
+    static func calculateSize(
+        in decoder: ScaleCodec.Decoder, for info: NetworkType.Info, runtime: any Runtime
+    ) throws -> Int {
+        var skippable = decoder.skippable()
+        return try calculateSize(in: &skippable, for: info, runtime: runtime)
+    }
+    
+    @inlinable
     static func calculateSize<D: SkippableDecoder>(
         in decoder: inout D, for id: NetworkType.Id, runtime: any Runtime
     ) throws -> Int {
-        guard let typeInfo = runtime.resolve(type: id) else {
+        guard let type = runtime.resolve(type: id) else{
             throw DecodingError.typeNotFound(id)
         }
-        switch typeInfo.definition {
+        return try calculateSize(in: &decoder, for: id.i(type), runtime: runtime)
+    }
+    
+    static func calculateSize<D: SkippableDecoder>(
+        in decoder: inout D, for info: NetworkType.Info, runtime: any Runtime
+    ) throws -> Int {
+        switch info.type.definition {
         case .primitive(is: let pType): return try _primitiveSize(in: &decoder, prim: pType)
         case .compact(of: _): return try _compactSize(in: &decoder)
         case .bitsequence(store: let store, order: let order):
@@ -37,7 +53,7 @@ public extension Value {
         case .composite(fields: let fields):
             return try _compositeSize(from: &decoder, fields: fields, runtime: runtime)
         case .variant(variants: let vars):
-            return try _variantSize(from: &decoder, type: id, variants: vars, runtime: runtime)
+            return try _variantSize(from: &decoder, type: info.id, variants: vars, runtime: runtime)
         }
     }
 }

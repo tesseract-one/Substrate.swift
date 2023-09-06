@@ -15,8 +15,8 @@ public struct AnyExtrinsicFailureEvent: SomeExtrinsicFailureEvent {
     public typealias Err = ExtrinsicFailed
     public let error: ExtrinsicFailed
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
-        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as info: NetworkType.Info, runtime: Runtime) throws {
+        let value = try Value<NetworkType.Id>(from: &decoder, as: info, runtime: runtime)
         self.error = ExtrinsicFailed(body: value)
     }
     

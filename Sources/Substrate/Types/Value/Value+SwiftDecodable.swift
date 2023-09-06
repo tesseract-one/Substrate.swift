@@ -15,42 +15,51 @@ extension Value: RuntimeDynamicSwiftDecodable where C == NetworkType.Id {
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
     @inlinable
-    public init(from decoder: Swift.Decoder, as type: NetworkType.Id, runtime: Runtime) throws {
+    public init(from decoder: Swift.Decoder, as info: NetworkType.Info, runtime: Runtime) throws {
         var value = ValueDecodingContainer(decoder)
-        try self.init(from: &value, as: type, runtime: runtime, custom: true)
+        try self.init(from: &value, as: info, runtime: runtime, custom: true)
     }
     
+    @inlinable
     public init(from container: inout ValueDecodingContainer,
-                `as` type: NetworkType.Id,
+                `as` id: NetworkType.Id,
                 runtime: Runtime,
                 custom: Bool) throws
     {
-        if custom, let coder = runtime.custom(coder: type) {
-            self = try coder.decode(from: &container, as: type, runtime: runtime)
+        guard let type = runtime.resolve(type: id) else {
+            throw DecodingError.typeNotFound(id)
+        }
+        try self.init(from: &container, as: id.i(type), runtime: runtime, custom: custom)
+    }
+    
+    public init(from container: inout ValueDecodingContainer,
+                `as` info: NetworkType.Info,
+                runtime: Runtime,
+                custom: Bool) throws
+    {
+        if custom, let coder = runtime.custom(coder: info) {
+            self = try coder.decode(from: &container, as: info, runtime: runtime)
             return
         }
-        guard let typeInfo = runtime.resolve(type: type) else {
-            throw DecodingError.typeNotFound(type)
-        }
-        switch typeInfo.definition {
+        switch info.type.definition {
         case .composite(fields: let fields):
-            self = try Self._decodeComposite(from: &container, type: type, fields: fields, runtime: runtime)
+            self = try Self._decodeComposite(from: &container, type: info, fields: fields, runtime: runtime)
         case .sequence(of: let vType):
-            self = try Self._decodeSequence(from: &container, type: type, valueType: vType, runtime: runtime)
+            self = try Self._decodeSequence(from: &container, type: info, valueType: vType, runtime: runtime)
         case .variant(variants: let vars):
-            self = try Self._decodeVariant(from: &container, name: typeInfo.name,
-                                           type: type, variants: vars, runtime: runtime)
+            self = try Self._decodeVariant(from: &container, name: info.type.name,
+                                           type: info, variants: vars, runtime: runtime)
         case .array(count: let count, of: let vType):
-            self = try Self._decodeArray(from: &container, type: type, count: count,
+            self = try Self._decodeArray(from: &container, type: info, count: count,
                                          valueType: vType, runtime: runtime)
         case .tuple(components: let fields):
-            self = try Self._decodeTuple(from: &container, type: type, fields: fields, runtime: runtime)
+            self = try Self._decodeTuple(from: &container, type: info, fields: fields, runtime: runtime)
         case .primitive(is: let vType):
-            self = try Self._decodePrimitive(from: &container, type: type, prim: vType, runtime: runtime)
+            self = try Self._decodePrimitive(from: &container, type: info, prim: vType, runtime: runtime)
         case .compact(of: let vType):
-            self = try Self._decodeCompact(from: &container, type: type, of: vType, runtime: runtime)
+            self = try Self._decodeCompact(from: &container, type: info, of: vType, runtime: runtime)
         case .bitsequence(store: let store, order: let order):
-            self = try Self._decodeBitSequence(from: &container, type: type, store: store,
+            self = try Self._decodeBitSequence(from: &container, type: info, store: store,
                                                order: order, runtime: runtime)
         }
     }
@@ -157,17 +166,17 @@ public enum ValueDecodingContainer {
 
 private extension Value where C == NetworkType.Id {
     static func _decodeComposite(
-        from: inout ValueDecodingContainer, type: NetworkType.Id,
+        from: inout ValueDecodingContainer, type info: NetworkType.Info,
         fields: [NetworkType.Field], runtime: Runtime
     ) throws -> Self {
         guard fields.count > 0 else {
             guard try from.decodeNil() else {
                 throw try from.newError("Expected nil value")
             }
-            return Value(value: .sequence([]), context: type)
+            return Value(value: .sequence([]), context: info.id)
         }
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, id: type)
+            return try runtime.decodeValue(from: data, info: info)
         } else if fields[0].name != nil { // Map
             var value = try from.nestedKeyedContainer()
             var map: [String: Value<C>] = Dictionary(minimumCapacity: fields.count)
@@ -175,18 +184,18 @@ private extension Value where C == NetworkType.Id {
                 try value.next(key: field.name!.camelCased(with: "_"))
                 map[field.name!] = try Value(from: &value, as: field.type, runtime: runtime, custom: true)
             }
-            return Value(value: .map(map), context: type)
+            return Value(value: .map(map), context: info.id)
         } else { // Sequence
             var value = try from.nestedUnkeyedContainer()
             let seq = try fields.map {
                 try Value(from: &value, as: $0.type, runtime: runtime, custom: true)
             }
-            return Value(value: .sequence(seq), context: type)
+            return Value(value: .sequence(seq), context: info.id)
         }
     }
     
     static func _decodeSequence(
-        from: inout ValueDecodingContainer, type: NetworkType.Id,
+        from: inout ValueDecodingContainer, type info: NetworkType.Info,
         valueType: NetworkType.Id, runtime: Runtime
     ) throws -> Self {
         guard let vTypeInfo = runtime.resolve(type: valueType) else {
@@ -194,14 +203,14 @@ private extension Value where C == NetworkType.Id {
         }
         if case .primitive(is: .u8) = vTypeInfo.definition { // [u8] array
             if let data = try? from.decode(Data.self) {
-                return Value(value: .primitive(.bytes(data)), context: type)
+                return Value(value: .primitive(.bytes(data)), context: info.id)
             } else if let data = try? from.decode([UInt8].self) {
-                return Value(value: .primitive(.bytes(Data(data))), context: type)
+                return Value(value: .primitive(.bytes(Data(data))), context: info.id)
             } else {
                 throw try from.newError("Expected hex or [u8] for data")
             }
         } else if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, id: type)
+            return try runtime.decodeValue(from: data, info: info)
         } else { // array
             var value = try from.nestedUnkeyedContainer()
             var values = Array<Self>()
@@ -211,24 +220,24 @@ private extension Value where C == NetworkType.Id {
             while try !value.isAtEnd() {
                 values.append(try Value(from: &value, as: valueType, runtime: runtime, custom: true))
             }
-            return Value(value: .sequence(values), context: type)
+            return Value(value: .sequence(values), context: info.id)
         }
     }
     
     static func _decodeVariant(
-        from: inout ValueDecodingContainer, name: String?, type: NetworkType.Id,
+        from: inout ValueDecodingContainer, name: String?, type info: NetworkType.Info,
         variants: [NetworkType.Variant], runtime: Runtime
     ) throws -> Self {
         guard name != "Option" else { // Option<T> can be null or value
             let someType = variants.first(where: { $0.name == "Some" })!.fields[0].type
             if try from.decodeNil() {
-                return Value(value: .variant(.sequence(name: "None", values: [])), context: type)
+                return Value(value: .variant(.sequence(name: "None", values: [])), context: info.id)
             }
             let some = try Value(from: &from, as: someType, runtime: runtime, custom: true)
-            return Value(value: .variant(.sequence(name: "Some", values: [some])), context: type)
+            return Value(value: .variant(.sequence(name: "Some", values: [some])), context: info.id)
         }
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, id: type)
+            return try runtime.decodeValue(from: data, info: info)
         } else {
             var container = try from.nestedKeyedContainer()
             var variant: NetworkType.Variant
@@ -255,20 +264,20 @@ private extension Value where C == NetworkType.Id {
                 try container.next(key: found.name.camelCased(with: "_"))
                 variant = found
             }
-            let value = try Self._decodeComposite(from: &container, type: type,
+            let value = try Self._decodeComposite(from: &container, type: info,
                                                   fields: variant.fields, runtime: runtime)
             switch value.value {
             case .map(let map):
-                return Value(value: .variant(.map(name: variant.name, fields: map)), context: type)
+                return Value(value: .variant(.map(name: variant.name, fields: map)), context: info.id)
             case .sequence(let fields):
-                return Value(value: .variant(.sequence(name: variant.name, values: fields)), context: type)
+                return Value(value: .variant(.sequence(name: variant.name, values: fields)), context: info.id)
             default: fatalError("Should never be called for composite")
             }
         }
     }
     
     static func _decodeArray(
-        from: inout ValueDecodingContainer, type: NetworkType.Id,
+        from: inout ValueDecodingContainer, type info: NetworkType.Info,
         count: UInt32, valueType: NetworkType.Id, runtime: Runtime
     ) throws -> Self {
         guard let vTypeInfo = runtime.resolve(type: valueType) else {
@@ -279,17 +288,17 @@ private extension Value where C == NetworkType.Id {
                 guard data.count == count else {
                     throw try from.newError("Wrong data size: \(data.count), expected: \(count)")
                 }
-                return Value(value: .primitive(.bytes(data)), context: type)
+                return Value(value: .primitive(.bytes(data)), context: info.id)
             } else if let data = try? from.decode([UInt8].self) {
                 guard data.count == count else {
                     throw try from.newError("Wrong array size: \(data.count), expected: \(count)")
                 }
-                return Value(value: .primitive(.bytes(Data(data))), context: type)
+                return Value(value: .primitive(.bytes(Data(data))), context: info.id)
             } else {
                 throw try from.newError("Expected hex or [u8] for data")
             }
         } else if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, id: type)
+            return try runtime.decodeValue(from: data, info: info)
         } else { // array
             var value = try from.nestedUnkeyedContainer()
             var values = Array<Self>()
@@ -300,68 +309,68 @@ private extension Value where C == NetworkType.Id {
             guard values.count == count else {
                 throw try from.newError("Wrong array size: \(values.count), expected: \(count)")
             }
-            return Value(value: .sequence(values), context: type)
+            return Value(value: .sequence(values), context: info.id)
         }
     }
     
     static func _decodeTuple(
-        from: inout ValueDecodingContainer, type: NetworkType.Id,
+        from: inout ValueDecodingContainer, type info: NetworkType.Info,
         fields: [NetworkType.Id], runtime: Runtime
     ) throws -> Self {
         // Should we check 1 element tuples as value?
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, id: type)
+            return try runtime.decodeValue(from: data, info: info)
         } else {
             var container = try from.nestedUnkeyedContainer()
             let seq = try fields.map { try Value(from: &container, as: $0, runtime: runtime, custom: true) }
-            return Value(value: .sequence(seq), context: type)
+            return Value(value: .sequence(seq), context: info.id)
         }
     }
     
     static func _decodePrimitive(
-        from: inout ValueDecodingContainer, type: NetworkType.Id,
+        from: inout ValueDecodingContainer, type info: NetworkType.Info,
         prim: NetworkType.Primitive, runtime: Runtime
     ) throws -> Self {
         switch prim {
-        case .bool: return Value(value: .primitive(.bool(try from.decode(Bool.self))), context: type)
+        case .bool: return Value(value: .primitive(.bool(try from.decode(Bool.self))), context: info.id)
         case .char:
             let string = try from.decode(String.self)
             guard string.unicodeScalars.count == 1 else {
                 throw try from.newError("Bad character string: \(string)")
             }
-            return Value(value: .primitive(.char(Character(string.unicodeScalars.first!))), context: type)
-        case .str: return Value(value: .primitive(.string(try from.decode(String.self))), context: type)
+            return Value(value: .primitive(.char(Character(string.unicodeScalars.first!))), context: info.id)
+        case .str: return Value(value: .primitive(.string(try from.decode(String.self))), context: info.id)
         case .u8, .u16, .u32, .u64:
             let value = try from.decode(HexOrNumber<UInt64>.self)
-            return Value(value: .primitive(.uint(UInt256(value.value))), context: type)
+            return Value(value: .primitive(.uint(UInt256(value.value))), context: info.id)
         case .u128, .u256:
             if let value = try? from.decode(UInt64.self) {
-                return Value(value: .primitive(.uint(UInt256(value))), context: type)
+                return Value(value: .primitive(.uint(UInt256(value))), context: info.id)
             } else {
                 return Value(value: .primitive(.uint(try from.decode(UIntHex<UInt256>.self).value)),
-                             context: type)
+                             context: info.id)
             }
         case .i8, .i16, .i32, .i64, .i128, .i256:
             return Value(value: .primitive(.int(Int256(try from.decode(Int64.self)))),
-                         context: type)
+                         context: info.id)
         }
     }
     
     static func _decodeCompact(
-        from: inout ValueDecodingContainer, type: NetworkType.Id,
+        from: inout ValueDecodingContainer, type info: NetworkType.Info,
         of: NetworkType.Id, runtime: Runtime
     ) throws -> Self {
         var innerTypeId = of
         var value: Self? = nil
         while value == nil {
             guard let innerType = runtime.resolve(type: innerTypeId)?.definition else {
-                throw try from.newError("Type not found: \(type)")
+                throw try from.newError("Type not found: \(innerTypeId)")
             }
             switch innerType {
             case .primitive(is: let prim):
                 switch prim {
                 case .u8, .u16, .u32, .u64, .u128, .u256:
-                    value = try Self._decodePrimitive(from: &from, type: type,
+                    value = try Self._decodePrimitive(from: &from, type: info,
                                                       prim: prim, runtime: runtime)
                 default: throw try from.newError("Can't compact decode: \(innerType)")
                 }
@@ -382,14 +391,14 @@ private extension Value where C == NetworkType.Id {
     }
     
     static func _decodeBitSequence(
-        from: inout ValueDecodingContainer, type: NetworkType.Id,
+        from: inout ValueDecodingContainer, type info: NetworkType.Info,
         store: NetworkType.Id, order: NetworkType.Id, runtime: Runtime
     ) throws -> Self {
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, id: type)
+            return try runtime.decodeValue(from: data, info: info)
         }
         let bools = try from.decode([Bool].self)
         return Value(value: .bitSequence(BitSequence(bits: bools, order: .lsb0)),
-                     context: type)
+                     context: info.id)
     }
 }

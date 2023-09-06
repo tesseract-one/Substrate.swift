@@ -58,51 +58,57 @@ extension Value {
 extension Value: RuntimeDynamicEncodable {
     @inlinable
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
-                                              as type: NetworkType.Id,
+                                              as info: NetworkType.Info,
                                               runtime: Runtime) throws
     {
-        try self.encode(in: &encoder, as: type, runtime: runtime, custom: true)
+        try self.encode(in: &encoder, as: info, runtime: runtime, custom: true)
     }
     
+    @inlinable
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
-                                              as type: NetworkType.Id,
+                                              as id: NetworkType.Id,
                                               runtime: Runtime,
                                               custom: Bool) throws
     {
-        if custom, let coder = runtime.custom(coder: type) {
-            try coder.encode(value: self, in: &encoder, as: type, runtime: runtime)
+        guard let type = runtime.resolve(type: id) else {
+            throw EncodingError.typeNotFound(id)
+        }
+        try encode(in: &encoder, as: id.i(type), runtime: runtime, custom: custom)
+    }
+    
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
+                                              as info: NetworkType.Info,
+                                              runtime: Runtime,
+                                              custom: Bool) throws
+    {
+        if custom, let coder = runtime.custom(coder: info) {
+            try coder.encode(value: self, in: &encoder, as: info, runtime: runtime)
             return
         }
-        guard let typeInfo = runtime.resolve(type: type) else {
-            throw EncodingError.typeNotFound(type)
-        }
-        switch typeInfo.definition {
+        switch info.type.definition {
         case .composite(fields: let fields):
-            try _encodeComposite(id: type, fields: fields, runtime: runtime, in: &encoder)
+            try _encodeComposite(id: info.id, fields: fields, runtime: runtime, in: &encoder)
         case .sequence(of: let seqTypeId):
-            try _encodeSequence(id: type, valueType: seqTypeId, runtime: runtime, in: &encoder)
+            try _encodeSequence(id: info.id, valueType: seqTypeId, runtime: runtime, in: &encoder)
         case .array(count: let count, of: let arrTypeId):
-            try _encodeArray(id: type, valueType: arrTypeId, count: count, runtime: runtime, in: &encoder)
+            try _encodeArray(id: info.id, valueType: arrTypeId, count: count, runtime: runtime, in: &encoder)
         case .tuple(components: let fields):
-            try _encodeTuple(id: type, fields: fields, runtime: runtime, in: &encoder)
+            try _encodeTuple(id: info.id, fields: fields, runtime: runtime, in: &encoder)
         case .variant(variants: let variants):
-            try _encodeVariant(id: type, variants: variants, runtime: runtime, in: &encoder)
+            try _encodeVariant(id: info.id, variants: variants, runtime: runtime, in: &encoder)
         case .primitive(is: let primitive):
-            try _encodePrimitive(id: type, type: primitive, in: &encoder)
+            try _encodePrimitive(id: info.id, type: primitive, in: &encoder)
         case .compact(of: let type):
-            try _encodeCompact(id: type, type: type, runtime: runtime, in: &encoder)
+            try _encodeCompact(id: info.id, type: type, runtime: runtime, in: &encoder)
         case .bitsequence(store: let store, order: let order):
-            try _encodeBitSequence(id: type, store: store, order: order, runtime: runtime, in: &encoder)
+            try _encodeBitSequence(id: info.id, store: store, order: order, runtime: runtime, in: &encoder)
         }
     }
 }
 
-extension Runtime {
-    public func encode<C, E: ScaleCodec.Encoder>(value: Value<C>,
-                                                 `as` type: NetworkType.Id,
-                                                 in encoder: inout E) throws
-    {
-        try value.encode(in: &encoder, as: type, runtime: self)
+extension Value: RuntimeEncodable where C == NetworkType.Id {
+    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
+        try self.encode(in: &encoder, as: context, runtime: runtime)
     }
 }
 
@@ -454,12 +460,6 @@ private extension Value {
             try encoder.encode(BitSequence(seq), .format(format))
         default: throw EncodingError.wrongShape(actual: self, expected: id)
         }
-    }
-}
-
-extension Value: RuntimeEncodable where C == NetworkType.Id {
-    public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
-        try self.encode(in: &encoder, as: context, runtime: runtime)
     }
 }
 

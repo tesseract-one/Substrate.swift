@@ -56,8 +56,8 @@ public extension DynamicTypes {
 
 public extension DynamicTypes {
     // Default implementation. Should work on most networks. Provide own if needed
-    static func tryParse<BE>(
-        from metadata: any Metadata,
+    static func tryParse<BE, BC>(
+        from metadata: any Metadata, block blockType: BC.Type,
         blockEvents: BE.Type, blockEventsKey: (name: String, pallet: String),
         accountParamNames: [String] = ["accountid", "t::accountid", "account", "acc", "a"],
         accountSelector: NSRegularExpression = try! NSRegularExpression(pattern: "^.*AccountId[0-9]*$"),
@@ -66,7 +66,7 @@ public extension DynamicTypes {
         dispatchErrorSelector: NSRegularExpression = try! NSRegularExpression(pattern: "^.*DispatchError$"),
         transactionValidityErrorSelector: NSRegularExpression =
             try! NSRegularExpression(pattern: "^.*TransactionValidityError$")
-    ) throws -> Self where BE: SomeBlockEvents {
+    ) throws -> Self where BE: SomeBlockEvents, BC: SomeBlock {
         // Extsinsic info
         let ext: (call: NetworkType.Info, address: NetworkType.Info,
                   signature: NetworkType.Info, extra: NetworkType.Info)
@@ -105,8 +105,8 @@ public extension DynamicTypes {
         
         var header: Maybe<NetworkType.Info>! = nil
         if let block = block.value {
-            let headerType = block.type.parameters.first{ $0.name.lowercased() == "header" }?.type
-            if let id = headerType, let type = metadata.resolve(type: id) {
+            let headerId = try? blockType.headerType(metadata: metadata, block: block.type)
+            if let id = headerId, let type = metadata.resolve(type: id) {
                 header = .success(id.i(type))
             }
         }
@@ -211,7 +211,7 @@ public extension DynamicTypes {
                                           selector: "\(beKey.pallet).\(beKey.name)"))
         }
         guard let id = blockEvents.eventTypeId(metadata: metadata,
-                                               events: beStorage.types.value.id) else {
+                                               events: beStorage.types.value) else {
             return .failure(.typeNotFound(name: "Event",
                                           in: String(describing: BE.self),
                                           selector: "Element.Type"))

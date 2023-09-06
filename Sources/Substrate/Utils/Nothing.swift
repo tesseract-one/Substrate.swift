@@ -38,9 +38,9 @@ extension Nothing: ScaleCodec.Codable, RuntimeCodable {
 }
 
 extension Nothing: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let _ = try Self.validate(runtime: runtime, type: type).get()
-        return .nil(type)
+    public func asValue(runtime: Runtime, type: NetworkType.Info) throws -> Value<NetworkType.Id> {
+        try validate(runtime: runtime, type: type).get()
+        return .nil(type.id)
     }
 }
 

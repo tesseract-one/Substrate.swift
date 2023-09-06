@@ -76,11 +76,11 @@ extension AnyEventRecord.Phase: VariantValidatableType {
 
 extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: NetworkType.Id,
+                                       as info: NetworkType.Info,
                                        runtime: Runtime) throws
     {
-        let info = try Self.validate(runtime: runtime, type: type).get()
-        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
+        try Self.validate(runtime: runtime, type: info).get()
+        let value = try Value<NetworkType.Id>(from: &decoder, as: info, runtime: runtime)
         let extrinsicId: Value<NetworkType.Id>
         switch value.value {
         case .variant(.sequence(name: let name, values: let vals)):
@@ -108,15 +108,15 @@ extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
 }
 
 extension AnyEventRecord: CompositeValidatableType {
-    public static func validate(info: TypeInfo, type: NetworkType.Info,
+    public static func validate(info sinfo: TypeInfo, type tinfo: NetworkType.Info,
                                 runtime: any Runtime) -> Result<Void, TypeError>
     {
-        guard let phase = info.first(where: { $0.name == "phase" }) else {
-            return .failure(.fieldNotFound(for: Self.self, field: "phase", in: type.type))
+        guard let phase = sinfo.first(where: { $0.name == "phase" }) else {
+            return .failure(.fieldNotFound(for: Self.self, field: "phase", in: tinfo.type))
         }
         let eventNames = ["event", "e", "ev"]
-        guard let event = info.first(where: { eventNames.contains($0.name ?? "") }) else {
-            return .failure(.fieldNotFound(for: Self.self, field: "event", in: type.type))
+        guard let event = sinfo.first(where: { eventNames.contains($0.name ?? "") }) else {
+            return .failure(.fieldNotFound(for: Self.self, field: "event", in: tinfo.type))
         }
         return Phase.validate(runtime: runtime, type: phase.type)
             .flatMap { _ in AnyEvent.validate(runtime: runtime, type: event.type) }
@@ -125,18 +125,15 @@ extension AnyEventRecord: CompositeValidatableType {
 
 extension AnyEventRecord: RuntimeDynamicDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: NetworkType.Id,
+                                       as info: NetworkType.Info,
                                        runtime: Runtime) throws
     {
-        guard let tinfo = runtime.resolve(type: type) else {
-            throw TypeError.typeNotFound(for: Self.self, id: type)
-        }
-        let info = try Self.typeInfo(runtime: runtime, type: type.i(tinfo)).get()
-        try Self.validate(info: info, type: type.i(tinfo), runtime: runtime).get()
+        let sinfo = try Self.typeInfo(runtime: runtime, type: info).get()
+        try Self.validate(info: sinfo, type: info, runtime: runtime).get()
         var phase: Phase? = nil
         var event: (name: String, pallet: String, data: Data, type: NetworkType.Id)? = nil
         var other: [String: Value<NetworkType.Id>] = [:]
-        for field in info {
+        for field in sinfo {
             switch field.name! {
             case "phase": phase = try runtime.decode(from: &decoder, id: field.type.id)
             case "event", "e", "ev":

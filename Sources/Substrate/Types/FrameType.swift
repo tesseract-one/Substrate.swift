@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol FrameType {
+public protocol FrameType: RuntimeValidatableType {
     static var frame: String { get }
     static var name: String { get }
     static var frameTypeName: String { get }
@@ -16,14 +16,20 @@ public protocol FrameType {
 }
 
 public extension FrameType {
-    var name: String { Self.name }
-    var frame: String { Self.frame }
+    @inlinable var name: String { Self.name }
+    @inlinable var frame: String { Self.frame }
+    
+    @inlinable
+    func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
+        Self.validate(runtime: runtime)
+    }
 }
 
 public enum FrameTypeError: Error {
     case typeInfoNotFound(for: String)
     case typeInfoNotFound(for: String, index: UInt8, frame: UInt8)
     case foundWrongType(for: String, found: (name: String, frame: String))
+    case wrongType(for: String, got: String, reason: String)
     case wrongFieldsCount(for: String, expected: Int, got: Int)
     case paramMismatch(for: String, index: Int, expected: String, got: String)
     case valueNotFound(for: String, key: String)
@@ -187,6 +193,14 @@ public extension FrameTypeError { // FrameType
                                name: String, frame: String) -> Self {
         .foundWrongType(for: "\(type.frameTypeName): \(type.frame).\(type.name)",
                         found: (name, frame))
+    }
+    
+    @inlinable
+    static func wrongType(for type: FrameType.Type,
+                          got: String, reason: String) -> Self {
+        .wrongType(for: "\(type.frameTypeName): \(type.frame).\(type.name)",
+                   got: got,
+                   reason: reason)
     }
     
     @inlinable

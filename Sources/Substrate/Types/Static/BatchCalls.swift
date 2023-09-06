@@ -16,7 +16,7 @@ public extension BatchCallCommon {
     
     @inlinable static var pallet: String { "Utility" }
     
-    init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: NetworkType.Id, runtime: Runtime) throws {
+    init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         let modIndex = try decoder.decode(.enumCaseId)
         let callIndex = try decoder.decode(.enumCaseId)
         guard let info = runtime.resolve(callName: callIndex, pallet: modIndex) else {
@@ -26,19 +26,19 @@ public extension BatchCallCommon {
             throw FrameTypeError.foundWrongType(for: Self.self, name: info.name, frame: info.pallet)
         }
         let calls = try Array<AnyCall<NetworkType.Id>>(from: &decoder) { decoder in
-            try AnyCall(from: &decoder, as: type, runtime: runtime)
+            try AnyCall(from: &decoder, runtime: runtime)
         }
         self.init(calls: calls)
     }
     
-    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, as type: NetworkType.Id, runtime: Runtime) throws {
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
         guard let info = runtime.resolve(callIndex: name, pallet: pallet) else {
             throw FrameTypeError.typeInfoNotFound(for: Self.self)
         }
         try encoder.encode(info.pallet, .enumCaseId)
         try encoder.encode(info.index, .enumCaseId)
         try calls.encode(in: &encoder) { call, enc in
-            try runtime.encode(value: call, in: &enc) { _ in type }
+            try runtime.encode(value: call, in: &enc)
         }
     }
     

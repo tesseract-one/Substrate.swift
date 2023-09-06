@@ -60,8 +60,8 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     public func decoder(with data: Data) -> ScaleCodec.Decoder { config.decoder(data: data) }
     
     @inlinable
-    public func custom(coder type: NetworkType.Id) -> RuntimeCustomDynamicCoder? {
-        try? customCoders.first { try $0.checkType(id: type, runtime: self) }
+    public func custom(coder info: NetworkType.Info) -> RuntimeCustomDynamicCoder? {
+        try? customCoders.first { try $0.checkType(info: info, runtime: self) }
     }
     
     @inlinable

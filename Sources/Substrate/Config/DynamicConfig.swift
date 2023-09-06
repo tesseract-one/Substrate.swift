@@ -107,7 +107,8 @@ public extension Configs.Dynamic {
     @inlinable
     func dynamicTypes(metadata: any Metadata) throws -> DynamicTypes {
         try .tryParse(
-            from: metadata, blockEvents: ST<Self>.BlockEvents.self,
+            from: metadata, block: ST<Self>.Block.self,
+            blockEvents: ST<Self>.BlockEvents.self,
             blockEventsKey: (EventsStorageKey<ST<Self>.BlockEvents>.name,
                              EventsStorageKey<ST<Self>.BlockEvents>.pallet),
             accountSelector: accountSelector, blockSelector: blockSelector,

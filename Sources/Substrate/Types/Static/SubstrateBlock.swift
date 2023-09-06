@@ -15,7 +15,7 @@ public struct SubstrateBlock<H: StaticFixedHasher,
                              N: ConfigUnsignedInteger,
                              E: OpaqueExtrinsic & IdentifiableType>: StaticBlock, IdentifiableType,
                                                                      CustomStringConvertible
-{
+{    
     public typealias THeader = Header
     public typealias TExtrinsic = E
     

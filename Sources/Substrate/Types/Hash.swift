@@ -10,7 +10,7 @@ import ScaleCodec
 import ContextCodable
 
 public protocol Hash: ContextDecodable, Swift.Encodable,
-                      ValueRepresentable, VoidValueRepresentable,
+                      VoidValueRepresentable, ValueRepresentable,
                       ValidatableType, Equatable, CustomStringConvertible
     where DecodingContext == (metadata: any Metadata, id: () throws -> NetworkType.Id)
 {
@@ -37,18 +37,15 @@ public extension Hash {
         try container.encode(raw)
     }
     
-    func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw TypeError.typeNotFound(for: Self.self, id: type)
-        }
-        guard let count = info.asBytes(runtime) else {
-            throw TypeError.wrongType(for: Self.self, got: info,
+    func asValue(runtime: Runtime, type: NetworkType.Info) throws -> Value<NetworkType.Id> {
+        guard let count = type.type.asBytes(runtime) else {
+            throw TypeError.wrongType(for: Self.self, got: type.type,
                                       reason: "isn't byte array")
         }
         guard count == 0 || raw.count == count else {
-            throw TypeError.wrongValuesCount(for: Self.self, expected: raw.count, in: info)
+            throw TypeError.wrongValuesCount(for: Self.self, expected: raw.count, in: type.type)
         }
-        return .bytes(raw, type)
+        return .bytes(raw, type.id)
     }
      
     func asValue() -> Value<Void> {

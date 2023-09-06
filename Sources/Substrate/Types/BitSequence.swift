@@ -207,10 +207,22 @@ extension BitSequence {
 }
 
 extension BitSequence.Format {
+    @inlinable
     public init(store: NetworkType.Id, order: NetworkType.Id, runtime: Runtime) throws {
-        try self.init(store: Store(type: store, runtime: runtime),
-                      order: Order(type: order, runtime: runtime))
+        self = try Self.from(store: store, order: order, runtime: runtime).get()
     }
+    
+    public static func from(store: NetworkType.Id,
+                            order: NetworkType.Id,
+                            runtime: Runtime) -> Result<Self, TypeError>
+    {
+        Store.from(type: store, runtime: runtime).flatMap { store in
+            Order.from(type: order, runtime: runtime).map {
+                BitSequence.Format(store: store, order: $0)
+            }
+        }
+    }
+    
     public static let u8msb0 = Self(store: .u8, order: .msb0)
     public static let u8lsb0 = Self(store: .u8, order: .lsb0)
     public static let u16msb0 = Self(store: .u16, order: .msb0)
@@ -305,9 +317,9 @@ extension CustomDecoderFactory where T == BitSequence {
 }
 
 extension BitSequence: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let _ = try Self.validate(runtime: runtime, type: type).get()
-        return .bits(self, type)
+    public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
+        try validate(runtime: runtime, type: info).get()
+        return .bits(self, info.id)
     }
 }
 

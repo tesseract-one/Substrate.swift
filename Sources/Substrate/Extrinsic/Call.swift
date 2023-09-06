@@ -8,12 +8,12 @@
 import Foundation
 import ScaleCodec
 
-public protocol Call: RuntimeDynamicEncodable {
+public protocol Call: RuntimeEncodable, RuntimeValidatableType {
     var pallet: String { get }
     var name: String { get }
 }
 
-public protocol PalletCall: Call, FrameType {
+public protocol PalletCall: Call, RuntimeDecodable, FrameType {
     static var pallet: String { get }
 }
 
@@ -44,7 +44,7 @@ public protocol SomeBatchCall: PalletCall {
     func add(_ call: any Call) -> Self
 }
 
-public protocol StaticCall: PalletCall, RuntimeEncodable, RuntimeDecodable {
+public protocol StaticCall: PalletCall {
     init<D: ScaleCodec.Decoder>(decodingParams decoder: inout D, runtime: Runtime) throws
     func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws
 }

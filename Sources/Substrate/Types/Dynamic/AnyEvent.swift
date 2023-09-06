@@ -21,10 +21,10 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
     }
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as type: NetworkType.Id,
+                                       as info: NetworkType.Info,
                                        runtime: Runtime) throws
     {
-        var value = try Value(from: &decoder, as: type, runtime: runtime)
+        var value = try Value(from: &decoder, as: info, runtime: runtime)
         let pallet: String
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
@@ -74,10 +74,10 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
     }
     
     public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
     {
-        type == runtime.types.event ? .success(()) :
-            .failure(.wrongType(for: Self.self, got: type.type,
+        info == runtime.types.event ? .success(()) :
+            .failure(.wrongType(for: Self.self, got: info.type,
                                 reason: "Top level event has different info"))
     }
     

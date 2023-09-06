@@ -133,9 +133,7 @@ public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable, Identifiable
 public extension Dictionary where Key == NetworkType.Id, Value == NetworkType {
     @inlinable
     func get(_ id: NetworkType.Id) throws -> NetworkType {
-        guard let val = self[id] else {
-            throw MetadataError.typeNotFound(id: id)
-        }
+        guard let val = self[id] else { throw MetadataError.typeNotFound(id: id) }
         return val
     }
 }

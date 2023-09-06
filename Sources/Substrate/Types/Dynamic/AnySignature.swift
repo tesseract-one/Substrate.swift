@@ -30,13 +30,13 @@ public struct AnySignature: Signature {
     }
     
     public init<D: ScaleCodec.Decoder>(
-        from decoder: inout D, as type: NetworkType.Id, runtime: Runtime
+        from decoder: inout D, as info: NetworkType.Info, runtime: Runtime
     ) throws {
-        let value = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
+        let value = try Value<NetworkType.Id>(from: &decoder, as: info, runtime: runtime)
             .flatten(runtime: runtime)
         switch value.value {
         case .variant(let variant):
-            let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type).get()
+            let algos = try Self.parseTypeInfo(runtime: runtime, type: info.type).get()
             guard let algo = algos[variant.name] else {
                 throw Error.unsupportedCrypto(name: variant.name)
             }
@@ -45,7 +45,7 @@ public struct AnySignature: Signature {
             }
             _sig = try MultiSignature(raw: bytes, algorithm: algo, runtime: runtime)
         case .primitive(.bytes(let data)):
-            let algorithms = try Self.algorithms(runtime: runtime, id: { _ in type})
+            let algorithms = try Self.algorithms(runtime: runtime, id: { _ in info.id})
             guard algorithms.count == 1 else {
                 throw Error.rawBytesForMultiSignature(value: value)
             }
@@ -56,23 +56,23 @@ public struct AnySignature: Signature {
     }
     
     public func encode<E: ScaleCodec.Encoder>(
-        in encoder: inout E, as type: NetworkType.Id, runtime: Runtime
+        in encoder: inout E, as info: NetworkType.Info, runtime: Runtime
     ) throws {
-        try asValue(runtime: runtime, type: type).encode(in: &encoder, as: type, runtime: runtime)
+        try asValue(runtime: runtime, type: info).encode(in: &encoder, as: info, runtime: runtime)
     }
     
-    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        let algos = try Self.parseTypeInfo(runtime: runtime, typeId: type).get()
+    public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
+        let algos = try Self.parseTypeInfo(runtime: runtime, type: info.type).get()
         if algos.count == 1 {
             guard algos.first!.value == _sig.algorithm else {
                 throw Error.unsupportedCrypto(id: algos.first!.value)
             }
-            return .bytes(_sig.raw, type)
+            return .bytes(_sig.raw, info.id)
         }
         guard let pair = algos.first(where: { $0.value == _sig.algorithm }) else {
             throw Error.unsupportedCrypto(id: _sig.algorithm)
         }
-        return .variant(name: pair.key, values: [.bytes(_sig.raw, type)], type)
+        return .variant(name: pair.key, values: [.bytes(_sig.raw, info.id)], info.id)
     }
     
     public static func algorithms(runtime: Runtime,

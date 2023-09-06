@@ -5,7 +5,7 @@ COMMAND="$2"
 NODE_LOG="$3"
 # statring node
 echo "[INFO] WRAPPER: starting node"
-$NODE_BINARY --dev &> "$NODE_LOG" &
+$NODE_BINARY --dev -linfo &> "$NODE_LOG" &
 node_pid=$!
 echo "[INFO] WRAPPER: started node process $node_pid"
 sleep 5

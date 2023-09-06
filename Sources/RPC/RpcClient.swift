@@ -133,7 +133,7 @@ extension RpcClient: Client {
         header hash: ST<C>.Hash?, runtime: ExtendedRuntime<C>
     ) async throws -> ST<C>.BlockHeader? {
         let context = ST<C>.BlockHeader.DecodingContext(runtime: runtime) {
-            try ST<C>.Block.headerType(runtime: $0, block: $0.types.block.get().id)
+            try ST<C>.Block.headerType(metadata: $0.metadata, block: $0.types.block.get().type)
         }
         return try await call(method: "chain_getHeader", params: Params(hash),
                               context: context)

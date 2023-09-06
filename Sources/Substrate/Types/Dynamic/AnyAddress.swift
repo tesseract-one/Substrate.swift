@@ -15,24 +15,21 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     case other(name: String, values: [any ValueRepresentable])
     
     public init<D: ScaleCodec.Decoder>(
-        from decoder: inout D, as type: NetworkType.Id, runtime: any Runtime
+        from decoder: inout D, as info: NetworkType.Info, runtime: any Runtime
     ) throws {
-        guard let info = runtime.resolve(type: type) else {
-            throw TypeError.typeNotFound(for: Self.self, id: type)
-        }
-        switch info.flatten(runtime).definition {
+        switch info.type.flatten(runtime).definition {
         case .variant(variants: let vars):
-            let idVar = try Self.findIdVariant(in: vars, type: info).get()
+            let idVar = try Self.findIdVariant(in: vars, type: info.type).get()
             if try decoder.peek() == idVar.index {
                 let _ = try decoder.decode(.enumCaseId)
                 self = try .id(Id(from: &decoder, as: idVar.fields.first!.type, runtime: runtime))
             } else {
-                let val = try Value<NetworkType.Id>(from: &decoder, as: type, runtime: runtime)
+                let val = try Value<NetworkType.Id>(from: &decoder, as: info, runtime: runtime)
                     .flatten(runtime: runtime)
                 self = .other(name: val.variant!.name, values: val.variant!.values)
             }
         default:
-            self = try .id(Id(from: &decoder, as: type, runtime: runtime))
+            self = try .id(Id(from: &decoder, as: info, runtime: runtime))
         }
     }
     
@@ -56,44 +53,41 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     }
     
     public func encode<E: ScaleCodec.Encoder>(
-        in encoder: inout E, as type: NetworkType.Id, runtime: any Runtime
+        in encoder: inout E, as info: NetworkType.Info, runtime: any Runtime
     ) throws {
-        try asValue(runtime: runtime, type: type).encode(in: &encoder, as: type, runtime: runtime)
+        try asValue(runtime: runtime, type: info).encode(in: &encoder, as: info, runtime: runtime)
     }
     
-    public func asValue(runtime: Runtime, type: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        guard let info = runtime.resolve(type: type) else {
-            throw TypeError.typeNotFound(for: Self.self, id: type)
-        }
-        switch info.flatten(runtime).definition {
+    public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
+        switch info.type.flatten(runtime).definition {
         case .variant(variants: let vars):
             switch self {
             case .id(let id):
-                let idVar = try Self.findIdVariant(in: vars, type: info).get()
+                let idVar = try Self.findIdVariant(in: vars, type: info.type).get()
                 return try .variant(
                     name: idVar.name,
                     values: [id.asValue(runtime: runtime, type: idVar.fields.first!.type)],
-                    type
+                    info.id
                 )
             case .other(name: let n, values: let params):
                 guard let item = vars.first(where: { $0.name == n }) else {
-                    throw TypeError.variantNotFound(for: Self.self, variant: n, in: info)
+                    throw TypeError.variantNotFound(for: Self.self, variant: n, in: info.type)
                 }
                 guard item.fields.count == params.count else {
                     throw TypeError.wrongVariantFieldsCount(for: Self.self, variant: n,
-                                                            expected: params.count, in: info)
+                                                            expected: params.count, in: info.type)
                 }
                 let mapped = try zip(item.fields, params).map {
                     try $1.asValue(runtime: runtime, type: $0.type)
                 }
-                return .variant(name: n, values: mapped, type)
+                return .variant(name: n, values: mapped, info.id)
             }
         default:
             guard case .id(let id) = self else {
-                throw TypeError.wrongType(for: Self.self, got: info,
+                throw TypeError.wrongType(for: Self.self, got: info.type,
                                           reason: "primitive type but self is not Id")
             }
-            return try id.asValue(runtime: runtime, type: type)
+            return try id.asValue(runtime: runtime, type: info)
         }
     }
     
@@ -111,15 +105,15 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     }
     
     public static func validate(runtime: any Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
+                                type info: NetworkType.Info) -> Result<Void, TypeError>
     {
-        switch type.type.flatten(runtime).definition {
+        switch info.type.flatten(runtime).definition {
         case .variant(variants: let vars):
-            return findIdVariant(in: vars, type: type.type).flatMap { variant in
+            return findIdVariant(in: vars, type: info.type).flatMap { variant in
                 TAccountId.validate(runtime: runtime, type: variant.fields.first!.type).map{_ in}
             }
         default:
-            return TAccountId.validate(runtime: runtime, type: type)
+            return TAccountId.validate(runtime: runtime, type: info)
         }
     }
     

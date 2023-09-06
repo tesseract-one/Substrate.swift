@@ -103,17 +103,17 @@ public extension Runtime {
     }
     
     @inlinable
-    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
+    func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder>(
         call: C.Type, from decoder: inout D
     ) throws -> C {
-        try decode(from: &decoder) { $0.types.call.id }
+        try decode(from: &decoder)
     }
     
     @inlinable
     func encode<C: Call, E: ScaleCodec.Encoder>(
         call: C, in encoder: inout E
     ) throws {
-        try encode(value: call, in: &encoder) { $0.types.call.id }
+        try encode(value: call, in: &encoder)
     }
     
     @inlinable
@@ -122,10 +122,10 @@ public extension Runtime {
     }
     
     @inlinable
-    func decode<C: Call & RuntimeDynamicDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
+    func decode<C: Call & RuntimeDecodable, D: ScaleCodec.Decoder, Extra: ExtrinsicExtra>(
         extrinsic: Extrinsic<C, Extra>.Type, from decoder: inout D
     ) throws -> Extrinsic<C, Extra> {
-        try extrinsicDecoder.decode(from: &decoder, runtime: self)
+        try extrinsicDecoder.extrinsic(from: &decoder, runtime: self)
     }
 }
 
@@ -168,4 +168,8 @@ public extension NetworkType {
     func flatten(_ runtime: any Runtime) -> Self {
         flatten(runtime.metadata)
     }
+}
+
+public protocol RuntimeValidatableType {
+    func validate(runtime: any Runtime) -> Result<Void, FrameTypeError>
 }

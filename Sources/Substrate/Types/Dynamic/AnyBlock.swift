@@ -22,26 +22,21 @@ public struct AnyBlock<H: FixedHasher,
     public let other: [String: Value<NetworkType.Id>]?
     public let type: NetworkType.Info
     
-    public init(from decoder: Swift.Decoder, as type: NetworkType.Id, runtime: Runtime) throws {
-        guard let info = Self.fieldTypes(id: type, runtime: runtime) else {
-            throw try Swift.DecodingError.dataCorruptedError(
-                in: decoder.singleValueContainer(),
-                debugDescription: "Type not found: \(type)"
-            )
-        }
-        self.type = info.info
-        guard let header = info.header else {
+    public init(from decoder: Swift.Decoder, as info: NetworkType.Info, runtime: Runtime) throws {
+        let fields = Self.fieldTypes(type: info.type, metadata: runtime.metadata)
+        self.type = info
+        guard let header = fields.header else {
             throw Swift.DecodingError.typeMismatch(
                 NetworkType.Field.self,
                 .init(codingPath: decoder.codingPath,
-                      debugDescription: "Can't find header in Block: \(info.info)")
+                      debugDescription: "Can't find header in Block: \(info)")
             )
         }
-        guard let extrinsic = info.extrinsic else {
+        guard let extrinsic = fields.extrinsic else {
             throw Swift.DecodingError.typeMismatch(
                 NetworkType.Field.self,
                 .init(codingPath: decoder.codingPath,
-                      debugDescription: "Can't find extrinsics in Block: \(info.info)")
+                      debugDescription: "Can't find extrinsics in Block: \(info)")
             )
         }
         let container = try decoder.container(keyedBy: AnyCodableCodingKey.self)
@@ -58,7 +53,7 @@ public struct AnyBlock<H: FixedHasher,
                                 context: E.DecodingContext(runtime: runtime){_ in extrinsic.1}))
         }
         self.extrinsics = extrinsics
-        self.other = try info.other.map { other in
+        self.other = try fields.other.map { other in
             try other.map { (key, type) in
                 let val = try container.decode(
                     Value<NetworkType.Id>.self, forKey: key,
@@ -70,52 +65,40 @@ public struct AnyBlock<H: FixedHasher,
     }
     
     public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError> {
-        let fields = Self.fieldTypes(info: type, runtime: runtime)
+                                type info: NetworkType.Info) -> Result<Void, TypeError> {
+        let fields = Self.fieldTypes(type: info.type, metadata: runtime.metadata)
         guard let header = fields.header else {
-            return .failure(.fieldNotFound(for: Self.self, field: "header", in: type.type))
+            return .failure(.fieldNotFound(for: Self.self, field: "header", in: info.type))
         }
         guard let extrinsic = fields.extrinsic else {
-            return .failure(.fieldNotFound(for: Self.self, field: "extrinsic", in: type.type))
+            return .failure(.fieldNotFound(for: Self.self, field: "extrinsic", in: info.type))
         }
         return Header.validate(runtime: runtime, type: header.1).flatMap { _ in
             E.validate(runtime: runtime, type: extrinsic.1).map{_ in }
         }
     }
     
-    public static func headerType(runtime: Runtime,
-                                  block id: NetworkType.Id) throws -> NetworkType.Id
-    {
-        guard let info = Self.fieldTypes(id: id, runtime: runtime) else {
-            throw TypeError.typeNotFound(for: Self.self, id: id)
-        }
-        guard let header = info.header else {
-            throw TypeError.fieldNotFound(for: Self.self, field: "header", in: info.info.type)
-        }
-        return header.1
-    }
-    
     private static func fieldTypes(
-        info: NetworkType.Info, runtime: any Runtime
-    ) -> (info: NetworkType.Info, header: (AnyCodableCodingKey, NetworkType.Id)?,
+        type: NetworkType, metadata: any Metadata
+    ) -> (header: (AnyCodableCodingKey, NetworkType.Id)?,
           extrinsic: (AnyCodableCodingKey, NetworkType.Id)?,
           other: [AnyCodableCodingKey: NetworkType.Id]?)
     {
-        switch info.type.definition {
+        switch type.definition {
         case .composite(fields: let fields):
             guard fields.count >= 2 else {
-                return (info: info, header: nil, extrinsic: nil, other: nil)
+                return (header: nil, extrinsic: nil, other: nil)
             }
             let header: (AnyCodableCodingKey, NetworkType.Id)
             let extrinsics: (AnyCodableCodingKey, NetworkType.Id)
             let filtered: [NetworkType.Field]
             if fields[0].name != nil { // Named
                 guard let hField = fields.first(where: { $0.name!.lowercased() == Self.headerKey }) else {
-                    return (info: info, header: nil, extrinsic: nil, other: nil)
+                    return (header: nil, extrinsic: nil, other: nil)
                 }
                 header = (AnyCodableCodingKey(Self.headerKey), hField.type)
                 guard let eField = fields.first(where: { $0.name!.lowercased() == Self.extrinsicsKey }) else {
-                    return (info: info, header: header, extrinsic: nil, other: nil)
+                    return (header: header, extrinsic: nil, other: nil)
                 }
                 extrinsics = (AnyCodableCodingKey(Self.extrinsicsKey), eField.type)
                 filtered = fields.filter { ![Self.headerKey, Self.extrinsicsKey].contains($0.name!.lowercased()) }
@@ -124,14 +107,14 @@ public struct AnyBlock<H: FixedHasher,
                 extrinsics = (AnyCodableCodingKey(1), fields[1].type)
                 filtered = fields.count > 2 ? Array(fields.suffix(from: 2)) : []
             }
-            guard let extrinsicsType = runtime.resolve(type: extrinsics.1) else {
-                return (info: info, header: header, extrinsic: nil, other: nil)
+            guard let extrinsicsType = metadata.resolve(type: extrinsics.1) else {
+                return (header: header, extrinsic: nil, other: nil)
             }
             guard case .sequence(of: let extrinsicId) = extrinsicsType.definition else {
-                return (info: info, header: header, extrinsic: nil, other: nil)
+                return (header: header, extrinsic: nil, other: nil)
             }
             if filtered.count == 0 {
-                return (info: info, header: header,
+                return (header: header,
                         extrinsic: (extrinsics.0, extrinsicId), other: nil)
             }
             let other = filtered.enumerated().map {
@@ -139,22 +122,10 @@ public struct AnyBlock<H: FixedHasher,
                     ?? AnyCodableCodingKey($0.offset + 2)
                 return (key, $0.element.type)
             }
-            return (info: info, header: header, extrinsic: (extrinsics.0, extrinsicId),
+            return (header: header, extrinsic: (extrinsics.0, extrinsicId),
                     other: Dictionary(uniqueKeysWithValues: other))
-        default: return (info: info, header: nil, extrinsic: nil, other: nil)
+        default: return (header: nil, extrinsic: nil, other: nil)
         }
-    }
-    
-    private static func fieldTypes(
-        id: NetworkType.Id, runtime: any Runtime
-    ) -> (info: NetworkType.Info, header: (AnyCodableCodingKey, NetworkType.Id)?,
-          extrinsic: (AnyCodableCodingKey, NetworkType.Id)?,
-          other: [AnyCodableCodingKey: NetworkType.Id]?)?
-    {
-        guard let type = runtime.resolve(type: id) else {
-            return nil
-        }
-        return fieldTypes(info: id.i(type), runtime: runtime)
     }
     
     @inlinable public static var headerKey: String { "header" }
@@ -171,19 +142,19 @@ public extension AnyBlock {
         
         public let fields: [String: Value<NetworkType.Id>]
         public let number: TNumber
-        public let type: NetworkType.Id
+        public let type: NetworkType.Info
         
         public var hash: THasher.THash {
-            let value = Value<NetworkType.Id>(value: .map(fields), context: type)
+            let value = Value<NetworkType.Id>(value: .map(fields), context: type.id)
             let data = try! _runtime.encode(value: value, as: type)
             return try! _runtime.hash(type: THasher.THash.self, data: data)
         }
         
-        public init(from decoder: Swift.Decoder, `as` type: NetworkType.Id, runtime: any Runtime) throws {
+        public init(from decoder: Swift.Decoder, `as` info: NetworkType.Info, runtime: any Runtime) throws {
             self._runtime = runtime
-            self.type = type
+            self.type = info
             var container = ValueDecodingContainer(decoder)
-            let value = try Value<NetworkType.Id>(from: &container, as: type, runtime: _runtime, custom: true)
+            let value = try Value<NetworkType.Id>(from: &container, as: info, runtime: _runtime, custom: true)
             guard let map = value.map else {
                 throw try container.newError("Header is not a map: \(value)")
             }
@@ -198,14 +169,14 @@ public extension AnyBlock {
         }
         
         public static func validate(runtime: Runtime,
-                                    type: NetworkType.Info) -> Result<Void, TypeError>
+                                    type info: NetworkType.Info) -> Result<Void, TypeError>
         {
-            guard case .composite(fields: let fields) = type.type.flatten(runtime).definition else {
-                return .failure(.wrongType(for: Self.self, got: type.type,
+            guard case .composite(fields: let fields) = info.type.flatten(runtime).definition else {
+                return .failure(.wrongType(for: Self.self, got: info.type,
                                            reason: "Isn't composite"))
             }
             guard let n = fields.first(where: {$0.name == "number"}) else {
-                return .failure(.fieldNotFound(for: Self.self, field: "number", in: type.type))
+                return .failure(.fieldNotFound(for: Self.self, field: "number", in: info.type))
             }
             return Compact<N>.validate(runtime: runtime, type: n.type).map{_ in}
         }
