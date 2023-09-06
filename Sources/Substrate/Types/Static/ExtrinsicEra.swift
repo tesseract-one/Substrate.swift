@@ -132,7 +132,8 @@ extension ExtrinsicEra: ValueRepresentable {
     public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
         try validate(runtime: runtime, type: info).get()
         guard case .variant(variants: let vars) = info.type.flatten(runtime).definition else {
-            throw TypeError.wrongType(for: Self.self, got: info.type, reason: "Not a variant")
+            throw TypeError.wrongType(for: Self.self, type: info.type,
+                                      reason: "Not a variant", .get())
         }
         let bodyType = vars[1].fields[0].type
         switch self {

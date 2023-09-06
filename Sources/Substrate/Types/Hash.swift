@@ -39,11 +39,12 @@ public extension Hash {
     
     func asValue(runtime: Runtime, type: NetworkType.Info) throws -> Value<NetworkType.Id> {
         guard let count = type.type.asBytes(runtime) else {
-            throw TypeError.wrongType(for: Self.self, got: type.type,
-                                      reason: "isn't byte array")
+            throw TypeError.wrongType(for: Self.self, type: type.type,
+                                      reason: "isn't byte array", .get())
         }
         guard count == 0 || raw.count == count else {
-            throw TypeError.wrongValuesCount(for: Self.self, expected: raw.count, in: type.type)
+            throw TypeError.wrongValuesCount(for: Self.self, expected: raw.count,
+                                             type: type.type, .get())
         }
         return .bytes(raw, type.id)
     }

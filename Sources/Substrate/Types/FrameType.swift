@@ -20,29 +20,37 @@ public extension FrameType {
     @inlinable var frame: String { Self.frame }
     
     @inlinable
+    static var errorTypeName: String { "\(frameTypeName): \(frame).\(name)" }
+    
+    @inlinable
     func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
         Self.validate(runtime: runtime)
     }
 }
 
 public enum FrameTypeError: Error {
-    case typeInfoNotFound(for: String)
-    case typeInfoNotFound(for: String, index: UInt8, frame: UInt8)
-    case foundWrongType(for: String, found: (name: String, frame: String))
-    case wrongType(for: String, got: String, reason: String)
-    case wrongFieldsCount(for: String, expected: Int, got: Int)
-    case paramMismatch(for: String, index: Int, expected: String, got: String)
-    case valueNotFound(for: String, key: String)
-    case childError(for: String, index: Int, error: TypeError)
+    case typeInfoNotFound(for: String, _ info: ErrorMethodInfo)
+    case typeInfoNotFound(for: String, index: UInt8,
+                          frame: UInt8, _ info: ErrorMethodInfo)
+    case foundWrongType(for: String, found: (name: String, frame: String),
+                        _ info: ErrorMethodInfo)
+    case wrongType(for: String, got: String, reason: String,
+                   _ info: ErrorMethodInfo)
+    case wrongFieldsCount(for: String, expected: Int, got: Int,
+                          _ info: ErrorMethodInfo)
+    case paramMismatch(for: String, index: Int, expected: String,
+                       got: String, _ info: ErrorMethodInfo)
+    case valueNotFound(for: String, key: String, _ info: ErrorMethodInfo)
+    case childError(for: String, index: Int,
+                    error: TypeError, _ info: ErrorMethodInfo)
 }
 
 public enum FrameTypeDefinition {
-    case call(FrameType.Type, fields: [TypeDefinition.Field])
-    case event(FrameType.Type, fields: [TypeDefinition.Field])
-    case constant(FrameType.Type, type: TypeDefinition)
-    case runtime(FrameType.Type, params: [TypeDefinition.Field], return: TypeDefinition)
-    case storage(FrameType.Type,
-                 keys: [(key: TypeDefinition, hasher: LatestMetadata.StorageHasher)],
+    case call(fields: [TypeDefinition.Field])
+    case event(fields: [TypeDefinition.Field])
+    case constant(type: TypeDefinition)
+    case runtimeCall(params: [TypeDefinition.Field], return: TypeDefinition)
+    case storage(keys: [(key: TypeDefinition, hasher: LatestMetadata.StorageHasher)],
                  value: TypeDefinition)
 }
 
@@ -75,12 +83,12 @@ public extension ComplexStaticFrameType where
         let ourTypes = childTypes
         guard ourTypes.count == info.count else {
             return .failure(.wrongFieldsCount(for: Self.self, expected: ourTypes.count,
-                                              got: info.count))
+                                              got: info.count, .get()))
         }
         return zip(ourTypes, info).enumerated().voidErrorMap { index, zip in
             let (our, info) = zip
             return our.validate(runtime: runtime, type: info.type.i(info.field.type)).mapError {
-                .childError(for: Self.self, index: index, error: $0)
+                .childError(for: Self.self, index: index, error: $0, .get())
             }
         }
     }
@@ -102,57 +110,61 @@ public extension FrameTypeDefinition {
                   runtime: any Runtime) -> Result<Void, FrameTypeError>
     {
         switch self {
-        case .call(let ftype, fields: let fields):
-            guard let info = runtime.resolve(callParams: ftype.name, pallet: ftype.frame) else {
-                return .failure(.typeInfoNotFound(for: type))
+        case .call(fields: let fields):
+            guard let info = runtime.resolve(callParams: type.name, pallet: type.frame) else {
+                return .failure(.typeInfoNotFound(for: type, .get()))
             }
             return validate(fields: fields,
                             ifields: info.map{($0.field.name, $0.type.i($0.field.type))},
                             type: type, runtime: runtime)
-        case .event(let ftype, fields: let fields):
-            guard let info = runtime.resolve(eventParams: ftype.name, pallet: ftype.frame) else {
-                return .failure(.typeInfoNotFound(for: type))
+        case .event(fields: let fields):
+            guard let info = runtime.resolve(eventParams: type.name, pallet: type.frame) else {
+                return .failure(.typeInfoNotFound(for: type, .get()))
             }
             return validate(fields: fields,
                             ifields: info.map{($0.field.name, $0.type.i($0.field.type))},
                             type: type, runtime: runtime)
-        case .runtime(let ftype, params: let params, return: let rtype):
-            guard let info = runtime.resolve(runtimeCall: ftype.name, api: ftype.frame) else {
-                return .failure(.typeInfoNotFound(for: type))
+        case .runtimeCall(params: let params, return: let rtype):
+            guard let info = runtime.resolve(runtimeCall: type.name, api: type.frame) else {
+                return .failure(.typeInfoNotFound(for: type, .get()))
             }
             return validate(fields: params, ifields: info.params,
                             type: type, runtime: runtime).flatMap {
-                return rtype.validate(runtime: runtime, type: info.result.type).mapError {
-                    .childError(for: type, index: -1, error: $0)
+                return rtype.validate(runtime: runtime, for: type.errorTypeName,
+                                      type: info.result.type).mapError {
+                    .childError(for: type, index: -1, error: $0, .get())
                 }
             }
-        case .constant(let ftype, type: let vtype):
-            guard let info = runtime.resolve(constant: ftype.name, pallet: ftype.frame) else {
-                return .failure(.typeInfoNotFound(for: type))
+        case .constant(type: let vtype):
+            guard let info = runtime.resolve(constant: type.name, pallet: type.frame) else {
+                return .failure(.typeInfoNotFound(for: type, .get()))
             }
-            return vtype.validate(runtime: runtime, type: info.type.type).mapError {
-                .childError(for: type, index: -1, error: $0)
+            return vtype.validate(runtime: runtime, for: type.errorTypeName,
+                                  type: info.type.type).mapError {
+                .childError(for: type, index: -1, error: $0, .get())
             }
-        case .storage(let ftype, keys: let path, value: let vtype):
-            guard let info = runtime.resolve(storage: ftype.name, pallet: ftype.frame) else {
-                return .failure(.typeInfoNotFound(for: type))
+        case .storage(keys: let path, value: let vtype):
+            guard let info = runtime.resolve(storage: type.name, pallet: type.frame) else {
+                return .failure(.typeInfoNotFound(for: type, .get()))
             }
             guard path.count == info.keys.count else {
                 return .failure(.wrongFieldsCount(for: type, expected: path.count,
-                                                  got: info.keys.count))
+                                                  got: info.keys.count, .get()))
             }
             return zip(path, info.keys).enumerated().voidErrorMap { index, zip in
                 let (pkey, ikey) = zip
                 guard pkey.hasher == ikey.hasher else {
                     return .failure(.paramMismatch(for: type, index: index,
                                                    expected: pkey.hasher.description,
-                                                   got: ikey.hasher.description))
+                                                   got: ikey.hasher.description, .get()))
                 }
-                return pkey.key.validate(runtime: runtime, type: ikey.type.type)
-                    .mapError { .childError(for: type, index: index, error: $0) }
+                return pkey.key.validate(runtime: runtime, for: type.errorTypeName,
+                                         type: ikey.type.type)
+                    .mapError { .childError(for: type, index: index, error: $0, .get()) }
             }.flatMap {
-                vtype.validate(runtime: runtime, type: info.value.type).mapError {
-                    .childError(for: type, index: -1, error: $0)
+                vtype.validate(runtime: runtime, for: type.errorTypeName,
+                               type: info.value.type).mapError {
+                    .childError(for: type, index: -1, error: $0, .get())
                 }
             }
         }
@@ -164,12 +176,14 @@ public extension FrameTypeDefinition {
                   runtime: any Runtime) -> Result<Void, FrameTypeError>
     {
         guard fields.count == ifields.count else {
-            return .failure(.wrongFieldsCount(for: type, expected: fields.count, got: ifields.count))
+            return .failure(.wrongFieldsCount(for: type, expected: fields.count,
+                                              got: ifields.count, .get()))
         }
         return zip(fields, ifields).enumerated().voidErrorMap { index, zip in
             let (field, info) = zip
-            return field.type.validate(runtime: runtime, type: info.type.type).mapError {
-                .childError(for: type, index: index, error: $0)
+            return field.type.validate(runtime: runtime, for: type.errorTypeName,
+                                       type: info.type.type).mapError {
+                .childError(for: type, index: index, error: $0, .get())
             }
         }
     }
@@ -177,58 +191,69 @@ public extension FrameTypeDefinition {
 
 public extension FrameTypeError { // FrameType
     @inlinable
-    static func typeInfoNotFound(for type: FrameType.Type) -> Self {
-        .typeInfoNotFound(for: "\(type.frameTypeName): \(type.frame).\(type.name)")
+    static func typeInfoNotFound(for type: FrameType.Type,
+                                 _ info: ErrorMethodInfo) -> Self
+    {
+        .typeInfoNotFound(for: type.errorTypeName, info)
     }
     
     @inlinable
     static func typeInfoNotFound(for type: FrameType.Type,
-                                 index: UInt8, frame: UInt8) -> Self {
-        .typeInfoNotFound(for: "\(type.frameTypeName): \(type.frame).\(type.name)",
-                          index: index, frame: frame)
+                                 index: UInt8, frame: UInt8,
+                                 _ info: ErrorMethodInfo) -> Self
+    {
+        .typeInfoNotFound(for: type.errorTypeName,
+                          index: index, frame: frame, info)
     }
     
     @inlinable
     static func foundWrongType(for type: FrameType.Type,
-                               name: String, frame: String) -> Self {
-        .foundWrongType(for: "\(type.frameTypeName): \(type.frame).\(type.name)",
-                        found: (name, frame))
+                               name: String, frame: String,
+                               _ info: ErrorMethodInfo) -> Self
+    {
+        .foundWrongType(for: type.errorTypeName,
+                        found: (name, frame), info)
     }
     
     @inlinable
     static func wrongType(for type: FrameType.Type,
-                          got: String, reason: String) -> Self {
-        .wrongType(for: "\(type.frameTypeName): \(type.frame).\(type.name)",
-                   got: got,
-                   reason: reason)
+                          got: String, reason: String,
+                          _ info: ErrorMethodInfo) -> Self
+    {
+        .wrongType(for: type.errorTypeName, got: got,
+                   reason: reason, info)
     }
     
     @inlinable
     static func wrongFieldsCount(for type: FrameType.Type,
-                                 expected: Int, got: Int) -> Self {
-        .wrongFieldsCount(for: "\(type.frameTypeName): \(type.frame).\(type.name)",
-                          expected: expected, got: got)
+                                 expected: Int, got: Int,
+                                 _ info: ErrorMethodInfo) -> Self {
+        .wrongFieldsCount(for: type.errorTypeName,
+                          expected: expected, got: got, info)
     }
     
     @inlinable
     static func paramMismatch(for type: FrameType.Type, index: Int,
-                              expected: Any, got: Any) -> Self {
-        .paramMismatch(for: "\(type.frameTypeName): \(type.frame).\(type.name)",
+                              expected: Any, got: Any,
+                              _ info: ErrorMethodInfo) -> Self {
+        .paramMismatch(for: type.errorTypeName,
                        index: index,
                        expected: String(describing: expected),
-                       got: String(describing: got))
+                       got: String(describing: got), info)
     }
     
     @inlinable
-    static func valueNotFound(for type: FrameType.Type, key: String) -> Self {
-        .valueNotFound(for: "\(type.frameTypeName): \(type.frame).\(type.name)",
-                       key: key)
+    static func valueNotFound(for type: FrameType.Type, key: String,
+                              _ info: ErrorMethodInfo) -> Self {
+        .valueNotFound(for: type.errorTypeName,
+                       key: key, info)
     }
     
     @inlinable
     static func childError(for type: FrameType.Type,
-                           index: Int, error: TypeError) -> Self {
-        .childError(for: "\(type.frameTypeName): \(type.frame).\(type.name)",
-                    index: index, error: error)
+                           index: Int, error: TypeError,
+                           _ info: ErrorMethodInfo) -> Self {
+        .childError(for: type.errorTypeName,
+                    index: index, error: error, info)
     }
 }

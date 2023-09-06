@@ -33,7 +33,7 @@ public struct ExtrinsicCustomDynamicCoder: RuntimeCustomDynamicCoder {
     ) -> Result<Void, TypeError> {
         value.bytes != nil
             ? .success(())
-            : .failure(.wrongType(for: value.description, got: info.type,
-                                  reason: "Isn't bytes"))
+            : .failure(.wrongType(for: value.description, type: info.type,
+                                  reason: "Isn't bytes", .get()))
     }
 }

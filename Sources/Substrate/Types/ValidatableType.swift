@@ -27,17 +27,48 @@ public protocol ValidatableTypeStatic {
 
 public typealias ValidatableType = ValidatableTypeDynamic & ValidatableTypeStatic
 
-public enum TypeError: Error {
-    case typeNotFound(for: String, id: NetworkType.Id)
-    case recursiveType(path: [NetworkType.Id])
-    case wrongType(for: String, got: NetworkType, reason: String)
-    case wrongValuesCount(for: String, expected: Int, in: NetworkType)
-    case fieldNotFound(for: String, field: String, in: NetworkType)
-    case variantNotFound(for: String, variant: String, in: NetworkType)
+public enum TypeError: Error, Hashable, Equatable, CustomDebugStringConvertible {
+    case typeNotFound(for: String, id: NetworkType.Id,
+                      info: ErrorMethodInfo)
+    case recursiveType(for: String, info: ErrorMethodInfo)
+    case wrongType(for: String, type: NetworkType, reason: String,
+                   info: ErrorMethodInfo)
+    case wrongValuesCount(for: String, expected: Int, type: NetworkType,
+                          info: ErrorMethodInfo)
+    case fieldNotFound(for: String, field: String, type: NetworkType,
+                       info: ErrorMethodInfo)
+    case variantNotFound(for: String, variant: String, type: NetworkType,
+                         info: ErrorMethodInfo)
     case wrongVariantIndex(for: String, variant: String,
-                           expected: UInt8, in: NetworkType)
+                           expected: UInt8, type: NetworkType,
+                           info: ErrorMethodInfo)
     case wrongVariantFieldsCount(for: String, variant: String,
-                                 expected: Int, in: NetworkType)
+                                 expected: Int, type: NetworkType,
+                                 info: ErrorMethodInfo)
+    
+    
+    public var debugDescription: String {
+        switch self {
+        case .typeNotFound(for: let fr, id: let id, info: let i):
+            return "\(i):: <\(fr)> :: Type \(id) not found in runtime"
+        case .recursiveType(for: let fr, info: let i):
+            return "\(i):: <\(fr)> :: Recursive type definition"
+        case .wrongType(for: let fr, type: let t, reason: let r, info: let i):
+            return "\(i):: <\(fr)> :: Bad type found \"\(t)\", reason - \"\(r)\""
+        case .wrongValuesCount(for: let fr, expected: let e, type: let t, info: let i):
+            return "\(i):: <\(fr)> :: Different values count, expected \(e), type \(t)"
+        case .fieldNotFound(for: let fr, field: let fd, type: let t, info: let i):
+            return "\(i):: <\(fr)> :: Field \"\(fd)\" not found, type \(t)"
+        case .variantNotFound(for: let fr, variant: let v, type: let t, info: let i):
+            return "\(i):: <\(fr)> :: Variant \"\(v)\" not found, type \(t)"
+        case .wrongVariantIndex(for: let fr, variant: let v,
+                                expected: let e, type: let t, info: let i):
+            return "\(i):: <\(fr)> :: Variant \"\(v)\" has wrong index, expected \(e), type \(t)"
+        case .wrongVariantFieldsCount(for: let fr, variant: let v,
+                                      expected: let e, type: let t, info: let i):
+            return "\(i):: <\(fr)> :: Variant \"\(v)\" has wrong fields count, expected \(e), type \(t)"
+        }
+    }
 }
 
 public extension ValidatableTypeDynamic {
@@ -46,7 +77,7 @@ public extension ValidatableTypeDynamic {
                   type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
     {
         guard let type = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(for: Self.self, id: id))
+            return .failure(.typeNotFound(for: Self.self, id: id, .get()))
         }
         return validate(runtime: runtime, type: id.i(type)).map{id.i(type)}
     }
@@ -65,7 +96,7 @@ public extension ValidatableTypeStatic {
                          type id: NetworkType.Id) -> Result<NetworkType.Info, TypeError>
     {
         guard let type = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(for: Self.self, id: id))
+            return .failure(.typeNotFound(for: Self.self, id: id, .get()))
         }
         return validate(runtime: runtime, type: id.i(type)).map{type.i(id)}
     }
@@ -106,14 +137,14 @@ public extension CompositeValidatableType {
         case .composite(fields: let fs):
             return fs.resultMap {
                 guard let type = runtime.resolve(type: $0.type) else {
-                    return .failure(.typeNotFound(for: Self.self, id: $0.type))
+                    return .failure(.typeNotFound(for: Self.self, id: $0.type, .get()))
                 }
                 return .success(($0.name, type.i($0.type)))
             }
         case .tuple(components: let ids):
             return ids.resultMap {
                 guard let type = runtime.resolve(type: $0) else {
-                    return .failure(.typeNotFound(for: Self.self, id: $0))
+                    return .failure(.typeNotFound(for: Self.self, id: $0, .get()))
                 }
                 return .success((nil, $0.i(type)))
             }
@@ -134,7 +165,7 @@ public extension CompositeStaticValidatableType {
         guard ourFields.count == sinfo.count else {
             return .failure(.wrongValuesCount(for: Self.self,
                                               expected: ourFields.count,
-                                              in: tinfo.type))
+                                              type: tinfo.type, .get()))
         }
         return zip(ourFields, sinfo).voidErrorMap { field, info in
             field.validate(runtime: runtime, type: info.type)
@@ -151,13 +182,13 @@ public extension VariantValidatableType {
                          type info: NetworkType.Info) -> Result<TypeInfo, TypeError>
     {
         guard case .variant(variants: let variants) = info.type.definition else {
-            return .failure(.wrongType(for: Self.self, got: info.type,
-                                       reason: "Type isn't Variant"))
+            return .failure(.wrongType(for: Self.self, type: info.type,
+                                       reason: "Type isn't Variant", .get()))
         }
         return variants.resultMap { variant in
             return variant.fields.resultMap { field in
                 guard let type = runtime.resolve(type: field.type) else {
-                    return .failure(.typeNotFound(for: Self.self, id: field.type))
+                    return .failure(.typeNotFound(for: Self.self, id: field.type, .get()))
                 }
                 return .success((field.name, type.i(field.type)))
             }.map { (variant.index, variant.name, $0) }
@@ -177,20 +208,26 @@ public extension VariantStaticValidatableType {
         guard ourVariants.count == sinfo.count else {
             return .failure(.wrongValuesCount(for: Self.self,
                                               expected: ourVariants.count,
-                                              in: tinfo.type))
+                                              type: tinfo.type, .get()))
         }
         let variantsDict = Dictionary(uniqueKeysWithValues: sinfo.map { ($0.name, $0) })
         return ourVariants.voidErrorMap { variant in
             guard let inVariant = variantsDict[variant.name] else {
-                return .failure(.variantNotFound(for: Self.self, variant: variant.name, in: tinfo.type))
+                return .failure(.variantNotFound(for: Self.self,
+                                                 variant: variant.name,
+                                                 type: tinfo.type, .get()))
             }
             guard variant.index == inVariant.index else {
-                return .failure(.wrongVariantIndex(for: Self.self, variant: variant.name,
-                                                   expected: variant.index, in: tinfo.type))
+                return .failure(.wrongVariantIndex(for: Self.self,
+                                                   variant: variant.name,
+                                                   expected: variant.index,
+                                                   type: tinfo.type, .get()))
             }
             guard variant.fields.count == inVariant.fields.count else {
-                return .failure(.wrongVariantFieldsCount(for: Self.self, variant: variant.name,
-                                                         expected: variant.fields.count, in: tinfo.type))
+                return .failure(.wrongVariantFieldsCount(for: Self.self,
+                                                         variant: variant.name,
+                                                         expected: variant.fields.count,
+                                                         type: tinfo.type, .get()))
             }
             return zip(variant.fields, inVariant.fields).voidErrorMap { field, info in
                 field.validate(runtime: runtime, type: info.type)
@@ -199,35 +236,124 @@ public extension VariantStaticValidatableType {
     }
 }
 
-public extension TypeError {
-    static func typeNotFound(for type: Any.Type, id: NetworkType.Id) -> Self {
-        .typeNotFound(for: String(describing: type), id: id)
+public extension TypeError { // For static validation
+    @inlinable
+    static func typeNotFound(for _type: Any.Type, id: NetworkType.Id,
+                             _ info: ErrorMethodInfo) -> Self
+    {
+        .typeNotFound(for: String(describing: _type), id: id, info: info)
     }
     
-    static func wrongType(for type: Any.Type, got: NetworkType, reason: String) -> Self {
-        .wrongType(for: String(describing: type), got: got, reason: reason)
-    }
-    static func wrongValuesCount(for type: Any.Type, expected: Int, in: NetworkType) -> Self {
-        .wrongValuesCount(for: String(describing: type), expected: expected, in: `in`)
-    }
-        
-    static func fieldNotFound(for type: Any.Type, field: String, in: NetworkType) -> Self {
-        .fieldNotFound(for: String(describing: type), field: field, in: `in`)
-    }
-            
-    static func variantNotFound(for type: Any.Type, variant: String, in: NetworkType) -> Self {
-        .variantNotFound(for: String(describing: type), variant: variant, in: `in`)
+    @inlinable
+    static func wrongType(for _type: Any.Type, type: NetworkType,
+                          reason: String, _ info: ErrorMethodInfo) -> Self
+    {
+        .wrongType(for: String(describing: _type), type: type,
+                   reason: reason, info: info)
     }
     
-    static func wrongVariantFieldsCount(for type: Any.Type, variant: String,
-                                        expected: Int, in: NetworkType) -> Self {
-        .wrongVariantFieldsCount(for: String(describing: type), variant: variant,
-                                 expected: expected, in: `in`)
+    @inlinable
+    static func wrongValuesCount(for _type: Any.Type, expected: Int,
+                                 type: NetworkType,
+                                 _ info: ErrorMethodInfo) -> Self
+    {
+        .wrongValuesCount(for: String(describing: _type), expected: expected,
+                          type: type, info: info)
     }
     
-    static func wrongVariantIndex(for type: Any.Type, variant: String,
-                                  expected: UInt8, in: NetworkType) -> Self {
-        .wrongVariantIndex(for: String(describing: type), variant: variant,
-                           expected: expected, in: `in`)
+    @inlinable
+    static func fieldNotFound(for _type: Any.Type, field: String,
+                              type: NetworkType, _ info: ErrorMethodInfo) -> Self
+    {
+        .fieldNotFound(for: String(describing: _type), field: field,
+                       type: type, info: info)
+    }
+    
+    @inlinable
+    static func variantNotFound(for _type: Any.Type, variant: String,
+                                type: NetworkType, _ info: ErrorMethodInfo) -> Self
+    {
+        .variantNotFound(for: String(describing: _type), variant: variant,
+                         type: type, info: info)
+    }
+    
+    @inlinable
+    static func wrongVariantFieldsCount(for _type: Any.Type, variant: String,
+                                        expected: Int, type: NetworkType,
+                                        _ info: ErrorMethodInfo) -> Self
+    {
+        .wrongVariantFieldsCount(for: String(describing: _type),
+                                 variant: variant, expected: expected,
+                                 type: type, info: info)
+    }
+    
+    @inlinable
+    static func wrongVariantIndex(for _type: Any.Type, variant: String,
+                                  expected: UInt8, type: NetworkType,
+                                  _ info: ErrorMethodInfo) -> Self
+    {
+        .wrongVariantIndex(for: String(describing: _type), variant: variant,
+                           expected: expected, type: type, info: info)
+    }
+}
+
+public extension TypeError { // For static validation
+    @inlinable
+    static func typeNotFound(for value: Any, id: NetworkType.Id,
+                             _ info: ErrorMethodInfo) -> Self
+    {
+        .typeNotFound(for: String(describing: value), id: id, info: info)
+    }
+    
+    @inlinable
+    static func wrongType(for value: Any, type: NetworkType,
+                          reason: String, _ info: ErrorMethodInfo) -> Self
+    {
+        .wrongType(for: String(describing: value), type: type,
+                   reason: reason, info: info)
+    }
+    
+    @inlinable
+    static func wrongValuesCount(for value: Any, expected: Int,
+                                 type: NetworkType,
+                                 _ info: ErrorMethodInfo) -> Self
+    {
+        .wrongValuesCount(for: String(describing: value), expected: expected,
+                          type: type, info: info)
+    }
+    
+    @inlinable
+    static func fieldNotFound(for value: Any, field: String,
+                              type: NetworkType, _ info: ErrorMethodInfo) -> Self
+    {
+        .fieldNotFound(for: String(describing: value), field: field,
+                       type: type, info: info)
+    }
+    
+    @inlinable
+    static func variantNotFound(for value: Any, variant: String,
+                                type: NetworkType, _ info: ErrorMethodInfo) -> Self
+    {
+        .variantNotFound(for: String(describing: value), variant: variant,
+                         type: type, info: info)
+    }
+    
+    @inlinable
+    static func wrongVariantFieldsCount(for value: Any, variant: String,
+                                        expected: Int, type: NetworkType,
+                                        _ info: ErrorMethodInfo) -> Self
+    {
+        .wrongVariantFieldsCount(for: String(describing: value),
+                                 variant: variant, expected: expected,
+                                 type: type, info: info)
+    }
+    
+    @inlinable
+    static func wrongVariantIndex(for value: Any, variant: String,
+                                  expected: UInt8, type: NetworkType,
+                                  _ info: ErrorMethodInfo) -> Self
+    {
+        .wrongVariantIndex(for: String(describing: value), variant: variant,
+                           expected: expected, type: type, info: info)
     }
 }

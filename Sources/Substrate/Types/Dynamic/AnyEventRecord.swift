@@ -59,16 +59,17 @@ extension AnyEventRecord.Phase: VariantValidatableType {
     {
         guard let apply = info.first(where: { $0.name == "ApplyExtrinsic" }) else {
             return .failure(.variantNotFound(for: Self.self,
-                                             variant: "ApplyExtrinsic", in: type.type))
+                                             variant: "ApplyExtrinsic", type: type.type, .get()))
         }
         guard apply.fields.count == 1 else {
             return .failure(.wrongVariantFieldsCount(for: Self.self,
                                                      variant: "ApplyExtrinsic",
-                                                     expected: 1, in: type.type))
+                                                     expected: 1, type: type.type, .get()))
         }
         guard apply.fields[0].type.type.asPrimitive(runtime)?.isUInt != nil else {
             return .failure(.wrongType(for: Self.self,
-                                       got: type.type, reason: "ApplyExtrinsic.Index is not UInt"))
+                                       type: type.type,
+                                       reason: "ApplyExtrinsic.Index is not UInt", .get()))
         }
         return .success(())
     }
@@ -100,8 +101,9 @@ extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
         }
         guard let uint = extrinsicId.uint, let u32 = UInt32(exactly: uint) else {
             throw TypeError.wrongType(for: Self.self,
-                                      got: info.type,
-                                      reason: "Bad extrinsic id: \(extrinsicId)")
+                                      type: info.type,
+                                      reason: "Bad extrinsic id: \(extrinsicId)",
+                                      .get())
         }
         self = .applyExtrinsic(u32)
     }
@@ -112,11 +114,13 @@ extension AnyEventRecord: CompositeValidatableType {
                                 runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard let phase = sinfo.first(where: { $0.name == "phase" }) else {
-            return .failure(.fieldNotFound(for: Self.self, field: "phase", in: tinfo.type))
+            return .failure(.fieldNotFound(for: Self.self, field: "phase",
+                                           type: tinfo.type, .get()))
         }
         let eventNames = ["event", "e", "ev"]
         guard let event = sinfo.first(where: { eventNames.contains($0.name ?? "") }) else {
-            return .failure(.fieldNotFound(for: Self.self, field: "event", in: tinfo.type))
+            return .failure(.fieldNotFound(for: Self.self, field: "event",
+                                           type: tinfo.type, .get()))
         }
         return Phase.validate(runtime: runtime, type: phase.type)
             .flatMap { _ in AnyEvent.validate(runtime: runtime, type: event.type) }

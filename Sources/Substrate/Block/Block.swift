@@ -59,10 +59,12 @@ public extension SomeBlock {
                            block type: NetworkType) throws -> NetworkType.Id
     {
         guard case .composite(let fields) = type.flatten(metadata).definition else {
-            throw TypeError.wrongType(for: Self.self, got: type, reason: "Isn't Composite")
+            throw TypeError.wrongType(for: Self.self, type: type,
+                                      reason: "Isn't Composite", .get())
         }
         guard let header = fields.first(where: {$0.name == "header"}) else {
-            throw TypeError.fieldNotFound(for: Self.self, field: "header", in: type)
+            throw TypeError.fieldNotFound(for: Self.self, field: "header",
+                                          type: type, .get())
         }
         return header.type
     }

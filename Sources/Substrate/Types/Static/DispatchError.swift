@@ -60,7 +60,7 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
         default:
             throw FrameTypeError.paramMismatch(for: "DispatchError",
                                                index: -1, expected: "ModuleError",
-                                               got: "\(self)")
+                                               got: "\(self)", .get())
         }
     }}
     

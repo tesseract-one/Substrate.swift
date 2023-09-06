@@ -32,7 +32,7 @@ public extension PalletEvent where
 {
     static func typeInfo(runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
         guard let info = runtime.resolve(eventParams: name, pallet: pallet) else {
-            return .failure(.typeInfoNotFound(for: Self.self))
+            return .failure(.typeInfoNotFound(for: Self.self, .get()))
         }
         return .success(info)
     }
@@ -47,10 +47,12 @@ public extension StaticEvent {
         let modIndex = try decoder.decode(UInt8.self)
         let evIndex = try decoder.decode(UInt8.self)
         guard let info = runtime.resolve(eventName: evIndex, pallet: modIndex) else {
-            throw FrameTypeError.typeInfoNotFound(for: Self.self, index: evIndex, frame: modIndex)
+            throw FrameTypeError.typeInfoNotFound(for: Self.self, index: evIndex,
+                                                  frame: modIndex, .get())
         }
         guard Self.frame == info.pallet && Self.name == info.name else {
-            throw FrameTypeError.foundWrongType(for: Self.self, name: info.name, frame: info.pallet)
+            throw FrameTypeError.foundWrongType(for: Self.self, name: info.name,
+                                                frame: info.pallet, .get())
         }
         try self.init(paramsFrom: &decoder, runtime: runtime)
     }

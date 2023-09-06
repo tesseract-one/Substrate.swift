@@ -113,36 +113,39 @@ public struct ModuleError: Error, IdentifiableType {
     public init(values: [Value<NetworkType.Id>], runtime: any Runtime) throws {
         guard values.count == 2 else {
             throw FrameTypeError.wrongFieldsCount(for: "ModuleError", expected: 2,
-                                                  got: values.count)
+                                                  got: values.count, .get())
         }
         guard let index = values[0].uint.flatMap({UInt8(exactly: $0)}) else {
             throw FrameTypeError.paramMismatch(for: "Error", index: 0,
-                                               expected: "UInt8", got: values[0].description)
+                                               expected: "UInt8",
+                                               got: values[0].description, .get())
         }
         guard let bytes = values[1].bytes, bytes.count > 0 else {
             throw FrameTypeError.paramMismatch(for: "Error", index: 1,
-                                               expected: "Data", got: values[1].description)
+                                               expected: "Data",
+                                               got: values[1].description, .get())
         }
         try self.init(pallet: index, error: bytes[0], metadata: runtime.metadata)
     }
     
     public init(pallet: UInt8, error: UInt8, metadata: any Metadata) throws {
         guard let pallet = metadata.resolve(pallet: pallet) else {
-            throw FrameTypeError.typeInfoNotFound(for: "Error", index: error, frame: pallet)
+            throw FrameTypeError.typeInfoNotFound(for: "Error", index: error,
+                                                  frame: pallet, .get())
         }
         guard let palletError = pallet.error else {
             throw FrameTypeError.paramMismatch(for: "\(pallet.name).error",
                                                index: -1, expected: "NetworkType.Info",
-                                               got: "nil")
+                                               got: "nil", .get())
         }
         guard case .variant(variants: let variants) = palletError.type.definition else {
             throw FrameTypeError.wrongType(for: "\(pallet.name).error",
                                            got: palletError.type.description,
-                                           reason: "Should be Variant")
+                                           reason: "Should be Variant", .get())
         }
         guard let error = variants.first(where: { $0.index == error }) else {
             throw FrameTypeError.typeInfoNotFound(for: "Error", index: error,
-                                                  frame: pallet.index)
+                                                  frame: pallet.index, .get())
         }
         self.pallet = pallet
         self.error = error

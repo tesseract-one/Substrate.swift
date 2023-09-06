@@ -79,20 +79,24 @@ extension MultiSignature: ValueRepresentable {
     public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
         try validate(runtime: runtime, type: info).get()
         guard case .variant(variants: let variants) = info.type.flatten(runtime).definition else {
-            throw TypeError.wrongType(for: Self.self, got: info.type, reason: "Should be variant")
+            throw TypeError.wrongType(for: Self.self, type: info.type,
+                                      reason: "Should be variant", .get())
         }
         switch self {
         case .sr25519(let sig):
             return try .variant(name: variants[0].name,
-                                values: [sig.asValue(runtime: runtime, type: variants[0].fields[0].type)],
+                                values: [sig.asValue(runtime: runtime,
+                                                     type: variants[0].fields[0].type)],
                                 info.id)
         case .ed25519(let sig):
             return try .variant(name: variants[1].name,
-                                values: [sig.asValue(runtime: runtime, type: variants[1].fields[0].type)],
+                                values: [sig.asValue(runtime: runtime,
+                                                     type: variants[1].fields[0].type)],
                                 info.id)
         case .ecdsa(let sig):
             return try .variant(name: variants[2].name,
-                                values: [sig.asValue(runtime: runtime, type: variants[2].fields[0].type)],
+                                values: [sig.asValue(runtime: runtime,
+                                                     type: variants[2].fields[0].type)],
                                 info.id)
         }
     }

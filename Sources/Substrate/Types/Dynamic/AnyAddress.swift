@@ -71,11 +71,13 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                 )
             case .other(name: let n, values: let params):
                 guard let item = vars.first(where: { $0.name == n }) else {
-                    throw TypeError.variantNotFound(for: Self.self, variant: n, in: info.type)
+                    throw TypeError.variantNotFound(for: Self.self, variant: n,
+                                                    type: info.type, .get())
                 }
                 guard item.fields.count == params.count else {
                     throw TypeError.wrongVariantFieldsCount(for: Self.self, variant: n,
-                                                            expected: params.count, in: info.type)
+                                                            expected: params.count,
+                                                            type: info.type, .get())
                 }
                 let mapped = try zip(item.fields, params).map {
                     try $1.asValue(runtime: runtime, type: $0.type)
@@ -84,8 +86,8 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
             }
         default:
             guard case .id(let id) = self else {
-                throw TypeError.wrongType(for: Self.self, got: info.type,
-                                          reason: "primitive type but self is not Id")
+                throw TypeError.wrongType(for: Self.self, type: info.type,
+                                          reason: "primitive type but self is not Id", .get())
             }
             return try id.asValue(runtime: runtime, type: info)
         }
@@ -101,7 +103,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                 return .success(item)
             }
         }
-        return .failure(.variantNotFound(for: Self.self, variant: "Id", in: type))
+        return .failure(.variantNotFound(for: Self.self, variant: "Id", type: type, .get()))
     }
     
     public static func validate(runtime: any Runtime,

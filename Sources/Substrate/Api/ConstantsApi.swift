@@ -95,10 +95,10 @@ public extension StaticConstant where TValue: RuntimeDecodable {
 public extension StaticConstant where TValue: ValidatableTypeStatic {
     static func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
         guard let info = runtime.resolve(constant: name, pallet: pallet) else {
-            return .failure(.typeInfoNotFound(for: Self.self))
+            return .failure(.typeInfoNotFound(for: Self.self, .get()))
         }
         return TValue.validate(runtime: runtime, type: info.type).mapError {
-            .childError(for: Self.self, index: -1, error: $0)
+            .childError(for: Self.self, index: -1, error: $0, .get())
         }
     }
 }
@@ -106,6 +106,6 @@ public extension StaticConstant where TValue: ValidatableTypeStatic {
 public extension StaticConstant where TValue: IdentifiableType {
     @inlinable
     static var definition: FrameTypeDefinition {
-        .constant(Self.self, type: TValue.definition)
+        .constant(type: TValue.definition)
     }
 }

@@ -42,8 +42,8 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
         case .sequence(of: let recordId):
             return recordId
         default:
-            throw TypeError.wrongType(for: Self.self, got: info.type,
-                                      reason: "Not a sequence")
+            throw TypeError.wrongType(for: Self.self, type: info.type,
+                                      reason: "Not a sequence", .get())
         }
     }
     

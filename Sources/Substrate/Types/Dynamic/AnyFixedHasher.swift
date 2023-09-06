@@ -80,8 +80,8 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
                                 type: NetworkType.Info) -> Result<Void, TypeError>
     {
         guard let name = type.type.path.last, HashType(name: name) != nil else {
-            return .failure(.wrongType(for: Self.self, got: type.type,
-                                       reason: "Unknown hash: \(type.type)"))
+            return .failure(.wrongType(for: Self.self, type: type.type,
+                                       reason: "Unknown hash: \(type.type)", .get()))
         }
         return .success(())
     }

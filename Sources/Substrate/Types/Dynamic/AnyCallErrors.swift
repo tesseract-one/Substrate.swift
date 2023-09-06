@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct AnyTransactionValidityError: CallError, CustomStringConvertible {
+public struct AnyTransactionValidityError: CallError, CustomDebugStringConvertible {
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
     public let value: Value<NetworkType.Id>
@@ -32,12 +32,12 @@ public struct AnyTransactionValidityError: CallError, CustomStringConvertible {
         .success(())
     }
     
-    public var description: String {
+    public var debugDescription: String {
         "TransactionValidityError: \(value)"
     }
 }
 
-public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, CustomStringConvertible {
+public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, CustomDebugStringConvertible {
     public typealias TModuleError = ModuleError
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
@@ -51,12 +51,12 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
         let fields = value.variant!.values
         guard fields.count == 1 else {
             throw FrameTypeError.wrongFieldsCount(for: "DispatchError.\(value.variant!.name)",
-                                                  expected: 1, got: fields.count)
+                                                  expected: 1, got: fields.count, .get())
         }
         guard let values = fields[0].sequence else {
             throw FrameTypeError.paramMismatch(for: "DispatchError.\(value.variant!.name)",
                                                index: 0, expected: "Composite",
-                                               got: fields[0].description)
+                                               got: fields[0].description, .get())
         }
         return try ModuleError(values: values, runtime: _runtime)
     }}
@@ -90,15 +90,18 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
                                 runtime: Runtime) -> Result<Void, TypeError>
     {
         guard let module = info.first(where: { $0.name.contains("Module") }) else {
-            return .failure(.variantNotFound(for: Self.self, variant: "*Module*", in: tinfo.type))
+            return .failure(.variantNotFound(for: Self.self,
+                                             variant: "*Module*",
+                                             type: tinfo.type, .get()))
         }
         guard module.fields.count == 1 else {
-            return .failure(.wrongValuesCount(for: Self.self, expected: 1, in: tinfo.type))
+            return .failure(.wrongValuesCount(for: Self.self, expected: 1,
+                                              type: tinfo.type, .get()))
         }
         return TModuleError.validate(runtime: runtime, type: module.fields[0].type)
     }
     
-    public var description: String {
+    public var debugDescription: String {
         "DispatchError: \(value)"
     }
 }

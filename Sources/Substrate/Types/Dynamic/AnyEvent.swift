@@ -30,21 +30,21 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
         case .variant(.sequence(name: let name, values: let values)):
             guard values.count == 1 else {
                 throw FrameTypeError.wrongFieldsCount(for: "AnyEvent", expected: 1,
-                                                      got: values.count)
+                                                      got: values.count, .get())
             }
             pallet = name
             value = values.first!
         case .variant(.map(name: let name, fields: let fields)):
             guard fields.count == 1 else {
                 throw FrameTypeError.wrongFieldsCount(for: "AnyEvent", expected: 1,
-                                                      got: fields.count)
+                                                      got: fields.count, .get())
             }
             pallet = name
             value = fields.values.first!
         default: throw FrameTypeError.paramMismatch(for: "AnyEvent",
                                                     index: 0,
                                                     expected: "Value.Variant",
-                                                    got: value.description)
+                                                    got: value.description, .get())
         }
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
@@ -58,7 +58,7 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
         default: throw FrameTypeError.paramMismatch(for: "AnyEvent: \(pallet)",
                                                     index: 0,
                                                     expected: "Value.Variant",
-                                                    got: value.description)
+                                                    got: value.description, .get())
         }
     }
     
@@ -68,7 +68,8 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
         let size = try Value<Void>.calculateSize(in: decoder, for: type, runtime: runtime)
         let hBytes = try decoder.peek(count: 2)
         guard let header = runtime.resolve(eventName: hBytes[1], pallet: hBytes[0]) else {
-            throw FrameTypeError.typeInfoNotFound(for: "Event", index: hBytes[1], frame: hBytes[0])
+            throw FrameTypeError.typeInfoNotFound(for: "Event", index: hBytes[1],
+                                                  frame: hBytes[0], .get())
         }
         return try (name: header.name, pallet: header.pallet, data: decoder.read(count: size))
     }
@@ -77,8 +78,8 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
     {
         info == runtime.types.event ? .success(()) :
-            .failure(.wrongType(for: Self.self, got: info.type,
-                                reason: "Top level event has different info"))
+            .failure(.wrongType(for: Self.self, type: info.type,
+                                reason: "Top level event has different info", .get()))
     }
     
     public var description: String {

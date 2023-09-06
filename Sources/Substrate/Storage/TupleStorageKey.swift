@@ -96,7 +96,7 @@ public extension TupleStorageKeyBase where
 {
     @inlinable
     static var definition: FrameTypeDefinition {
-        .storage(Self.self, keys: TPath.identifiablePath, value: TValue.definition)
+        .storage(keys: TPath.identifiablePath, value: TValue.definition)
     }
 }
 

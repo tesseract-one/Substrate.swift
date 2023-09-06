@@ -30,7 +30,7 @@ extension Value: ValidatableTypeDynamic {
                          custom: Bool) -> Result<Void, TypeError>
     {
         guard let type = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(for: description, id: id))
+            return .failure(.typeNotFound(for: self, id: id, .get()))
         }
         return validate(runtime: runtime, type: id.i(type), custom: custom)
     }
@@ -97,7 +97,8 @@ private extension Value {
                 // transparent anyway in SCALE terms).
                 return validate(runtime: runtime, type: fields[0].type, custom: true)
             } else {
-                return .failure(.wrongType(for: description, got: type, reason: "Isn't Composite"))
+                return .failure(.wrongType(for: self, type: type,
+                                           reason: "Isn't Composite", .get()))
             }
         }
     }
@@ -114,20 +115,20 @@ private extension Value {
             switch primitive {
             case .bytes(_):
                 guard let vTypeInfo = runtime.resolve(type: valueType) else {
-                    return .failure(.typeNotFound(for: description, id: valueType))
+                    return .failure(.typeNotFound(for: self, id: valueType, .get()))
                 }
                 guard case .primitive(is: .u8) = vTypeInfo.definition else {
-                    return .failure(.wrongType(for: description, got: vTypeInfo,
-                                               reason: "Isn't byte"))
+                    return .failure(.wrongType(for: self, type: vTypeInfo,
+                                               reason: "Isn't byte", .get()))
                 }
                 return .success(())
             default:
-                return .failure(.wrongType(for: description, got: type,
-                                           reason: "Isn't array"))
+                return .failure(.wrongType(for: self, type: type,
+                                           reason: "Isn't array", .get()))
             }
         default:
-            return .failure(.wrongType(for: description, got: type,
-                                       reason: "Isn't array"))
+            return .failure(.wrongType(for: self, type: type,
+                                       reason: "Isn't array", .get()))
         }
     }
     
@@ -137,8 +138,9 @@ private extension Value {
         switch value {
         case .sequence(let values):
             guard values.count == count else {
-                return .failure(.wrongValuesCount(for: description,
-                                                  expected: values.count, in: type))
+                return .failure(.wrongValuesCount(for: self,
+                                                  expected: values.count,
+                                                  type: type, .get()))
             }
             return values.voidErrorMap {
                 $0.validate(runtime: runtime, type: valueType, custom: true)
@@ -147,22 +149,26 @@ private extension Value {
             switch primitive {
             case .bytes(let bytes):
                 guard bytes.count == count else {
-                    return .failure(.wrongValuesCount(for: description,
+                    return .failure(.wrongValuesCount(for: self,
                                                       expected: bytes.count,
-                                                      in: type))
+                                                      type: type, .get()))
                 }
                 guard let vTypeInfo = runtime.resolve(type: valueType) else {
-                    return .failure(.typeNotFound(for: description, id: valueType))
+                    return .failure(.typeNotFound(for: self,
+                                                  id: valueType, .get()))
                 }
                 guard case .primitive(is: .u8) = vTypeInfo.definition else {
-                    return .failure(.wrongType(for: description, got: type, reason: "Isn't array"))
+                    return .failure(.wrongType(for: self, type: type,
+                                               reason: "Isn't array", .get()))
                 }
                 return .success(())
             default:
-                return .failure(.wrongType(for: description, got: type, reason: "Isn't array"))
+                return .failure(.wrongType(for: self, type: type,
+                                           reason: "Isn't array", .get()))
             }
         default:
-            return .failure(.wrongType(for: description, got: type, reason: "Isn't array"))
+            return .failure(.wrongType(for: self, type: type,
+                                       reason: "Isn't array", .get()))
         }
     }
     
@@ -172,9 +178,9 @@ private extension Value {
         switch value {
         case .sequence(let values):
             guard values.count == fields.count else {
-                return .failure(.wrongValuesCount(for: description,
+                return .failure(.wrongValuesCount(for: self,
                                                   expected: values.count,
-                                                  in: type))
+                                                  type: type, .get()))
             }
             guard values.count > 0 else { return .success(())}
             return zip(fields, values).voidErrorMap { field, value in
@@ -185,8 +191,8 @@ private extension Value {
                 // A 1-field tuple? try validate inner content then.
                 return validate(runtime: runtime, type: fields[0], custom: true)
             } else {
-                return .failure(.wrongType(for: description, got: type,
-                                           reason: "Isn't array"))
+                return .failure(.wrongType(for: self, type: type,
+                                           reason: "Isn't array", .get()))
             }
         }
     }
@@ -195,10 +201,13 @@ private extension Value {
         type: NetworkType, variants: [NetworkType.Variant], runtime: Runtime
     ) -> Result<Void, TypeError> {
         guard case .variant(let variant) = value else {
-            return .failure(.wrongType(for: description, got: type, reason: "Isn't Variant"))
+            return .failure(.wrongType(for: self, type: type,
+                                       reason: "Isn't Variant", .get()))
         }
         guard let varType = variants.first(where: { $0.name == variant.name }) else {
-            return .failure(.variantNotFound(for: description, variant: variant.name, in: type))
+            return .failure(.variantNotFound(for: self,
+                                             variant: variant.name,
+                                             type: type, .get()))
         }
         switch variant {
         case .map(name: _, fields: let map):
@@ -217,26 +226,30 @@ private extension Value {
     ) -> Result<Void, TypeError> {
         if let map = self.map {
             guard map.count == fields.count else {
-                return .failure(.wrongValuesCount(for: description,
-                                                  expected: map.count, in: type))
+                return .failure(.wrongValuesCount(for: self,
+                                                  expected: map.count,
+                                                  type: type, .get()))
             }
             guard map.count > 0 else { return .success(()) }
             guard fields[0].name != nil else {
-                return .failure(.wrongType(for: description, got: type,
-                                           reason: "Isn't map, seems as sequence"))
+                return .failure(.wrongType(for: self, type: type,
+                                           reason: "Isn't map, seems as sequence",
+                                           .get()))
             }
             return fields.voidErrorMap { field in
                 let name = field.name! // should be ok. Fields is named
                 guard let value = map[name] else {
-                    return .failure(.fieldNotFound(for: description, field: name, in: type))
+                    return .failure(.fieldNotFound(for: self, field: name,
+                                                   type: type, .get()))
                 }
                 return value.validate(runtime: runtime, type: field.type, custom: true)
             }
         } else {
             let values = self.sequence!
             guard values.count == fields.count else {
-                return .failure(.wrongValuesCount(for: description,
-                                                  expected: values.count, in: type))
+                return .failure(.wrongValuesCount(for: self,
+                                                  expected: values.count,
+                                                  type: type, .get()))
             }
             guard values.count > 0 else { return .success(()) }
             return zip(fields, values).voidErrorMap { field, value in
@@ -249,8 +262,8 @@ private extension Value {
         type: NetworkType, primitive: NetworkType.Primitive
     ) -> Result<Void, TypeError> {
         guard case .primitive(let sprimitive) = value else {
-            return .failure(.wrongType(for: description, got: type,
-                                       reason: "Isn't primitive"))
+            return .failure(.wrongType(for: self, type: type,
+                                       reason: "Isn't primitive", .get()))
         }
         switch (primitive, sprimitive) {
         case (.bool, .bool(_)): return .success(())
@@ -281,8 +294,8 @@ private extension Value {
         case (.i256, let p):
             return _validatePrimitiveInt(primitive: p, type: type, Int256.self)
         default:
-            return .failure(.wrongType(for: description, got: type,
-                                       reason: "Can't match primitive"))
+            return .failure(.wrongType(for: self, type: type,
+                                       reason: "Can't match primitive", .get()))
         }
     }
     
@@ -293,14 +306,16 @@ private extension Value {
         case .int(let int):
             return INT(exactly: int) != nil
                 ? .success(())
-                : .failure(.wrongType(for: description, got: type, reason: "Int overflow"))
+                : .failure(.wrongType(for: self, type: type,
+                                      reason: "Int overflow", .get()))
         case .uint(let uint):
             return INT(exactly: uint) != nil
                 ? .success(())
-                : .failure(.wrongType(for: description, got: type, reason: "Int overflow"))
+                : .failure(.wrongType(for: self, type: type,
+                                      reason: "Int overflow", .get()))
         default:
-            return .failure(.wrongType(for: description, got: type,
-                                       reason: "Isn't integer"))
+            return .failure(.wrongType(for: self, type: type,
+                                       reason: "Isn't integer", .get()))
         }
     }
     
@@ -314,20 +329,20 @@ private extension Value {
         var innerCtType: CompactTy? = nil
         while innerCtType == nil {
             guard let type = runtime.resolve(type: innerTypeId) else {
-                return .failure(.typeNotFound(for: description, id: innerTypeId))
+                return .failure(.typeNotFound(for: self, id: innerTypeId, .get()))
             }
             innerType = type
             switch innerType.definition {
             case .composite(fields: let fields):
                 guard fields.count == 1 else {
-                    return .failure(.wrongType(for: description, got: innerType,
-                                               reason: "Isn't compact"))
+                    return .failure(.wrongType(for: self, type: innerType,
+                                               reason: "Isn't compact", .get()))
                 }
                 innerTypeId = fields[0].type
             case .tuple(components: let vals):
                 guard vals.count == 1 else {
-                    return .failure(.wrongType(for: description, got: innerType,
-                                               reason: "Isn't compact"))
+                    return .failure(.wrongType(for: self, type: innerType,
+                                               reason: "Isn't compact", .get()))
                 }
                 innerTypeId = vals[0]
             case .primitive(is: let prim):
@@ -338,11 +353,12 @@ private extension Value {
                 case .u64: innerCtType = .u64
                 case .u128: innerCtType = .u128
                 case .u256: innerCtType = .u256
-                default: return .failure(.wrongType(for: description, got: innerType,
-                                                    reason: "Primitive isn't compact encodable"))
+                default: return .failure(.wrongType(for: self, type: innerType,
+                                                    reason: "Primitive isn't compact encodable",
+                                                    .get()))
                 }
-            default: return .failure(.wrongType(for: description, got: innerType,
-                                                reason: "Isn't compact"))
+            default: return .failure(.wrongType(for: self, type: innerType,
+                                                reason: "Isn't compact", .get()))
             }
         }
         // resolve to the innermost value that we have in the same way, expecting to get out
@@ -353,21 +369,21 @@ private extension Value {
             switch value.value {
             case .map(let map):
                 guard map.count == 1 else {
-                    return .failure(.wrongType(for: description, got: innerType,
-                                               reason: "Isn't 1 value map"))
+                    return .failure(.wrongType(for: self, type: innerType,
+                                               reason: "Isn't 1 value map", .get()))
                 }
                 value = map.values.first!
             case .sequence(let seq):
                 guard seq.count == 1 else {
-                    return .failure(.wrongType(for: description, got: innerType,
-                                               reason: "Isn't 1 value sequence"))
+                    return .failure(.wrongType(for: self, type: innerType,
+                                               reason: "Isn't 1 value sequence", .get()))
                 }
                 value = seq.first!
             case .primitive(let primitive):
                 innerPrimitive = primitive
             default:
-                return .failure(.wrongType(for: description, got: innerType,
-                                                    reason: "Isn't compact encodable"))
+                return .failure(.wrongType(for: self, type: innerType,
+                                           reason: "Isn't compact encodable", .get()))
             }
         }
         // Try to compact encode the primitive type we have into the type asked for:
@@ -403,11 +419,13 @@ private extension Value {
                 return vals.voidErrorMap {
                     $0.bool != nil
                     ? .success(())
-                    : .failure(.wrongType(for: description, got: type,
-                                          reason: "Isn't bool in sequence"))
+                    : .failure(.wrongType(for: self, type: type,
+                                          reason: "Isn't bool in sequence",
+                                          .get()))
                 }
-            default: return .failure(.wrongType(for: description, got: type,
-                                                reason: "Isn't bit sequence"))
+            default: return .failure(.wrongType(for: self, type: type,
+                                                reason: "Isn't bit sequence",
+                                                .get()))
             }
         }
     }

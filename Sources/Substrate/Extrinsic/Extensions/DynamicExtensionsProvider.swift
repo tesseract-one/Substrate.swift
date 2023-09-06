@@ -35,10 +35,10 @@ public extension DynamicExtrinsicExtension {
         additionalSigned aId: NetworkType.Id
     ) -> Result<Void, TypeError> {
         guard let eType = runtime.resolve(type: eId) else {
-            return .failure(.typeNotFound(for: Self.self, id: eId))
+            return .failure(.typeNotFound(for: Self.self, id: eId, .get()))
         }
         guard let aType = runtime.resolve(type: aId) else {
-            return .failure(.typeNotFound(for: Self.self, id: aId))
+            return .failure(.typeNotFound(for: Self.self, id: aId, .get()))
         }
         return validate(config: config, runtime: runtime,
                         extra: eId.i(eType), additionalSigned: aId.i(aType))

@@ -79,20 +79,22 @@ public extension AnyCall where C == NetworkType.Id {
         case .variant(.sequence(name: let name, values: let values)):
             guard values.count == 1 else {
                 throw FrameTypeError.wrongFieldsCount(for: "AnyCall: \(name)._",
-                                                      expected: 1, got: values.count)
+                                                      expected: 1, got: values.count,
+                                                      .get())
             }
             pallet = name
             value = values.first!
         case .variant(.map(name: let name, fields: let fields)):
             guard fields.count == 1 else {
                 throw FrameTypeError.wrongFieldsCount(for: "AnyCall: \(name)._",
-                                                      expected: 1, got: fields.count)
+                                                      expected: 1, got: fields.count,
+                                                      .get())
             }
             pallet = name
             value = fields.first!.value
         default: throw FrameTypeError.wrongType(for: "AnyCall: _._",
                                                 got: call.description,
-                                                reason: "Expected Variant")
+                                                reason: "Expected Variant", .get())
         }
         try self.init(pallet: pallet, call: value)
     }
@@ -110,7 +112,7 @@ public extension AnyCall where C == NetworkType.Id {
                       params: fields)
         default: throw FrameTypeError.wrongType(for: "AnyCall: \(pallet)._",
                                                 got: call.description,
-                                                reason: "Expected Variant")
+                                                reason: "Expected Variant", .get())
         }
     }
 }
@@ -119,7 +121,8 @@ extension AnyCall: RuntimeDecodable, RuntimeDynamicDecodable where C == NetworkT
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         let pallet = try decoder.decode(UInt8.self)
         guard let call = runtime.resolve(palletCall: pallet) else {
-            throw FrameTypeError.typeInfoNotFound(for: "AnyCall: _._", index: 0, frame: pallet)
+            throw FrameTypeError.typeInfoNotFound(for: "AnyCall: _._", index: 0,
+                                                  frame: pallet, .get())
         }
         try self.init(pallet: call.pallet,
                       call: Value(from: &decoder, as: call.type.id, runtime: runtime))
@@ -130,20 +133,20 @@ extension AnyCall: RuntimeEncodable, RuntimeDynamicEncodable {
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws
     {
         guard let palletCall = runtime.resolve(palletCall: pallet) else {
-            throw FrameTypeError.typeInfoNotFound(for: errorTypeName)
+            throw FrameTypeError.typeInfoNotFound(for: errorTypeName, .get())
         }
         guard case .variant(variants: let calls) = palletCall.type.type.definition else {
             throw FrameTypeError.wrongType(for: errorTypeName,
                                            got: palletCall.type.type.description,
-                                           reason: "Expected Variant")
+                                           reason: "Expected Variant", .get())
         }
         guard let call = calls.first(where: {$0.name == name}) else {
-            throw FrameTypeError.typeInfoNotFound(for: errorTypeName)
+            throw FrameTypeError.typeInfoNotFound(for: errorTypeName, .get())
         }
         guard call.fields.count == _params.count else {
             throw FrameTypeError.wrongFieldsCount(for: errorTypeName,
                                                   expected: call.fields.count,
-                                                  got: _params.count)
+                                                  got: _params.count, .get())
         }
         let variant: Value<NetworkType.Id>
         if call.fields.first?.name != nil { // Map
@@ -154,7 +157,8 @@ extension AnyCall: RuntimeEncodable, RuntimeDynamicEncodable {
                 } else if let val = _params[String(idx)] {
                     value = val
                 } else {
-                    throw FrameTypeError.valueNotFound(for: errorTypeName, key: el.name!)
+                    throw FrameTypeError.valueNotFound(for: errorTypeName,
+                                                       key: el.name!, .get())
                 }
                 return try (el.name!, value.asValue(runtime: runtime, type: el.type))
             }
@@ -164,7 +168,8 @@ extension AnyCall: RuntimeEncodable, RuntimeDynamicEncodable {
         } else { // Sequence
             let values = try call.fields.enumerated().map { (idx, el) in
                 guard let value = _params[String(idx)] else {
-                    throw FrameTypeError.valueNotFound(for: errorTypeName, key: String(idx))
+                    throw FrameTypeError.valueNotFound(for: errorTypeName,
+                                                       key: String(idx), .get())
                 }
                 return try value.asValue(runtime: runtime, type: el.type)
             }
@@ -181,10 +186,11 @@ extension AnyCall: RuntimeValidatableType {
     
     public func validate(runtime: Runtime) -> Result<Void, FrameTypeError> {
         guard let callParams = runtime.resolve(callParams: name, pallet: pallet) else {
-            return .failure(.typeInfoNotFound(for: errorTypeName))
+            return .failure(.typeInfoNotFound(for: errorTypeName, .get()))
         }
         return validate(params: callParams.map {($0.field.name, $0.field.type)},
-                        runtime: runtime).mapError { $0.frameError(for: errorTypeName) }
+                        runtime: runtime).mapError { $0.frameError(for: errorTypeName,
+                                                                   .get()) }
     }
 }
 
@@ -193,29 +199,32 @@ extension AnyCall: ValidatableTypeDynamic {
                          type info: NetworkType.Info) -> Result<Void, TypeError>
     {
         guard case .variant(let allCalls) = info.type.flatten(runtime).definition else{
-            return .failure(.wrongType(for: Self.self, got: info.type,
-                                       reason: "Expected Variant"))
+            return .failure(.wrongType(for: Self.self, type: info.type,
+                                       reason: "Expected Variant", .get()))
         }
         guard let pallet = allCalls.first(where: { $0.name == pallet }) else {
-            return .failure(.variantNotFound(for: Self.self, variant: pallet, in: info.type))
+            return .failure(.variantNotFound(for: Self.self, variant: pallet,
+                                             type: info.type, .get()))
         }
         guard pallet.fields.count == 1 else {
             return .failure(.wrongVariantFieldsCount(for: Self.self,
                                                      variant: pallet.name,
-                                                     expected: 1, in: info.type))
+                                                     expected: 1, type: info.type, .get()))
         }
         guard let type = runtime.resolve(type: pallet.fields[0].type) else {
-            return .failure(.typeNotFound(for: Self.self, id: pallet.fields[0].type))
+            return .failure(.typeNotFound(for: Self.self, id: pallet.fields[0].type, .get()))
         }
         guard case .variant(let calls) = info.type.flatten(runtime).definition else{
-            return .failure(.wrongType(for: Self.self, got: type, reason: "Expected Variant"))
+            return .failure(.wrongType(for: Self.self, type: type,
+                                       reason: "Expected Variant", .get()))
         }
         guard let call = calls.first(where: { $0.name == name }) else {
             return .failure(.variantNotFound(for: Self.self,
-                                             variant: name, in: type))
+                                             variant: name, type: type, .get()))
         }
         return validate(params: call.fields.map{($0.name, $0.type)},
-                        runtime: runtime).mapError { $0.typeError(for: Self.self, info: info) }
+                        runtime: runtime).mapError { $0.typeError(for: Self.self,
+                                                                  info: info, .get()) }
     }
 }
 
@@ -224,8 +233,8 @@ extension AnyCall: ValidatableTypeStatic {
                                 type info: NetworkType.Info) -> Result<Void, TypeError>
     {
         info == runtime.types.call ? .success(()) :
-            .failure(.wrongType(for: Self.self, got: info.type,
-                                reason: "Top level call has different info"))
+            .failure(.wrongType(for: Self.self, type: info.type,
+                                reason: "Top level call has different info", .get()))
     }
 }
 
@@ -241,23 +250,25 @@ private extension AnyCall {
         case wrongFieldsCount(expected: Int, got: Int)
         case childError(index: Int, error: TypeError)
         
-        func frameError(for t: String) -> FrameTypeError {
+        func frameError(for t: String, _ info: ErrorMethodInfo) -> FrameTypeError {
             switch self {
             case .valueNotFound(key: let k):
-                return .valueNotFound(for: t, key: k)
+                return .valueNotFound(for: t, key: k, info)
             case .wrongFieldsCount(expected: let e, got: let g):
-                return .wrongFieldsCount(for: t, expected: e, got: g)
+                return .wrongFieldsCount(for: t, expected: e, got: g, info)
             case .childError(index: let i, error: let e):
-                return .childError(for: t, index: i, error: e)
+                return .childError(for: t, index: i, error: e, info)
             }
         }
         
-        func typeError(for t: Any.Type, info: NetworkType.Info) -> TypeError {
+        func typeError(for t: Any.Type, info: NetworkType.Info,
+                       _ einfo: ErrorMethodInfo) -> TypeError
+        {
             switch self {
             case .valueNotFound(key: let k):
-                return .fieldNotFound(for: t, field: k, in: info.type)
+                return .fieldNotFound(for: t, field: k, type: info.type, einfo)
             case .wrongFieldsCount(expected: _, got: let g): // Inverted
-                return .wrongValuesCount(for: t, expected: g, in: info.type)
+                return .wrongValuesCount(for: t, expected: g, type: info.type, einfo)
             case .childError(index: _, error: let e): return e
             }
         }

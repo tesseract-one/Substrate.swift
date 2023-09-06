@@ -68,10 +68,12 @@ public struct AnyBlock<H: FixedHasher,
                                 type info: NetworkType.Info) -> Result<Void, TypeError> {
         let fields = Self.fieldTypes(type: info.type, metadata: runtime.metadata)
         guard let header = fields.header else {
-            return .failure(.fieldNotFound(for: Self.self, field: "header", in: info.type))
+            return .failure(.fieldNotFound(for: Self.self, field: "header",
+                                           type: info.type, .get()))
         }
         guard let extrinsic = fields.extrinsic else {
-            return .failure(.fieldNotFound(for: Self.self, field: "extrinsic", in: info.type))
+            return .failure(.fieldNotFound(for: Self.self, field: "extrinsic",
+                                           type: info.type, .get()))
         }
         return Header.validate(runtime: runtime, type: header.1).flatMap { _ in
             E.validate(runtime: runtime, type: extrinsic.1).map{_ in }
@@ -172,11 +174,12 @@ public extension AnyBlock {
                                     type info: NetworkType.Info) -> Result<Void, TypeError>
         {
             guard case .composite(fields: let fields) = info.type.flatten(runtime).definition else {
-                return .failure(.wrongType(for: Self.self, got: info.type,
-                                           reason: "Isn't composite"))
+                return .failure(.wrongType(for: Self.self, type: info.type,
+                                           reason: "Isn't composite", .get()))
             }
             guard let n = fields.first(where: {$0.name == "number"}) else {
-                return .failure(.fieldNotFound(for: Self.self, field: "number", in: info.type))
+                return .failure(.fieldNotFound(for: Self.self, field: "number",
+                                               type: info.type, .get()))
             }
             return Compact<N>.validate(runtime: runtime, type: n.type).map{_ in}
         }

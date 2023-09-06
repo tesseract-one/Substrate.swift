@@ -11,8 +11,8 @@ import ScaleCodec
 public extension NetworkType {
     typealias LazyId = (Runtime) throws -> Id
     
-    struct IdNeverCalledError: Error, CustomStringConvertible {
-        public var description: String { "Asked for IdNever" }
+    struct IdNeverCalledError: Error, CustomDebugStringConvertible {
+        public var debugDescription: String { "Asked for IdNever" }
         public init() {}
     }
     

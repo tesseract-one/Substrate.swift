@@ -20,8 +20,8 @@ public extension SomeTuple0 {
                               type: NetworkType.Info) -> Result<Void, TypeError>
     {
         type.type.isEmpty(runtime) ?
-            .success(()) : .failure(.wrongType(for: Self.self, got: type.type,
-                                               reason: "Expected ()"))
+            .success(()) : .failure(.wrongType(for: Self.self, type: type.type,
+                                               reason: "Expected ()", .get()))
     }
     
     @inlinable
@@ -31,7 +31,8 @@ public extension SomeTuple0 {
     {
         fields.count == 0 ? .success(()) : .failure(.wrongValuesCount(for: Self.self,
                                                                       expected: 0,
-                                                                      in: type.type))
+                                                                      type: type.type,
+                                                                      .get()))
     }
 }
 
@@ -43,10 +44,11 @@ public extension ListTuple where DroppedLast: ValidatableTupleStatic, Last: Vali
         case .array(count: let count, of: let id):
             guard count == self.count else {
                 return .failure(.wrongValuesCount(for: Self.self,
-                                                  expected: self.count, in: type.type))
+                                                  expected: self.count,
+                                                  type: type.type, .get()))
             }
             guard let chType = runtime.resolve(type: id) else {
-                return .failure(.typeNotFound(for: Self.self, id: id))
+                return .failure(.typeNotFound(for: Self.self, id: id, .get()))
             }
             var fields = Array(repeating: chType.i(id), count: Int(count))
             return validate(type: type,
@@ -55,11 +57,12 @@ public extension ListTuple where DroppedLast: ValidatableTupleStatic, Last: Vali
         case .tuple(components: let ids):
             guard ids.count == self.count else {
                 return .failure(.wrongValuesCount(for: Self.self,
-                                                  expected: self.count, in: type.type))
+                                                  expected: self.count,
+                                                  type: type.type, .get()))
             }
             return ids.resultMap { id in
                 guard let chType = runtime.resolve(type: id) else {
-                    return .failure(.typeNotFound(for: Self.self, id: id))
+                    return .failure(.typeNotFound(for: Self.self, id: id, .get()))
                 }
                 return .success(chType.i(id))
             }.flatMap { (fields: [NetworkType.Info]) in
@@ -69,11 +72,12 @@ public extension ListTuple where DroppedLast: ValidatableTupleStatic, Last: Vali
         case .composite(fields: let fields):
             guard fields.count == self.count else {
                 return .failure(.wrongValuesCount(for: Self.self,
-                                                  expected: self.count, in: type.type))
+                                                  expected: self.count,
+                                                  type: type.type, .get()))
             }
             return fields.resultMap { field in
                 guard let chType = runtime.resolve(type: field.type) else {
-                    return .failure(.typeNotFound(for: Self.self, id: field.type))
+                    return .failure(.typeNotFound(for: Self.self, id: field.type, .get()))
                 }
                 return .success(chType.i(field.type))
             }.flatMap { (fields: [NetworkType.Info]) in
@@ -82,8 +86,8 @@ public extension ListTuple where DroppedLast: ValidatableTupleStatic, Last: Vali
             }
         default:
             return .failure(.wrongType(for: Self.self,
-                                       got: type.type,
-                                       reason: "Isn't composite"))
+                                       type: type.type,
+                                       reason: "Isn't composite", .get()))
         }
     }
     
@@ -94,7 +98,8 @@ public extension ListTuple where DroppedLast: ValidatableTupleStatic, Last: Vali
     {
         guard fields.count == self.count else {
             return .failure(.wrongValuesCount(for: Self.self,
-                                              expected: self.count, in: type.type))
+                                              expected: self.count,
+                                              type: type.type, .get()))
         }
         let ltype = fields.removeLast()
         return DroppedLast.validate(type: type, fields: &fields, runtime: runtime).flatMap {

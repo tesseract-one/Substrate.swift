@@ -82,7 +82,7 @@ public extension PalletStorageKey where
     @inlinable
     static func typeInfo(runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
         guard let info = runtime.resolve(storage: name, pallet: pallet) else {
-            return .failure(.typeInfoNotFound(for: Self.self))
+            return .failure(.typeInfoNotFound(for: Self.self, .get()))
         }
         return .success((info.keys, info.value))
     }
@@ -118,7 +118,7 @@ public extension StaticStorageKey {
     
     static func validate(base: TBaseParams, runtime: any Runtime) throws {
         if runtime.resolve(storage: name, pallet: pallet) == nil {
-            throw FrameTypeError.typeInfoNotFound(for: Self.self)
+            throw FrameTypeError.typeInfoNotFound(for: Self.self, .get())
         }
     }
     
@@ -165,7 +165,7 @@ public extension ComplexStaticFrameType
         let ourTypes = childTypes
         guard ourTypes.keys.count == info.keys.count else {
             return .failure(.wrongFieldsCount(for: Self.self, expected: ourTypes.keys.count,
-                                              got: info.keys.count))
+                                              got: info.keys.count, .get()))
         }
         return zip(ourTypes.keys, info.keys).enumerated().voidErrorMap { index, zip in
             let (our, info) = zip
@@ -173,15 +173,15 @@ public extension ComplexStaticFrameType
                 return .failure(
                     .paramMismatch(for: Self.self, index: index,
                                    expected: our.hasher.hasherType.name,
-                                   got: info.hasher.name)
+                                   got: info.hasher.name, .get())
                 )
             }
             return our.type.validate(runtime: runtime, type: info.type).mapError {
-                .childError(for: Self.self, index: index, error: $0)
+                .childError(for: Self.self, index: index, error: $0, .get())
             }
         }.flatMap {
             ourTypes.value.validate(runtime: runtime, type: info.value) .mapError {
-                .childError(for: Self.self, index: -1, error: $0)
+                .childError(for: Self.self, index: -1, error: $0, .get())
             }
         }
     }

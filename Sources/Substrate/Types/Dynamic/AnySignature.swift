@@ -91,7 +91,7 @@ public struct AnySignature: Signature {
         runtime: Runtime, typeId: NetworkType.Id
     ) -> Result<[String: CryptoTypeId], TypeError> {
         guard let type = runtime.resolve(type: typeId) else {
-            return .failure(.typeNotFound(for: Self.self, id: typeId))
+            return .failure(.typeNotFound(for: Self.self, id: typeId, .get()))
         }
         return parseTypeInfo(runtime: runtime, type: type)
     }
@@ -107,7 +107,7 @@ public struct AnySignature: Signature {
                 }
                 guard item.fields.count == 1 else {
                     return .failure(.wrongValuesCount(for: Self.self, expected: 1,
-                                                      in: type))
+                                                      type: type, .get()))
                 }
                 if let typeName = item.fields[0].typeName?.lowercased() {
                     if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
@@ -115,15 +115,15 @@ public struct AnySignature: Signature {
                     }
                 }
                 guard let type = runtime.resolve(type: item.fields[0].type) else {
-                    return .failure(.typeNotFound(for: Self.self, id: item.fields[0].type))
+                    return .failure(.typeNotFound(for: Self.self, id: item.fields[0].type, .get()))
                 }
                 if let typeName = type.name?.lowercased() {
                     if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
                         return .success((item.name, CryptoTypeId.byName[name]!))
                     }
                 }
-                return .failure(.wrongType(for: Self.self, got: type,
-                                           reason: "Unknown signature type: \(type)"))
+                return .failure(.wrongType(for: Self.self, type: type,
+                                           reason: "Unknown signature type: \(type)", .get()))
             }
             return mapped.map{Dictionary(uniqueKeysWithValues: $0)}
         case .composite(fields: let fields):
@@ -133,7 +133,7 @@ public struct AnySignature: Signature {
                 }
             }
             guard fields.count == 1 else {
-                return .failure(.wrongValuesCount(for: Self.self, expected: 1, in: type))
+                return .failure(.wrongValuesCount(for: Self.self, expected: 1, type: type, .get()))
             }
             if let typeName = fields[0].typeName?.lowercased() {
                 if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
@@ -148,12 +148,12 @@ public struct AnySignature: Signature {
                 }
             }
             guard ids.count == 1 else {
-                return .failure(.wrongValuesCount(for: Self.self, expected: 1, in: type))
+                return .failure(.wrongValuesCount(for: Self.self, expected: 1, type: type, .get()))
             }
             return parseTypeInfo(runtime: runtime, typeId: ids[0])
         default:
-            return .failure(.wrongType(for: Self.self, got: type,
-                                       reason: "Can't be parsed as signature"))
+            return .failure(.wrongType(for: Self.self, type: type,
+                                       reason: "Can't be parsed as signature", .get()))
         }
     }
 }

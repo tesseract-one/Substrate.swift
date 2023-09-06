@@ -401,7 +401,7 @@ public extension ValueRepresentable {
     @inlinable
     func asValue(runtime: any Runtime, type id: NetworkType.Id) throws -> Value<NetworkType.Id> {
         guard let type = runtime.resolve(type: id) else {
-            throw TypeError.typeNotFound(for: Self.self, id: id)
+            throw TypeError.typeNotFound(for: Self.self, id: id, .get())
         }
         return try asValue(runtime: runtime, type: id.i(type))
     }

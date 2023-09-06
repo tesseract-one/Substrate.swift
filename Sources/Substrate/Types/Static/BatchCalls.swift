@@ -20,10 +20,12 @@ public extension BatchCallCommon {
         let modIndex = try decoder.decode(.enumCaseId)
         let callIndex = try decoder.decode(.enumCaseId)
         guard let info = runtime.resolve(callName: callIndex, pallet: modIndex) else {
-            throw FrameTypeError.typeInfoNotFound(for: Self.self, index: callIndex, frame: modIndex)
+            throw FrameTypeError.typeInfoNotFound(for: Self.self, index: callIndex,
+                                                  frame: modIndex, .get())
         }
         guard Self.pallet == info.pallet && Self.name == info.name else {
-            throw FrameTypeError.foundWrongType(for: Self.self, name: info.name, frame: info.pallet)
+            throw FrameTypeError.foundWrongType(for: Self.self, name: info.name,
+                                                frame: info.pallet, .get())
         }
         let calls = try Array<AnyCall<NetworkType.Id>>(from: &decoder) { decoder in
             try AnyCall(from: &decoder, runtime: runtime)
@@ -33,7 +35,7 @@ public extension BatchCallCommon {
     
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
         guard let info = runtime.resolve(callIndex: name, pallet: pallet) else {
-            throw FrameTypeError.typeInfoNotFound(for: Self.self)
+            throw FrameTypeError.typeInfoNotFound(for: Self.self, .get())
         }
         try encoder.encode(info.pallet, .enumCaseId)
         try encoder.encode(info.index, .enumCaseId)

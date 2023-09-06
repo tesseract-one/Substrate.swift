@@ -33,7 +33,7 @@ public extension PlainStorageKey where
 public extension PlainStorageKey where TValue: IdentifiableTypeStatic {
     @inlinable
     static var definition: FrameTypeDefinition {
-        .storage(Self.self, keys: [], value: TValue.definition)
+        .storage(keys: [], value: TValue.definition)
     }
 }
 
@@ -74,7 +74,7 @@ public extension MapStorageKey where
 public extension MapStorageKey where TKH.TKey: IdentifiableTypeStatic, TValue: IdentifiableTypeStatic {
     @inlinable
     static var definition: FrameTypeDefinition {
-        .storage(Self.self, keys: [(key: TKH.TKey.definition, hasher: TKH.THasher.hasherType)],
+        .storage(keys: [(key: TKH.TKey.definition, hasher: TKH.THasher.hasherType)],
                  value: TValue.definition)
     }
 }
@@ -130,8 +130,8 @@ public extension DoubleMapStorageKey where
 {
     @inlinable
     static var definition: FrameTypeDefinition {
-        .storage(Self.self, keys: [(key: TKH1.TKey.definition, hasher: TKH1.THasher.hasherType),
-                                   (key: TKH2.TKey.definition, hasher: TKH2.THasher.hasherType)],
+        .storage(keys: [(key: TKH1.TKey.definition, hasher: TKH1.THasher.hasherType),
+                        (key: TKH2.TKey.definition, hasher: TKH2.THasher.hasherType)],
                  value: TValue.definition)
     }
 }

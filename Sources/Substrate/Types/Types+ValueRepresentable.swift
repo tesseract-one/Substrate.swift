@@ -91,31 +91,31 @@ public extension Collection where Element == ValueRepresentable {
         switch info.type.flatten(runtime).definition {
         case .array(count: let c, of: let eType):
             guard count == c else {
-                return .failure(.wrongValuesCount(for: "\(self)", expected: count,
-                                                  in: info.type))
+                return .failure(.wrongValuesCount(for: self, expected: count,
+                                                  type: info.type, .get()))
             }
             fallthrough
         case .sequence(of: let eType):
             return voidErrorMap { $0.validate(runtime: runtime, type: eType).map{_ in} }
         case .composite(fields: let fields):
             guard count == fields.count else {
-                return .failure(.wrongValuesCount(for: "\(self)", expected: count,
-                                                  in: info.type))
+                return .failure(.wrongValuesCount(for: self, expected: count,
+                                                  type: info.type, .get()))
             }
             return zip(self, fields).voidErrorMap { v, f in
                 v.validate(runtime: runtime, type: f.type).map {_ in}
             }
         case .tuple(components: let ids):
             guard count == ids.count else {
-                return .failure(.wrongValuesCount(for: "\(self)", expected: count,
-                                                  in: info.type))
+                return .failure(.wrongValuesCount(for: self, expected: count,
+                                                  type: info.type, .get()))
             }
             return zip(self, ids).voidErrorMap { v, id in
                 v.validate(runtime: runtime, type: id).map {_ in}
             }
         default:
-            return .failure(.wrongType(for: "\(self)", got: info.type,
-                                       reason: "Isn't collection"))
+            return .failure(.wrongType(for: self, type: info.type,
+                                       reason: "Isn't collection", .get()))
         }
     }
     
@@ -123,9 +123,9 @@ public extension Collection where Element == ValueRepresentable {
         switch info.type.flatten(runtime).definition {
         case .array(count: let count, of: let eType):
             guard count == self.count else {
-                throw TypeError.wrongValuesCount(for: "\(self)",
+                throw TypeError.wrongValuesCount(for: self,
                                                  expected: self.count,
-                                                 in: info.type)
+                                                 type: info.type, .get())
             }
             fallthrough
         case .sequence(of: let eType):
@@ -133,21 +133,23 @@ public extension Collection where Element == ValueRepresentable {
             return .sequence(mapped, info.id)
         case .composite(fields: let fields):
             guard fields.count == count else {
-                throw TypeError.wrongValuesCount(for: "\(self)",
-                                                 expected: count, in: info.type)
+                throw TypeError.wrongValuesCount(for: self,
+                                                 expected: count,
+                                                 type: info.type, .get())
             }
             let arr = try zip(self, fields).map { try $0.asValue(runtime: runtime, type: $1.type) }
             return .sequence(arr, info.id)
         case .tuple(components: let ids):
             guard ids.count == count else {
-                throw TypeError.wrongValuesCount(for: "\(self)",
-                                                 expected: count, in: info.type)
+                throw TypeError.wrongValuesCount(for: self,
+                                                 expected: count,
+                                                 type: info.type, .get())
             }
             let arr = try zip(self, ids).map { try $0.asValue(runtime: runtime, type: $1) }
             return .sequence(arr, info.id)
         default:
-            throw TypeError.wrongType(for: "\(self)", got: info.type,
-                                      reason: "Isn't collection")
+            throw TypeError.wrongType(for: self, type: info.type,
+                                      reason: "Isn't collection", .get())
         }
     }
 }
@@ -169,21 +171,21 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
         case .composite(fields: let fields):
             return fields.voidErrorMap { field in
                 guard let key = field.name else {
-                    return .failure(.wrongType(for: description, got: info.type,
-                                               reason: "field name is nil"))
+                    return .failure(.wrongType(for: self, type: info.type,
+                                               reason: "field name is nil", .get()))
                 }
                 return self[key].validate(runtime: runtime, type: field.type).map{_ in}
             }
         // Variant can be represented as ["Name": Value]
         case .variant(variants: let variants):
             guard count == 1 else {
-                return .failure(.wrongType(for: description, got: info.type,
-                                           reason: "count != 1 for variant"))
+                return .failure(.wrongType(for: self, type: info.type,
+                                           reason: "count != 1 for variant", .get()))
             }
             guard let variant = variants.first(where: { $0.name == first!.key }) else {
-                return .failure(.variantNotFound(for: description,
+                return .failure(.variantNotFound(for: self,
                                                  variant: first!.key,
-                                                 in: info.type))
+                                                 type: info.type, .get()))
             }
             // this will allow array/dictionary as a parameter
             if variant.fields.count == 1 {
@@ -194,9 +196,9 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
             switch first!.value {
             case let arr as Array<ValueRepresentable>:
                 guard variant.fields.count == arr.count else {
-                    return .failure(.wrongValuesCount(for: "\(self)",
+                    return .failure(.wrongValuesCount(for: self,
                                                       expected: variant.fields.count,
-                                                      in: info.type))
+                                                      type: info.type, .get()))
                 }
                 return zip(variant.fields, arr).voidErrorMap { field, elem in
                     elem.validate(runtime: runtime, type: field.type).map{_ in}
@@ -204,17 +206,17 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
             case let dict as Dictionary<String, ValueRepresentable>:
                 return variant.fields.voidErrorMap { field in
                     guard let key = field.name else {
-                        return .failure(.wrongType(for: description, got: info.type,
-                                                   reason: "field name is nil"))
+                        return .failure(.wrongType(for: self, type: info.type,
+                                                   reason: "field name is nil", .get()))
                     }
                     return dict[key].validate(runtime: runtime, type: field.type).map{_ in}
                 }
-            default: return .failure(.wrongType(for: description, got: info.type,
-                                                reason: "Can't be a variant type"))
+            default: return .failure(.wrongType(for: self, type: info.type,
+                                                reason: "Can't be a variant type", .get()))
             }
         default:
-            return .failure(.wrongType(for: description, got: info.type,
-                                       reason: "Isn't map"))
+            return .failure(.wrongType(for: self, type: info.type,
+                                       reason: "Isn't map", .get()))
         }
     }
     
@@ -225,8 +227,8 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
         case .composite(fields: let fields):
             let map = try fields.map { field in
                 guard let key = field.name else {
-                    throw TypeError.wrongType(for: description, got: info.type,
-                                              reason: "field name is nil")
+                    throw TypeError.wrongType(for: self, type: info.type,
+                                              reason: "field name is nil", .get())
                 }
                 return try (key, self[key].asValue(runtime: runtime, type: field.type))
             }
@@ -234,11 +236,12 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
         // Variant can be represented as ["Name": Value]
         case .variant(variants: let variants):
             guard count == 1 else {
-                throw TypeError.wrongType(for: description, got: info.type,
-                                          reason: "count != 1 for variant")
+                throw TypeError.wrongType(for: self, type: info.type,
+                                          reason: "count != 1 for variant", .get())
             }
             guard let variant = variants.first(where: { $0.name == first!.key }) else {
-                throw TypeError.variantNotFound(for: description, variant: first!.key, in: info.type)
+                throw TypeError.variantNotFound(for: self, variant: first!.key,
+                                                type: info.type, .get())
             }
             // this will allow array/dictionary as a parameter
             if variant.fields.count == 1 {
@@ -254,9 +257,9 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
             switch first!.value {
             case let arr as Array<ValueRepresentable>:
                 guard arr.count == variant.fields.count else {
-                    throw TypeError.wrongValuesCount(for: description,
+                    throw TypeError.wrongValuesCount(for: self,
                                                      expected: variant.fields.count,
-                                                     in: info.type)
+                                                     type: info.type, .get())
                 }
                 let seq = try zip(arr, variant.fields).map { el, fld in
                     try el.asValue(runtime: runtime, type: fld.type)
@@ -265,19 +268,19 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
             case let dict as Dictionary<String, ValueRepresentable>:
                 let map = try variant.fields.map { field in
                     guard let key = field.name else {
-                        throw TypeError.wrongType(for: description, got: info.type,
-                                                  reason: "field name is nil")
+                        throw TypeError.wrongType(for: self, type: info.type,
+                                                  reason: "field name is nil", .get())
                     }
                     return try (key, dict[key].asValue(runtime: runtime, type: field.type))
                 }
                 return .variant(name: variant.name,
                                 fields: Dictionary<_,_>(uniqueKeysWithValues: map), info.id)
-            default: throw TypeError.wrongType(for: Self.self, got: info.type,
-                                               reason: "Can't be a variant type")
+            default: throw TypeError.wrongType(for: self, type: info.type,
+                                               reason: "Can't be a variant type", .get())
             }
         default:
-            throw TypeError.wrongType(for: Self.self, got: info.type,
-                                      reason: "Isn't map")
+            throw TypeError.wrongType(for: self, type: info.type,
+                                      reason: "Isn't map", .get())
         }
     }
 }
@@ -299,7 +302,8 @@ extension Optional: ValueRepresentable, ValidatableTypeDynamic where Wrapped == 
         }
         return info.type.asOptional(runtime) != nil
             ? .success(())
-            : .failure(.wrongType(for: Self.self, got: info.type, reason: "Isn't oprional"))
+            : .failure(.wrongType(for: Self.self, type: info.type,
+                                  reason: "Isn't optional", .get()))
     }
     
     public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
@@ -311,7 +315,8 @@ extension Optional: ValueRepresentable, ValidatableTypeDynamic where Wrapped == 
             return try svalue.asValue(runtime: runtime, type: info)
         }
         guard info.type.asOptional(runtime) != nil else {
-            throw TypeError.wrongType(for: Self.self, got: info.type, reason: "Isn't oprional")
+            throw TypeError.wrongType(for: Self.self, type: info.type,
+                                      reason: "Isn't optional", .get())
         }
         return .variant(name: "None", values: [], info.id)
     }
@@ -331,7 +336,8 @@ extension Either: ValueRepresentable, ValidatableTypeDynamic
 {
     public func validate(runtime: Runtime, type info: NetworkType.Info) -> Result<Void, TypeError> {
         guard let result = info.type.asResult(runtime) else {
-            return .failure(.wrongType(for: "\(self)", got: info.type, reason: "Isn't Result"))
+            return .failure(.wrongType(for: self, type: info.type,
+                                       reason: "Isn't Result", .get()))
         }
         switch self {
         case .left(let err):
@@ -344,15 +350,18 @@ extension Either: ValueRepresentable, ValidatableTypeDynamic
     
     public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
         guard let result = info.type.asResult(runtime) else {
-            throw TypeError.wrongType(for: "\(self)", got: info.type, reason: "Isn't Result")
+            throw TypeError.wrongType(for: self, type: info.type,
+                                      reason: "Isn't Result", .get())
         }
         switch self {
         case .left(let err):
             return try .variant(name: "Err",
-                                values: [err.asValue(runtime: runtime, type: result.err.type)], info.id)
+                                values: [err.asValue(runtime: runtime,
+                                                     type: result.err.type)], info.id)
         case .right(let ok):
             return try .variant(name: "Ok",
-                                values: [ok.asValue(runtime: runtime, type: result.ok.type)], info.id)
+                                values: [ok.asValue(runtime: runtime,
+                                                    type: result.ok.type)], info.id)
         }
     }
 }

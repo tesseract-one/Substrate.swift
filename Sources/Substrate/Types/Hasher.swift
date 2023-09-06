@@ -27,8 +27,8 @@ public extension StaticHasher {
                          type: NetworkType.Info) -> Result<Void, TypeError>
     {
         guard let name = type.type.path.last, name == hasherType.name else {
-            return .failure(.wrongType(for: Self.self, got: type.type,
-                                       reason: "Unknown hasher: \(type.type)"))
+            return .failure(.wrongType(for: Self.self, type: type.type,
+                                       reason: "Unknown hasher: \(type.type)", .get()))
         }
         return .success(())
     }

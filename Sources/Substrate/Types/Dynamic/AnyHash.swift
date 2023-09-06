@@ -23,15 +23,15 @@ public struct AnyHash: Hash {
     {
         let type = try id()
         guard let info = metadata.resolve(type: type) else {
-            throw TypeError.typeNotFound(for: Self.self, id: type)
+            throw TypeError.typeNotFound(for: Self.self, id: type, .get())
         }
         guard let count = info.asBytes(metadata) else {
-            throw TypeError.wrongType(for: Self.self, got: info,
-                                      reason: "Isn't bytes")
+            throw TypeError.wrongType(for: Self.self, type: info,
+                                      reason: "Isn't bytes", .get())
         }
         guard count == 0 || count == raw.count else {
             throw TypeError.wrongValuesCount(for: Self.self,
-                                             expected: raw.count, in: info)
+                                             expected: raw.count, type: info, .get())
         }
         self.raw = raw
     }

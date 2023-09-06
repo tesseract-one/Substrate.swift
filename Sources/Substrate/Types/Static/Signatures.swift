@@ -52,17 +52,17 @@ public extension SingleTypeStaticSignature {
                           type: NetworkType) -> Result<Void, TypeError> {
         return AnySignature.parseTypeInfo(runtime: runtime, type: type).flatMap { types in
             guard types.count == 1, types.values.first == algorithm else {
-                return .failure(.wrongType(for: Self.self, got: type,
-                                           reason: "Unknown signature type: \(types)"))
+                return .failure(.wrongType(for: Self.self, type: type,
+                                           reason: "Unknown signature type: \(types)", .get()))
             }
             guard let count = type.asBytes(runtime) else {
-                return .failure(.wrongType(for: Self.self, got: type,
-                                           reason: "Signature is not byte sequence"))
+                return .failure(.wrongType(for: Self.self, type: type,
+                                           reason: "Signature is not byte sequence", .get()))
             }
             guard Self.fixedBytesCount == count else {
                 return .failure(.wrongValuesCount(for: Self.self,
                                                   expected: Self.fixedBytesCount,
-                                                  in: type))
+                                                  type: type, .get()))
             }
             return .success(())
         }
