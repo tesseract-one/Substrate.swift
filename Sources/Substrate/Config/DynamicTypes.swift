@@ -45,12 +45,28 @@ public struct DynamicTypes {
 }
 
 public extension DynamicTypes {
-    enum LookupError: Error {
-        case typeNotFound(id: NetworkType.Id)
+    enum LookupError: Error, CustomDebugStringConvertible {
+        case typeIdNotFound(id: NetworkType.Id)
         case typeNotFound(name: String, selector: String)
-        case typeNotFound(name: String, in: String, selector: String)
+        case subtypeNotFound(name: String, in: String, selector: String)
         case wrongType(name: String, reason: String)
         case unknownHasherType(type: String)
+        
+        public var debugDescription: String {
+            switch self {
+            case .typeIdNotFound(id: let id):
+                return "Type #\(id) not found in metadata"
+            case .typeNotFound(name: let n, selector: let s):
+                return "Type \(n) not found in medatadat by \"\(s)\" selector"
+            case .subtypeNotFound(name: let n, in: let i, selector: let s):
+                return "Type \(n) not found in the type \(i) metadata using \"\(s)\" selector"
+            case .wrongType(name: let n, reason: let r):
+                return "Bad type \(n), reason: \(r)"
+            case .unknownHasherType(type: let t):
+                return "Unknown hasher with type: \(t)"
+            
+            }
+        }
     }
 }
 
@@ -120,23 +136,23 @@ public extension DynamicTypes {
                 return .failure(.wrongType(name: "Header", reason: "Not a composite"))
             }
             guard let id = fs.first(where:{$0.typeName?.lowercased().contains("hash") ?? false})?.type else {
-                return .failure(.typeNotFound(name: "Hash", in: "Header", selector: ".hash.typeName"))
+                return .failure(.subtypeNotFound(name: "Hash", in: "Header", selector: ".hash.typeName"))
             }
             guard let type = metadata.resolve(type: id) else {
-                return .failure(.typeNotFound(id: id))
+                return .failure(.typeIdNotFound(id: id))
             }
             return .success(id.i(type))
         }
         
         let hasher: Maybe<AnyFixedHasher.HashType> = header!.flatMap { header in
             guard let id = header.type.parameters.first(where:{$0.name.lowercased() == "hash"})?.type else {
-                return .failure(.typeNotFound(name: "Hash", in: "Header", selector: "Parameter: Hash"))
+                return .failure(.subtypeNotFound(name: "Hash", in: "Header", selector: "Parameter: Hash"))
             }
             guard let type = metadata.resolve(type: id) else {
-                return .failure(.typeNotFound(id: id))
+                return .failure(.typeIdNotFound(id: id))
             }
             guard let hasherName = type.path.last else {
-                return .failure(.typeNotFound(name: "Hasher", in: "Header", selector: "path"))
+                return .failure(.subtypeNotFound(name: "Hasher", in: "Header", selector: "path"))
             }
             guard let hasher = AnyFixedHasher.HashType(name: hasherName) else {
                 return .failure(.unknownHasherType(type: hasherName))
@@ -165,8 +181,8 @@ public extension DynamicTypes {
                  signature: NetworkType.Info, extra: NetworkType.Info), LookupError>
     {
         guard let metaType = metadata.extrinsic.type else {
-            return .failure(.typeNotFound(name: "NetworkType.Info", in: "Metadata",
-                                          selector: ".extrinsic.type"))
+            return .failure(.subtypeNotFound(name: "NetworkType.Info", in: "Metadata",
+                                             selector: ".extrinsic.type"))
         }
         var addressId: NetworkType.Id? = nil
         var sigId: NetworkType.Id? = nil
@@ -183,20 +199,20 @@ public extension DynamicTypes {
         }
         guard let addressId = addressId, let addressType = metadata.resolve(type: addressId) else
         {
-            return .failure(.typeNotFound(name: "Address", in: "Extrinsic",
-                                          selector: "Parameter: Address"))
+            return .failure(.subtypeNotFound(name: "Address", in: "Extrinsic",
+                                             selector: "Parameter: Address"))
         }
         guard let sigId = sigId, let sigType = metadata.resolve(type: sigId) else {
-            return .failure(.typeNotFound(name: "Signature", in: "Extrinsic",
-                                          selector: "Parameter: Signature"))
+            return .failure(.subtypeNotFound(name: "Signature", in: "Extrinsic",
+                                             selector: "Parameter: Signature"))
         }
         guard let callId = callId, let callType = metadata.resolve(type: callId) else {
-            return .failure(.typeNotFound(name: "Call", in: "Extrinsic",
-                                          selector: "Parameter: Call"))
+            return .failure(.subtypeNotFound(name: "Call", in: "Extrinsic",
+                                             selector: "Parameter: Call"))
         }
         guard let extraId = extraId, let extraType = metadata.resolve(type: extraId) else {
-            return .failure(.typeNotFound(name: "Extra", in: "Extrinsic",
-                                          selector: "Parameter: Extra"))
+            return .failure(.subtypeNotFound(name: "Extra", in: "Extrinsic",
+                                             selector: "Parameter: Extra"))
         }
         return .success((call: callId.i(callType), address: addressId.i(addressType),
                          signature: sigId.i(sigType), extra: extraId.i(extraType)))
@@ -207,17 +223,17 @@ public extension DynamicTypes {
         blockEvents: BE.Type, beKey: (name: String, pallet: String), metadata: any Metadata
     ) -> Result<NetworkType.Info, LookupError> {
         guard let beStorage = metadata.resolve(pallet: beKey.pallet)?.storage(name: beKey.name) else {
-            return .failure(.typeNotFound(name: "Storage", in: "Metadata",
-                                          selector: "\(beKey.pallet).\(beKey.name)"))
+            return .failure(.subtypeNotFound(name: "Storage", in: "Metadata",
+                                             selector: "\(beKey.pallet).\(beKey.name)"))
         }
         guard let id = blockEvents.eventTypeId(metadata: metadata,
                                                events: beStorage.types.value) else {
-            return .failure(.typeNotFound(name: "Event",
-                                          in: String(describing: BE.self),
-                                          selector: "Element.Type"))
+            return .failure(.subtypeNotFound(name: "Event",
+                                             in: String(describing: BE.self),
+                                             selector: "Element.Type"))
         }
         guard let type = metadata.resolve(type: id) else {
-            return .failure(.typeNotFound(id: id))
+            return .failure(.typeIdNotFound(id: id))
         }
         return .success(id.i(type))
     }
