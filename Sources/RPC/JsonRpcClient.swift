@@ -83,6 +83,7 @@ public class JsonRpcSubscribableClient:
         case codec(CodecError)
         case request(RequestError<Any, AnyValue>)
         case unknown(subscription: String)
+        case outdated(subscriptions: [String])
         case unsubscribeFailed
         case disconnected
         case duplicate(id: String)
@@ -114,21 +115,41 @@ public class JsonRpcSubscribableClient:
     
     private actor Subscriptions {
         private var subscriptions: [String: (Result<Parsable, Error>) -> Void] = [:]
+        private var buffered: [String: ([Parsable], TimeInterval)] = [:]
         
         func add(id: String, cb: @escaping (Result<Parsable, Error>) -> Void) throws {
             guard subscriptions[id] == nil else { throw Error.duplicate(id: id) }
             subscriptions[id] = cb
+            if let buff = buffered[id] {
+                buffered.removeValue(forKey: id)
+                for message in buff.0 { cb(.success(message)) }
+            }
         }
         
-        func call(id: String, with res: Result<Parsable, Error>) throws {
-            guard let cb = subscriptions[id] else { throw Error.unknown(subscription: id) }
-            cb(res)
+        func call(id: String, with value: Parsable) throws {
+            if let cb = subscriptions[id] {
+                cb(.success(value))
+            } else {
+                var buf = buffered[id] ?? ([], Date().timeIntervalSinceReferenceDate)
+                buf.0.append(value)
+                buffered[id] = buf
+            }
         }
         
         func remove(id: String) throws {
             guard subscriptions.removeValue(forKey: id) != nil else {
                 throw Error.unknown(subscription: id)
             }
+        }
+        
+        func clearBuffer() -> [String]? {
+            let now = Date().timeIntervalSinceReferenceDate
+            let outdated = buffered.filter{ now - $1.1 >= 30 }.keys
+            if outdated.count > 0 {
+                outdated.forEach{buffered.removeValue(forKey: $0)}
+                return Array(outdated)
+            }
+            return nil
         }
         
         func clear() -> [String: (Result<Parsable, Error>) -> Void] {
@@ -139,6 +160,7 @@ public class JsonRpcSubscribableClient:
     
     public weak var delegate: JsonRpcClientDelegate?
     private var subscriptions: Subscriptions
+    private var cleanupTimer: Task<Void, Never>!
     
     public init(client: JsonRPC.Client & Persistent & ContentCodersProvider,
                 delegate: JsonRpcClientDelegate?)
@@ -147,6 +169,17 @@ public class JsonRpcSubscribableClient:
         self.delegate = delegate
         super.init(client: client)
         client.delegate = self
+        self.cleanupTimer = Task.detached(priority: .background) { [weak self] in
+            while !Task.isCancelled {
+                if let outdated = await self?.subscriptions.clearBuffer() {
+                    self?.onError(.outdated(subscriptions: outdated))
+                }
+                do {
+                    try await Task.sleep(nanoseconds: 5_000_000_000)
+                } catch { break }
+            }
+            return
+        }
     }
     
     public func subscribe<Params: Encodable, Event: Decodable>(
@@ -197,7 +230,7 @@ public class JsonRpcSubscribableClient:
             }
             Task {
                 do {
-                    try await self.subscriptions.call(id: header.subscription, with: .success(params))
+                    try await self.subscriptions.call(id: header.subscription, with: params)
                 } catch {
                     self.onError(.from(any: error))
                 }
@@ -277,6 +310,11 @@ public class JsonRpcSubscribableClient:
         for (_, cb) in subscriptions {
             cb(.failure(reason))
         }
+    }
+    
+    deinit {
+        self.cleanupTimer.cancel()
+        self.cleanupTimer = nil
     }
 }
 
