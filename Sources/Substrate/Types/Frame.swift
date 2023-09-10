@@ -13,6 +13,7 @@ public protocol Frame: RuntimeValidatableType {
     
     var calls: [PalletCall.Type] { get }
     var events: [PalletEvent.Type] { get }
+    var errors: [StaticPalletError.Type] { get }
     var storageKeys: [any PalletStorageKey.Type] { get }
     var constants: [any StaticConstant.Type] { get }
 }
@@ -25,6 +26,7 @@ public extension Frame {
             .flatMap { events.voidErrorMap { $0.validate(runtime: runtime) } }
             .flatMap { storageKeys.voidErrorMap { $0.validate(runtime: runtime) } }
             .flatMap { constants.voidErrorMap { $0.validate(runtime: runtime) } }
+            .flatMap { errors.voidErrorMap { $0.validate(runtime: runtime) }}
     }
 }
 
@@ -57,6 +59,14 @@ public protocol FrameConstant: StaticConstant {
 }
 
 public extension FrameConstant {
+    static var pallet: String { TFrame.name }
+}
+
+public protocol FrameError: StaticPalletError {
+    associatedtype TFrame: Frame
+}
+
+public extension FrameError {
     static var pallet: String { TFrame.name }
 }
 

@@ -101,62 +101,15 @@ public protocol SomeExtrinsicFailureEvent: PalletEvent {
 }
 
 public protocol SomeDispatchError: CallError {
-    associatedtype TModuleError: Error
     var isModuleError: Bool { get }
-    var moduleError: TModuleError { get throws }
+    var moduleErrorInfo: (name: String, pallet: String) { get throws }
+    
+    func typedModuleError<E: PalletError>(_ type: E.Type) throws -> E
+    var anyModuleError: AnyModuleError { get throws }
 }
 
-public struct ModuleError: Error, IdentifiableType {
-    public let pallet: PalletMetadata
-    public let error: TypeDefinition.Variant
-    
-    public init(values: [Value<TypeDefinition>], runtime: any Runtime) throws {
-        guard values.count == 2 else {
-            throw FrameTypeError.wrongFieldsCount(for: "ModuleError", expected: 2,
-                                                  got: values.count, .get())
-        }
-        guard let index = values[0].uint.flatMap({UInt8(exactly: $0)}) else {
-            throw FrameTypeError.paramMismatch(for: "Error", index: 0,
-                                               expected: "UInt8",
-                                               got: values[0].description, .get())
-        }
-        guard let bytes = values[1].bytes, bytes.count > 0 else {
-            throw FrameTypeError.paramMismatch(for: "Error", index: 1,
-                                               expected: "Data",
-                                               got: values[1].description, .get())
-        }
-        try self.init(pallet: index, error: bytes[0], metadata: runtime.metadata)
-    }
-    
-    public init(pallet: UInt8, error: UInt8, metadata: any Metadata) throws {
-        guard let pallet = metadata.resolve(pallet: pallet) else {
-            throw FrameTypeError.typeInfoNotFound(for: "Error", index: error,
-                                                  frame: pallet, .get())
-        }
-        guard let palletError = pallet.error else {
-            throw FrameTypeError.paramMismatch(for: "\(pallet.name).error",
-                                               index: -1, expected: "NetworkType.Info",
-                                               got: "nil", .get())
-        }
-        guard case .variant(variants: let variants) = palletError.definition else {
-            throw FrameTypeError.wrongType(for: "\(pallet.name).error",
-                                           got: palletError.description,
-                                           reason: "Should be Variant", .get())
-        }
-        guard let error = variants.first(where: { $0.index == error }) else {
-            throw FrameTypeError.typeInfoNotFound(for: "Error", index: error,
-                                                  frame: pallet.index, .get())
-        }
-        self.pallet = pallet
-        self.error = error
-    }
-    
-    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder
-    {
-        .composite(fields: [
-            .v(registry.def(UInt8.self)),
-            .v(registry.def(Data.self, .fixed(4)))
-        ])
-    }
+public extension SomeDispatchError {
+    var anyModuleError: AnyModuleError { get throws {
+        try typedModuleError(AnyModuleError.self)
+    }}
 }
-

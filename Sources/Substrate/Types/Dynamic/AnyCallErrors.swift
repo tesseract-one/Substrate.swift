@@ -39,27 +39,42 @@ public struct AnyTransactionValidityError: CallError, CustomDebugStringConvertib
 }
 
 public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, CustomDebugStringConvertible {
-    public typealias TModuleError = ModuleError
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
     public let value: Value<TypeDefinition>
     private let _runtime: any Runtime
     
     @inlinable
-    public var isModuleError: Bool { value.variant?.name.contains("Module") ?? false }
+    public var isModuleError: Bool { value.variant?.name == "Module" }
     
-    public var moduleError: TModuleError { get throws {
+    public var moduleErrorInfo: (name: String, pallet: String) { get throws {
+        let data = try moduleErrorData
+        let info = try AnyModuleError.fetchInfo(error: data[1],
+                                                pallet: data[0],
+                                                runtime: _runtime).get()
+        return (info.error.name, info.pallet)
+    }}
+    
+    public func typedModuleError<E: PalletError>(_ type: E.Type) throws -> E {
+        try _runtime.decode(from: moduleErrorData)
+    }
+    
+    public var moduleError: Value<TypeDefinition> { get throws {
+        guard isModuleError else {
+            throw FrameTypeError.paramMismatch(for: "AnyDispatchError",
+                                               index: -1, expected: "Module",
+                                               got: "\(self)", .get())
+        }
         let fields = value.variant!.values
         guard fields.count == 1 else {
-            throw FrameTypeError.wrongFieldsCount(for: "DispatchError.\(value.variant!.name)",
+            throw FrameTypeError.wrongFieldsCount(for: "DispatchError.Module",
                                                   expected: 1, got: fields.count, .get())
         }
-        guard let values = fields[0].sequence else {
-            throw FrameTypeError.paramMismatch(for: "DispatchError.\(value.variant!.name)",
-                                               index: 0, expected: "Composite",
-                                               got: fields[0].description, .get())
-        }
-        return try ModuleError(values: values, runtime: _runtime)
+        return fields[0]
+    }}
+    
+    public var moduleErrorData: Data { get throws {
+        try _runtime.encode(value: moduleError)
     }}
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: TypeDefinition, runtime: Runtime) throws {
@@ -99,7 +114,7 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
             return .failure(.wrongValuesCount(for: Self.self, expected: 1,
                                               type: type, .get()))
         }
-        return TModuleError.validate(as: *module.fields[0].type, in: runtime)
+        return .success(())
     }
     
     public var debugDescription: String {

@@ -21,6 +21,8 @@ extension Configs.Substrate {
             [ST<C>.ExtrinsicFailureEvent.self]
         }
         
+        var errors: [StaticPalletError.Type] {[]}
+        
         var storageKeys: [any PalletStorageKey.Type] {
             [Storage.Account<ST<C>.AccountId,
                             Types.AccountInfo<ST<C>.Index, Types.AccountData<Types.Balance>>>.self]

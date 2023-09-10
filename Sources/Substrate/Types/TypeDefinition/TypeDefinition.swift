@@ -11,8 +11,9 @@ prefix operator *
 
 public protocol AnyTypeDefinition: Equatable, Hashable, CustomStringConvertible {
     var name: String { get }
-    var parameters: [TypeDefinition.Parameter] { get }
+    var parameters: [TypeDefinition.Parameter]? { get }
     var definition: TypeDefinition.Def { get }
+    var docs: [String]? { get }
     
     var weak: TypeDefinition.Weak { get }
     var strong: TypeDefinition { get }
@@ -21,20 +22,21 @@ public protocol AnyTypeDefinition: Equatable, Hashable, CustomStringConvertible 
 
 public struct TypeDefinition: AnyTypeDefinition {
     @inlinable public var name: String { _storage.name }
-    @inlinable public var parameters: [Parameter] { _storage.parameters }
+    @inlinable public var parameters: [Parameter]? { _storage.parameters }
     @inlinable public var definition: Def { _storage.definition }
+    @inlinable public var docs: [String]? { _storage.docs }
     
     @inlinable public var weak: Weak { _storage.weak }
     @inlinable public var strong: Self { self }
     @inlinable public var objectId: ObjectIdentifier { _storage.id }
     
-    private init(storage: Storage, registry: AnyObject) {
+    public let _storage: Storage
+    public let _registry: AnyObject
+    
+    public init(storage: Storage, registry: AnyObject) {
         self._storage = storage
         self._registry = registry
     }
-    
-    public let _storage: Storage
-    private let _registry: AnyObject
 }
 
 public extension TypeDefinition {
@@ -67,6 +69,8 @@ public extension TypeDefinition {
     struct Field: Equatable, Hashable, CustomStringConvertible {
         public let name: String?
         public let type: TypeDefinition.Weak
+        public let typeName: String? = nil
+        public let docs: [String]? = nil
         
         public init(_ name: String?, _ type: TypeDefinition.Weak) {
             self.name = name; self.type = type
@@ -140,6 +144,7 @@ public extension TypeDefinition {
         public let name: String
         public let type: TypeDefinition.Weak?
         
+        
         public init(name: String, type: TypeDefinition.Weak?) {
             self.name = name
             self.type = type
@@ -165,8 +170,9 @@ public extension TypeDefinition {
 public extension TypeDefinition {
     struct Weak: AnyTypeDefinition {
         public var name: String { _storage.name }
-        public var parameters: [Parameter] { _storage.parameters }
+        public var parameters: [Parameter]? { _storage.parameters }
         public var definition: Def { _storage.definition }
+        public var docs: [String]? { _storage.docs }
         
         public var strong: TypeDefinition { _storage.strong }
         @inlinable public var weak: Self { self }
@@ -174,17 +180,18 @@ public extension TypeDefinition {
         
         public static prefix func * (def: Self) -> TypeDefinition { def._storage.strong }
         
-        fileprivate init(storage: Storage) {
+        public private(set) weak var _storage: Storage!
+        
+        public init(storage: Storage) {
             self._storage = storage
         }
-        
-        private weak var _storage: Storage!
     }
     
     final class Storage: Equatable, Hashable, CustomStringConvertible {
         public var name: String { _name }
         public var definition: Def { _definition }
-        public var parameters: [Parameter] { _parameters }
+        public var parameters: [Parameter]? { _parameters }
+        public var docs: [String]? { _docs }
         
         public var weak: Weak { Weak(storage: self) }
         public var strong: TypeDefinition {
@@ -204,8 +211,9 @@ public extension TypeDefinition {
         ) -> Result<TypeDefinition, E> {
             ctr().map { bd in
                 self._name = bd.params.name!
-                self._parameters = bd.params.parameters ?? []
+                self._parameters = bd.params.parameters
                 self._definition = bd.def
+                self._docs = bd.params.docs
                 return self.strong
             }
         }
@@ -220,7 +228,8 @@ public extension TypeDefinition {
         
         private var _definition: Def
         private var _name: String!
-        private var _parameters: [Parameter]!
+        private var _parameters: [Parameter]?
+        private var _docs: [String]?
         private weak var _registry: AnyObject!
     }
     
@@ -238,34 +247,50 @@ public extension TypeDefinition {
         public struct OptParams {
             public let name: String?
             public let parameters: [Parameter]?
+            public let docs: [String]?
             
-            public init(name: String?, parameters: [Parameter]?) {
+            public init(name: String? = nil,
+                        parameters: [Parameter]? = nil,
+                        docs: [String]? = nil)
+            {
                 self.name = name
                 self.parameters = parameters
+                self.docs = docs
             }
             
             @inlinable
             public static func name(_ name: String) -> Self {
-                Self(name: name, parameters: nil)
+                Self(name: name)
             }
             @inlinable
             public static func parameters(_ params: [Parameter]) -> Self {
-                Self(name: nil, parameters: params)
+                Self(parameters: params)
             }
             @inlinable
-            public static func info(name: String, parameters: [Parameter]) -> Self {
+            public static func docs(_ docs: [String]) -> Self {
+                Self(docs: docs)
+            }
+            @inlinable
+            public static func info(name: String,
+                                    parameters: [Parameter]?,
+                                    docs: [String]?) -> Self
+            {
                 Self(name: name, parameters: parameters)
             }
             @inlinable
             public func name(_ name: String) -> Self {
-                Self(name: name, parameters: parameters)
+                Self(name: name, parameters: parameters, docs: docs)
             }
             @inlinable
-            public func parameters(_ params: [Parameter]) -> Self {
-                Self(name: name, parameters: params)
+            public func parameters(_ parameters: [Parameter]) -> Self {
+                Self(name: name, parameters: parameters, docs: docs)
             }
             @inlinable
-            public static var empty: Self { Self(name: nil, parameters: nil) }
+            public func docs(_ docs: [String]) -> Self {
+                Self(name: name, parameters: parameters, docs: docs)
+            }
+            @inlinable
+            public static var empty: Self { Self() }
             @inlinable
             public func composite(fields: [Field]) -> TypeDefinition.Builder {
                 .def(.composite(fields: fields))
@@ -313,12 +338,19 @@ public extension TypeDefinition {
         @inlinable
         public static func name(_ name: String) -> OptParams { .name(name) }
         @inlinable
-        public static func parameters(_ params: [Parameter]) -> OptParams {
-            .parameters(params)
+        public static func parameters(_ parameters: [Parameter]) -> OptParams {
+            .parameters(parameters)
         }
         @inlinable
-        public static func info(name: String, parameters: [Parameter]) -> OptParams {
-            .info(name: name, parameters: parameters)
+        public static func docs(_ docs: [String]) -> OptParams {
+            .docs(docs)
+        }
+        @inlinable
+        public static func info(name: String,
+                                parameters: [Parameter]?,
+                                docs: [String]?) -> OptParams
+        {
+            .info(name: name, parameters: parameters, docs: docs)
         }
         @inlinable
         public static func composite(fields: [Field]) -> Self {
@@ -363,8 +395,12 @@ public extension TypeDefinition {
             params.parameters(parameters).def(def)
         }
         @inlinable
-        public func info(name: String, parameters: [Parameter]) -> Self {
-            Self.info(name: name, parameters: parameters).def(def)
+        public func docs(_ docs: [String]) -> Self {
+            params.docs(docs).def(def)
+        }
+        @inlinable
+        public func info(name: String, parameters: [Parameter]?, docs: [String]?) -> Self {
+            Self.info(name: name, parameters: parameters, docs: docs).def(def)
         }
     }
 }
@@ -376,8 +412,8 @@ public extension Optional where Wrapped == TypeDefinition.Weak {
 
 public extension AnyTypeDefinition {
     @inlinable var fullName: String {
-        parameters.count == 0 ? name
-            : "\(name)<\(parameters.map{$0.name}.joined(separator: ", "))>"
+        (parameters?.count ?? 0) == 0 ? name
+            : "\(name)<\(parameters!.map{$0.name}.joined(separator: ", "))>"
     }
     
     @inlinable func flatten() -> TypeDefinition {

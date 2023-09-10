@@ -166,7 +166,7 @@ public extension SomeEventRecord {
         let eventNames = ["event", "e", "ev"]
         var type = fields.first { eventNames.contains($0.name ?? "") }?.type
         if type == nil {
-            type = flat.parameters.first { eventNames.contains($0.name.lowercased()) }?.type
+            type = flat.parameters?.first { eventNames.contains($0.name.lowercased()) }?.type
         }
         return *type
     }

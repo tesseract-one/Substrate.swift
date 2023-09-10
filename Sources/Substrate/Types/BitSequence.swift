@@ -259,6 +259,24 @@ extension BitSequence.Format.Store {
     }
     
     @inlinable
+    public var type: NetworkType {
+        switch self {
+        case .u8:
+            return NetworkType(path: ["bitvec", "order", "u8"], parameters: [],
+                               definition: .primitive(is: .u8), docs: [])
+        case .u16:
+            return NetworkType(path: ["bitvec", "order", "u16"], parameters: [],
+                               definition: .primitive(is: .u16), docs: [])
+        case .u32:
+            return NetworkType(path: ["bitvec", "order", "u32"], parameters: [],
+                               definition: .primitive(is: .u32), docs: [])
+        case .u64:
+            return NetworkType(path: ["bitvec", "order", "u64"], parameters: [],
+                               definition: .primitive(is: .u64), docs: [])
+        }
+    }
+    
+    @inlinable
     public var bits: UInt32 {
         UInt32(self.rawValue)
     }
@@ -289,6 +307,18 @@ extension BitSequence.Format.Order {
             return .failure(.badBitSequenceFormat(type: type,
                                                   reason: "Order format is not supported",
                                                   info: .get()))
+        }
+    }
+    
+    @inlinable
+    public var type: NetworkType {
+        switch self {
+        case .lsb0:
+            return NetworkType(path: ["bitvec", "order", "Lsb0"], parameters: [],
+                               definition: .composite(fields: []), docs: [])
+        case .msb0:
+            return NetworkType(path: ["bitvec", "order", "Msb0"], parameters: [],
+                               definition: .composite(fields: []), docs: [])
         }
     }
 }

@@ -93,7 +93,7 @@ public extension DynamicTypes {
         }
         
         let account: Maybe<TypeDefinition>
-        let accountType = ext.address.parameters.first {
+        let accountType = ext.address.parameters?.first {
             accountParamNames.contains($0.name.lowercased())
         }?.type
         if let accountType = accountType {
@@ -138,7 +138,7 @@ public extension DynamicTypes {
         }
         
         let hasher: Maybe<AnyFixedHasher.HashType> = header!.flatMap { header in
-            guard let type = header.parameters.first(where:{$0.name.lowercased() == "hash"})?.type else {
+            guard let type = header.parameters?.first(where:{$0.name.lowercased() == "hash"})?.type else {
                 return .failure(.subtypeNotFound(name: "Hash", in: "Header", selector: "Parameter: Hash"))
             }
             guard let hasherName = type.name.split(separator: ".").last else {
@@ -174,11 +174,14 @@ public extension DynamicTypes {
             return .failure(.subtypeNotFound(name: "NetworkType.Info", in: "Metadata",
                                              selector: ".extrinsic.type"))
         }
+        guard let metaTypeParameters = metaType.parameters else {
+            return .failure(.wrongType(name: "Extrinsic", reason: "Type parameters is nil"))
+        }
         var addressType: TypeDefinition? = nil
         var sigType: TypeDefinition? = nil
         var extraType: TypeDefinition? = nil
         var callType: TypeDefinition? = nil
-        for param in metaType.parameters {
+        for param in metaTypeParameters {
             switch param.name.lowercased() {
             case "address": addressType = *param.type
             case "signature": sigType = *param.type

@@ -61,7 +61,7 @@ public extension TypeRegistry where Id == NetworkType.Id {
     
     func def(
         id: Id,
-        _ ctr: () -> Result<(TypeDefinition.Builder), MetadataError>
+        _ ctr: () -> Result<TypeDefinition.Builder, MetadataError>
     ) -> Result<TypeDefinition, MetadataError> {
         if let def = self[id] { return .success(def) }
         let storage = TypeDefinition.Storage(registry: self)

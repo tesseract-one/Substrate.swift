@@ -19,7 +19,7 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
     /// A bad origin.
     case badOrigin
     /// A custom error in a module.
-    case module(ModuleErrorData)
+    case module(ModuleError)
     /// At least one consumer is remaining so the account cannot be destroyed.
     case consumerRemaining
     /// There are no providers so the account cannot be created.
@@ -42,8 +42,6 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
     /// Root origin is not allowed.
     case rootNotAllowed
     
-    public typealias TModuleError = ModuleError
-    
     public var isModuleError: Bool {
         switch self {
         case .module(_): return true
@@ -53,16 +51,21 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
     
     public var moduleError: ModuleError { get throws {
         switch self {
-        case .module(let data):
-            return try ModuleError(pallet: data.index,
-                                   error: data.error[0],
-                                   metadata: data._runtime.metadata)
+        case .module(let err): return err
         default:
             throw FrameTypeError.paramMismatch(for: "DispatchError",
-                                               index: -1, expected: "ModuleError",
+                                               index: -1, expected: "Module",
                                                got: "\(self)", .get())
         }
     }}
+    
+    public var moduleErrorInfo: (name: String, pallet: String) { get throws {
+        try moduleError.info
+    }}
+    
+    public func typedModuleError<E: PalletError>(_ type: E.Type) throws -> E {
+        try moduleError.parse(type)
+    }
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws {
         let id = try decoder.decode(.enumCaseId)
@@ -116,7 +119,7 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
     {
         .variant(variants: [
             .e(0, "Other"), .e(1, "CannotLookup"), .e(2, "BadOrigin"),
-            .s(3, "Module", registry.def(ModuleErrorData.self)),
+            .s(3, "Module", registry.def(ModuleError.self)),
             .e(4, "ConsumerRemaining"), .e(5, "NoProviders"), .e(6, "TooManyConsumers"),
             .s(7, "Token", registry.def(TokenError.self)),
             .s(8, "Arithmetic", registry.def(ArithmeticError.self)),
@@ -129,8 +132,8 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
 
 public extension DispatchError {
     /// Reason why a pallet call failed.
-    struct ModuleErrorData: Equatable, RuntimeDecodable, ScaleCodec.Encodable,
-                            RuntimeSwiftCodable, Swift.Encodable, IdentifiableType
+    struct ModuleError: Equatable, RuntimeDecodable, ScaleCodec.Encodable,
+                        RuntimeSwiftCodable, Swift.Encodable, IdentifiableType
     {
         /// Module index, matching the metadata module index.
         public let index: UInt8
@@ -161,6 +164,17 @@ public extension DispatchError {
             var container = encoder.container(keyedBy: CodableComplexKey<Self>.self)
             try container.encode(index, forKey: .index)
             try container.encode(error, forKey: .error)
+        }
+        
+        public var info: (name: String, pallet: String) { get throws {
+            let info = try AnyModuleError.fetchInfo(error: error[0],
+                                                    pallet: index,
+                                                    runtime: _runtime).get()
+            return (info.error.name, info.pallet)
+        }}
+        
+        public func parse<T: PalletError>(_ type: T.Type) throws -> T {
+            return try _runtime.decode(from: [index] + error)
         }
         
         public static func == (lhs: Self, rhs: Self) -> Bool {
@@ -249,7 +263,7 @@ extension DispatchError: RuntimeSwiftCodable, Swift.Encodable {
             }
             switch key {
             case .module:
-                let m = try container2.decode(ModuleErrorData.self, forKey: key,
+                let m = try container2.decode(ModuleError.self, forKey: key,
                                               context: .init(runtime: runtime))
                 self = .module(m)
             case .token:
@@ -314,7 +328,7 @@ extension DispatchError: RuntimeSwiftCodable, Swift.Encodable {
     }
 }
 
-private extension CodableComplexKey where T == DispatchError.ModuleErrorData {
+private extension CodableComplexKey where T == DispatchError.ModuleError {
     static let index = Self(stringValue: "index")!
     static let error = Self(stringValue: "error")!
 }

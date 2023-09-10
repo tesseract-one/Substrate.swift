@@ -51,6 +51,7 @@ public enum FrameTypeDefinition {
     case constant(type: TypeDefinition)
     case runtimeCall(params: [TypeDefinition.Field], return: TypeDefinition)
     case storage(keys: StorageKeyTypeKeysInfo, value: TypeDefinition)
+    case error(fields: [TypeDefinition.Field])
 }
 
 
@@ -145,6 +146,12 @@ public extension FrameTypeDefinition {
             return vtype.validate(for: type.errorTypeName,
                                   as: info.type).mapError {
                 .childError(for: type, index: -1, error: $0, .get())
+            }
+        case .error(fields: let fields):
+            return AnyModuleError.fetchInfo(error: type.name, pallet: type.frame,
+                                            runtime: runtime).flatMap { vrt in
+                return validate(fields: fields, ifields: vrt.fields.map{($0.name, *$0.type)},
+                                type: type, runtime: runtime)
             }
         case .storage(keys: let path, value: let vtype):
             guard let info = runtime.resolve(storage: type.name, pallet: type.frame) else {

@@ -15,19 +15,17 @@ public final class MetadataV14: Metadata {
     public var pallets: [String] { Array(palletsByName.keys) }
     public var apis: [String] { [] }
     
-    public let types: NetworkTypeRegistry
-    public let typesByName: [String: TypeDefinition]
+    public let types: [String: TypeDefinition]
     public let palletsByIndex: [UInt8: Pallet]
     public let palletsByName: [String: Pallet]
     
     public init(network: Network) throws {
         let types = try TypeRegistry.from(network: network.types).get()
-        self.types = types
         self.version = network.version
         let byNamePairs = types.types.compactMap { kv in
             (kv.value.name, kv.value.strong)
         }
-        self.typesByName = Dictionary(byNamePairs) { (l, r) in l }
+        self.types = Dictionary(byNamePairs) { (l, r) in l }
         self.extrinsic = try Extrinsic(network: network.extrinsic, types: types)
         let pallets = try network.pallets.map { try Pallet(network: $0, types: types) }
         self.palletsByName = Dictionary(uniqueKeysWithValues: pallets.map { ($0.name, $0) })
@@ -35,18 +33,18 @@ public final class MetadataV14: Metadata {
     }
     
     @inlinable
-    public func resolve(type path: String) -> TypeDefinition? { typesByName[path] }
+    public func resolve(type path: String) -> TypeDefinition? { types[path] }
     
     @inlinable
     public func search(type cb: (String) -> Bool) -> TypeDefinition? {
-        typesByName.first{cb($0.key)}?.value
+        types.first{cb($0.key)}?.value
     }
     
     @inlinable public func reduce<R>(
         types into: R,
         _ cb: (inout R, TypeDefinition) throws -> Void
     ) rethrows -> R {
-        try types.types.reduce(into: into) { r, e in try cb(&r, e.value.strong) }
+        try types.reduce(into: into) { r, e in try cb(&r, e.value) }
     }
     
     @inlinable
