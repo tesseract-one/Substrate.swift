@@ -144,8 +144,8 @@ public class ExtrinsicV4Manager<SE: SignedExtensionsProvider>: ExtrinsicManager 
                 got: runtime.metadata.extrinsic.version
             )
         }
-        let _ = try TAddress.validate(type: runtime.types.address).get()
-        let _ = try TSignature.validate(type: runtime.types.signature).get()
+        let _ = try TAddress.validate(as: runtime.types.address, in: runtime).get()
+        let _ = try TSignature.validate(as: runtime.types.signature, in: runtime).get()
         try extensions.validate(runtime: runtime).get()
     }
     

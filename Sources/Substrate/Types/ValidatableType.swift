@@ -10,11 +10,12 @@ import ScaleCodec
 import Numberick
 
 public protocol ValidatableTypeDynamic {
-    func validate(runtime: any Runtime, type: TypeDefinition) -> Result<Void, TypeError>
+    func validate(as type: TypeDefinition, in runtime: any Runtime) -> Result<Void, TypeError>
 }
 
+// Runtime is here for TypeRegistry and theoretical flexibility.
 public protocol ValidatableTypeStatic {
-    static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    static func validate(as type: TypeDefinition, in runtime: any Runtime) -> Result<Void, TypeError>
 }
 
 public typealias ValidatableType = ValidatableTypeDynamic & ValidatableTypeStatic
@@ -61,23 +62,26 @@ public enum TypeError: Error, Hashable, Equatable, CustomDebugStringConvertible 
 
 public extension ValidatableTypeStatic {
     @inlinable
-    func validate(runtime: any Runtime, type: TypeDefinition) -> Result<Void, TypeError>
+    func validate(as type: TypeDefinition, in runtime: any Runtime) -> Result<Void, TypeError>
     {
-        Self.validate(type: type)
+        Self.validate(as: type, in: runtime)
     }
 }
 
 public protocol ComplexValidatableType: ValidatableType {
     associatedtype TypeInfo
     
-    static func parseType(type: TypeDefinition) -> Result<TypeInfo, TypeError>
-    static func validate(info: TypeInfo, type: TypeDefinition) -> Result<Void, TypeError>
+    static func parse(type: TypeDefinition,
+                      in runtime: any Runtime) -> Result<TypeInfo, TypeError>
+    static func validate(info: TypeInfo, as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError>
 }
 
 public extension ComplexValidatableType {
-    @inlinable static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    @inlinable static func validate(as type: TypeDefinition,
+                                    in runtime: any Runtime) -> Result<Void, TypeError>
     {
-        parseType(type: type).flatMap { validate(info: $0, type: type) }
+        parse(type: type, in: runtime).flatMap { validate(info: $0, as: type, in: runtime) }
     }
 }
 
@@ -90,7 +94,8 @@ public protocol CompositeValidatableType: ComplexValidatableType
     where TypeInfo == [TypeDefinition.Field] {}
 
 public extension CompositeValidatableType {
-    static func parseType(type: TypeDefinition) -> Result<TypeInfo, TypeError>
+    static func parse(type: TypeDefinition,
+                      in runtime: any Runtime) -> Result<TypeInfo, TypeError>
     {
         switch type.flatten().definition {
         case .composite(fields: let fs): return .success(fs)
@@ -104,7 +109,8 @@ public protocol CompositeStaticValidatableType: CompositeValidatableType,
     where ChildTypes == [ValidatableTypeStatic.Type] {}
 
 public extension CompositeStaticValidatableType {
-    static func validate(info: TypeInfo, type: TypeDefinition) -> Result<Void, TypeError>
+    static func validate(info: TypeInfo, as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError>
     {
         let ourFields = childTypes
         guard ourFields.count == info.count else {
@@ -113,7 +119,7 @@ public extension CompositeStaticValidatableType {
                                               type: type, .get()))
         }
         return zip(ourFields, info).voidErrorMap { field, info in
-            field.validate(type: *info.type)
+            field.validate(as: *info.type, in: runtime)
         }
     }
 }
@@ -122,7 +128,8 @@ public protocol VariantValidatableType: ComplexValidatableType
     where TypeInfo == [TypeDefinition.Variant] {}
 
 public extension VariantValidatableType {
-    static func parseType(type: TypeDefinition) -> Result<TypeInfo, TypeError>
+    static func parse(type: TypeDefinition,
+                      in runtime: any Runtime) -> Result<TypeInfo, TypeError>
     {
         guard case .variant(variants: let variants) = type.definition else {
             return .failure(.wrongType(for: Self.self, type: type,
@@ -137,7 +144,8 @@ public protocol VariantStaticValidatableType: VariantValidatableType,
     where ChildTypes == [(index: UInt8, name: String, fields: [ValidatableTypeStatic.Type])] {}
 
 public extension VariantStaticValidatableType {
-    static func validate(info: TypeInfo, type: TypeDefinition) -> Result<Void, TypeError>
+    static func validate(info: TypeInfo, as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError>
     {
         let ourVariants = childTypes
         guard ourVariants.count == info.count else {
@@ -165,7 +173,7 @@ public extension VariantStaticValidatableType {
                                                          type: type, .get()))
             }
             return zip(variant.fields, inVariant.fields).voidErrorMap { field, info in
-                field.validate(type: *info.type)
+                field.validate(as: *info.type, in: runtime)
             }
         }
     }

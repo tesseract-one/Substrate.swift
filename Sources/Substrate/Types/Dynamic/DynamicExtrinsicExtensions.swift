@@ -25,16 +25,16 @@ public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
     ) async throws -> Value<TypeDefinition> {
-        try api.runtime.version.specVersion.asValue(runtime: api.runtime,
-                                                    type: type)
+        try api.runtime.version.specVersion.asValue(of: type,
+                                                    in: api.runtime)
     }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(type: extra).flatMap {
-            SBT<C>.Version.validate(type: additionalSigned)
+        Nothing.validate(as: extra, in: runtime).flatMap {
+            SBT<C>.Version.validate(as: additionalSigned, in: runtime)
         }
     }
 }
@@ -56,16 +56,16 @@ public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
     ) async throws -> Value<TypeDefinition> {
-        try api.runtime.version.transactionVersion.asValue(runtime: api.runtime,
-                                                           type: type)
+        try api.runtime.version.transactionVersion.asValue(of: type,
+                                                           in: api.runtime)
     }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(type: extra).flatMap {
-            SBT<C>.Version.validate(type: additionalSigned)
+        Nothing.validate(as: extra, in: runtime).flatMap {
+            SBT<C>.Version.validate(as: additionalSigned, in: runtime)
         }
     }
 }
@@ -87,16 +87,15 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     public func additionalSigned<R: RootApi>(
         api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
     ) async throws -> Value<TypeDefinition> {
-        try api.runtime.genesisHash.asValue(runtime: api.runtime,
-                                            type: type)
+        try api.runtime.genesisHash.asValue(of: type, in: api.runtime)
     }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(type: extra).flatMap {
-            SBT<C>.Hash.validate(type: additionalSigned)
+        Nothing.validate(as: extra, in: runtime).flatMap {
+            SBT<C>.Hash.validate(as: additionalSigned, in: runtime)
         }
     }
 }
@@ -122,8 +121,8 @@ public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
         config: C.Type, runtime: any Runtime,
         extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(type: extra).flatMap {
-            Nothing.validate(type: additionalSigned)
+        Nothing.validate(as: extra, in: runtime).flatMap {
+            Nothing.validate(as: additionalSigned, in: runtime)
         }
     }
 }
@@ -152,7 +151,7 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
     public func extra<R: RootApi>(
         api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
     ) async throws -> Value<TypeDefinition> {
-        try params.nonce.asValue(runtime: api.runtime, type: type)
+        try params.nonce.asValue(of: type, in: api.runtime)
     }
     
     public func additionalSigned<R: RootApi>(
@@ -163,8 +162,8 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
         config: C.Type, runtime: any Runtime,
         extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Compact<AnySigningParams<C>.TPartial.TNonce>.validate(type: extra).flatMap {
-            Nothing.validate(type: additionalSigned)
+        Compact<AnySigningParams<C>.TPartial.TNonce>.validate(as: extra, in: runtime).flatMap {
+            Nothing.validate(as: additionalSigned, in: runtime)
         }
     }
 }
@@ -191,21 +190,21 @@ public struct DynamicCheckMortalityExtension: DynamicExtrinsicExtension {
     public func extra<R: RootApi>(
         api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
     ) async throws -> Value<TypeDefinition> {
-        try params.era.asValue(runtime: api.runtime, type: type)
+        try params.era.asValue(of: type, in: api.runtime)
     }
 
     public func additionalSigned<R: RootApi>(
         api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
     ) async throws -> Value<TypeDefinition> {
-        try params.blockHash.asValue(runtime: api.runtime, type: type)
+        try params.blockHash.asValue(of: type, in: api.runtime)
     }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
         extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        AnySigningParams<C>.TPartial.TEra.validate(type: extra).flatMap {
-            AnySigningParams<C>.TPartial.THash.validate(type: additionalSigned)
+        AnySigningParams<C>.TPartial.TEra.validate(as: extra, in: runtime).flatMap {
+            AnySigningParams<C>.TPartial.THash.validate(as: additionalSigned, in: runtime)
         }
     }
 }
@@ -232,8 +231,8 @@ public struct DynamicCheckWeightExtension: DynamicExtrinsicExtension {
         config: C.Type, runtime: any Runtime,
         extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(type: extra).flatMap {
-            Nothing.validate(type: additionalSigned)
+        Nothing.validate(as: extra, in: runtime).flatMap {
+            Nothing.validate(as: additionalSigned, in: runtime)
         }
     }
 }
@@ -258,7 +257,7 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
     public func extra<R: RootApi>(
         api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
     ) async throws -> Value<TypeDefinition> {
-        try params.tip.asValue(runtime: api.runtime, type: type)
+        try params.tip.asValue(of: type, in: api.runtime)
     }
 
     public func additionalSigned<R: RootApi>(
@@ -269,8 +268,8 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
         config: C.Type, runtime: any Runtime,
         extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        AnySigningParams<C>.TPartial.TPayment.validate(type: extra).flatMap {
-            Nothing.validate(type: additionalSigned)
+        AnySigningParams<C>.TPartial.TPayment.validate(as: extra, in: runtime).flatMap {
+            Nothing.validate(as: additionalSigned, in: runtime)
         }
     }
     
@@ -305,8 +304,8 @@ public struct DynamicPrevalidateAttestsExtension: DynamicExtrinsicExtension {
         config: C.Type, runtime: any Runtime,
         extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(type: extra).flatMap {
-            Nothing.validate(type: additionalSigned)
+        Nothing.validate(as: extra, in: runtime).flatMap {
+            Nothing.validate(as: additionalSigned, in: runtime)
         }
     }
 }

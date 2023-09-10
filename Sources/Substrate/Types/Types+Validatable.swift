@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public extension FixedWidthInteger {
-    func validateInteger(type: TypeDefinition) -> Result<Void, TypeError>
+    func validateInteger(as type: TypeDefinition) -> Result<Void, TypeError>
     {
         let primitive: NetworkType.Primitive
         if let compact = type.asCompact() {
@@ -54,75 +54,75 @@ public extension FixedWidthInteger {
 }
 
 extension UInt8: ValidatableTypeDynamic {
-    public func validate(runtime: any Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension UInt16: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension UInt32: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension UInt64: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension UInt: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension Int8: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension Int16: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension Int32: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension Int64: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension Int: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 extension NBKDoubleWidth: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError> {
-        validateInteger(type: type)
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError> {
+        validateInteger(as: type)
     }
 }
 
 extension Data: ValidatableTypeDynamic {
-    public func validate(runtime: Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError>
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard let count = type.asBytes() else {
             return .failure(.wrongType(for: Self.self, type: type,
@@ -137,7 +137,8 @@ extension Data: ValidatableTypeDynamic {
 }
 
 extension Data: ValidatableTypeStatic {
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard type.asBytes() != nil else {
             return .failure(.wrongType(for: Self.self, type: type,
@@ -146,7 +147,7 @@ extension Data: ValidatableTypeStatic {
         return .success(())
     }
     
-    public static func validate(type: TypeDefinition,
+    public static func validate(as type: TypeDefinition,
                                 count: UInt32) -> Result<Void, TypeError>
     {
         guard let cnt = type.asBytes() else {
@@ -162,7 +163,8 @@ extension Data: ValidatableTypeStatic {
 }
 
 extension Compact: ValidatableTypeStatic {
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard let compact = type.asCompact() else {
             return .failure(.wrongType(for: Self.self, type: type,
@@ -193,14 +195,15 @@ extension Compact: ValidatableTypeStatic {
 }
 
 extension Array: ValidatableTypeStatic where Element: ValidatableTypeStatic {
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         switch type.flatten().definition {
         case .array(count: _, of: let eType), .sequence(of: let eType):
-            return Element.validate(type: *eType)
+            return Element.validate(as: *eType, in: runtime)
         case .composite(fields: let fields):
             return fields.voidErrorMap {
-                Element.validate(type: *$0.type)
+                Element.validate(as: *$0.type, in: runtime)
             }
         default:
             return .failure(.wrongType(for: Self.self, type: type,
@@ -210,25 +213,27 @@ extension Array: ValidatableTypeStatic where Element: ValidatableTypeStatic {
 }
 
 extension Optional: ValidatableTypeStatic where Wrapped: ValidatableTypeStatic {
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard let field = type.asOptional() else {
             return .failure(.wrongType(for: Self.self, type: type,
                                        reason: "Isn't Optional", .get()))
         }
-        return Wrapped.validate(type: *field.type)
+        return Wrapped.validate(as: *field.type, in: runtime)
     }
 }
 
 extension Either: ValidatableTypeStatic where Left: ValidatableTypeStatic, Right: ValidatableTypeStatic {
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard let result = type.asResult() else {
             return .failure(.wrongType(for: Self.self, type: type,
                                        reason: "Isn't Result", .get()))
         }
-        return Left.validate(type: *result.err.type).flatMap { _ in
-            Right.validate(type: *result.ok.type)
+        return Left.validate(as: *result.err.type, in: runtime).flatMap { _ in
+            Right.validate(as: *result.ok.type, in: runtime)
         }
     }
 }

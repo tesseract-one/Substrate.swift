@@ -52,7 +52,7 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
             } else {
                 throw RuntimeCallCodingError.parameterNotFound(name: param.name, inParams: params)
             }
-            try value.asValue(runtime: runtime, type: param.type).encode(in: &encoder, runtime: runtime)
+            try value.asValue(of: param.type, in: runtime).encode(in: &encoder, runtime: runtime)
         }
     }
     

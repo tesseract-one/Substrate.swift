@@ -10,21 +10,22 @@ import Foundation
 // Static validation is always good. We can represent all types
 extension Value: ValidatableTypeStatic {
     @inlinable
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         .success(())
     }
 }
 
 extension Value: ValidatableTypeDynamic {
-    public func validate(runtime: any Runtime,
-                         type: TypeDefinition) -> Result<Void, TypeError>
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError>
     {
-        return validate(runtime: runtime, type: type, custom: true)
+        return validate(as: type, in: runtime, custom: true)
     }
     
-    public func validate(runtime: any Runtime,
-                         type: TypeDefinition,
+    public func validate(as type: TypeDefinition,
+                         in runtime: any Runtime,
                          custom: Bool) -> Result<Void, TypeError>
     {
         if custom, let coder = runtime.custom(coder: type) {
@@ -65,7 +66,7 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                return validate(runtime: runtime, type: *fields[0].type, custom: true)
+                return validate(as: *fields[0].type, in: runtime, custom: true)
             } else {
                 return _validateCompositeFields(type: type, fields: fields, runtime: runtime)
             }
@@ -75,7 +76,7 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                return validate(runtime: runtime, type: *fields[0].type, custom: true)
+                return validate(as: *fields[0].type, in: runtime, custom: true)
             } else {
                 return _validateCompositeFields(type: type, fields: fields, runtime: runtime)
             }
@@ -85,7 +86,7 @@ private extension Value {
                 // aiming for has exactly 1 field. Perhaps it's a wrapper type, so let's
                 // aim to encode to the contents of it instead (1 field composites are
                 // transparent anyway in SCALE terms).
-                return validate(runtime: runtime, type: *fields[0].type, custom: true)
+                return validate(as: *fields[0].type, in: runtime, custom: true)
             } else {
                 return .failure(.wrongType(for: self, type: type,
                                            reason: "Isn't Composite", .get()))
@@ -99,7 +100,7 @@ private extension Value {
         switch value {
         case .sequence(let values):
             return values.voidErrorMap { value in
-                value.validate(runtime: runtime, type: *valueType, custom: true)
+                value.validate(as: *valueType, in: runtime, custom: true)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -130,7 +131,7 @@ private extension Value {
                                                   type: type, .get()))
             }
             return values.voidErrorMap {
-                $0.validate(runtime: runtime, type: *valueType, custom: true)
+                $0.validate(as: *valueType, in: runtime, custom: true)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -200,7 +201,7 @@ private extension Value {
                     return .failure(.fieldNotFound(for: self, field: name,
                                                    type: type, .get()))
                 }
-                return value.validate(runtime: runtime, type: *field.type, custom: true)
+                return value.validate(as: *field.type, in: runtime, custom: true)
             }
         } else {
             let values = self.sequence!
@@ -211,7 +212,7 @@ private extension Value {
             }
             guard values.count > 0 else { return .success(()) }
             return zip(fields, values).voidErrorMap { field, value in
-                value.validate(runtime: runtime, type: *field.type, custom: true)
+                value.validate(as: *field.type, in: runtime, custom: true)
             }
         }
     }

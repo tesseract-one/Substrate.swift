@@ -55,10 +55,12 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
     public func encode<E: ScaleCodec.Encoder>(
         in encoder: inout E, as type: TypeDefinition, runtime: any Runtime
     ) throws {
-        try asValue(runtime: runtime, type: type).encode(in: &encoder, runtime: runtime)
+        try asValue(of: type, in: runtime).encode(in: &encoder, runtime: runtime)
     }
     
-    public func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
+    public func asValue(of type: TypeDefinition,
+                        in runtime: any Runtime) throws -> Value<TypeDefinition>
+    {
         let flat = type.flatten()
         switch flat.definition {
         case .variant(variants: let vars):
@@ -67,7 +69,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                 let idVar = try Self.findIdVariant(in: vars, type: flat).get()
                 return try .variant(
                     name: idVar.name,
-                    values: [id.asValue(runtime: runtime, type: *idVar.fields.first!.type)],
+                    values: [id.asValue(of: *idVar.fields.first!.type, in: runtime)],
                     type
                 )
             case .other(name: let n, values: let params):
@@ -81,7 +83,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                                                             type: type, .get())
                 }
                 let mapped = try zip(item.fields, params).map {
-                    try $1.asValue(runtime: runtime, type: *$0.type)
+                    try $1.asValue(of: *$0.type, in: runtime)
                 }
                 return .variant(name: n, values: mapped, type)
             }
@@ -90,7 +92,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                 throw TypeError.wrongType(for: Self.self, type: type,
                                           reason: "primitive type but self is not Id", .get())
             }
-            return try id.asValue(runtime: runtime, type: type)
+            return try id.asValue(of: type, in: runtime)
         }
     }
     
@@ -107,16 +109,17 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         return .failure(.variantNotFound(for: Self.self, variant: "Id", type: type, .get()))
     }
     
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         let flat = type.flatten()
         switch flat.definition {
         case .variant(variants: let vars):
             return findIdVariant(in: vars, type: flat).flatMap { variant in
-                TAccountId.validate(type: *variant.fields.first!.type).map{_ in}
+                TAccountId.validate(as: *variant.fields.first!.type, in: runtime).map{_ in}
             }
         default:
-            return TAccountId.validate(type: flat)
+            return TAccountId.validate(as: flat, in: runtime)
         }
     }
     

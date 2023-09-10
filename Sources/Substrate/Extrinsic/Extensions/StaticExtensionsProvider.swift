@@ -35,7 +35,8 @@ public protocol StaticExtrinsicExtension: StaticExtrinsicExtensionBase, Extrinsi
 {
     static var identifier: ExtrinsicExtensionId { get }
     
-    func validate(extra: TypeDefinition, additionalSigned: TypeDefinition) -> Result<Void, TypeError>
+    func validate(extra: TypeDefinition, additionalSigned: TypeDefinition,
+                  in runtime: any Runtime) -> Result<Void, TypeError>
 }
 
 public extension StaticExtrinsicExtension {
@@ -45,10 +46,11 @@ public extension StaticExtrinsicExtension {
 public extension StaticExtrinsicExtension where
     TExtra: ValidatableTypeStatic, TAdditionalSigned: ValidatableTypeStatic
 {
-    func validate(extra: TypeDefinition, additionalSigned: TypeDefinition) -> Result<Void, TypeError>
+    func validate(extra: TypeDefinition, additionalSigned: TypeDefinition,
+                  in runtime: any Runtime) -> Result<Void, TypeError>
     {
-        TExtra.validate(type: extra).flatMap { _ in
-            TAdditionalSigned.validate(type: additionalSigned)
+        TExtra.validate(as: extra, in: runtime).flatMap { _ in
+            TAdditionalSigned.validate(as: additionalSigned, in: runtime)
         }
     }
 }
@@ -59,7 +61,8 @@ public protocol StaticExtrinsicExtensions: StaticExtrinsicExtensionBase
     var identifiers: [ExtrinsicExtensionId] { get }
     
     func validate(
-        types: [ExtrinsicExtensionId: (extId: TypeDefinition, addId: TypeDefinition)]
+        types: [ExtrinsicExtensionId: (extId: TypeDefinition, addId: TypeDefinition)],
+        in runtime: any Runtime
     ) -> Result<Void, Either<ExtrinsicCodingError, TypeError>>
 }
 
@@ -134,6 +137,7 @@ public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: Sig
         guard unknown.count == 0 else {
             return .failure(.left(.unknownExtension(identifier: unknown.first!)))
         }
-        return extensions.validate(types: Dictionary(uniqueKeysWithValues: ext))
+        return extensions.validate(types: Dictionary(uniqueKeysWithValues: ext),
+                                   in: runtime)
     }
 }

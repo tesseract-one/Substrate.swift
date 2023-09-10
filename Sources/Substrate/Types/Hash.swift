@@ -32,7 +32,9 @@ public extension Hash {
         try container.encode(raw)
     }
     
-    func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
+    func asValue(of type: TypeDefinition,
+                 in runtime: any Runtime) throws -> Value<TypeDefinition>
+    {
         guard let count = type.asBytes() else {
             throw TypeError.wrongType(for: Self.self, type: type,
                                       reason: "isn't byte array", .get())

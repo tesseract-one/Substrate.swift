@@ -37,7 +37,9 @@ public struct AnyHash: Hash {
         try self.init(raw: data, type: context)
     }
     
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
-        Data.validate(type: type)
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
+    {
+        Data.validate(as: type, in: runtime)
     }
 }

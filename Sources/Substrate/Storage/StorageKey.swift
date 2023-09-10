@@ -81,7 +81,7 @@ public extension PalletStorageKey where
     Self: ComplexFrameType, TypeInfo == StorageKeyTypeInfo
 {
     @inlinable
-    static func typeInfo(runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
+    static func typeInfo(from runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
         guard let info = runtime.resolve(storage: name, pallet: pallet) else {
             return .failure(.typeInfoNotFound(for: Self.self, .get()))
         }
@@ -161,7 +161,7 @@ public extension ComplexStaticFrameType
     where TypeInfo == StorageKeyTypeInfo, ChildTypes == StorageKeyChildTypes
 {
     static func validate(info: TypeInfo,
-                         runtime: any Runtime) -> Result<Void, FrameTypeError>
+                         in runtime: any Runtime) -> Result<Void, FrameTypeError>
     {
         let ourTypes = childTypes
         guard ourTypes.keys.count == info.keys.count else {
@@ -177,11 +177,11 @@ public extension ComplexStaticFrameType
                                    got: info.hasher.name, .get())
                 )
             }
-            return our.type.validate(type: info.type).mapError {
+            return our.type.validate(as: info.type, in: runtime).mapError {
                 .childError(for: Self.self, index: index, error: $0, .get())
             }
         }.flatMap {
-            ourTypes.value.validate(type: info.value) .mapError {
+            ourTypes.value.validate(as: info.value, in: runtime) .mapError {
                 .childError(for: Self.self, index: -1, error: $0, .get())
             }
         }

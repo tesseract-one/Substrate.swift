@@ -16,6 +16,7 @@ public protocol Runtime: AnyObject {
     var isBatchSupported: Bool { get }
     
     var types: DynamicTypes { get }
+    var staticTypes: Synced<TypeRegistry<TypeDefinition.TypeId>> { get }
     
     func encoder() -> any ScaleCodec.Encoder
     func encoder(reservedCapacity: Int) -> any ScaleCodec.Encoder

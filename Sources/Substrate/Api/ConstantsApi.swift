@@ -97,7 +97,7 @@ public extension StaticConstant where TValue: ValidatableTypeStatic {
         guard let info = runtime.resolve(constant: name, pallet: pallet) else {
             return .failure(.typeInfoNotFound(for: Self.self, .get()))
         }
-        return TValue.validate(type: info.type).mapError {
+        return TValue.validate(as: info.type, in: runtime).mapError {
             .childError(for: Self.self, index: -1, error: $0, .get())
         }
     }

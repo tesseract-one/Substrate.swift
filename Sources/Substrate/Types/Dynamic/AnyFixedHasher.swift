@@ -76,7 +76,8 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
         lhs.type == rhs.type
     }
     
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard let name = type.name.split(separator: ".").last else {
             return .failure(.wrongType(for: Self.self, type: type,

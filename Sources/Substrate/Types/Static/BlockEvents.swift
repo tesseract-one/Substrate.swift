@@ -46,8 +46,10 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
         }
     }
     
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
-        Array<ER>.validate(type: type)
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
+    {
+        Array<ER>.validate(as: type, in: runtime)
     }
     
     public static var `default`: Self { Self(events: []) }

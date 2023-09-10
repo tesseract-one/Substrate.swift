@@ -30,7 +30,7 @@ public typealias CallChildTypes = [ValidatableTypeStatic.Type]
 public extension PalletCall where
     Self: ComplexFrameType, TypeInfo == CallTypeInfo
 {
-    static func typeInfo(runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
+    static func typeInfo(from runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
         guard let info = runtime.resolve(callParams: name, pallet: pallet) else {
             return .failure(.typeInfoNotFound(for: Self.self, .get()))
         }

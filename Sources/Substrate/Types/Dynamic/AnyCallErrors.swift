@@ -27,8 +27,10 @@ public struct AnyTransactionValidityError: CallError, CustomDebugStringConvertib
         self.init(value: value)
     }
     
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
-        Value<TypeDefinition>.validate(type: type)
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
+    {
+        Value<TypeDefinition>.validate(as: type, in: runtime)
     }
     
     public var debugDescription: String {
@@ -85,7 +87,8 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
         self._runtime = runtime
     }
     
-    public static func validate(info: TypeInfo, type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(info: TypeInfo, as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard let module = info.first(where: { $0.name.contains("Module") }) else {
             return .failure(.variantNotFound(for: Self.self,
@@ -96,7 +99,7 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
             return .failure(.wrongValuesCount(for: Self.self, expected: 1,
                                               type: type, .get()))
         }
-        return TModuleError.validate(type: *module.fields[0].type)
+        return TModuleError.validate(as: *module.fields[0].type, in: runtime)
     }
     
     public var debugDescription: String {

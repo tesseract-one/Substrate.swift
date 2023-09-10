@@ -57,10 +57,12 @@ public struct AnySignature: Signature {
     public func encode<E: ScaleCodec.Encoder>(
         in encoder: inout E, as type: TypeDefinition, runtime: Runtime
     ) throws {
-        try asValue(runtime: runtime, type: type).encode(in: &encoder, runtime: runtime)
+        try asValue(of: type, in: runtime).encode(in: &encoder, runtime: runtime)
     }
     
-    public func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
+    public func asValue(of type: TypeDefinition,
+                        in runtime: any Runtime) throws -> Value<TypeDefinition>
+    {
         let algos = try Self.parseTypeInfo(type: type).get()
         if algos.count == 1 {
             guard algos.first!.value == _sig.algorithm else {
@@ -80,7 +82,8 @@ public struct AnySignature: Signature {
         try Array(parseTypeInfo(type: type()).get().values)
     }
     
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         parseTypeInfo(type: type).map{_ in}
     }

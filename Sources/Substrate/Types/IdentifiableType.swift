@@ -11,35 +11,15 @@ public protocol IdentifiableTypeStatic: ValidatableTypeStatic {
     static func definition(
         in registry: TypeRegistry<TypeDefinition.TypeId>
     ) -> TypeDefinition.Builder
-    
-    static func validate(
-        type: TypeDefinition,
-        registry: TypeRegistry<TypeDefinition.TypeId>
-    ) -> Result<Void, TypeError>
-    
-    static var typeRegistry: Synced<TypeRegistry<TypeDefinition.TypeId>> { get }
 }
 
 public extension IdentifiableTypeStatic {
     @inlinable
-    static var typeRegistry: Synced<TypeRegistry<TypeDefinition.TypeId>> {
-        GLOBAL_STATIC_TYPE_REGISTRY
-    }
-}
-
-public extension IdentifiableTypeStatic {
-    @inlinable
-    static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    static func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError>
     {
-        typeRegistry.sync{validate(type: type, registry: $0)}
-    }
-    
-    @inlinable
-    static func validate(
-        type: TypeDefinition,
-        registry: TypeRegistry<TypeDefinition.TypeId>
-    ) -> Result<Void, TypeError> {
-        registry.def(Self.self).validate(for: Self.self, type: type)
+        runtime.staticTypes.sync{$0.def(Self.self)}.validate(for: Self.self,
+                                                             as: type)
     }
 }
 
@@ -91,5 +71,3 @@ public enum IdentifiableCollectionTypeConfig: CustomStringConvertible, Default {
 }
 
 public typealias IdentifiableType = IdentifiableTypeStatic & ValidatableType
-
-public let GLOBAL_STATIC_TYPE_REGISTRY = Synced(value: TypeRegistry<TypeDefinition.TypeId>())

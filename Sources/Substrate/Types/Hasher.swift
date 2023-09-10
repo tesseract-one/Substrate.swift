@@ -23,7 +23,8 @@ public protocol StaticHasher: Hasher, ValidatableType {
 public extension StaticHasher {
     @inlinable var type: LatestMetadata.StorageHasher { Self.hasherType }
     
-    static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    static func validate(as type: TypeDefinition,
+                         in runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard type.name.hasSuffix(hasherType.name) else {
             return .failure(.wrongType(for: Self.self, type: type,

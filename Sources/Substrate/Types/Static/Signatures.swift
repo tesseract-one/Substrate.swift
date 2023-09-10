@@ -38,8 +38,10 @@ public extension SingleTypeStaticSignature {
     @inlinable
     static var fixedBytesCount: Int { algorithm.signatureBytesCount }
     
-    func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
-        try validate(runtime: runtime, type: type).get()
+    func asValue(of type: TypeDefinition,
+                 in runtime: any Runtime) throws -> Value<TypeDefinition>
+    {
+        try validate(as: type, in: runtime).get()
         return .bytes(raw, type)
     }
     
@@ -80,7 +82,9 @@ public struct EcdsaSignature: SingleTypeStaticSignature {
     }
     
     @inlinable
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
+    {
         _validate(type: type)
     }
     
@@ -99,7 +103,9 @@ public struct Ed25519Signature: SingleTypeStaticSignature {
     }
     
     @inlinable
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
+    {
         _validate(type: type)
     }
     
@@ -118,7 +124,9 @@ public struct Sr25519Signature: SingleTypeStaticSignature {
     }
     
     @inlinable
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
+    {
         _validate(type: type)
     }
     

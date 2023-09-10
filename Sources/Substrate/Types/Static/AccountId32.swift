@@ -42,8 +42,10 @@ public struct AccountId32: StaticAccountId, Hashable, Equatable {
 }
 
 extension AccountId32: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
-        try validate(runtime: runtime, type: type).get()
+    public func asValue(of type: TypeDefinition,
+                        in runtime: any Runtime) throws -> Value<TypeDefinition>
+    {
+        try validate(as: type, in: runtime).get()
         return .bytes(raw, type)
     }
 }

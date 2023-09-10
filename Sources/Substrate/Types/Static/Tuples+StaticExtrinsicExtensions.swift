@@ -42,13 +42,15 @@ public extension SomeTuple1 where
     
     @inlinable
     func validate(
-        types: [ExtrinsicExtensionId: (extId: TypeDefinition, addId: TypeDefinition)]
+        types: [ExtrinsicExtensionId: (extId: TypeDefinition, addId: TypeDefinition)],
+        in runtime: any Runtime
     ) -> Result<Void, Either<ExtrinsicCodingError, TypeError>> {
         guard let info = types[first.identifier] else {
             return .failure(.left(.unknownExtension(identifier: first.identifier)))
         }
         return first.validate(extra: info.extId,
-                              additionalSigned: info.addId).mapError{.right($0)}
+                              additionalSigned: info.addId,
+                              in: runtime).mapError{.right($0)}
     }
 }
 
@@ -93,14 +95,15 @@ public extension ListTuple where
 
     @inlinable
     func validate(
-        types: [ExtrinsicExtensionId: (extId: TypeDefinition, addId: TypeDefinition)]
+        types: [ExtrinsicExtensionId: (extId: TypeDefinition, addId: TypeDefinition)],
+        in runtime: any Runtime
     ) -> Result<Void, Either<ExtrinsicCodingError, TypeError>> {
         guard let info = types[last.identifier] else {
             return .failure(.left(.unknownExtension(identifier: last.identifier)))
         }
-        return last.validate(extra: info.extId, additionalSigned: info.addId)
+        return last.validate(extra: info.extId, additionalSigned: info.addId, in: runtime)
             .mapError{.right($0)}
-            .flatMap{dropLast.validate(types: types)}
+            .flatMap{dropLast.validate(types: types, in: runtime)}
     }
 }
 

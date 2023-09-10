@@ -64,7 +64,9 @@ public struct AnyBlock<H: FixedHasher,
         }.flatMap { Dictionary(uniqueKeysWithValues: $0) }
     }
     
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
+    {
         let fields = Self.fieldTypes(type: type)
         guard let header = fields.header else {
             return .failure(.fieldNotFound(for: Self.self, field: "header",
@@ -74,8 +76,8 @@ public struct AnyBlock<H: FixedHasher,
             return .failure(.fieldNotFound(for: Self.self, field: "extrinsic",
                                            type: type, .get()))
         }
-        return Header.validate(type: header.1).flatMap { _ in
-            E.validate(type: extrinsic.1)
+        return Header.validate(as: header.1, in: runtime).flatMap { _ in
+            E.validate(as: extrinsic.1, in: runtime)
         }
     }
     
@@ -166,7 +168,7 @@ public extension AnyBlock {
             self.number = converted
         }
         
-        public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+        public static func validate(as type: TypeDefinition, in runtime: any Runtime) -> Result<Void, TypeError>
         {
             guard case .composite(fields: let fields) = type.flatten().definition else {
                 return .failure(.wrongType(for: Self.self, type: type,
@@ -176,7 +178,7 @@ public extension AnyBlock {
                 return .failure(.fieldNotFound(for: Self.self, field: "number",
                                                type: type, .get()))
             }
-            return Compact<N>.validate(type: *n.type)
+            return Compact<N>.validate(as: *n.type, in: runtime)
         }
     }
 }

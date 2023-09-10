@@ -160,7 +160,7 @@ extension AnyCall: RuntimeEncodable, RuntimeDynamicEncodable {
                     throw FrameTypeError.valueNotFound(for: errorTypeName,
                                                        key: el.name!, .get())
                 }
-                return try (el.name!, value.asValue(runtime: runtime, type: *el.type))
+                return try (el.name!, value.asValue(of: *el.type, in: runtime))
             }
             let map = Dictionary(uniqueKeysWithValues: pairs)
             variant = Value(value: .variant(.map(name: name, fields: map)),
@@ -171,7 +171,7 @@ extension AnyCall: RuntimeEncodable, RuntimeDynamicEncodable {
                     throw FrameTypeError.valueNotFound(for: errorTypeName,
                                                        key: String(idx), .get())
                 }
-                return try value.asValue(runtime: runtime, type: *el.type)
+                return try value.asValue(of: *el.type, in: runtime)
             }
             variant = Value(value: .variant(.sequence(name: name, values: values)),
                             context: palletCall.type)
@@ -184,7 +184,7 @@ extension AnyCall: RuntimeEncodable, RuntimeDynamicEncodable {
 extension AnyCall: RuntimeValidatableType {
     @inlinable public var frame: String { pallet }
     
-    public func validate(runtime: Runtime) -> Result<Void, FrameTypeError> {
+    public func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
         guard let callParams = runtime.resolve(callParams: name, pallet: pallet) else {
             return .failure(.typeInfoNotFound(for: errorTypeName, .get()))
         }
@@ -195,7 +195,7 @@ extension AnyCall: RuntimeValidatableType {
 }
 
 extension AnyCall: ValidatableTypeDynamic {
-    public func validate(runtime: any Runtime, type: TypeDefinition) -> Result<Void, TypeError> {
+    public func validate(as type: TypeDefinition, in runtime: any Runtime) -> Result<Void, TypeError> {
         guard case .variant(let allCalls) = type.flatten().definition else{
             return .failure(.wrongType(for: Self.self, type: type,
                                        reason: "Expected Variant", .get()))
@@ -224,7 +224,8 @@ extension AnyCall: ValidatableTypeDynamic {
 }
 
 extension AnyCall: ValidatableTypeStatic {
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in: any Runtime) -> Result<Void, TypeError>
     {
         guard case .variant(variants: let vars) = type.definition else {
             return .failure(.wrongType(for: Self.self,
@@ -308,7 +309,7 @@ private extension AnyCall {
             guard let val = (value ?? _params[key]) else {
                 return .failure(.valueNotFound(key: key))
             }
-            return val.validate(runtime: runtime, type: *param.type).mapError {
+            return val.validate(as: *param.type, in: runtime).mapError {
                 .childError(index: idx, error: $0)
             }
         }

@@ -9,13 +9,13 @@ import Foundation
 
 public extension AnyTypeDefinition {
     @inlinable
-    func validate(for: Any.Type, type: TypeDefinition) -> Result<Void, TypeError>
+    func validate(for: Any.Type, as type: TypeDefinition) -> Result<Void, TypeError>
     {
-        validate(for: String(describing: `for`), type: type)
+        validate(for: String(describing: `for`), as: type)
     }
     
     @inlinable
-    func validate(for: String, type: TypeDefinition) -> Result<Void, TypeError>
+    func validate(for: String, as type: TypeDefinition) -> Result<Void, TypeError>
     {
         // Maybe we trying to validate the same object
         if objectId == type.objectId { return .success(()) }

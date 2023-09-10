@@ -51,7 +51,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, Cu
                                                                  expected: keys.count)
         }
         let components: [Component] = try zip(keys, params).map { (key, val) in
-            let value = try val.asValue(runtime: runtime, type: key.type)
+            let value = try val.asValue(of: key.type, in: runtime)
             let data = try runtime.encode(value: value)
             return .full(val, key.hasher.hasher.hash(data: data))
         }
@@ -170,7 +170,7 @@ public extension AnyStorageKey {
                                                                      expected: keys.count - 1)
             }
             let components: [Component] = try zip(keys, params).map { (key, val) in
-                let value = try val.asValue(runtime: runtime, type: key.type)
+                let value = try val.asValue(of: key.type, in: runtime)
                 let data = try runtime.encode(value: value)
                 return .full(val, key.hasher.hasher.hash(data: data))
             }
@@ -186,7 +186,7 @@ public extension AnyStorageKey {
                                                                      expected: keys.count - 1)
             }
             let key = keys[path.count]
-            let value = try param.asValue(runtime: runtime, type: key.type)
+            let value = try param.asValue(of: key.type, in: runtime)
             let data = try runtime.encode(value: value)
             let newPath = path + [.full(param, key.hasher.hasher.hash(data: data))]
             return Self(name: name, pallet: pallet, path: newPath)

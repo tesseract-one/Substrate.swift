@@ -75,7 +75,8 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
         return try (name: header.name, pallet: header.pallet, data: decoder.read(count: size))
     }
     
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
         guard case .variant(variants: let vars) = type.definition else {
             return .failure(.wrongType(for: Self.self,

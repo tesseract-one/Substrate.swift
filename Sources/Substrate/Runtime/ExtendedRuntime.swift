@@ -29,6 +29,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     public let metadataHash: ST<RC>.Hash?
     public let types: DynamicTypes
     public let isBatchSupported: Bool
+    public let staticTypes: Synced<TypeRegistry<TypeDefinition.TypeId>>
     public private(set) var customCoders: [ObjectIdentifier: RuntimeCustomDynamicCoder]!
     
     public private(set) var extrinsicManager: RC.TExtrinsicManager
@@ -96,6 +97,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         self.properties = properties
         self.addressFormat = properties.ss58Format ?? .default
         self.types = types
+        self.staticTypes = Synced(value: TypeRegistry())
         self.extrinsicManager = try config.extrinsicManager(types: types, metadata: metadata)
         guard let hasher = ST<RC>.Hasher(type: types.hasher.value) else {
             let hasher = try types.hasher.get()
@@ -143,7 +145,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
                                                    isStatic: Bool) throws
     {
         switch info {
-        case .success(let info): try type.validate(type: info).get()
+        case .success(let info): try type.validate(as: info, in: self).get()
         case .failure(let err): guard isStatic else { throw err }
         }
     }

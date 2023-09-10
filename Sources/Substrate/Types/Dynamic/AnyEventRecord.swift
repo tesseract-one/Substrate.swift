@@ -54,7 +54,9 @@ public extension AnyEventRecord {
 }
 
 extension AnyEventRecord.Phase: VariantValidatableType {
-    public static func validate(info: TypeInfo, type: TypeDefinition) -> Result<Void, TypeError> {
+    public static func validate(info: TypeInfo, as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
+    {
         guard let apply = info.first(where: { $0.name == "ApplyExtrinsic" }) else {
             return .failure(.variantNotFound(for: Self.self,
                                              variant: "ApplyExtrinsic", type: type, .get()))
@@ -78,7 +80,7 @@ extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
                                        as type: TypeDefinition,
                                        runtime: Runtime) throws
     {
-        try Self.validate(type: type).get()
+        try Self.validate(as: type, in: runtime).get()
         let value = try Value<TypeDefinition>(from: &decoder, as: type, runtime: runtime)
         let extrinsicId: Value<TypeDefinition>
         switch value.value {
@@ -108,19 +110,20 @@ extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
 }
 
 extension AnyEventRecord: CompositeValidatableType {
-    public static func validate(info sinfo: TypeInfo, type: TypeDefinition) -> Result<Void, TypeError>
+    public static func validate(info: TypeInfo, as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
     {
-        guard let phase = sinfo.first(where: { $0.name == "phase" }) else {
+        guard let phase = info.first(where: { $0.name == "phase" }) else {
             return .failure(.fieldNotFound(for: Self.self, field: "phase",
                                            type: type, .get()))
         }
         let eventNames = ["event", "e", "ev"]
-        guard let event = sinfo.first(where: { eventNames.contains($0.name ?? "") }) else {
+        guard let event = info.first(where: { eventNames.contains($0.name ?? "") }) else {
             return .failure(.fieldNotFound(for: Self.self, field: "event",
                                            type: type, .get()))
         }
-        return Phase.validate(type: *phase.type)
-            .flatMap { _ in AnyEvent.validate(type: *event.type) }
+        return Phase.validate(as: *phase.type, in: runtime)
+            .flatMap { _ in AnyEvent.validate(as: *event.type, in: runtime) }
     }
 }
 
@@ -129,8 +132,8 @@ extension AnyEventRecord: RuntimeDynamicDecodable {
                                        as type: TypeDefinition,
                                        runtime: Runtime) throws
     {
-        let sinfo = try Self.parseType(type: type).get()
-        try Self.validate(info: sinfo, type: type).get()
+        let sinfo = try Self.parse(type: type, in: runtime).get()
+        try Self.validate(info: sinfo, as: type, in: runtime).get()
         var phase: Phase? = nil
         var event: (name: String, pallet: String, data: Data, type: TypeDefinition)? = nil
         var other: [String: Value<TypeDefinition>] = [:]

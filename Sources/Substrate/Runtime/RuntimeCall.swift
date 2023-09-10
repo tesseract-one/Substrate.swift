@@ -46,7 +46,7 @@ public extension StaticRuntimeCall where
     Self: ComplexFrameType, TypeInfo == RuntimeCallTypeInfo
 {
     @inlinable
-    static func typeInfo(runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
+    static func typeInfo(from runtime: any Runtime) -> Result<TypeInfo, FrameTypeError> {
         guard let info = runtime.resolve(runtimeCall: method, api: api) else {
             return .failure(.typeInfoNotFound(for: Self.self, .get()))
         }
@@ -59,7 +59,7 @@ public extension ComplexStaticFrameType where
     ChildTypes == RuntimeCallChildTypes
 {
     static func validate(info: TypeInfo,
-                         runtime: any Runtime) -> Result<Void, FrameTypeError>
+                         in runtime: any Runtime) -> Result<Void, FrameTypeError>
     {
         let ourTypes = childTypes
         guard ourTypes.params.count == info.params.count else {
@@ -68,11 +68,11 @@ public extension ComplexStaticFrameType where
         }
         return zip(ourTypes.params, info.params).enumerated().voidErrorMap { index, zip in
             let (our, info) = zip
-            return our.validate(type: info.type).mapError {
+            return our.validate(as: info.type, in: runtime).mapError {
                 .childError(for: Self.self, index: index, error: $0, .get())
             }
         }.flatMap {
-            ourTypes.result.validate(type: info.result).mapError {
+            ourTypes.result.validate(as: info.result, in: runtime).mapError {
                 .childError(for: Self.self, index: -1, error: $0, .get())
             }
         }

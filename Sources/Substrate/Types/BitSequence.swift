@@ -310,14 +310,18 @@ extension CustomDecoderFactory where T == BitSequence {
 }
 
 extension BitSequence: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
-        try validate(runtime: runtime, type: type).get()
+    public func asValue(of type: TypeDefinition,
+                        in runtime: any Runtime) throws -> Value<TypeDefinition>
+    {
+        try validate(as: type, in: runtime).get()
         return .bits(self, type)
     }
 }
 
 extension BitSequence: ValidatableType {
-    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+    public static func validate(as type: TypeDefinition,
+                                in runtime: any Runtime) -> Result<Void, TypeError>
+    {
         guard case .bitsequence(format: _) = type.definition else {
             return .failure(.wrongType(for: Self.self, type: type,
                                        reason: "Isn't BitSequence", .get()))

@@ -57,13 +57,13 @@ public enum FrameTypeDefinition {
 public protocol ComplexFrameType: FrameType {
     associatedtype TypeInfo
     
-    static func typeInfo(runtime: any Runtime) -> Result<TypeInfo, FrameTypeError>
-    static func validate(info: TypeInfo, runtime: any Runtime) -> Result<Void, FrameTypeError>
+    static func typeInfo(from runtime: any Runtime) -> Result<TypeInfo, FrameTypeError>
+    static func validate(info: TypeInfo, in runtime: any Runtime) -> Result<Void, FrameTypeError>
 }
 
 public extension ComplexFrameType {
     @inlinable static func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
-        typeInfo(runtime: runtime).flatMap { validate(info: $0, runtime: runtime) }
+        typeInfo(from: runtime).flatMap { validate(info: $0, in: runtime) }
     }
 }
 
@@ -77,7 +77,7 @@ public extension ComplexStaticFrameType where
     TypeInfo == EventTypeInfo, ChildTypes == EventChildTypes
 {
     static func validate(info: TypeInfo,
-                         runtime: any Runtime) -> Result<Void, FrameTypeError>
+                         in runtime: any Runtime) -> Result<Void, FrameTypeError>
     {
         let ourTypes = childTypes
         guard ourTypes.count == info.count else {
@@ -86,7 +86,7 @@ public extension ComplexStaticFrameType where
         }
         return zip(ourTypes, info).enumerated().voidErrorMap { index, zip in
             let (our, info) = zip
-            return our.validate(type: *info.type).mapError {
+            return our.validate(as: *info.type, in: runtime).mapError {
                 .childError(for: Self.self, index: index, error: $0, .get())
             }
         }
@@ -97,32 +97,20 @@ public protocol IdentifiableFrameType: FrameType {
     static func definition(
         in registry: TypeRegistry<TypeDefinition.TypeId>
     ) -> FrameTypeDefinition
-    
-    static func validate(
-        runtime: any Runtime,
-        registry: any ThreadSynced<TypeRegistry<TypeDefinition.TypeId>>
-    ) -> Result<Void, FrameTypeError>
 }
 
 public extension IdentifiableFrameType {
     @inlinable
     static func validate(runtime: any Runtime) -> Result<Void, FrameTypeError>
     {
-        validate(runtime: runtime, registry: Data.typeRegistry)
-    }
-    
-    @inlinable
-    static func validate(
-        runtime: any Runtime,
-        registry: any ThreadSynced<TypeRegistry<TypeDefinition.TypeId>>
-    ) -> Result<Void, FrameTypeError> {
-        registry.sync{definition(in: $0)}.validate(type: Self.self, runtime: runtime)
+        runtime.staticTypes.sync{definition(in: $0)}.validate(as: Self.self,
+                                                              in: runtime)
     }
 }
 
 public extension FrameTypeDefinition {
-    func validate(type: any IdentifiableFrameType.Type,
-                  runtime: any Runtime) -> Result<Void, FrameTypeError>
+    func validate(as type: any IdentifiableFrameType.Type,
+                  in runtime: any Runtime) -> Result<Void, FrameTypeError>
     {
         switch self {
         case .call(fields: let fields):
@@ -146,7 +134,7 @@ public extension FrameTypeDefinition {
             return validate(fields: params, ifields: info.params,
                             type: type, runtime: runtime).flatMap {
                 return rtype.validate(for: type.errorTypeName,
-                                      type: info.result).mapError {
+                                      as: info.result).mapError {
                     .childError(for: type, index: -1, error: $0, .get())
                 }
             }
@@ -155,7 +143,7 @@ public extension FrameTypeDefinition {
                 return .failure(.typeInfoNotFound(for: type, .get()))
             }
             return vtype.validate(for: type.errorTypeName,
-                                  type: info.type).mapError {
+                                  as: info.type).mapError {
                 .childError(for: type, index: -1, error: $0, .get())
             }
         case .storage(keys: let path, value: let vtype):
@@ -174,11 +162,11 @@ public extension FrameTypeDefinition {
                                                    got: ikey.hasher.description, .get()))
                 }
                 return pkey.type.validate(for: type.errorTypeName,
-                                          type: ikey.type)
+                                          as: ikey.type)
                     .mapError { .childError(for: type, index: index, error: $0, .get()) }
             }.flatMap {
                 vtype.validate(for: type.errorTypeName,
-                               type: info.value).mapError {
+                               as: info.value).mapError {
                     .childError(for: type, index: -1, error: $0, .get())
                 }
             }
@@ -197,7 +185,7 @@ public extension FrameTypeDefinition {
         return zip(fields, ifields).enumerated().voidErrorMap { index, zip in
             let (field, info) = zip
             return field.type.validate(for: type.errorTypeName,
-                                       type: info.type).mapError {
+                                       as: info.type).mapError {
                 .childError(for: type, index: index, error: $0, .get())
             }
         }

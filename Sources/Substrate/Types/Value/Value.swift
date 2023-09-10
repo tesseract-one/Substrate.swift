@@ -391,7 +391,7 @@ extension Value.Primitive: CustomStringConvertible {
 }
 
 public protocol ValueRepresentable: ValidatableTypeDynamic {
-    func asValue(runtime: any Runtime, type: TypeDefinition) throws -> Value<TypeDefinition>
+    func asValue(of type: TypeDefinition, in runtime: any Runtime) throws -> Value<TypeDefinition>
 }
 
 public protocol VoidValueRepresentable {
