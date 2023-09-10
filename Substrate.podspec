@@ -21,7 +21,7 @@ Pod::Spec.new do |s|
   s.dependency 'ContextCodable.swift', '~> 0.1.0'
   s.dependency 'xxHash', '~> 0.1.0'
   s.dependency 'Serializable.swift', '~> 0.3.1'
-  s.dependency 'Numberick', '~> 0.10.0'
+  s.dependency 'Numberick', '~> 0.11.0'
 
   s.test_spec 'SubstrateTests' do |ts|
     ts.platforms = base_platforms
