@@ -11,7 +11,7 @@ import Numberick
 
 public extension CaseIterable where Self: IdentifiableTypeStatic {
     @inlinable
-    static var definition: TypeDefinition {
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
         .variant(variants: allCases.enumerated().map { (idx, cs) in
             .e(UInt8(idx), String(describing: cs).uppercasedFirst)
         })
@@ -20,29 +20,37 @@ public extension CaseIterable where Self: IdentifiableTypeStatic {
 
 extension UInt8: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .u8) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .u8)
+    }
 }
 extension UInt16: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .u16) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .u16)
+    }
 }
 extension UInt32: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .u32) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .u32)
+    }
 }
 extension UInt64: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .u64) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .u64)
+    }
 }
 extension UInt: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition {
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
         MemoryLayout<UInt>.size == 4 ? .primitive(is: .u32) : .primitive(is: .u64)
     }
 }
 extension NBKDoubleWidth: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition {
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
         switch bitWidth {
         case 128: return isSigned ? .primitive(is: .i128) : .primitive(is: .u128)
         case 256: return isSigned ? .primitive(is: .i256) : .primitive(is: .u256)
@@ -52,70 +60,109 @@ extension NBKDoubleWidth: IdentifiableTypeStatic {
 }
 extension Int8: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .i8) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder{
+        .primitive(is: .i8)
+    }
 }
 extension Int16: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .i16) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .i16)
+    }
 }
 extension Int32: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .i32) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .i32)
+    }
 }
 extension Int64: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .i64) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .i64)
+    }
 }
 extension Int: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition {
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
         MemoryLayout<UInt>.size == 4 ? .primitive(is: .i32) : .primitive(is: .i64)
     }
 }
-
 extension Bool: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .bool) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .bool)
+    }
 }
 
 extension String: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .str) }
-}
-
-extension Data: IdentifiableTypeStatic {
-    @inlinable
-    public static var definition: TypeDefinition { .data }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .str)
+    }
 }
 
 extension Compact: IdentifiableTypeStatic where T: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition {
-        .compact(of: T.definition)
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .compact(of: registry.def(T.self))
     }
 }
 
 extension Character: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition { .primitive(is: .char) }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .primitive(is: .char)
+    }
 }
 
-extension Array: IdentifiableTypeStatic where Element: IdentifiableTypeStatic {
+public extension Collection where Self: IdentifiableWithConfigTypeStatic,
+                                  TypeConfig == IdentifiableCollectionTypeConfig,
+                                  Element: IdentifiableTypeStatic
+{
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>,
+                           _ config: TypeConfig) -> TypeDefinition.Builder
+    {
+        switch config {
+        case .dynamic: return .sequence(of: registry.def(Element.self))
+        case .fixed(let count): return .array(count: count, of: registry.def(Element.self))
+        }
+    }
+    
     @inlinable
-    public static var definition: TypeDefinition { .sequence(of: Element.definition) }
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        definition(in: registry, .dynamic)
+    }
+}
+
+extension Array: IdentifiableWithConfigTypeStatic,
+                 IdentifiableTypeStatic where Element: IdentifiableTypeStatic
+{
+    public typealias TypeConfig = IdentifiableCollectionTypeConfig
+}
+
+extension Data: IdentifiableWithConfigTypeStatic, IdentifiableTypeStatic {
+    public typealias TypeConfig = IdentifiableCollectionTypeConfig
 }
 
 extension Optional: IdentifiableTypeStatic where Wrapped: IdentifiableTypeStatic {
     @inlinable
-    public static var definition: TypeDefinition {
-        .variant(variants: [.e(0, "None"), .s(1, "Some", Wrapped.definition)])
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .variant(variants: [
+            .e(0, "None"), .s(1, "Some", registry.def(Wrapped.self))
+        ])
     }
 }
 
-extension Either: IdentifiableTypeStatic where Left: IdentifiableTypeStatic, Right: IdentifiableTypeStatic {
+extension Either: IdentifiableTypeStatic where Left: IdentifiableTypeStatic,
+                                               Right: IdentifiableTypeStatic
+{
     @inlinable
-    public static var definition: TypeDefinition {
-        .variant(variants: [.s(0, "Ok", Right.definition),
-                            .s(1, "Err", Left.definition)])
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder
+    {
+        .variant(variants: [
+            .s(0, "Ok", registry.def(Right.self)),
+            .s(1, "Err", registry.def(Left.self))
+        ])
     }
 }

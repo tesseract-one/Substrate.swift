@@ -21,8 +21,8 @@ public extension Configs {
         public typealias TExtrinsicPayment = Value<Void>
         public typealias TSystemProperties = AnySystemProperties
         public typealias TRuntimeVersion = AnyRuntimeVersion<UInt32>
-        public typealias TFeeDetails = Value<NetworkType.Id>
-        public typealias TRuntimeDispatchInfo = Value<NetworkType.Id>
+        public typealias TFeeDetails = Value<TypeDefinition>
+        public typealias TRuntimeDispatchInfo = Value<TypeDefinition>
     }
     
     struct Dynamic<A: AccountId, H: FixedHasher>: Config, BatchSupportedConfig {
@@ -125,7 +125,7 @@ public extension Configs.Dynamic {
                 selector: ExtrinsicExtensionId.chargeTransactionPayment.rawValue
             )
         }
-        switch type.type.flatten(runtime).definition {
+        switch type.flatten().definition {
         case .compact(of: _): return .uint(.default)
         case .primitive(is: let p):
             switch p {

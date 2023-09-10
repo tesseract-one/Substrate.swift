@@ -37,8 +37,8 @@ public extension StaticRuntimeCall {
     @inlinable static var frameTypeName: String { "RuntimeCall" }
 }
 
-public typealias RuntimeCallTypeInfo = (params: [(name: String, type: NetworkType.Info)],
-                                        result: NetworkType.Info)
+public typealias RuntimeCallTypeInfo = (params: [(name: String, type: TypeDefinition)],
+                                        result: TypeDefinition)
 public typealias RuntimeCallChildTypes = (params: [ValidatableTypeStatic.Type],
                                           result: ValidatableTypeStatic.Type)
 
@@ -68,11 +68,11 @@ public extension ComplexStaticFrameType where
         }
         return zip(ourTypes.params, info.params).enumerated().voidErrorMap { index, zip in
             let (our, info) = zip
-            return our.validate(runtime: runtime, type: info.type).mapError {
+            return our.validate(type: info.type).mapError {
                 .childError(for: Self.self, index: index, error: $0, .get())
             }
         }.flatMap {
-            ourTypes.result.validate(runtime: runtime, type: info.result).mapError {
+            ourTypes.result.validate(type: info.result).mapError {
                 .childError(for: Self.self, index: -1, error: $0, .get())
             }
         }
@@ -109,6 +109,6 @@ public extension StaticCodableRuntimeCall {
 public enum RuntimeCallCodingError: Error {
     case callNotFound(method: String, api: String)
     case wrongParametersCount(params: [String: any ValueRepresentable],
-                              expected: [(String, NetworkType.Info)])
+                              expected: [(String, TypeDefinition)])
     case parameterNotFound(name: String, inParams: [String: any ValueRepresentable])
 }

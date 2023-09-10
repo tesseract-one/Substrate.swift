@@ -33,7 +33,7 @@ public class ExtrinsicApiRegistry<R: RootApi>: RootApiAware {
     }
     
     public func getApi<A>(_ t: A.Type) -> A where A: ExtrinsicApi, A.R == R {
-        _apis.sync { apis in
+        _apis.mutate { apis in
             if let api = apis[A.id] as? A {
                 return api
             }

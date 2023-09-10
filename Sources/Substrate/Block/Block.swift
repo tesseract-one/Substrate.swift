@@ -17,8 +17,7 @@ public protocol SomeBlock: RuntimeDynamicSwiftDecodable, ValidatableType {
     var header: THeader { get }
     var extrinsics: [TExtrinsic] { get }
     
-    static func headerType(metadata: any Metadata,
-                           block type: NetworkType) throws -> NetworkType.Id
+    static func headerType(block type: TypeDefinition) throws -> TypeDefinition
 }
 
 public extension SomeBlock {
@@ -36,7 +35,7 @@ public protocol SomeBlockHeader: RuntimeDynamicSwiftDecodable, ValidatableType {
 public protocol StaticBlock: SomeBlock, RuntimeSwiftDecodable where THeader: RuntimeSwiftDecodable {}
 
 public protocol SomeChainBlock<TBlock>: ContextDecodable where
-    DecodingContext == (runtime: Runtime, blockType: NetworkType.LazyId)
+    DecodingContext == (runtime: Runtime, blockType: TypeDefinition.Lazy)
 {
     associatedtype TBlock: SomeBlock
     
@@ -49,16 +48,15 @@ public protocol StaticChainBlock: SomeChainBlock where TBlock: StaticBlock {
 
 public extension StaticChainBlock {
     init(from decoder: Swift.Decoder,
-         context: (runtime: Runtime, blockType: NetworkType.LazyId)) throws {
+         context: (runtime: Runtime, blockType: TypeDefinition.Lazy)) throws {
         try self.init(from: decoder, runtime: context.runtime)
     }
 }
 
 public extension SomeBlock {
-    static func headerType(metadata: any Metadata,
-                           block type: NetworkType) throws -> NetworkType.Id
+    static func headerType(block type: TypeDefinition) throws -> TypeDefinition
     {
-        guard case .composite(let fields) = type.flatten(metadata).definition else {
+        guard case .composite(let fields) = type.flatten().definition else {
             throw TypeError.wrongType(for: Self.self, type: type,
                                       reason: "Isn't Composite", .get())
         }

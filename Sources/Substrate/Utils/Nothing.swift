@@ -38,9 +38,9 @@ extension Nothing: ScaleCodec.Codable, RuntimeCodable {
 }
 
 extension Nothing: ValueRepresentable {
-    public func asValue(runtime: Runtime, type: NetworkType.Info) throws -> Value<NetworkType.Id> {
+    public func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
         try validate(runtime: runtime, type: type).get()
-        return .nil(type.id)
+        return .nil(type)
     }
 }
 
@@ -49,7 +49,9 @@ extension Nothing: VoidValueRepresentable {
 }
 
 extension Nothing: IdentifiableType {
-    @inlinable public static var definition: TypeDefinition { .void }
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .void
+    }
 }
 
 // Somehow substrate has Compact<()> type

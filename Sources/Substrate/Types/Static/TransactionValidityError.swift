@@ -69,10 +69,10 @@ public enum TransactionValidityError: StaticCallError, Equatable, Swift.Codable,
     }
     
     @inlinable
-    public static var definition: TypeDefinition {
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
         .variant(variants: [
-            .s(0, "Invalid", InvalidTransaction.definition),
-            .s(1, "Unknown", UnknownTransaction.definition)
+            .s(0, "Invalid", registry.def(InvalidTransaction.self)),
+            .s(1, "Unknown", registry.def(UnknownTransaction.self))
         ])
     }
 }
@@ -80,7 +80,7 @@ public enum TransactionValidityError: StaticCallError, Equatable, Swift.Codable,
 public extension TransactionValidityError {
     /// An invalid transaction validity.
     enum InvalidTransaction: Error, Equatable, Swift.Codable, ScaleCodec.Codable,
-                             RuntimeCodable, RuntimeSwiftCodable
+                             RuntimeCodable, RuntimeSwiftCodable, IdentifiableType
     {
         /// The call of the transaction is not expected.
         case call
@@ -238,12 +238,12 @@ public extension TransactionValidityError {
         }
         
         @inlinable
-        public static var definition: TypeDefinition {
+        public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
             .variant(variants: [
                 .e(0, "Call"), .e(1, "Payment"), .e(2, "Future"), .e(3, "Stale"),
                 .e(4, "BadProof"), .e(5, "AncientBirthBlock"), .e(6, "ExhaustsResources"),
-                .s(7, "Custom", UInt8.definition), .e(8, "BadMandatory"), .e(9, "MandatoryValidation"),
-                .e(10, "BadSigner")
+                .s(7, "Custom", registry.def(UInt8.self)), .e(8, "BadMandatory"),
+                .e(9, "MandatoryValidation"), .e(10, "BadSigner")
             ])
         }
     }
@@ -252,7 +252,7 @@ public extension TransactionValidityError {
 public extension TransactionValidityError {
     /// An unknown transaction validity.
     enum UnknownTransaction: Error, Equatable, Swift.Codable, ScaleCodec.Codable,
-                             RuntimeCodable, RuntimeSwiftCodable
+                             RuntimeCodable, RuntimeSwiftCodable, IdentifiableType
     {
         /// Could not lookup some information that is required to validate the transaction.
         case cannotLookup
@@ -324,10 +324,10 @@ public extension TransactionValidityError {
         }
         
         @inlinable
-        public static var definition: TypeDefinition {
+        public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
             .variant(variants: [
                 .e(0, "CannotLookup"), .e(1, "NoUnsignedValidator"),
-                .s(2, "Custom", UInt8.definition)
+                .s(2, "Custom", registry.def(UInt8.self))
             ])
         }
     }

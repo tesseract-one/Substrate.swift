@@ -24,7 +24,7 @@ public extension PalletCall {
     @inlinable static var frame: String { pallet }
 }
 
-public typealias CallTypeInfo = [(field: NetworkType.Field, type: NetworkType)]
+public typealias CallTypeInfo = [TypeDefinition.Field]
 public typealias CallChildTypes = [ValidatableTypeStatic.Type]
 
 public extension PalletCall where

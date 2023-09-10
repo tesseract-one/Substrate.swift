@@ -28,19 +28,17 @@ public extension SomeTuple1 where
 
 public extension SomeTuple1 where Self: TupleStorageValidatableKeyPath {
     @inlinable
-    static var validatablePath: [(hasher: StaticHasher.Type,
-                                  type: ValidatableTypeStatic.Type)]
-    {
-        [(T1.THasher.self, T1.TKey.self)]
+    static func fillValidatable(path: inout StorageKeyChildKeyTypes) {
+        path.append((T1.THasher.self, T1.TKey.self))
     }
 }
 
 public extension SomeTuple1 where Self: TupleStorageIdentifiableKeyPath {
     @inlinable
-    static var identifiablePath: [(key: TypeDefinition,
-                                   hasher: LatestMetadata.StorageHasher)]
+    static func fillDefinitions(registry: TypeRegistry<TypeDefinition.TypeId>,
+                                defs: inout StorageKeyTypeKeysInfo)
     {
-        [(T1.TKey.definition, T1.THasher.hasherType)]
+        defs.append((T1.THasher.hasherType, registry.def(T1.TKey.self)))
     }
 }
 
@@ -70,10 +68,10 @@ public extension ListTuple where
     Self: TupleStorageNKeyPath & TupleStorageValidatableKeyPath,
     DroppedFirst: TupleStorageValidatableKeyPath
 {
-    static var validatablePath: [(hasher: StaticHasher.Type,
-                                  type: ValidatableTypeStatic.Type)]
-    {
-        [(First.THasher.self, First.TKey.self)] + DroppedFirst.validatablePath
+    @inlinable
+    static func fillValidatable(path: inout StorageKeyChildKeyTypes) {
+        path.append((First.THasher.self, First.TKey.self))
+        DroppedFirst.fillValidatable(path: &path)
     }
 }
 
@@ -82,10 +80,11 @@ public extension ListTuple where
     DroppedFirst: TupleStorageIdentifiableKeyPath
 {
     @inlinable
-    static var identifiablePath: [(key: TypeDefinition,
-                                   hasher: LatestMetadata.StorageHasher)]
+    static func fillDefinitions(registry: TypeRegistry<TypeDefinition.TypeId>,
+                                defs: inout StorageKeyTypeKeysInfo)
     {
-        [(First.TKey.definition, First.THasher.hasherType)] + DroppedFirst.identifiablePath
+        defs.append((First.THasher.hasherType, registry.def(First.TKey.self)))
+        DroppedFirst.fillDefinitions(registry: registry, defs: &defs)
     }
 }
 

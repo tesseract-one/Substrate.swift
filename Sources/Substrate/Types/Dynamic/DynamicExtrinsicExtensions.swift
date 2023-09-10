@@ -19,21 +19,22 @@ public struct DynamicCheckSpecVersionExtension: DynamicExtrinsicExtension {
     ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> {
-        try api.runtime.version.specVersion.asValue(runtime: api.runtime, type: id)
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> {
+        try api.runtime.version.specVersion.asValue(runtime: api.runtime,
+                                                    type: type)
     }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(runtime: runtime, type: extra).flatMap {
-            SBT<C>.Version.validate(runtime: runtime, type: additionalSigned)
+        Nothing.validate(type: extra).flatMap {
+            SBT<C>.Version.validate(type: additionalSigned)
         }
     }
 }
@@ -49,21 +50,22 @@ public struct DynamicCheckTxVersionExtension: DynamicExtrinsicExtension {
     ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> {
-        try api.runtime.version.transactionVersion.asValue(runtime: api.runtime, type: id)
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> {
+        try api.runtime.version.transactionVersion.asValue(runtime: api.runtime,
+                                                           type: type)
     }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(runtime: runtime, type: extra).flatMap {
-            SBT<C>.Version.validate(runtime: runtime, type: additionalSigned)
+        Nothing.validate(type: extra).flatMap {
+            SBT<C>.Version.validate(type: additionalSigned)
         }
     }
 }
@@ -79,21 +81,22 @@ public struct DynamicCheckGenesisExtension: DynamicExtrinsicExtension {
     ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> {
-        try api.runtime.genesisHash.asValue(runtime: api.runtime, type: id)
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> {
+        try api.runtime.genesisHash.asValue(runtime: api.runtime,
+                                            type: type)
     }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(runtime: runtime, type: extra).flatMap {
-            SBT<C>.Hash.validate(runtime: runtime, type: additionalSigned)
+        Nothing.validate(type: extra).flatMap {
+            SBT<C>.Hash.validate(type: additionalSigned)
         }
     }
 }
@@ -108,19 +111,19 @@ public struct DynamicCheckNonZeroSenderExtension: DynamicExtrinsicExtension {
     ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(runtime: runtime, type: extra).flatMap {
-            Nothing.validate(runtime: runtime, type: additionalSigned)
+        Nothing.validate(type: extra).flatMap {
+            Nothing.validate(type: additionalSigned)
         }
     }
 }
@@ -147,21 +150,21 @@ public struct DynamicCheckNonceExtension: DynamicExtrinsicExtension {
     }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> {
-        try params.nonce.asValue(runtime: api.runtime, type: id)
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> {
+        try params.nonce.asValue(runtime: api.runtime, type: type)
     }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Compact<AnySigningParams<C>.TPartial.TNonce>.validate(runtime: runtime, type: extra).flatMap {
-            Nothing.validate(runtime: runtime, type: additionalSigned)
+        Compact<AnySigningParams<C>.TPartial.TNonce>.validate(type: extra).flatMap {
+            Nothing.validate(type: additionalSigned)
         }
     }
 }
@@ -186,23 +189,23 @@ public struct DynamicCheckMortalityExtension: DynamicExtrinsicExtension {
     }
 
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> {
-        try params.era.asValue(runtime: api.runtime, type: id)
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> {
+        try params.era.asValue(runtime: api.runtime, type: type)
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> {
-        try params.blockHash.asValue(runtime: api.runtime, type: id)
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> {
+        try params.blockHash.asValue(runtime: api.runtime, type: type)
     }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        AnySigningParams<C>.TPartial.TEra.validate(runtime: runtime, type: extra).flatMap {
-            AnySigningParams<C>.TPartial.THash.validate(runtime: runtime, type: additionalSigned)
+        AnySigningParams<C>.TPartial.TEra.validate(type: extra).flatMap {
+            AnySigningParams<C>.TPartial.THash.validate(type: additionalSigned)
         }
     }
 }
@@ -218,19 +221,19 @@ public struct DynamicCheckWeightExtension: DynamicExtrinsicExtension {
     ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(runtime: runtime, type: extra).flatMap {
-            Nothing.validate(runtime: runtime, type: additionalSigned)
+        Nothing.validate(type: extra).flatMap {
+            Nothing.validate(type: additionalSigned)
         }
     }
 }
@@ -253,25 +256,25 @@ public struct DynamicChargeTransactionPaymentExtension: DynamicExtrinsicExtensio
     }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> {
-        try params.tip.asValue(runtime: api.runtime, type: id)
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> {
+        try params.tip.asValue(runtime: api.runtime, type: type)
     }
 
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        AnySigningParams<C>.TPartial.TPayment.validate(runtime: runtime, type: extra).flatMap {
-            Nothing.validate(runtime: runtime, type: additionalSigned)
+        AnySigningParams<C>.TPartial.TPayment.validate(type: extra).flatMap {
+            Nothing.validate(type: additionalSigned)
         }
     }
     
-    static func tipType(runtime: any Runtime) -> NetworkType.Info? {
+    static func tipType(runtime: any Runtime) -> TypeDefinition? {
         guard let ext = runtime.metadata.extrinsic.extensions.first(where: {
             $0.identifier == ExtrinsicExtensionId.chargeTransactionPayment.rawValue
         }) else {
@@ -291,19 +294,19 @@ public struct DynamicPrevalidateAttestsExtension: DynamicExtrinsicExtension {
     ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial { params }
     
     public func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id> { .nil(id) }
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition> { .nil(type) }
     
     public func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError> {
-        Nothing.validate(runtime: runtime, type: extra).flatMap {
-            Nothing.validate(runtime: runtime, type: additionalSigned)
+        Nothing.validate(type: extra).flatMap {
+            Nothing.validate(type: additionalSigned)
         }
     }
 }

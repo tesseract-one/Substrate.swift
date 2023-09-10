@@ -16,19 +16,18 @@ public protocol Metadata {
     
     // Swith to non optional after v14 drop
     var outerEnums: OuterEnumsMetadata? { get }
-    var customTypes: Dictionary<String, (NetworkType.Id, Data)>? { get }
+    var customTypes: Dictionary<String, (TypeDefinition, Data)>? { get }
     
     var pallets: [String] { get }
     var apis: [String] { get }
     
-    func resolve(type id: NetworkType.Id) -> NetworkType?
     // Path is joined by "."
-    func resolve(type path: String) -> NetworkType.Info?
+    func resolve(type path: String) -> TypeDefinition?
     // Search and reduce is O(n). Try to resolve by id or by path
-    func search(type cb: (String) -> Bool) -> NetworkType.Info?
+    func search(type cb: (String) -> Bool) -> TypeDefinition?
     func reduce<R>(
         types into: R,
-        _ cb: (inout R, NetworkType.Info) throws -> Void
+        _ cb: (inout R, TypeDefinition) throws -> Void
     ) rethrows -> R
     
     func resolve(pallet index: UInt8) -> PalletMetadata?
@@ -39,18 +38,18 @@ public protocol Metadata {
 public protocol PalletMetadata {
     var name: String { get }
     var index: UInt8 { get }
-    var call: NetworkType.Info? { get }
-    var event: NetworkType.Info? { get }
-    var error: NetworkType.Info? { get }
+    var call: TypeDefinition? { get }
+    var event: TypeDefinition? { get }
+    var error: TypeDefinition? { get }
     var storage: [String] { get }
     var constants: [String] { get }
     
     func callName(index: UInt8) -> String?
     func callIndex(name: String) -> UInt8?
-    func callParams(name: String) -> [(field: NetworkType.Field, type: NetworkType)]?
+    func callParams(name: String) -> [TypeDefinition.Field]?
     func eventName(index: UInt8) -> String?
     func eventIndex(name: String) -> UInt8?
-    func eventParams(name: String) -> [(field: NetworkType.Field, type: NetworkType)]?
+    func eventParams(name: String) -> [TypeDefinition.Field]?
     
     func storage(name: String) -> StorageMetadata?
     func constant(name: String) -> ConstantMetadata?
@@ -59,8 +58,8 @@ public protocol PalletMetadata {
 public protocol StorageMetadata {
     var name: String { get }
     var modifier: LatestMetadata.StorageEntryModifier { get }
-    var types: (keys: [(hasher: LatestMetadata.StorageHasher, type: NetworkType.Info)],
-                value: NetworkType.Info) { get }
+    var types: (keys: [(hasher: LatestMetadata.StorageHasher, type: TypeDefinition)],
+                value: TypeDefinition) { get }
     var defaultValue: Data { get }
     var documentation: [String] { get }
 }
@@ -68,26 +67,26 @@ public protocol StorageMetadata {
 public protocol ExtrinsicMetadata {
     var version: UInt8 { get }
     // remove after v14 drop
-    var type: NetworkType.Info? { get }
+    var type: TypeDefinition? { get }
     var extensions: [ExtrinsicExtensionMetadata] { get }
     // Make non optional after v14 metadata drop
-    var addressType: NetworkType.Info? { get }
-    var callType: NetworkType.Info? { get }
-    var signatureType: NetworkType.Info? { get }
-    var extraType: NetworkType.Info? { get }
+    var addressType: TypeDefinition? { get }
+    var callType: TypeDefinition? { get }
+    var signatureType: TypeDefinition? { get }
+    var extraType: TypeDefinition? { get }
 }
 
 public protocol ConstantMetadata {
     var name: String { get }
-    var type: NetworkType.Info { get }
+    var type: TypeDefinition { get }
     var value: Data { get }
     var documentation: [String] { get }
 }
 
 public protocol ExtrinsicExtensionMetadata {
     var identifier: String { get }
-    var type: NetworkType.Info { get }
-    var additionalSigned: NetworkType.Info { get }
+    var type: TypeDefinition { get }
+    var additionalSigned: TypeDefinition { get }
 }
 
 public protocol RuntimeApiMetadata {
@@ -96,19 +95,25 @@ public protocol RuntimeApiMetadata {
     
     func resolve(
         method name: String
-    ) -> (params: [(name: String, type: NetworkType.Info)], result: NetworkType.Info)?
+    ) -> (params: [(name: String, type: TypeDefinition)], result: TypeDefinition)?
 }
 
 public protocol OuterEnumsMetadata {
-    var callType: NetworkType.Info { get }
-    var eventType: NetworkType.Info { get }
-    var moduleErrorType: NetworkType.Info { get }
+    var callType: TypeDefinition { get }
+    var eventType: TypeDefinition { get }
+    var moduleErrorType: TypeDefinition { get }
 }
 
 public enum MetadataError: Error {
-    case typeNotFound(id: NetworkType.Id)
-    case storageBadHashersCount(expected: Int, got: Int, name: String, pallet: String)
-    case storageNonCompositeKey(name: String, pallet: String, type: NetworkType.Info)
+    case typeNotFound(id: NetworkType.Id, info: ErrorMethodInfo)
+    case badBitSequenceFormat(type: NetworkType, reason: String,
+                              info: ErrorMethodInfo)
+    case storageBadHashersCount(expected: Int, got: Int,
+                                name: String, pallet: String,
+                                info: ErrorMethodInfo)
+    case storageNonCompositeKey(name: String, pallet: String,
+                                type: TypeDefinition.Strong, info: ErrorMethodInfo)
+    case typeIsNotVariant(type: TypeDefinition.Strong, info: ErrorMethodInfo)
 }
 
 public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable, IdentifiableType {
@@ -127,13 +132,8 @@ public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable, Identifiable
         return try decoder.decode(VersionedNetworkMetadata.self).metadata.asMetadata()
     }
     
-    public static var definition: TypeDefinition { .data }
-}
-
-public extension Dictionary where Key == NetworkType.Id, Value == NetworkType {
-    @inlinable
-    func get(_ id: NetworkType.Id) throws -> NetworkType {
-        guard let val = self[id] else { throw MetadataError.typeNotFound(id: id) }
-        return val
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder
+    {
+        .sequence(of: registry.def(UInt8.self))
     }
 }

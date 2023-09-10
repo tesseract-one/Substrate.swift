@@ -12,19 +12,20 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
     public let pallet: String
     public let name: String
     
-    public let params: Value<NetworkType.Id>
+    public let params: Value<TypeDefinition>
     
-    public init(name: String, pallet: String, params: Value<NetworkType.Id>) {
+    public init(name: String, pallet: String, params: Value<TypeDefinition>) {
         self.pallet = pallet
         self.name = name
         self.params = params
     }
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as info: NetworkType.Info,
+                                       as type: TypeDefinition,
                                        runtime: Runtime) throws
     {
-        var value = try Value(from: &decoder, as: info, runtime: runtime)
+        var value = try Value(from: &decoder, as: type, runtime: runtime)
+        print(value)
         let pallet: String
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
@@ -63,9 +64,9 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
     }
     
     public static func fetchEventData<D: ScaleCodec.Decoder>(
-        from decoder: inout D, runtime: any Runtime, type: NetworkType.Id
+        from decoder: inout D, runtime: any Runtime, type: TypeDefinition
     ) throws -> (name: String, pallet: String, data: Data) {
-        let size = try Value<Void>.calculateSize(in: decoder, for: type, runtime: runtime)
+        let size = try Value<Void>.calculateSize(in: decoder, for: type)
         let hBytes = try decoder.peek(count: 2)
         guard let header = runtime.resolve(eventName: hBytes[1], pallet: hBytes[0]) else {
             throw FrameTypeError.typeInfoNotFound(for: "Event", index: hBytes[1],
@@ -74,12 +75,26 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
         return try (name: header.name, pallet: header.pallet, data: decoder.read(count: size))
     }
     
-    public static func validate(runtime: Runtime,
-                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
     {
-        info == runtime.types.event ? .success(()) :
-            .failure(.wrongType(for: Self.self, type: info.type,
-                                reason: "Top level event has different info", .get()))
+        guard case .variant(variants: let vars) = type.definition else {
+            return .failure(.wrongType(for: Self.self,
+                                       type: type,
+                                       reason: "Isn't variant", .get()))
+        }
+        return vars.voidErrorMap { vart in
+            guard vart.fields.count == 1 else {
+                return .failure(.wrongVariantFieldsCount(for: Self.self,
+                                                         variant: vart.name,
+                                                         expected: 1, type: type, .get()))
+            }
+            guard case .variant(_) = vart.fields[0].type.definition else {
+                return .failure(.wrongType(for: Self.self,
+                                           type: vart.fields[0].type,
+                                           reason: "Child type isn't variant", .get()))
+            }
+            return .success(())
+        }
     }
     
     public var description: String {

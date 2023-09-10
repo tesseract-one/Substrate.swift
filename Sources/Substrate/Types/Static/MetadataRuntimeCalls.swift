@@ -16,8 +16,9 @@ public struct MetadataVersionsRuntimeCall: StaticCodableRuntimeCall, Identifiabl
     public init() {}
     public func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E) throws {}
     
-    public static var definition: FrameTypeDefinition {
-        .runtimeCall(params: [], return: TReturn.definition)
+    @inlinable
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+        .runtimeCall(params: [], return: registry.def(TReturn.self, .dynamic))
     }
 }
 
@@ -33,7 +34,9 @@ public struct MetadataAtVersionRuntimeCall: StaticCodableRuntimeCall, Identifiab
         try encoder.encode(version)
     }
     
-    public static var definition: FrameTypeDefinition {
-        .runtimeCall(params: [.v(UInt32.definition)], return: TReturn.definition)
+    @inlinable
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+        .runtimeCall(params: [.v(registry.def(UInt32.self))],
+                     return: registry.def(TReturn.self))
     }
 }

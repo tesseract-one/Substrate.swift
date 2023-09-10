@@ -22,10 +22,9 @@ public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
             proofSize = try decoder.decode(.compact)
         }
         
-        @inlinable
-        public static var definition: TypeDefinition {
-            .composite(fields: [.v(Compact<UInt64>.definition),
-                                .v(Compact<UInt64>.definition)])
+        public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+            .composite(fields: [.v(registry.def(compact: UInt64.self)),
+                                .v(registry.def(compact: UInt64.self))])
         }
     }
     
@@ -54,11 +53,10 @@ public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
         paysFee = try decoder.decode()
     }
     
-    @inlinable
-    public static var definition: TypeDefinition {
-        .composite(fields: [.v(Weight.definition),
-                            .v(DispatchClass.definition),
-                            .v(Pays.definition)])
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .composite(fields: [.v(registry.def(Weight.self)),
+                            .v(registry.def(DispatchClass.self)),
+                            .v(registry.def(Pays.self))])
     }
 }
 
@@ -77,11 +75,10 @@ public struct RuntimeDispatchInfo<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
         partialFee = try runtime.decode(from: &decoder)
     }
     
-    @inlinable
-    public static var definition: TypeDefinition {
-        .composite(fields: [.v(DispatchInfo.Weight.definition),
-                            .v(DispatchInfo.DispatchClass.definition),
-                            .v(Bal.definition)])
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .composite(fields: [.v(registry.def(DispatchInfo.Weight.self)),
+                            .v(registry.def(DispatchInfo.DispatchClass.self)),
+                            .v(registry.def(Bal.self))])
     }
 }
 
@@ -108,11 +105,10 @@ public struct FeeDetails<Bal>: RuntimeDecodable, RuntimeDynamicDecodable, Identi
             adjustedWeightFee = try runtime.decode(from: &decoder)
         }
         
-        @inlinable
-        public static var definition: TypeDefinition {
-            .composite(fields: [.v(Bal.definition),
-                                .v(Bal.definition),
-                                .v(Bal.definition)])
+        public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+            .composite(fields: [.v(registry.def(Bal.self)),
+                                .v(registry.def(Bal.self)),
+                                .v(registry.def(Bal.self))])
         }
     }
     
@@ -126,9 +122,8 @@ public struct FeeDetails<Bal>: RuntimeDecodable, RuntimeDynamicDecodable, Identi
         tip = try runtime.decode(from: &decoder)
     }
     
-    @inlinable
-    public static var definition: TypeDefinition {
-        .composite(fields: [.v(Optional<InclusionFee>.definition),
-                            .v(Bal.definition)])
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .composite(fields: [.v(registry.def(Optional<InclusionFee>.self)),
+                            .v(registry.def(Bal.self))])
     }
 }

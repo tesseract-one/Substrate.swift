@@ -120,27 +120,29 @@ extension ExtrinsicEra: ScaleCodec.Codable {
 extension ExtrinsicEra: RuntimeCodable, RuntimeDynamicDecodable, RuntimeDynamicEncodable {}
 
 extension ExtrinsicEra: IdentifiableType {
-    public static var definition: TypeDefinition {
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder
+    {
+        let u8def = registry.def(UInt8.self)
         return .variant(variants:
             [.e(0, "Immortal")] +
-            Array((1...255).map{.s(UInt8($0), "Mortal\($0)", UInt8.definition)})
+            Array((UInt8(1)...255).map{.s($0, "Mortal\($0)", u8def)})
         )
     }
 }
 
 extension ExtrinsicEra: ValueRepresentable {
-    public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
-        try validate(runtime: runtime, type: info).get()
-        guard case .variant(variants: let vars) = info.type.flatten(runtime).definition else {
-            throw TypeError.wrongType(for: Self.self, type: info.type,
+    public func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
+        try validate(runtime: runtime, type: type).get()
+        guard case .variant(variants: let vars) = type.flatten().definition else {
+            throw TypeError.wrongType(for: Self.self, type: type,
                                       reason: "Not a variant", .get())
         }
         let bodyType = vars[1].fields[0].type
         switch self {
-        case .immortal: return .variant(name: "Immortal", values: [], info.id)
+        case .immortal: return .variant(name: "Immortal", values: [], type)
         case .mortal(period: _, phase: _):
             let (first, second) = self.serialize()
-            return .variant(name: "Mortal\(first)", values: [.uint(UInt256(second!), bodyType)], info.id)
+            return .variant(name: "Mortal\(first)", values: [.uint(UInt256(second!), bodyType)], type)
         }
     }
 }

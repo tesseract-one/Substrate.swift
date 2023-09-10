@@ -52,19 +52,18 @@ public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
             } else {
                 throw RuntimeCallCodingError.parameterNotFound(name: param.name, inParams: params)
             }
-            try value.asValue(runtime: runtime, type: param.type.id)
-                .encode(in: &encoder, as: param.type.id, runtime: runtime)
+            try value.asValue(runtime: runtime, type: param.type).encode(in: &encoder, runtime: runtime)
         }
     }
     
     public func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D, runtime: Runtime) throws -> Return {
-        return try runtime.decode(from: &decoder) { runtime in
+        return try runtime.decode(from: &decoder) {
             guard let call = runtime.resolve(runtimeCall: method, api: api) else {
                 throw RuntimeCallCodingError.callNotFound(method: method, api: api)
             }
-            return call.result.id
+            return call.result
         }
     }
 }
 
-public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<NetworkType.Id>>
+public typealias AnyValueRuntimeCall = AnyRuntimeCall<Value<TypeDefinition>>

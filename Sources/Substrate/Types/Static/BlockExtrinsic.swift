@@ -38,7 +38,7 @@ public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic, Identifiable
     
     public var debugDescription: String {
         do {
-            let ext: AnyExtrinsic<AnyCall<NetworkType.Id>> = try decode()
+            let ext: AnyExtrinsic<AnyCall<TypeDefinition>> = try decode()
             return ext.description
         } catch {
             return description
@@ -46,5 +46,9 @@ public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic, Identifiable
     }
     
     public static var version: UInt8 { M.version }
-    public static var definition: TypeDefinition { .data }
+    
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder
+    {
+        .sequence(of: registry.def(UInt8.self))
+    }
 }

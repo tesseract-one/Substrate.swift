@@ -38,24 +38,24 @@ public extension SingleTypeStaticSignature {
     @inlinable
     static var fixedBytesCount: Int { algorithm.signatureBytesCount }
     
-    func asValue(runtime: Runtime, type: NetworkType.Info) throws -> Value<NetworkType.Id> {
+    func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
         try validate(runtime: runtime, type: type).get()
-        return .bytes(raw, type.id)
+        return .bytes(raw, type)
     }
     
     func asValue() -> Value<Void> { .bytes(raw) }
     
-    @inlinable
-    static var definition: TypeDefinition { .data(count: UInt32(fixedBytesCount)) }
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .array(count: UInt32(fixedBytesCount), of: registry.def(UInt8.self))
+    }
     
-    static func _validate(runtime: any Runtime,
-                          type: NetworkType) -> Result<Void, TypeError> {
-        return AnySignature.parseTypeInfo(runtime: runtime, type: type).flatMap { types in
+    static func _validate(type: TypeDefinition) -> Result<Void, TypeError> {
+        return AnySignature.parseTypeInfo(type: type).flatMap { types in
             guard types.count == 1, types.values.first == algorithm else {
                 return .failure(.wrongType(for: Self.self, type: type,
                                            reason: "Unknown signature type: \(types)", .get()))
             }
-            guard let count = type.asBytes(runtime) else {
+            guard let count = type.asBytes() else {
                 return .failure(.wrongType(for: Self.self, type: type,
                                            reason: "Signature is not byte sequence", .get()))
             }
@@ -80,9 +80,8 @@ public struct EcdsaSignature: SingleTypeStaticSignature {
     }
     
     @inlinable
-    public static func validate(runtime: Runtime,
-                                type: NetworkType) -> Result<Void, TypeError> {
-        _validate(runtime: runtime, type: type)
+    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+        _validate(type: type)
     }
     
     @inlinable
@@ -100,9 +99,8 @@ public struct Ed25519Signature: SingleTypeStaticSignature {
     }
     
     @inlinable
-    public static func validate(runtime: Runtime,
-                                type: NetworkType) -> Result<Void, TypeError> {
-        _validate(runtime: runtime, type: type)
+    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+        _validate(type: type)
     }
     
     @inlinable
@@ -120,9 +118,8 @@ public struct Sr25519Signature: SingleTypeStaticSignature {
     }
     
     @inlinable
-    public static func validate(runtime: Runtime,
-                                type: NetworkType) -> Result<Void, TypeError> {
-        _validate(runtime: runtime, type: type)
+    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+        _validate(type: type)
     }
     
     @inlinable

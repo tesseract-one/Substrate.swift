@@ -14,7 +14,7 @@ public protocol Address<TAccountId>: RuntimeDynamicCodable,
     
     init(accountId: TAccountId,
          runtime: any Runtime,
-         id: NetworkType.LazyId) throws
+         type: TypeDefinition.Lazy) throws
 }
 
 public protocol StaticAddress<TAccountId>: Address, RuntimeCodable {
@@ -25,7 +25,7 @@ public extension StaticAddress {
     @inlinable
     init(accountId: TAccountId,
          runtime: any Runtime,
-         id: NetworkType.LazyId) throws
+         type: TypeDefinition.Lazy) throws
     {
         try self.init(accountId: accountId, runtime: runtime)
     }

@@ -23,8 +23,10 @@ public struct ExtrinsicFailureEvent: SomeExtrinsicFailureEvent, StaticEvent, Ide
     }
     
     @inlinable
-    public static var definition: FrameTypeDefinition {
-        .event(fields: [.v(DispatchError.definition), .v(DispatchInfo.definition)])
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+        .event(fields: [
+            .v(registry.def(DispatchError.self)), .v(registry.def(DispatchInfo.self))
+        ])
     }
     
     public static let pallet: String = "System"

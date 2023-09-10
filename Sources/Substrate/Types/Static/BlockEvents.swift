@@ -19,12 +19,12 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
     }
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as info: NetworkType.Info,
+                                       as type: TypeDefinition,
                                        runtime: Runtime) throws
     {
-        let recordId = try Self.recordTypeId(metadata: runtime.metadata, events: info)
+        let record = try Self.recordType(events: type)
         let events = try Array<ER>(from: &decoder) { decoder in
-            try runtime.decode(from: &decoder) { _ in recordId }
+            try runtime.decode(from: &decoder) { record }
         }
         self.init(events: events)
     }
@@ -37,19 +37,18 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
         events.description
     }
     
-    public static func recordTypeId(metadata: any Metadata, events info: NetworkType.Info) throws -> NetworkType.Id {
-        switch info.type.flatten(metadata).definition {
-        case .sequence(of: let recordId):
-            return recordId
+    public static func recordType(events type: TypeDefinition) throws -> TypeDefinition {
+        switch type.flatten().definition {
+        case .sequence(of: let record):
+            return record
         default:
-            throw TypeError.wrongType(for: Self.self, type: info.type,
+            throw TypeError.wrongType(for: Self.self, type: type,
                                       reason: "Not a sequence", .get())
         }
     }
     
-    public static func validate(runtime: any Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError> {
-        Array<ER>.validate(runtime: runtime, type: type)
+    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+        Array<ER>.validate(type: type)
     }
     
     public static var `default`: Self { Self(events: []) }
@@ -63,9 +62,9 @@ extension BlockEvents: RuntimeDecodable where ER: RuntimeDecodable {
 
 // Can be removed after dropping Metadata V14
 public extension SomeBlockEvents {
-    static func eventTypeId(metadata: any Metadata, events info: NetworkType.Info) -> NetworkType.Id? {
-        (try? BlockEvents<ER>.recordTypeId(metadata: metadata, events: info)).flatMap {
-            ER.eventTypeId(metadata: metadata, record: $0)
+    static func eventType(events type: TypeDefinition) -> TypeDefinition? {
+        (try? BlockEvents<ER>.recordType(events: type)).flatMap {
+            ER.eventType(record: $0)
         }
     }
 }

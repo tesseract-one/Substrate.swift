@@ -44,15 +44,16 @@ public protocol TupleStorageKeyPath: ListTuple
 public protocol TupleStorageValidatableKeyPath: TupleStorageKeyPath where
     First.TKey: ValidatableTypeStatic, Last.TKey: ValidatableTypeStatic
 {
-    static var validatablePath: [(hasher: any StaticHasher.Type,
-                                  type: any ValidatableTypeStatic.Type)] { get }
+    static func fillValidatable(path: inout StorageKeyChildKeyTypes)
 }
 
 public protocol TupleStorageIdentifiableKeyPath: TupleStorageKeyPath where
     First.TKey: IdentifiableTypeStatic, Last.TKey: IdentifiableTypeStatic
 {
-    static var identifiablePath: [(key: TypeDefinition,
-                                   hasher: LatestMetadata.StorageHasher)] { get }
+    static func fillDefinitions(
+        registry: TypeRegistry<TypeDefinition.TypeId>,
+        defs: inout StorageKeyTypeKeysInfo
+    )
 }
 
 public protocol TupleStorageNKeyPath: TupleStorageKeyPath where DroppedFirst: TupleStorageKeyPath {}
@@ -87,7 +88,10 @@ public extension TupleStorageKeyBase where
 {
     @inlinable
     static var childTypes: ChildTypes {
-        (keys: TPath.validatablePath, value: TValue.self)
+        var path = StorageKeyChildKeyTypes()
+        path.reserveCapacity(TPath.count)
+        TPath.fillValidatable(path: &path)
+        return (keys: path, value: TValue.self)
     }
 }
 
@@ -95,8 +99,11 @@ public extension TupleStorageKeyBase where
     TPath: TupleStorageIdentifiableKeyPath, TValue: IdentifiableTypeStatic
 {
     @inlinable
-    static var definition: FrameTypeDefinition {
-        .storage(keys: TPath.identifiablePath, value: TValue.definition)
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+        var defs = StorageKeyTypeKeysInfo()
+        defs.reserveCapacity(TPath.count)
+        TPath.fillDefinitions(registry: registry, defs: &defs)
+        return .storage(keys: defs, value: registry.def(TValue.self))
     }
 }
 

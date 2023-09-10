@@ -12,11 +12,11 @@ public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
                            ValueRepresentable, ValidatableType
 {
     init(from string: String, runtime: any Runtime,
-         id: NetworkType.LazyId) throws
+         type: TypeDefinition.Lazy) throws
     init(pub: any PublicKey, runtime: any Runtime,
-         id: NetworkType.LazyId) throws
+         type: TypeDefinition.Lazy) throws
     init(raw: Data, runtime: any Runtime,
-         id: NetworkType.LazyId) throws
+         type: TypeDefinition.Lazy) throws
     
     var raw: Data { get }
     var string: String { get }
@@ -25,13 +25,13 @@ public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
 
 public extension AccountId {
     init(from string: String, runtime: any Runtime,
-         id: NetworkType.LazyId) throws
+         type: TypeDefinition.Lazy) throws
     {
         let (raw, format) = try SS58.decode(string: string)
         guard format == runtime.addressFormat else {
             throw SS58.Error.formatNotAllowed
         }
-        try self.init(raw: raw, runtime: runtime, id: id)
+        try self.init(raw: raw, runtime: runtime, type: type)
     }
     
     var string: String {
@@ -62,23 +62,20 @@ public extension StaticAccountId {
     }
     
     init(from string: String, runtime: any Runtime) throws {
-        try self.init(from: string, runtime: runtime, id: NetworkType.IdNever)
+        try self.init(from: string, runtime: runtime, type: TypeDefinition.Never)
     }
     
-    init(from string: String, runtime: any Runtime,
-         id: NetworkType.LazyId) throws
+    init(from string: String, runtime: any Runtime, type: TypeDefinition.Lazy) throws
     {
         try self.init(from: string, runtime: runtime)
     }
     
-    init(pub: any PublicKey, runtime: any Runtime,
-         id: NetworkType.LazyId) throws
+    init(pub: any PublicKey, runtime: any Runtime, type: TypeDefinition.Lazy) throws
     {
         try self.init(pub: pub, runtime: runtime)
     }
     
-    init(raw: Data, runtime: any Runtime,
-         id: NetworkType.LazyId) throws
+    init(raw: Data, runtime: any Runtime, type: TypeDefinition.Lazy) throws
     {
         try self.init(raw: raw, runtime: runtime)
     }
@@ -110,5 +107,7 @@ public extension StaticAccountId {
     }
     
     @inlinable
-    static var definition: TypeDefinition { .data(count: UInt32(byteCount)) }
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .array(count: UInt32(self.byteCount), of: registry.def(UInt8.self))
+    }
 }

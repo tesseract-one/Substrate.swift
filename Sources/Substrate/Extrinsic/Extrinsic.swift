@@ -108,9 +108,9 @@ public protocol SomeDispatchError: CallError {
 
 public struct ModuleError: Error, IdentifiableType {
     public let pallet: PalletMetadata
-    public let error: NetworkType.Variant
+    public let error: TypeDefinition.Variant
     
-    public init(values: [Value<NetworkType.Id>], runtime: any Runtime) throws {
+    public init(values: [Value<TypeDefinition>], runtime: any Runtime) throws {
         guard values.count == 2 else {
             throw FrameTypeError.wrongFieldsCount(for: "ModuleError", expected: 2,
                                                   got: values.count, .get())
@@ -138,9 +138,9 @@ public struct ModuleError: Error, IdentifiableType {
                                                index: -1, expected: "NetworkType.Info",
                                                got: "nil", .get())
         }
-        guard case .variant(variants: let variants) = palletError.type.definition else {
+        guard case .variant(variants: let variants) = palletError.definition else {
             throw FrameTypeError.wrongType(for: "\(pallet.name).error",
-                                           got: palletError.type.description,
+                                           got: palletError.description,
                                            reason: "Should be Variant", .get())
         }
         guard let error = variants.first(where: { $0.index == error }) else {
@@ -151,8 +151,12 @@ public struct ModuleError: Error, IdentifiableType {
         self.error = error
     }
     
-    public static var definition: TypeDefinition {
-        .composite(fields: [.v(UInt8.definition), .v(.data(count: 4))])
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder
+    {
+        .composite(fields: [
+            .v(registry.def(UInt8.self)),
+            .v(registry.def(Data.self, .fixed(4)))
+        ])
     }
 }
 

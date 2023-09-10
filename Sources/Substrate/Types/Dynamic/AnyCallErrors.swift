@@ -11,25 +11,24 @@ import ScaleCodec
 public struct AnyTransactionValidityError: CallError, CustomDebugStringConvertible {
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
-    public let value: Value<NetworkType.Id>
+    public let value: Value<TypeDefinition>
     
-    public init(value: Value<NetworkType.Id>) {
+    public init(value: Value<TypeDefinition>) {
         self.value = value
     }
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as info: NetworkType.Info, runtime: Runtime) throws {
-        let value = try Value<NetworkType.Id>(from: &decoder, as: info, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: TypeDefinition, runtime: Runtime) throws {
+        let value = try Value<TypeDefinition>(from: &decoder, as: type, runtime: runtime)
         self.init(value: value)
     }
     
-    public init(from decoder: Swift.Decoder, as info: NetworkType.Info, runtime: Runtime) throws {
-        let value = try Value<NetworkType.Id>(from: decoder, as: info, runtime: runtime)
+    public init(from decoder: Swift.Decoder, as type: TypeDefinition, runtime: Runtime) throws {
+        let value = try Value<TypeDefinition>(from: decoder, as: type, runtime: runtime)
         self.init(value: value)
     }
     
-    public static func validate(runtime: any Runtime,
-                                type info: NetworkType.Info) -> Result<Void, TypeError> {
-        .success(())
+    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+        Value<TypeDefinition>.validate(type: type)
     }
     
     public var debugDescription: String {
@@ -41,7 +40,7 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
     public typealias TModuleError = ModuleError
     public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
     
-    public let value: Value<NetworkType.Id>
+    public let value: Value<TypeDefinition>
     private let _runtime: any Runtime
     
     @inlinable
@@ -61,11 +60,11 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
         return try ModuleError(values: values, runtime: _runtime)
     }}
     
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as info: NetworkType.Info, runtime: Runtime) throws {
-        let value = try Value<NetworkType.Id>(from: &decoder, as: info, runtime: runtime)
+    public init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: TypeDefinition, runtime: Runtime) throws {
+        let value = try Value<TypeDefinition>(from: &decoder, as: type, runtime: runtime)
         guard value.variant != nil else {
             throw ScaleCodec.DecodingError.typeMismatch(
-                Value<NetworkType.Id>.self,
+                Value<TypeDefinition>.self,
                 .init(path: decoder.path, description: "Decoded non-variant value")
             )
         }
@@ -73,11 +72,11 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
         self._runtime = runtime
     }
     
-    public init(from decoder: Swift.Decoder, as info: NetworkType.Info, runtime: Runtime) throws {
-        let value = try Value<NetworkType.Id>(from: decoder, as: info, runtime: runtime)
+    public init(from decoder: Swift.Decoder, as type: TypeDefinition, runtime: Runtime) throws {
+        let value = try Value<TypeDefinition>(from: decoder, as: type, runtime: runtime)
         guard value.variant != nil else {
             throw Swift.DecodingError.typeMismatch(
-                Value<NetworkType.Id>.self,
+                Value<TypeDefinition>.self,
                 .init(codingPath: decoder.codingPath,
                       debugDescription: "Decoded non-variant value")
             )
@@ -86,19 +85,18 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
         self._runtime = runtime
     }
     
-    public static func validate(info: TypeInfo, type tinfo: NetworkType.Info,
-                                runtime: Runtime) -> Result<Void, TypeError>
+    public static func validate(info: TypeInfo, type: TypeDefinition) -> Result<Void, TypeError>
     {
         guard let module = info.first(where: { $0.name.contains("Module") }) else {
             return .failure(.variantNotFound(for: Self.self,
                                              variant: "*Module*",
-                                             type: tinfo.type, .get()))
+                                             type: type, .get()))
         }
         guard module.fields.count == 1 else {
             return .failure(.wrongValuesCount(for: Self.self, expected: 1,
-                                              type: tinfo.type, .get()))
+                                              type: type, .get()))
         }
-        return TModuleError.validate(runtime: runtime, type: module.fields[0].type)
+        return TModuleError.validate(type: module.fields[0].type)
     }
     
     public var debugDescription: String {

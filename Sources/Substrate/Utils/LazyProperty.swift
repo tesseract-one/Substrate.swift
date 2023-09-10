@@ -15,7 +15,7 @@ public struct LazyProperty<Value> {
     }
     
     public var value: Value {
-        _value.sync { value in
+        _value.mutate { value in
             switch value {
             case .right(let val): return val
             case .left(let cb):
@@ -36,7 +36,7 @@ public struct LazyThrowingProperty<Value> {
     
     public var value: Value {
         get throws {
-            try _value.sync { value in
+            try _value.mutate { value in
                 switch value {
                 case .right(let res): return try res.get()
                 case .left(let cb):

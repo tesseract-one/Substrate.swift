@@ -14,42 +14,24 @@ public protocol DynamicExtrinsicExtension: ExtrinsicSignedExtension {
     ) async throws -> AnySigningParams<SBC<R.RC>>.TPartial
 
     func extra<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id>
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition>
 
     func additionalSigned<R: RootApi>(
-        api: R, params: AnySigningParams<SBC<R.RC>>, id: NetworkType.Id
-    ) async throws -> Value<NetworkType.Id>
+        api: R, params: AnySigningParams<SBC<R.RC>>, type: TypeDefinition
+    ) async throws -> Value<TypeDefinition>
     
     func validate<C: BasicConfig>(
         config: C.Type, runtime: any Runtime,
-        extra: NetworkType.Info, additionalSigned: NetworkType.Info
+        extra: TypeDefinition, additionalSigned: TypeDefinition
     ) -> Result<Void, TypeError>
-}
-
-public extension DynamicExtrinsicExtension {
-    @inlinable
-    func validate<C: BasicConfig>(
-        config: C.Type, runtime: any Runtime,
-        extra eId: NetworkType.Id,
-        additionalSigned aId: NetworkType.Id
-    ) -> Result<Void, TypeError> {
-        guard let eType = runtime.resolve(type: eId) else {
-            return .failure(.typeNotFound(for: Self.self, id: eId, .get()))
-        }
-        guard let aType = runtime.resolve(type: aId) else {
-            return .failure(.typeNotFound(for: Self.self, id: aId, .get()))
-        }
-        return validate(config: config, runtime: runtime,
-                        extra: eId.i(eType), additionalSigned: aId.i(aType))
-    }
 }
 
 public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsProvider {
     public typealias TConfig = BC
     public typealias TParams = AnySigningParams<BC>
-    public typealias TExtra = Value<NetworkType.Id>
-    public typealias TAdditionalSigned = [Value<NetworkType.Id>]
+    public typealias TExtra = Value<TypeDefinition>
+    public typealias TAdditionalSigned = [Value<TypeDefinition>]
     
     public let extensions: [ExtrinsicExtensionId: any DynamicExtrinsicExtension]
     public let version: UInt8
@@ -73,22 +55,22 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
         params: TParams, for api: R
     ) async throws -> TExtra where SBC<R.RC> == TConfig {
         let extensions = try _activeExtensions(runtime: api.runtime).get()
-        var extra: [Value<NetworkType.Id>] = []
+        var extra: [Value<TypeDefinition>] = []
         extra.reserveCapacity(extensions.count)
         for ext in extensions {
-            try await extra.append(ext.ext.extra(api: api, params: params, id: ext.extId))
+            try await extra.append(ext.ext.extra(api: api, params: params, type: ext.extId))
         }
-        return Value(value: .sequence(extra), context: api.runtime.types.extrinsicExtra.id)
+        return Value(value: .sequence(extra), context: api.runtime.types.extrinsicExtra)
     }
     
     public func additionalSigned<R: RootApi>(
         params: TParams, for api: R
     ) async throws -> TAdditionalSigned where SBC<R.RC> == TConfig {
         let extensions = try _activeExtensions(runtime: api.runtime).get()
-        var additional: [Value<NetworkType.Id>] = []
+        var additional: [Value<TypeDefinition>] = []
         additional.reserveCapacity(extensions.count)
         for ext in extensions {
-            try await additional.append(ext.ext.additionalSigned(api: api, params: params, id: ext.addId))
+            try await additional.append(ext.ext.additionalSigned(api: api, params: params, type: ext.addId))
         }
         return additional
     }
@@ -96,7 +78,7 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
     public func encode<E: ScaleCodec.Encoder>(extra: TExtra, in encoder: inout E,
                                               runtime: any Runtime) throws {
         try runtime.encode(value: extra, in: &encoder,
-                           as: runtime.types.extrinsicExtra.id)
+                           as: runtime.types.extrinsicExtra)
     }
     
     public func encode<E: ScaleCodec.Encoder>(additionalSigned: TAdditionalSigned,
@@ -113,14 +95,14 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
     }
     
     public func extra<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: any Runtime) throws -> TExtra {
-        try runtime.decode(from: &decoder, id: runtime.types.extrinsicExtra.id)
+        try runtime.decode(from: &decoder, type: runtime.types.extrinsicExtra)
     }
     
     public func additionalSigned<D: ScaleCodec.Decoder>(
         from decoder: inout D, runtime: any Runtime
     ) throws -> TAdditionalSigned {
         try _activeExtensions(runtime: runtime).get().map { ext in
-            try runtime.decode(from: &decoder, id: ext.addId)
+            try runtime.decode(from: &decoder, type: ext.addId)
         }
     }
     
@@ -141,7 +123,7 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
     
     private func _activeExtensions(
         runtime: any Runtime
-    ) -> Result<[(ext: any DynamicExtrinsicExtension, extId: NetworkType.Id, addId: NetworkType.Id)],
+    ) -> Result<[(ext: any DynamicExtrinsicExtension, extId: TypeDefinition, addId: TypeDefinition)],
                 ExtrinsicCodingError>
     {
         guard runtime.metadata.extrinsic.version == version else {
@@ -155,7 +137,7 @@ public class DynamicSignedExtensionsProvider<BC: BasicConfig>: SignedExtensionsP
             guard let ext = self.extensions[id] else {
                 return .failure(.unknownExtension(identifier: id))
             }
-            return .success((ext, info.type.id, info.additionalSigned.id))
+            return .success((ext, info.type, info.additionalSigned))
         }
     }
 }

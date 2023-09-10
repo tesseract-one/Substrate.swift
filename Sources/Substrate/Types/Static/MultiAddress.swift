@@ -33,12 +33,13 @@ public enum MultiAddress<Id, Index>: IdentifiableType
         self = .index(index)
     }
     
-    public static var definition: TypeDefinition {
-        .variant(variants: [.s(0, "Id", Id.definition),
-                            .s(1, "Index", Compact<Index>.definition),
-                            .s(2, "Raw", Data.definition),
-                            .s(3, "Address32", .data(count: 32)),
-                            .s(4, "Address20", .data(count: 20))])
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder
+    {
+        .variant(variants: [.s(0, "Id", registry.def(Id.self)),
+                            .s(1, "Index", registry.def(compact: Index.self)),
+                            .s(2, "Raw", registry.def(Data.self, .dynamic)),
+                            .s(3, "Address32", registry.def(Data.self, .fixed(32))),
+                            .s(4, "Address20", registry.def(Data.self, .fixed(20)))])
     }
 }
 
@@ -46,10 +47,10 @@ extension MultiAddress: Equatable where Id: Equatable, Index: Equatable {}
 extension MultiAddress: Hashable where Id: Hashable, Index: Hashable {}
 
 extension MultiAddress: ValueRepresentable {
-    public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
-        try validate(runtime: runtime, type: info).get()
-        guard case .variant(variants: let variants) = info.type.definition else {
-            throw TypeError.wrongType(for: Self.self, type: info.type,
+    public func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
+        try validate(runtime: runtime, type: type).get()
+        guard case .variant(variants: let variants) = type.definition else {
+            throw TypeError.wrongType(for: Self.self, type: type,
                                       reason: "Not a variant", .get())
         }
         switch self {
@@ -57,27 +58,27 @@ extension MultiAddress: ValueRepresentable {
             return try .variant(name: variants[0].name,
                                 values: [id.asValue(runtime: runtime,
                                                     type: variants[0].fields[0].type)],
-                                info.id)
+                                type)
         case .index(let index):
             return try .variant(name: variants[1].name,
                                 values: [index.asValue(runtime: runtime,
                                                        type: variants[1].fields[0].type)],
-                                info.id)
+                                type)
         case .address20(let data):
             return try .variant(name: variants[2].name,
                                 values: [data.asValue(runtime: runtime,
                                                       type: variants[2].fields[0].type)],
-                                info.id)
+                                type)
         case .raw(let data):
             return try .variant(name: variants[3].name,
                                 values: [data.asValue(runtime: runtime,
                                                       type: variants[3].fields[0].type)],
-                                info.id)
+                                type)
         case .address32(let data):
             return try .variant(name: variants[4].name,
                                 values: [data.asValue(runtime: runtime,
                                                       type: variants[4].fields[0].type)],
-                                info.id)
+                                type)
         }
     }
 }

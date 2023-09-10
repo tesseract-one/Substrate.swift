@@ -27,7 +27,7 @@ public extension BatchCallCommon {
             throw FrameTypeError.foundWrongType(for: Self.self, name: info.name,
                                                 frame: info.pallet, .get())
         }
-        let calls = try Array<AnyCall<NetworkType.Id>>(from: &decoder) { decoder in
+        let calls = try Array<AnyCall<TypeDefinition>>(from: &decoder) { decoder in
             try AnyCall(from: &decoder, runtime: runtime)
         }
         self.init(calls: calls)
@@ -45,10 +45,10 @@ public extension BatchCallCommon {
     }
     
     @inlinable
-    static var childTypes: ChildTypes { [Array<AnyCall<NetworkType.Id>>.self] }
+    static var childTypes: ChildTypes { [Array<AnyCall<TypeDefinition>>.self] }
 }
 
-public struct BatchCall: BatchCallCommon {    
+public struct BatchCall: BatchCallCommon {
     public let calls: [any Call]
     public init(calls: [any Call]) {
         self.calls = calls

@@ -12,10 +12,10 @@ public struct AnyEventRecord: SomeEventRecord, CustomStringConvertible {
     public let phase: Phase
     public let header: (name: String, pallet: String)
     public let data: Data
-    public let fields: [String: Value<NetworkType.Id>]
+    public let fields: [String: Value<TypeDefinition>]
     
     private let _runtime: any Runtime
-    private let _eventTypeId: NetworkType.Id
+    private let _eventType: TypeDefinition
     
     public var extrinsicIndex: UInt32? {
         switch phase {
@@ -25,11 +25,11 @@ public struct AnyEventRecord: SomeEventRecord, CustomStringConvertible {
     }
     
     public var any: AnyEvent { get throws {
-        try _runtime.decode(from: data) { _ in _eventTypeId }
+        try _runtime.decode(from: data) { _eventType }
     } }
     
     public func typed<E: PalletEvent>(_ type: E.Type) throws -> E {
-        try _runtime.decode(from: data) { _ in _eventTypeId }
+        try _runtime.decode(from: data) { _eventType }
     }
     
     public var description: String {
@@ -41,7 +41,7 @@ public extension AnyEventRecord {
     enum Phase: Equatable, Hashable, CustomStringConvertible {
         // Applying an extrinsic.
         case applyExtrinsic(UInt32)
-        case other(name: String, fields: [String: Value<NetworkType.Id>])
+        case other(name: String, fields: [String: Value<TypeDefinition>])
         
         public var description: String {
             switch self {
@@ -54,21 +54,19 @@ public extension AnyEventRecord {
 }
 
 extension AnyEventRecord.Phase: VariantValidatableType {
-    public static func validate(info: TypeInfo, type: NetworkType.Info,
-                                runtime: Runtime) -> Result<Void, TypeError>
-    {
+    public static func validate(info: TypeInfo, type: TypeDefinition) -> Result<Void, TypeError> {
         guard let apply = info.first(where: { $0.name == "ApplyExtrinsic" }) else {
             return .failure(.variantNotFound(for: Self.self,
-                                             variant: "ApplyExtrinsic", type: type.type, .get()))
+                                             variant: "ApplyExtrinsic", type: type, .get()))
         }
         guard apply.fields.count == 1 else {
             return .failure(.wrongVariantFieldsCount(for: Self.self,
                                                      variant: "ApplyExtrinsic",
-                                                     expected: 1, type: type.type, .get()))
+                                                     expected: 1, type: type, .get()))
         }
-        guard apply.fields[0].type.type.asPrimitive(runtime)?.isUInt != nil else {
+        guard apply.fields[0].type.asPrimitive()?.isUInt != nil else {
             return .failure(.wrongType(for: Self.self,
-                                       type: type.type,
+                                       type: type,
                                        reason: "ApplyExtrinsic.Index is not UInt", .get()))
         }
         return .success(())
@@ -77,12 +75,12 @@ extension AnyEventRecord.Phase: VariantValidatableType {
 
 extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as info: NetworkType.Info,
+                                       as type: TypeDefinition,
                                        runtime: Runtime) throws
     {
-        try Self.validate(runtime: runtime, type: info).get()
-        let value = try Value<NetworkType.Id>(from: &decoder, as: info, runtime: runtime)
-        let extrinsicId: Value<NetworkType.Id>
+        try Self.validate(type: type).get()
+        let value = try Value<TypeDefinition>(from: &decoder, as: type, runtime: runtime)
+        let extrinsicId: Value<TypeDefinition>
         switch value.value {
         case .variant(.sequence(name: let name, values: let vals)):
             guard name == "ApplyExtrinsic" else {
@@ -101,7 +99,7 @@ extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
         }
         guard let uint = extrinsicId.uint, let u32 = UInt32(exactly: uint) else {
             throw TypeError.wrongType(for: Self.self,
-                                      type: info.type,
+                                      type: type,
                                       reason: "Bad extrinsic id: \(extrinsicId)",
                                       .get())
         }
@@ -110,45 +108,44 @@ extension AnyEventRecord.Phase: RuntimeDynamicDecodable {
 }
 
 extension AnyEventRecord: CompositeValidatableType {
-    public static func validate(info sinfo: TypeInfo, type tinfo: NetworkType.Info,
-                                runtime: any Runtime) -> Result<Void, TypeError>
+    public static func validate(info sinfo: TypeInfo, type: TypeDefinition) -> Result<Void, TypeError>
     {
         guard let phase = sinfo.first(where: { $0.name == "phase" }) else {
             return .failure(.fieldNotFound(for: Self.self, field: "phase",
-                                           type: tinfo.type, .get()))
+                                           type: type, .get()))
         }
         let eventNames = ["event", "e", "ev"]
         guard let event = sinfo.first(where: { eventNames.contains($0.name ?? "") }) else {
             return .failure(.fieldNotFound(for: Self.self, field: "event",
-                                           type: tinfo.type, .get()))
+                                           type: type, .get()))
         }
-        return Phase.validate(runtime: runtime, type: phase.type)
-            .flatMap { _ in AnyEvent.validate(runtime: runtime, type: event.type) }
+        return Phase.validate(type: phase.type)
+            .flatMap { _ in AnyEvent.validate(type: event.type) }
     }
 }
 
 extension AnyEventRecord: RuntimeDynamicDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as info: NetworkType.Info,
+                                       as type: TypeDefinition,
                                        runtime: Runtime) throws
     {
-        let sinfo = try Self.typeInfo(runtime: runtime, type: info).get()
-        try Self.validate(info: sinfo, type: info, runtime: runtime).get()
+        let sinfo = try Self.parseType(type: type).get()
+        try Self.validate(info: sinfo, type: type).get()
         var phase: Phase? = nil
-        var event: (name: String, pallet: String, data: Data, type: NetworkType.Id)? = nil
-        var other: [String: Value<NetworkType.Id>] = [:]
+        var event: (name: String, pallet: String, data: Data, type: TypeDefinition)? = nil
+        var other: [String: Value<TypeDefinition>] = [:]
         for field in sinfo {
             switch field.name! {
-            case "phase": phase = try runtime.decode(from: &decoder, id: field.type.id)
+            case "phase": phase = try runtime.decode(from: &decoder, type: field.type)
             case "event", "e", "ev":
-                let info = try AnyEvent.fetchEventData(from: &decoder, runtime: runtime, type: field.type.id)
-                event = (name: info.name, pallet: info.pallet, data: info.data, type: field.type.id)
+                let info = try AnyEvent.fetchEventData(from: &decoder, runtime: runtime, type: field.type)
+                event = (name: info.name, pallet: info.pallet, data: info.data, type: field.type)
             default:
-                other[field.name!] = try Value(from: &decoder, as: field.type.id, runtime: runtime)
+                other[field.name!] = try Value(from: &decoder, as: field.type, runtime: runtime)
             }
         }
         self._runtime = runtime
-        self._eventTypeId = event!.type
+        self._eventType = event!.type
         self.phase = phase!
         self.header = (name: event!.name, pallet: event!.pallet)
         self.data = event!.data
@@ -158,17 +155,15 @@ extension AnyEventRecord: RuntimeDynamicDecodable {
 
 // Can be removed after dropping Metadata V14
 public extension SomeEventRecord {
-    static func eventTypeId(metadata: any Metadata, record id: NetworkType.Id) -> NetworkType.Id? {
-        guard let typeInfo = metadata.resolve(type: id)?.flatten(metadata) else {
-            return nil
-        }
-        guard case .composite(fields: let fields) = typeInfo.definition else {
+    static func eventType(record type: TypeDefinition) -> TypeDefinition? {
+        let flat = type.flatten()
+        guard case .composite(fields: let fields) = flat.definition else {
             return nil
         }
         let eventNames = ["event", "e", "ev"]
         var type = fields.first { eventNames.contains($0.name ?? "") }?.type
         if type == nil {
-            type = typeInfo.parameters.first { eventNames.contains($0.name.lowercased()) }?.type
+            type = flat.parameters.first { eventNames.contains($0.name.lowercased()) }?.type
         }
         return type
     }

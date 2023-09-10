@@ -29,7 +29,7 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     public let metadataHash: ST<RC>.Hash?
     public let types: DynamicTypes
     public let isBatchSupported: Bool
-    public let customCoders: [RuntimeCustomDynamicCoder]
+    public private(set) var customCoders: [ObjectIdentifier: RuntimeCustomDynamicCoder]!
     
     public private(set) var extrinsicManager: RC.TExtrinsicManager
     
@@ -59,9 +59,8 @@ open class ExtendedRuntime<RC: Config>: Runtime {
     @inlinable
     public func decoder(with data: Data) -> ScaleCodec.Decoder { config.decoder(data: data) }
     
-    @inlinable
-    public func custom(coder info: NetworkType.Info) -> RuntimeCustomDynamicCoder? {
-        try? customCoders.first { try $0.checkType(info: info, runtime: self) }
+    public func custom(coder type: TypeDefinition) -> RuntimeCustomDynamicCoder? {
+        customCoders[type.objectId]
     }
     
     @inlinable
@@ -97,7 +96,6 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         self.properties = properties
         self.addressFormat = properties.ss58Format ?? .default
         self.types = types
-        self.customCoders = try config.customCoders(types: types, metadata: metadata)
         self.extrinsicManager = try config.extrinsicManager(types: types, metadata: metadata)
         guard let hasher = ST<RC>.Hasher(type: types.hasher.value) else {
             let hasher = try types.hasher.get()
@@ -109,6 +107,16 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         } else {
             self.isBatchSupported = false
         }
+        self.customCoders = nil
+        let customCoders = try config.customCoders(types: types, metadata: metadata)
+        let codersMap = try metadata.reduce(
+            types: Dictionary<ObjectIdentifier, RuntimeCustomDynamicCoder>()
+        ) { out, tdef in
+            for coder in customCoders where try coder.checkType(type: tdef, runtime: self) {
+                out[tdef.objectId] = coder
+            }
+        }
+        self.customCoders = codersMap
     }
     
     open func validate() throws {
@@ -131,11 +139,11 @@ open class ExtendedRuntime<RC: Config>: Runtime {
         try config.runtimeCalls(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
     }
     
-    public func validate<T: ValidatableTypeStatic>(type: T.Type, info: DynamicTypes.Maybe<NetworkType.Info>,
+    public func validate<T: ValidatableTypeStatic>(type: T.Type, info: DynamicTypes.Maybe<TypeDefinition>,
                                                    isStatic: Bool) throws
     {
         switch info {
-        case .success(let info): try type.validate(runtime: self, type: info).get()
+        case .success(let info): try type.validate(type: info).get()
         case .failure(let err): guard isStatic else { throw err }
         }
     }

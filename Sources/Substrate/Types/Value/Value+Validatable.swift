@@ -10,8 +10,7 @@ import Foundation
 // Static validation is always good. We can represent all types
 extension Value: ValidatableTypeStatic {
     @inlinable
-    public static func validate(runtime: any Runtime,
-                                type info: NetworkType.Info) -> Result<Void, TypeError>
+    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
     {
         .success(())
     }
@@ -19,46 +18,37 @@ extension Value: ValidatableTypeStatic {
 
 extension Value: ValidatableTypeDynamic {
     public func validate(runtime: any Runtime,
-                         type info: NetworkType.Info) -> Result<Void, TypeError>
+                         type: TypeDefinition) -> Result<Void, TypeError>
     {
-        return validate(runtime: runtime, type: info, custom: true)
-    }
-    
-    @inlinable
-    public func validate(runtime: any Runtime,
-                         type id: NetworkType.Id,
-                         custom: Bool) -> Result<Void, TypeError>
-    {
-        guard let type = runtime.resolve(type: id) else {
-            return .failure(.typeNotFound(for: self, id: id, .get()))
-        }
-        return validate(runtime: runtime, type: id.i(type), custom: custom)
+        return validate(runtime: runtime, type: type, custom: true)
     }
     
     public func validate(runtime: any Runtime,
-                         type info: NetworkType.Info,
+                         type: TypeDefinition,
                          custom: Bool) -> Result<Void, TypeError>
     {
-        if custom, let coder = runtime.custom(coder: info) {
-            return coder.validate(value: self, as: info, runtime: runtime)
+        if custom, let coder = runtime.custom(coder: type) {
+            return coder.validate(value: self, as: type, runtime: runtime)
         }
-        switch info.type.definition {
+        switch type.definition {
         case .composite(fields: let fields):
-            return _validateComposite(type: info.type, fields: fields, runtime: runtime)
+            return _validateComposite(type: type, fields: fields, runtime: runtime)
         case .sequence(of: let seqTypeId):
-            return _validateSequence(type: info.type, valueType: seqTypeId, runtime: runtime)
+            return _validateSequence(type: type, valueType: seqTypeId, runtime: runtime)
         case .array(count: let count, of: let arrTypeId):
-            return _validateArray(type: info.type, valueType: arrTypeId, count: count, runtime: runtime)
-        case .tuple(components: let fields):
-            return _validateTuple(type: info.type, fields: fields, runtime: runtime)
+            return _validateArray(type: type, valueType: arrTypeId, count: count, runtime: runtime)
         case .variant(variants: let variants):
-            return _validateVariant(type: info.type, variants: variants, runtime: runtime)
+            return _validateVariant(type: type, variants: variants, runtime: runtime)
         case .primitive(is: let primitive):
-            return _validatePrimitive(type: info.type, primitive: primitive)
+            return _validatePrimitive(type: type, primitive: primitive)
         case .compact(of: let type):
-            return _validateCompact(type: info.type, compact: type, runtime: runtime)
-        case .bitsequence(store: let store, order: let order):
-            return _validateBitSequence(type: info.type, store: store, order: order, runtime: runtime)
+            return _validateCompact(type: type, compact: type)
+        case .bitsequence(_):
+            return _validateBitSequence(type: type)
+        case .void:
+            return sequence?.count == 0 ? .success(())
+                : .failure(.wrongType(for: self, type: type,
+                                      reason: "Isn't empty composite", .get()))
         }
     }
 }
@@ -66,7 +56,7 @@ extension Value: ValidatableTypeDynamic {
 
 private extension Value {
     func _validateComposite(
-        type: NetworkType, fields: [NetworkType.Field], runtime: Runtime
+        type: TypeDefinition, fields: [TypeDefinition.Field], runtime: Runtime
     ) -> Result<Void, TypeError> {
         switch value {
         case .map(let mFields):
@@ -104,7 +94,7 @@ private extension Value {
     }
     
     func _validateSequence(
-        type: NetworkType, valueType: NetworkType.Id, runtime: Runtime
+        type: TypeDefinition, valueType: TypeDefinition, runtime: Runtime
     ) -> Result<Void, TypeError> {
         switch value {
         case .sequence(let values):
@@ -114,11 +104,8 @@ private extension Value {
         case .primitive(let primitive):
             switch primitive {
             case .bytes(_):
-                guard let vTypeInfo = runtime.resolve(type: valueType) else {
-                    return .failure(.typeNotFound(for: self, id: valueType, .get()))
-                }
-                guard case .primitive(is: .u8) = vTypeInfo.definition else {
-                    return .failure(.wrongType(for: self, type: vTypeInfo,
+                guard case .primitive(is: .u8) = valueType.definition else {
+                    return .failure(.wrongType(for: self, type: valueType,
                                                reason: "Isn't byte", .get()))
                 }
                 return .success(())
@@ -133,7 +120,7 @@ private extension Value {
     }
     
     func _validateArray(
-        type: NetworkType, valueType: NetworkType.Id, count: UInt32, runtime: Runtime
+        type: TypeDefinition, valueType: TypeDefinition, count: UInt32, runtime: Runtime
     ) -> Result<Void, TypeError> {
         switch value {
         case .sequence(let values):
@@ -153,13 +140,9 @@ private extension Value {
                                                       expected: bytes.count,
                                                       type: type, .get()))
                 }
-                guard let vTypeInfo = runtime.resolve(type: valueType) else {
-                    return .failure(.typeNotFound(for: self,
-                                                  id: valueType, .get()))
-                }
-                guard case .primitive(is: .u8) = vTypeInfo.definition else {
-                    return .failure(.wrongType(for: self, type: type,
-                                               reason: "Isn't array", .get()))
+                guard case .primitive(is: .u8) = valueType.definition else {
+                    return .failure(.wrongType(for: self, type: valueType,
+                                               reason: "Isn't byte", .get()))
                 }
                 return .success(())
             default:
@@ -172,33 +155,8 @@ private extension Value {
         }
     }
     
-    func _validateTuple(
-        type: NetworkType, fields: [NetworkType.Id], runtime: Runtime
-    ) -> Result<Void, TypeError> {
-        switch value {
-        case .sequence(let values):
-            guard values.count == fields.count else {
-                return .failure(.wrongValuesCount(for: self,
-                                                  expected: values.count,
-                                                  type: type, .get()))
-            }
-            guard values.count > 0 else { return .success(())}
-            return zip(fields, values).voidErrorMap { field, value in
-                value.validate(runtime: runtime, type: field, custom: true)
-            }
-        default:
-            if fields.count == 1 {
-                // A 1-field tuple? try validate inner content then.
-                return validate(runtime: runtime, type: fields[0], custom: true)
-            } else {
-                return .failure(.wrongType(for: self, type: type,
-                                           reason: "Isn't array", .get()))
-            }
-        }
-    }
-    
     func _validateVariant(
-        type: NetworkType, variants: [NetworkType.Variant], runtime: Runtime
+        type: TypeDefinition, variants: [TypeDefinition.Variant], runtime: Runtime
     ) -> Result<Void, TypeError> {
         guard case .variant(let variant) = value else {
             return .failure(.wrongType(for: self, type: type,
@@ -222,7 +180,7 @@ private extension Value {
     }
     
     func _validateCompositeFields(
-        type: NetworkType, fields: [NetworkType.Field], runtime: Runtime
+        type: TypeDefinition, fields: [TypeDefinition.Field], runtime: Runtime
     ) -> Result<Void, TypeError> {
         if let map = self.map {
             guard map.count == fields.count else {
@@ -259,7 +217,7 @@ private extension Value {
     }
     
     func _validatePrimitive(
-        type: NetworkType, primitive: NetworkType.Primitive
+        type: TypeDefinition, primitive: NetworkType.Primitive
     ) -> Result<Void, TypeError> {
         guard case .primitive(let sprimitive) = value else {
             return .failure(.wrongType(for: self, type: type,
@@ -300,7 +258,7 @@ private extension Value {
     }
     
     func _validatePrimitiveInt<INT: FixedWidthInteger>(
-        primitive: Primitive, type: NetworkType, _ itype: INT.Type
+        primitive: Primitive, type: TypeDefinition, _ itype: INT.Type
     ) -> Result<Void, TypeError> {
         switch primitive {
         case .int(let int):
@@ -319,32 +277,19 @@ private extension Value {
         }
     }
     
-    func _validateCompact(
-        type: NetworkType, compact: NetworkType.Id, runtime: Runtime
-    ) -> Result<Void, TypeError> {
+    func _validateCompact(type: TypeDefinition, compact: TypeDefinition) -> Result<Void, TypeError> {
         // Resolve to a primitive type inside the compact encoded type (or fail if
         // we hit some type we wouldn't know how to work with).
-        var innerTypeId = compact
-        var innerType: NetworkType!
+        var innerType = compact
         var innerCtType: CompactTy? = nil
         while innerCtType == nil {
-            guard let type = runtime.resolve(type: innerTypeId) else {
-                return .failure(.typeNotFound(for: self, id: innerTypeId, .get()))
-            }
-            innerType = type
             switch innerType.definition {
             case .composite(fields: let fields):
                 guard fields.count == 1 else {
                     return .failure(.wrongType(for: self, type: innerType,
                                                reason: "Isn't compact", .get()))
                 }
-                innerTypeId = fields[0].type
-            case .tuple(components: let vals):
-                guard vals.count == 1 else {
-                    return .failure(.wrongType(for: self, type: innerType,
-                                               reason: "Isn't compact", .get()))
-                }
-                innerTypeId = vals[0]
+                innerType = fields[0].type
             case .primitive(is: let prim):
                 switch prim {
                 case .u8: innerCtType = .u8
@@ -409,24 +354,20 @@ private extension Value {
         }
     }
     
-    func _validateBitSequence(
-        type: NetworkType, store: NetworkType.Id, order: NetworkType.Id, runtime: Runtime
-    ) -> Result<Void, TypeError> {
-        BitSequence.Format.from(store: store, order: order, runtime: runtime).flatMap { _ in
-            switch value {
-            case .bitSequence(_): return .success(())
-            case .sequence(let vals):
-                return vals.voidErrorMap {
-                    $0.bool != nil
+    func _validateBitSequence(type: TypeDefinition) -> Result<Void, TypeError> {
+        switch value {
+        case .bitSequence(_): return .success(())
+        case .sequence(let vals):
+            return vals.voidErrorMap { val in
+                val.bool != nil
                     ? .success(())
                     : .failure(.wrongType(for: self, type: type,
                                           reason: "Isn't bool in sequence",
                                           .get()))
-                }
-            default: return .failure(.wrongType(for: self, type: type,
-                                                reason: "Isn't bit sequence",
-                                                .get()))
             }
+        default: return .failure(.wrongType(for: self, type: type,
+                                            reason: "Isn't bit sequence",
+                                            .get()))
         }
     }
 }

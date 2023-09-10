@@ -132,12 +132,10 @@ public extension Value {
         try Value<NC>(value: value.mapContext(with: mapper), context: mapper(context))
     }
     
-    func flatten(runtime: any Runtime) -> Self {
+    func flatten() -> Self {
         switch self.value {
         case .sequence(let vals):
-            if vals.count == 1 {
-                return vals[0].flatten(runtime: runtime)
-            }
+            if vals.count == 1 { return vals[0].flatten() }
             return self
         default: return self
         }
@@ -393,18 +391,7 @@ extension Value.Primitive: CustomStringConvertible {
 }
 
 public protocol ValueRepresentable: ValidatableTypeDynamic {
-    func asValue(runtime: any Runtime, type id: NetworkType.Id) throws -> Value<NetworkType.Id>
-    func asValue(runtime: any Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id>
-}
-
-public extension ValueRepresentable {
-    @inlinable
-    func asValue(runtime: any Runtime, type id: NetworkType.Id) throws -> Value<NetworkType.Id> {
-        guard let type = runtime.resolve(type: id) else {
-            throw TypeError.typeNotFound(for: Self.self, id: id, .get())
-        }
-        return try asValue(runtime: runtime, type: id.i(type))
-    }
+    func asValue(runtime: any Runtime, type: TypeDefinition) throws -> Value<TypeDefinition>
 }
 
 public protocol VoidValueRepresentable {

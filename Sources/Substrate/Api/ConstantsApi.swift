@@ -38,7 +38,7 @@ public class ConstantsApiRegistry<R: RootApi>: RootApiAware {
     }
     
     public func getApi<A>(_ t: A.Type) -> A where A: ConstantsApi, A.R == R {
-        _apis.sync { apis in
+        _apis.mutate { apis in
             if let api = apis[A.id] as? A {
                 return api
             }
@@ -54,7 +54,7 @@ public extension ConstantsApiRegistry {
         guard let ct = rootApi.runtime.resolve(constant: name, pallet: pallet) else {
             throw ConstantsApiError.constantNotFound(name: name, pallet: pallet)
         }
-        return try rootApi.runtime.decode(from: ct.value) { _ in ct.type.id }
+        return try rootApi.runtime.decode(from: ct.value) { ct.type }
     }
     
     @inlinable
@@ -71,7 +71,7 @@ public extension ConstantsApiRegistry {
     }
     
     @inlinable
-    func `dynamic`(name: String, pallet: String) throws -> Value<NetworkType.Id> {
+    func `dynamic`(name: String, pallet: String) throws -> Value<TypeDefinition> {
         try get(name: name, pallet: pallet)
     }
 }
@@ -97,15 +97,15 @@ public extension StaticConstant where TValue: ValidatableTypeStatic {
         guard let info = runtime.resolve(constant: name, pallet: pallet) else {
             return .failure(.typeInfoNotFound(for: Self.self, .get()))
         }
-        return TValue.validate(runtime: runtime, type: info.type).mapError {
+        return TValue.validate(type: info.type).mapError {
             .childError(for: Self.self, index: -1, error: $0, .get())
         }
     }
 }
 
-public extension StaticConstant where TValue: IdentifiableType {
+public extension StaticConstant where TValue: IdentifiableTypeStatic {
     @inlinable
-    static var definition: FrameTypeDefinition {
-        .constant(type: TValue.definition)
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+        .constant(type: registry.def(TValue.self))
     }
 }

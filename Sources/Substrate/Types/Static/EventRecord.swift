@@ -16,7 +16,7 @@ public struct EventRecord<H: Hash>: SomeEventRecord, CompositeStaticValidatableT
     public let topics: [H]
     
     private let _runtime: any Runtime
-    private let _eventTypeId: NetworkType.Id
+    private let _eventType: TypeDefinition
     
     public var extrinsicIndex: UInt32? {
         switch phase {
@@ -26,11 +26,11 @@ public struct EventRecord<H: Hash>: SomeEventRecord, CompositeStaticValidatableT
     }
     
     public var any: AnyEvent { get throws {
-        try _runtime.decode(from: data) { _ in _eventTypeId }
+        try _runtime.decode(from: data) { _eventType }
     } }
     
     public func typed<E: PalletEvent>(_ type: E.Type) throws -> E {
-        try _runtime.decode(from: data) { _ in _eventTypeId }
+        try _runtime.decode(from: data) { _eventType }
     }
     
     public var description: String {
@@ -61,9 +61,10 @@ public extension EventRecord {
             }
         }
         
-        public static var definition: TypeDefinition {
+        public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
             .variant(variants: [
-                .s(0, "ApplyExtrinsic", UInt32.definition), .e(1, "Finalization"),
+                .s(0, "ApplyExtrinsic", registry.def(UInt32.self)),
+                .e(1, "Finalization"),
                 .e(2, "Initialization")
             ])
         }
@@ -87,9 +88,9 @@ extension EventRecord: RuntimeDecodable {
         let eventType = runtime.types.event
         self._runtime = runtime
         self.phase = try decoder.decode()
-        let info = try AnyEvent.fetchEventData(from: &decoder, runtime: runtime, type: eventType.id)
+        let info = try AnyEvent.fetchEventData(from: &decoder, runtime: runtime, type: eventType)
         self.header = (name: info.name, pallet: info.pallet)
-        self._eventTypeId = eventType.id
+        self._eventType = eventType
         self.data = info.data
         self.topics = try Array(from: &decoder) { decoder in
             try runtime.create(

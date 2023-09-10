@@ -1,15 +1,23 @@
 //
-//  Lock.swift
+//  Synced.swift
 //  
 //
 //  Created by Yehor Popovych on 30.12.2022.
 //
 
 import Foundation
+
+public protocol ThreadSynced<T> {
+    associatedtype T
+    var value: T { get }
+    func sync<U>(_ op: (T) throws -> U) rethrows -> U
+    mutating func mutate<U>(_ op: (inout T) throws -> U) rethrows -> U
+}
+
 #if os(Linux) || os(Windows)
 import Glibc
 
-public class Synced<T> {
+public class Synced<T>: ThreadSynced {
     private var _value: T
     private var _mutex: pthread_mutex_t
     
@@ -23,7 +31,19 @@ public class Synced<T> {
         }
     }
     
-    public func sync<U>(_ op: (inout T) throws -> U) rethrows -> U {
+    public func sync<U>(_ op: (T) throws -> U) rethrows -> U {
+        if pthread_mutex_lock(&_mutex) != 0 {
+            fatalError("Mutex lock failed!")
+        }
+        defer {
+            if pthread_mutex_unlock(&_mutex) != 0 {
+                fatalError("Mutex unlock failed!")
+            }
+        }
+        return try op(&_value)
+    }
+    
+    public func mutate<U>(_ op: (inout T) throws -> U) rethrows -> U {
         if pthread_mutex_lock(&_mutex) != 0 {
             fatalError("Mutex lock failed!")
         }
@@ -42,7 +62,7 @@ public class Synced<T> {
     }
 }
 #else
-public class Synced<T> {
+public class Synced<T>: ThreadSynced {
     private var _value: T
     private var _mutex: os_unfair_lock
 
@@ -52,8 +72,14 @@ public class Synced<T> {
     }
     
     public var value: T { sync { $0 } }
-
-    public func sync<U>(_ op: (inout T) throws -> U) rethrows -> U {
+    
+    public func sync<U>(_ op: (T) throws -> U) rethrows -> U {
+        os_unfair_lock_lock(&_mutex)
+        defer { os_unfair_lock_unlock(&_mutex) }
+        return try op(_value)
+    }
+    
+    public func mutate<U>(_ op: (inout T) throws -> U) rethrows -> U {
         os_unfair_lock_lock(&_mutex)
         defer { os_unfair_lock_unlock(&_mutex) }
         return try op(&_value)

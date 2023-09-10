@@ -83,7 +83,7 @@ public class Keychain {
     }
     
     public func add(_ pair: any KeyPair, for type: KeyTypeId? = nil) {
-        keyPairs.sync {
+        keyPairs.mutate {
             var kps = $0[type] ?? []
             kps.append(pair)
             $0[type] = kps

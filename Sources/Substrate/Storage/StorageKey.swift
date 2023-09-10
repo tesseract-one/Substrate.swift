@@ -71,10 +71,11 @@ public extension PalletStorageKey {
     @inlinable static var frameTypeName: String { "StorageKey" }
 }
 
-public typealias StorageKeyTypeInfo = (keys: [(hasher: LatestMetadata.StorageHasher, type: NetworkType.Info)],
-                                       value: NetworkType.Info)
-public typealias StorageKeyChildTypes = (keys: [(hasher: StaticHasher.Type, type: ValidatableTypeStatic.Type)],
-                                         value: ValidatableTypeStatic.Type)
+public typealias StorageKeyTypeKeysInfo = [(hasher: LatestMetadata.StorageHasher, type: TypeDefinition)]
+public typealias StorageKeyTypeInfo = (keys: StorageKeyTypeKeysInfo, value: TypeDefinition)
+
+public typealias StorageKeyChildKeyTypes = [(hasher: StaticHasher.Type, type: ValidatableTypeStatic.Type)]
+public typealias StorageKeyChildTypes = (keys: StorageKeyChildKeyTypes, value: ValidatableTypeStatic.Type)
 
 public extension PalletStorageKey where
     Self: ComplexFrameType, TypeInfo == StorageKeyTypeInfo
@@ -176,11 +177,11 @@ public extension ComplexStaticFrameType
                                    got: info.hasher.name, .get())
                 )
             }
-            return our.type.validate(runtime: runtime, type: info.type).mapError {
+            return our.type.validate(type: info.type).mapError {
                 .childError(for: Self.self, index: index, error: $0, .get())
             }
         }.flatMap {
-            ourTypes.value.validate(runtime: runtime, type: info.value) .mapError {
+            ourTypes.value.validate(type: info.value) .mapError {
                 .childError(for: Self.self, index: -1, error: $0, .get())
             }
         }

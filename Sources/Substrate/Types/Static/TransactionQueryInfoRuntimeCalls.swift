@@ -27,11 +27,11 @@ public extension TransactionQueryRuntimeCallCommon {
     func decode<D: ScaleCodec.Decoder>(returnFrom decoder: inout D,
                                        runtime: Runtime) throws -> TReturn
     {
-        try runtime.decode(from: &decoder) { runtime in
+        try runtime.decode(from: &decoder) {
             guard let call = runtime.resolve(runtimeCall: Self.method, api: Self.api) else {
                 throw RuntimeCallCodingError.callNotFound(method: method, api: api)
             }
-            return call.result.id
+            return call.result
         }
     }
     

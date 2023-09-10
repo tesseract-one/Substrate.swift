@@ -50,8 +50,7 @@ public enum FrameTypeDefinition {
     case event(fields: [TypeDefinition.Field])
     case constant(type: TypeDefinition)
     case runtimeCall(params: [TypeDefinition.Field], return: TypeDefinition)
-    case storage(keys: [(key: TypeDefinition, hasher: LatestMetadata.StorageHasher)],
-                 value: TypeDefinition)
+    case storage(keys: StorageKeyTypeKeysInfo, value: TypeDefinition)
 }
 
 
@@ -87,7 +86,7 @@ public extension ComplexStaticFrameType where
         }
         return zip(ourTypes, info).enumerated().voidErrorMap { index, zip in
             let (our, info) = zip
-            return our.validate(runtime: runtime, type: info.type.i(info.field.type)).mapError {
+            return our.validate(type: info.type).mapError {
                 .childError(for: Self.self, index: index, error: $0, .get())
             }
         }
@@ -95,13 +94,29 @@ public extension ComplexStaticFrameType where
 }
 
 public protocol IdentifiableFrameType: FrameType {
-    static var definition: FrameTypeDefinition { get }
+    static func definition(
+        in registry: TypeRegistry<TypeDefinition.TypeId>
+    ) -> FrameTypeDefinition
+    
+    static func validate(
+        runtime: any Runtime,
+        registry: any ThreadSynced<TypeRegistry<TypeDefinition.TypeId>>
+    ) -> Result<Void, FrameTypeError>
 }
 
 public extension IdentifiableFrameType {
+    @inlinable
     static func validate(runtime: any Runtime) -> Result<Void, FrameTypeError>
     {
-        definition.validate(type: Self.self, runtime: runtime)
+        validate(runtime: runtime, registry: Data.typeRegistry)
+    }
+    
+    @inlinable
+    static func validate(
+        runtime: any Runtime,
+        registry: any ThreadSynced<TypeRegistry<TypeDefinition.TypeId>>
+    ) -> Result<Void, FrameTypeError> {
+        registry.sync{definition(in: $0)}.validate(type: Self.self, runtime: runtime)
     }
 }
 
@@ -115,14 +130,14 @@ public extension FrameTypeDefinition {
                 return .failure(.typeInfoNotFound(for: type, .get()))
             }
             return validate(fields: fields,
-                            ifields: info.map{($0.field.name, $0.type.i($0.field.type))},
+                            ifields: info.map{($0.name, $0.type)},
                             type: type, runtime: runtime)
         case .event(fields: let fields):
             guard let info = runtime.resolve(eventParams: type.name, pallet: type.frame) else {
                 return .failure(.typeInfoNotFound(for: type, .get()))
             }
             return validate(fields: fields,
-                            ifields: info.map{($0.field.name, $0.type.i($0.field.type))},
+                            ifields: info.map{($0.name, $0.type)},
                             type: type, runtime: runtime)
         case .runtimeCall(params: let params, return: let rtype):
             guard let info = runtime.resolve(runtimeCall: type.name, api: type.frame) else {
@@ -130,8 +145,8 @@ public extension FrameTypeDefinition {
             }
             return validate(fields: params, ifields: info.params,
                             type: type, runtime: runtime).flatMap {
-                return rtype.validate(runtime: runtime, for: type.errorTypeName,
-                                      type: info.result.type).mapError {
+                return rtype.validate(for: type.errorTypeName,
+                                      type: info.result).mapError {
                     .childError(for: type, index: -1, error: $0, .get())
                 }
             }
@@ -139,8 +154,8 @@ public extension FrameTypeDefinition {
             guard let info = runtime.resolve(constant: type.name, pallet: type.frame) else {
                 return .failure(.typeInfoNotFound(for: type, .get()))
             }
-            return vtype.validate(runtime: runtime, for: type.errorTypeName,
-                                  type: info.type.type).mapError {
+            return vtype.validate(for: type.errorTypeName,
+                                  type: info.type).mapError {
                 .childError(for: type, index: -1, error: $0, .get())
             }
         case .storage(keys: let path, value: let vtype):
@@ -158,12 +173,12 @@ public extension FrameTypeDefinition {
                                                    expected: pkey.hasher.description,
                                                    got: ikey.hasher.description, .get()))
                 }
-                return pkey.key.validate(runtime: runtime, for: type.errorTypeName,
-                                         type: ikey.type.type)
+                return pkey.type.validate(for: type.errorTypeName,
+                                          type: ikey.type)
                     .mapError { .childError(for: type, index: index, error: $0, .get()) }
             }.flatMap {
-                vtype.validate(runtime: runtime, for: type.errorTypeName,
-                               type: info.value.type).mapError {
+                vtype.validate(for: type.errorTypeName,
+                               type: info.value).mapError {
                     .childError(for: type, index: -1, error: $0, .get())
                 }
             }
@@ -171,7 +186,7 @@ public extension FrameTypeDefinition {
     }
     
     func validate(fields: [TypeDefinition.Field],
-                  ifields: [(name: String?, type: NetworkType.Info)],
+                  ifields: [(name: String?, type: TypeDefinition)],
                   type: any IdentifiableFrameType.Type,
                   runtime: any Runtime) -> Result<Void, FrameTypeError>
     {
@@ -181,8 +196,8 @@ public extension FrameTypeDefinition {
         }
         return zip(fields, ifields).enumerated().voidErrorMap { index, zip in
             let (field, info) = zip
-            return field.type.validate(runtime: runtime, for: type.errorTypeName,
-                                       type: info.type.type).mapError {
+            return field.type.validate(for: type.errorTypeName,
+                                       type: info.type).mapError {
                 .childError(for: type, index: index, error: $0, .get())
             }
         }

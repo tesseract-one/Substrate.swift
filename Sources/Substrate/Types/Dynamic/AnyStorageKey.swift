@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public typealias AnyValueStorageKey = AnyStorageKey<Value<NetworkType.Id>>
+public typealias AnyValueStorageKey = AnyStorageKey<Value<TypeDefinition>>
 
 public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, CustomStringConvertible {
     public typealias TParams = [ValueRepresentable]
@@ -24,8 +24,8 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, Cu
         path.map { $0.value }
     }
     
-    public var values: [Value<NetworkType.Id>?] {
-        path.map { $0.value.flatMap{$0 as? Value<NetworkType.Id>} }
+    public var values: [Value<TypeDefinition>?] {
+        path.map { $0.value.flatMap{$0 as? Value<TypeDefinition>} }
     }
     
     public var hashes: [Data] {
@@ -51,9 +51,9 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, Cu
                                                                  expected: keys.count)
         }
         let components: [Component] = try zip(keys, params).map { (key, val) in
-            let value = try val.asValue(runtime: runtime, type: key.1.id)
-            let data = try runtime.encode(value: value, as: key.1.id)
-            return .full(val, key.0.hasher.hash(data: data))
+            let value = try val.asValue(runtime: runtime, type: key.type)
+            let data = try runtime.encode(value: value)
+            return .full(val, key.hasher.hasher.hash(data: data))
         }
         self.init(name: base.name, pallet: base.pallet, path: components)
     }
@@ -68,12 +68,12 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, Cu
             throw StorageKeyCodingError.badPrefix(has: gotPrefix, expected: ownPrefix)
         }
         var skippable = decoder.skippable()
-        let components: [Component] = try keys.map { (hash, tId) in
+        let components: [Component] = try keys.map { (hash, type) in
             let raw: Data = try decoder.decode(.fixed(UInt(hash.hasher.hashPartByteLength)))
             try skippable.skip(count: raw.count)
             if hash.hasher.isConcat {
                 let lengthBefore = decoder.length
-                let value = try runtime.decodeValue(from: &decoder, id: tId.id).removingContext()
+                let value = try runtime.decodeValue(from: &decoder, type: type).removingContext()
                 let valData = try skippable.read(count: lengthBefore - decoder.length) // read encoded value
                 return .full(value, raw + valData)
             } else {
@@ -84,11 +84,11 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, Cu
     }
     
     public func decode<D: Decoder>(valueFrom decoder: inout D, runtime: Runtime) throws -> TValue {
-        return try runtime.decode(from: &decoder) { runtime in
+        return try runtime.decode(from: &decoder) {
             guard let (_, value, _) = runtime.resolve(storage: self.name, pallet: self.pallet) else {
                 throw StorageKeyCodingError.storageNotFound(name: name, pallet: pallet)
             }
-            return value.id
+            return value
         }
     }
     
@@ -99,7 +99,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, Cu
         guard let (_, vType, data) = runtime.resolve(storage: base.name, pallet: base.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
-        return try runtime.decode(from: data, id: vType.id)
+        return try runtime.decode(from: data, type: vType)
     }
     
     public static func validate(base: (name: String, pallet: String), runtime: Runtime) throws {
@@ -170,9 +170,9 @@ public extension AnyStorageKey {
                                                                      expected: keys.count - 1)
             }
             let components: [Component] = try zip(keys, params).map { (key, val) in
-                let value = try val.asValue(runtime: runtime, type: key.1.id)
-                let data = try runtime.encode(value: value, as: key.1.id)
-                return .full(val, key.0.hasher.hash(data: data))
+                let value = try val.asValue(runtime: runtime, type: key.type)
+                let data = try runtime.encode(value: value)
+                return .full(val, key.hasher.hasher.hash(data: data))
             }
             self.init(name: name, pallet: pallet, path: components)
         }
@@ -186,9 +186,9 @@ public extension AnyStorageKey {
                                                                      expected: keys.count - 1)
             }
             let key = keys[path.count]
-            let value = try param.asValue(runtime: runtime, type: key.1.id)
-            let data = try runtime.encode(value: value, as: key.1.id)
-            let newPath = path + [.full(param, key.0.hasher.hash(data: data))]
+            let value = try param.asValue(runtime: runtime, type: key.type)
+            let data = try runtime.encode(value: value)
+            let newPath = path + [.full(param, key.hasher.hasher.hash(data: data))]
             return Self(name: name, pallet: pallet, path: newPath)
         }
         

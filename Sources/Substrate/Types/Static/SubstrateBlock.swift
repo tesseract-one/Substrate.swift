@@ -37,8 +37,11 @@ public struct SubstrateBlock<H: StaticFixedHasher,
         extrinsics = try container.decode([TExtrinsic].self, forKey: .extrinsics, context: .init(runtime: runtime))
     }
     
-    public static var definition: TypeDefinition {
-        .composite(fields: [.kv("header", Header.definition), .kv("extrinsics", [E].definition)])
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .composite(fields: [
+            .kv("header", registry.def(Header.self)),
+            .kv("extrinsics", registry.def([E].self, .dynamic))]
+        )
     }
 }
 
@@ -93,13 +96,13 @@ public extension SubstrateBlock {
             "extrinsicsRoot: \(extrinsicsRoot), digest: \(digest)}"
         }
         
-        public static var definition: TypeDefinition {
+        public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
             .composite(fields: [
-                .kv("parentHash", THasher.THash.definition),
-                .kv("number", Compact<N>.definition),
-                .kv("stateRoot", THasher.THash.definition),
-                .kv("extrinsicsRoot", THasher.THash.definition),
-                .kv("digest", Digest.definition)
+                .kv("parentHash", registry.def(THasher.THash.self)),
+                .kv("number", registry.def(compact: N.self)),
+                .kv("stateRoot", registry.def(THasher.THash.self)),
+                .kv("extrinsicsRoot", registry.def(THasher.THash.self)),
+                .kv("digest", registry.def(Digest.self))
             ])
         }
     }
@@ -127,8 +130,8 @@ public extension SubstrateBlock.Header {
         
         public var description: String { logs.description }
         
-        public static var definition: TypeDefinition {
-            .sequence(of: DigestItem.definition)
+        public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+            .sequence(of: registry.def(DigestItem.self))
         }
     }
     
@@ -205,12 +208,14 @@ public extension SubstrateBlock.Header {
             }
         }
         
-        public static var definition: TypeDefinition {
-            .variant(variants: [
-                .m(ItemType.preRuntime.rawValue, "PreRuntime", [ConsensusEnngineId.definition, .data]),
-                .m(ItemType.consensus.rawValue, "Consensus", [ConsensusEnngineId.definition, .data]),
-                .m(ItemType.seal.rawValue, "Seal", [ConsensusEnngineId.definition, .data]),
-                .s(ItemType.other.rawValue, "Other", .data),
+        public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+            let engId = registry.def(ConsensusEnngineId.self)
+            let data = registry.def(Data.self, .dynamic)
+            return .variant(variants: [
+                .m(ItemType.preRuntime.rawValue, "PreRuntime", [engId, data]),
+                .m(ItemType.consensus.rawValue, "Consensus", [engId, data]),
+                .m(ItemType.seal.rawValue, "Seal", [engId, data]),
+                .s(ItemType.other.rawValue, "Other", data),
                 .e(ItemType.runtimeEnvironmentUpdated.rawValue, "RuntimeEnvironmentUpdated")
             ])
         }

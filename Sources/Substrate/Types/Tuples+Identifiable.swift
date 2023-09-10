@@ -9,31 +9,38 @@ import Foundation
 import Tuples
 
 public protocol IdentifiableTuple: IdentifiableTypeStatic, SomeTuple {
-    static func fillFieldDefinifions(defs: inout [TypeDefinition.Field])
+    static func fillFieldDefinifions(in registry: TypeRegistry<TypeDefinition.TypeId>,
+                                     defs: inout [TypeDefinition.Field])
 }
 
 public extension SomeTuple0 {
     @inlinable
-    static var definition: TypeDefinition { .void }
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+        .void
+    }
+    
     @inlinable
-    static func fillFieldDefinifions(defs: inout [TypeDefinition.Field]) {}
+    static func fillFieldDefinifions(in registry: TypeRegistry<TypeDefinition.TypeId>,
+                                     defs: inout [TypeDefinition.Field]) {}
 }
 
 public extension ListTuple where Self: IdentifiableTuple,
     DroppedLast: IdentifiableTuple, Last: IdentifiableTypeStatic
 {
     @inlinable
-    static var definition: TypeDefinition {
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
         var fieldDefs = Array<TypeDefinition.Field>()
         fieldDefs.reserveCapacity(count)
-        fillFieldDefinifions(defs: &fieldDefs)
+        fillFieldDefinifions(in: registry, defs: &fieldDefs)
         return .composite(fields: fieldDefs)
     }
     
     @inlinable
-    static func fillFieldDefinifions(defs: inout [TypeDefinition.Field]) {
-        DroppedLast.fillFieldDefinifions(defs: &defs)
-        defs.append(.v(Last.definition))
+    static func fillFieldDefinifions(in registry: TypeRegistry<TypeDefinition.TypeId>,
+                                     defs: inout [TypeDefinition.Field])
+    {
+        DroppedLast.fillFieldDefinifions(in: registry, defs: &defs)
+        defs.append(.v(registry.def(Last.self)))
     }
 }
 

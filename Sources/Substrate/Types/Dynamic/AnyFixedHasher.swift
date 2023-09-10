@@ -76,12 +76,15 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
         lhs.type == rhs.type
     }
     
-    public static func validate(runtime: Runtime,
-                                type: NetworkType.Info) -> Result<Void, TypeError>
+    public static func validate(type: TypeDefinition) -> Result<Void, TypeError>
     {
-        guard let name = type.type.path.last, HashType(name: name) != nil else {
-            return .failure(.wrongType(for: Self.self, type: type.type,
-                                       reason: "Unknown hash: \(type.type)", .get()))
+        guard let name = type.name.split(separator: ".").last else {
+            return .failure(.wrongType(for: Self.self, type: type,
+                                       reason: "Can't get type name", .get()))
+        }
+        guard HashType(name: String(name)) != nil else {
+            return .failure(.wrongType(for: Self.self, type: type,
+                                       reason: "Unknown hash: \(name)", .get()))
         }
         return .success(())
     }

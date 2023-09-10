@@ -32,8 +32,8 @@ public extension PlainStorageKey where
 
 public extension PlainStorageKey where TValue: IdentifiableTypeStatic {
     @inlinable
-    static var definition: FrameTypeDefinition {
-        .storage(keys: [], value: TValue.definition)
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+        .storage(keys: [], value: registry.def(TValue.self))
     }
 }
 
@@ -73,9 +73,9 @@ public extension MapStorageKey where
 
 public extension MapStorageKey where TKH.TKey: IdentifiableTypeStatic, TValue: IdentifiableTypeStatic {
     @inlinable
-    static var definition: FrameTypeDefinition {
-        .storage(keys: [(key: TKH.TKey.definition, hasher: TKH.THasher.hasherType)],
-                 value: TValue.definition)
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+        .storage(keys: [(hasher: TKH.THasher.hasherType, type: registry.def(TKH.TKey.self))],
+                 value: registry.def(TValue.self))
     }
 }
 
@@ -129,10 +129,10 @@ public extension DoubleMapStorageKey where
     TValue: IdentifiableTypeStatic
 {
     @inlinable
-    static var definition: FrameTypeDefinition {
-        .storage(keys: [(key: TKH1.TKey.definition, hasher: TKH1.THasher.hasherType),
-                        (key: TKH2.TKey.definition, hasher: TKH2.THasher.hasherType)],
-                 value: TValue.definition)
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+        .storage(keys: [(hasher: TKH1.THasher.hasherType, type: registry.def(TKH1.TKey.self)),
+                        (hasher: TKH2.THasher.hasherType, type: registry.def(TKH2.TKey.self))],
+                 value: registry.def(TValue.self))
     }
 }
 

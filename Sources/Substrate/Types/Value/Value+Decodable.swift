@@ -10,71 +10,58 @@ import ScaleCodec
 
 extension Value {
     public enum DecodingError: Error {
-        case variantNotFound(UInt8, NetworkType.Id)
-        /// The type we're trying to encode into cannot be found in the type registry provided.
-        case typeNotFound(NetworkType.Id)
-        /// The type ID given is supposed to be compact encoded, but this is not possible to do automatically.
-        case cannotCompactDecode(NetworkType.Id)
+        case variantNotFound(UInt8, TypeDefinition.Strong)
+        /// The type given is supposed to be compact encoded, but this is not possible to do automatically.
+        case cannotCompactDecode(TypeDefinition.Strong)
     }
 }
 
-extension Value: RuntimeDynamicDecodable where C == NetworkType.Id {
+extension Value: RuntimeDynamicDecodable where C == TypeDefinition {
     @inlinable
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       as info: NetworkType.Info,
+                                       as type: TypeDefinition,
                                        runtime: Runtime) throws
     {
-        try self.init(from: &decoder, as: info, runtime: runtime, custom: true)
-    }
-    
-    @inlinable
-    public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       `as` id: NetworkType.Id,
-                                       runtime: Runtime, custom: Bool) throws
-    {
-        guard let type = runtime.resolve(type: id) else {
-            throw DecodingError.typeNotFound(id)
-        }
-        try self.init(from: &decoder, as: id.i(type), runtime: runtime, custom: custom)
+        try self.init(from: &decoder, as: type, runtime: runtime, custom: true)
     }
     
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                       `as` info: NetworkType.Info,
+                                       `as` type: TypeDefinition,
                                        runtime: Runtime,
                                        custom: Bool) throws
     {
-        if custom, let coder = runtime.custom(coder: info) {
-            self = try coder.decode(from: &decoder, as: info, runtime: runtime)
+        if custom, let coder = runtime.custom(coder: type) {
+            self = try coder.decode(from: &decoder, as: type, runtime: runtime)
             return
         }
-        switch info.type.definition {
+        switch type.definition {
         case .composite(fields: let fields):
-            self = try Self._decodeComposite(from: &decoder, type: info.id, fields: fields, runtime: runtime)
+            self = try Self._decodeComposite(from: &decoder, type: type, fields: fields, runtime: runtime)
         case .sequence(of: let vType):
-            self = try Self._decodeSequence(from: &decoder, type: info.id, valueType: vType, runtime: runtime)
+            self = try Self._decodeSequence(from: &decoder, type: type, valueType: vType, runtime: runtime)
         case .variant(variants: let vars):
-            self = try Self._decodeVariant(from: &decoder, type: info.id, variants: vars, runtime: runtime)
+            self = try Self._decodeVariant(from: &decoder, type: type, variants: vars, runtime: runtime)
         case .array(count: let count, of: let vType):
             self = try Self._decodeArray(
-                from: &decoder, type: info.id, valueType: vType, count: count, runtime: runtime
+                from: &decoder, type: type, valueType: vType, count: count, runtime: runtime
             )
-        case .tuple(components: let fields):
-            self = try Self._decodeTuple(from: &decoder, type: info.id, fields: fields, runtime: runtime)
         case .primitive(is: let pType):
-            self = try Self._decodePrimitive(from: &decoder, type: info.id, prim: pType)
+            self = try Self._decodePrimitive(from: &decoder, type: type, prim: pType)
         case .compact(of: let cType):
-            self = try Self._decodeCompact(from: &decoder, type: info.id, of: cType, runtime: runtime)
-        case .bitsequence(store: let store, order: let order):
-            self = try Self._decodeBitSequence(
-                from: &decoder, type: info.id, store: store, order: order, runtime: runtime
-            )
+            self = try Self._decodeCompact(from: &decoder, type: type, of: cType, runtime: runtime)
+        case .bitsequence(format: let format):
+            self.value = try .bitSequence(decoder.decode(.format(format)))
+            self.context = type
+        case .void:
+            self.value = .sequence([])
+            self.context = type
         }
     }
 }
 
-private extension Value where C == NetworkType.Id {
+private extension Value where C == TypeDefinition {
     static func _decodeComposite<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: NetworkType.Id, fields: [NetworkType.Field], runtime: Runtime
+        from decoder: inout D, type: TypeDefinition, fields: [TypeDefinition.Field], runtime: Runtime
     ) throws -> Self {
         guard fields.count > 0 else {
             return Value(value: .sequence([]), context: type)
@@ -94,12 +81,9 @@ private extension Value where C == NetworkType.Id {
     }
     
     static func _decodeSequence<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: NetworkType.Id, valueType: NetworkType.Id, runtime: Runtime
+        from decoder: inout D, type: TypeDefinition, valueType: TypeDefinition, runtime: Runtime
     ) throws -> Self {
-        guard let vTypeInfo = runtime.resolve(type: valueType) else {
-            throw DecodingError.typeNotFound(valueType)
-        }
-        if case .primitive(is: .u8) = vTypeInfo.definition {
+        if case .primitive(is: .u8) = valueType.definition {
             return try Value(value: .primitive(.bytes(decoder.decode())), context: type)
         } else {
             let values = try Array(from: &decoder) { decoder in
@@ -110,11 +94,11 @@ private extension Value where C == NetworkType.Id {
     }
     
     static func _decodeVariant<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: NetworkType.Id, variants: [NetworkType.Variant], runtime: Runtime
+        from decoder: inout D, type: TypeDefinition, variants: [TypeDefinition.Variant], runtime: Runtime
     ) throws -> Self {
         let index = try decoder.decode(.enumCaseId)
         guard let variant = variants.first(where: { $0.index == index }) else {
-            throw DecodingError.variantNotFound(index, type)
+            throw DecodingError.variantNotFound(index, type.strong)
         }
         let composite = try _decodeComposite(from: &decoder, type: type,
                                              fields: variant.fields, runtime: runtime)
@@ -125,14 +109,12 @@ private extension Value where C == NetworkType.Id {
     }
     
     static func _decodeArray<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: NetworkType.Id,
-        valueType: NetworkType.Id, count: UInt32, runtime: Runtime
+        from decoder: inout D, type: TypeDefinition,
+        valueType: TypeDefinition, count: UInt32, runtime: Runtime
     ) throws -> Self {
-        guard let vTypeInfo = runtime.resolve(type: valueType) else {
-            throw DecodingError.typeNotFound(valueType)
-        }
-        if case .primitive(is: .u8) = vTypeInfo.definition {
-            return try Value(value: .primitive(.bytes(decoder.decode(.fixed(UInt(count))))), context: type)
+        if case .primitive(is: .u8) = valueType.definition {
+            return try Value(value: .primitive(.bytes(decoder.decode(.fixed(UInt(count))))),
+                             context: type)
         } else {
             var values: [Value<C>] = []
             values.reserveCapacity(Int(count))
@@ -143,15 +125,8 @@ private extension Value where C == NetworkType.Id {
         }
     }
     
-    static func _decodeTuple<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: NetworkType.Id, fields: [NetworkType.Id], runtime: Runtime
-    ) throws -> Self {
-        let seq = try fields.map { try Value(from: &decoder, as: $0, runtime: runtime) }
-        return Value(value: .sequence(seq), context: type)
-    }
-    
     static func _decodePrimitive<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: NetworkType.Id, prim: NetworkType.Primitive
+        from decoder: inout D, type: TypeDefinition, prim: NetworkType.Primitive
     ) throws -> Self {
         switch prim {
         case .bool: return Value(value: .primitive(.bool(try decoder.decode())), context: type)
@@ -195,15 +170,12 @@ private extension Value where C == NetworkType.Id {
     }
     
     static func _decodeCompact<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: NetworkType.Id, of: NetworkType.Id, runtime: Runtime
+        from decoder: inout D, type: TypeDefinition, of: TypeDefinition, runtime: Runtime
     ) throws -> Self {
-        var innerTypeId = of
+        var innerType = of
         var value: Value<C>? = nil
         while value == nil {
-            guard let innerType = runtime.resolve(type: innerTypeId)?.definition else {
-                throw DecodingError.typeNotFound(type)
-            }
-            switch innerType {
+            switch innerType.definition {
             case .primitive(is: let prim):
                 switch prim {
                 case .u8:
@@ -229,29 +201,16 @@ private extension Value where C == NetworkType.Id {
                 case .u256:
                     value = try Value(value: .primitive(.uint(decoder.decode(.compact))),
                                       context: type)
-                default: throw DecodingError.cannotCompactDecode(innerTypeId)
+                default: throw DecodingError.cannotCompactDecode(innerType.strong)
                 }
             case .composite(fields: let fields):
                 guard fields.count == 1 else {
-                    throw DecodingError.cannotCompactDecode(innerTypeId)
+                    throw DecodingError.cannotCompactDecode(innerType.strong)
                 }
-                innerTypeId = fields[0].type
-            case .tuple(components: let fields):
-                guard fields.count == 1 else {
-                    throw DecodingError.cannotCompactDecode(innerTypeId)
-                }
-                innerTypeId = fields[0]
-            default: throw DecodingError.cannotCompactDecode(innerTypeId)
+                innerType = fields[0].type
+            default: throw DecodingError.cannotCompactDecode(innerType.strong)
             }
         }
         return value!
-    }
-    
-    static func _decodeBitSequence<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: NetworkType.Id,
-        store: NetworkType.Id, order: NetworkType.Id, runtime: Runtime
-    ) throws -> Self {
-        let format = try BitSequence.Format(store: store, order: order, runtime: runtime)
-        return try Value(value: .bitSequence(decoder.decode(.format(format))), context: type)
     }
 }

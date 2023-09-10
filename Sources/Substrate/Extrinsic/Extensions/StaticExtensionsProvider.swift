@@ -35,11 +35,7 @@ public protocol StaticExtrinsicExtension: StaticExtrinsicExtensionBase, Extrinsi
 {
     static var identifier: ExtrinsicExtensionId { get }
     
-    func validate(
-        runtime: any Runtime,
-        extra: NetworkType.Id,
-        additionalSigned: NetworkType.Id
-    ) -> Result<Void, TypeError>
+    func validate(extra: TypeDefinition, additionalSigned: TypeDefinition) -> Result<Void, TypeError>
 }
 
 public extension StaticExtrinsicExtension {
@@ -49,11 +45,10 @@ public extension StaticExtrinsicExtension {
 public extension StaticExtrinsicExtension where
     TExtra: ValidatableTypeStatic, TAdditionalSigned: ValidatableTypeStatic
 {
-    func validate(runtime: Runtime, extra: NetworkType.Id,
-                  additionalSigned: NetworkType.Id) -> Result<Void, TypeError>
+    func validate(extra: TypeDefinition, additionalSigned: TypeDefinition) -> Result<Void, TypeError>
     {
-        TExtra.validate(runtime: runtime, type: extra).flatMap { _ in
-            TAdditionalSigned.validate(runtime: runtime, type: additionalSigned).map {_ in}
+        TExtra.validate(type: extra).flatMap { _ in
+            TAdditionalSigned.validate(type: additionalSigned)
         }
     }
 }
@@ -64,8 +59,7 @@ public protocol StaticExtrinsicExtensions: StaticExtrinsicExtensionBase
     var identifiers: [ExtrinsicExtensionId] { get }
     
     func validate(
-        runtime: any Runtime,
-        types: [ExtrinsicExtensionId: (extId: NetworkType.Id, addId: NetworkType.Id)]
+        types: [ExtrinsicExtensionId: (extId: TypeDefinition, addId: TypeDefinition)]
     ) -> Result<Void, Either<ExtrinsicCodingError, TypeError>>
 }
 
@@ -134,12 +128,12 @@ public class StaticSignedExtensionsProvider<Ext: StaticExtrinsicExtensions>: Sig
         }
         let ext = runtime.metadata.extrinsic.extensions.map { info in
             (key: ExtrinsicExtensionId(info.identifier),
-             value: (extId: info.type.id, addId: info.additionalSigned.id))
+             value: (extId: info.type, addId: info.additionalSigned))
         }
         let unknown = Set(ext.map{$0.key}).subtracting(extensions.identifiers)
         guard unknown.count == 0 else {
             return .failure(.left(.unknownExtension(identifier: unknown.first!)))
         }
-        return extensions.validate(runtime: runtime, types: Dictionary(uniqueKeysWithValues: ext))
+        return extensions.validate(types: Dictionary(uniqueKeysWithValues: ext))
     }
 }

@@ -12,24 +12,19 @@ import ContextCodable
 public protocol Hash: ContextDecodable, Swift.Encodable,
                       VoidValueRepresentable, ValueRepresentable,
                       ValidatableType, Equatable, CustomStringConvertible
-    where DecodingContext == (metadata: any Metadata, id: () throws -> NetworkType.Id)
+    where DecodingContext == TypeDefinition.Lazy
 {
     var raw: Data { get }
     
-    init(raw: Data,
-         metadata: any Metadata,
-         id: () throws -> NetworkType.Id) throws
+    init(raw: Data, type: TypeDefinition.Lazy) throws
 }
 
 public extension Hash {
     var description: String { raw.hex() }
     
     @inlinable
-    init(raw: Data,
-         runtime: any Runtime,
-         id: NetworkType.LazyId) throws
-    {
-        try self.init(raw: raw, metadata: runtime.metadata) { try id(runtime) }
+    init(raw: Data, type: TypeDefinition) throws {
+        try self.init(raw: raw) { type }
     }
     
     func encode(to encoder: Swift.Encoder) throws {
@@ -37,16 +32,16 @@ public extension Hash {
         try container.encode(raw)
     }
     
-    func asValue(runtime: Runtime, type: NetworkType.Info) throws -> Value<NetworkType.Id> {
-        guard let count = type.type.asBytes(runtime) else {
-            throw TypeError.wrongType(for: Self.self, type: type.type,
+    func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
+        guard let count = type.asBytes() else {
+            throw TypeError.wrongType(for: Self.self, type: type,
                                       reason: "isn't byte array", .get())
         }
         guard count == 0 || raw.count == count else {
             throw TypeError.wrongValuesCount(for: Self.self, expected: raw.count,
-                                             type: type.type, .get())
+                                             type: type, .get())
         }
-        return .bytes(raw, type.id)
+        return .bytes(raw, type)
     }
      
     func asValue() -> Value<Void> {
@@ -60,9 +55,7 @@ public protocol StaticHash: Hash, IdentifiableType, FixedDataCodable, RuntimeCod
 
 public extension StaticHash {
     @inlinable
-    init(raw: Data,
-         metadata: any Metadata,
-         id: () throws -> NetworkType.Id) throws
+    init(raw: Data, type: TypeDefinition.Lazy) throws
     {
         try self.init(raw: raw)
     }
@@ -86,9 +79,10 @@ public extension StaticHash {
     @inlinable
     func serialize() -> Data { raw }
     
-    @inlinable
-    static var definition: TypeDefinition {
-        .data(count: UInt32(Self.fixedBytesCount))
+    static func definition(
+        in registry: TypeRegistry<TypeDefinition.TypeId>
+    ) -> TypeDefinition.Builder {
+        .array(count: UInt32(fixedBytesCount), of: registry.def(UInt8.self))
     }
 }
 

@@ -73,9 +73,7 @@ extension TransactionStatus: RuntimeSwiftCodable, Swift.Encodable {
                 throw Swift.DecodingError.dataCorruptedError(in: container1,
                                                              debugDescription: "Empty case object")
             }
-            let hashContext = BlockHash.DecodingContext(metadata: runtime.metadata) {
-                try runtime.types.hash.get().id
-            }
+            let hashContext = { try runtime.types.hash.get() }
             switch key {
             case .broadcast:
                 self = try .broadcast(container2.decode([String].self, forKey: key))
@@ -88,10 +86,7 @@ extension TransactionStatus: RuntimeSwiftCodable, Swift.Encodable {
             case .finalized:
                 self = try .finalized(container2.decode(BlockHash.self, forKey: key, context: hashContext))
             case .usurped:
-                let hashContext2 = H.DecodingContext(metadata: runtime.metadata) {
-                    try runtime.types.hash.get().id
-                }
-                self = try .usurped(container2.decode(H.self, forKey: key, context: hashContext2))
+                self = try .usurped(container2.decode(H.self, forKey: key, context: hashContext))
             default:
                 throw Swift.DecodingError.dataCorruptedError(forKey: key, in: container2,
                                                              debugDescription: "Unknow enum case")

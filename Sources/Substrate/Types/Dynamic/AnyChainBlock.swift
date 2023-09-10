@@ -13,7 +13,7 @@ public struct AnyChainBlock<B: SomeBlock>: SomeChainBlock {
     public let other: [String: AnyValue]
     
     public init(from decoder: Decoder,
-                context: (runtime: Runtime, blockType: NetworkType.LazyId)) throws {
+                context: (runtime: Runtime, blockType: TypeDefinition.Lazy)) throws {
         let container = try decoder.container(keyedBy: AnyCodableCodingKey.self)
         var block: B? = nil
         var other: [String: AnyValue] = [:]

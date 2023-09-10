@@ -112,14 +112,15 @@ public enum DispatchError: SomeDispatchError, StaticCallError, Equatable,
         }
     }
     
-    public static var definition: TypeDefinition {
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder
+    {
         .variant(variants: [
             .e(0, "Other"), .e(1, "CannotLookup"), .e(2, "BadOrigin"),
-            .s(3, "Module", ModuleErrorData.definition), .e(4, "ConsumerRemaining"),
-            .e(5, "NoProviders"), .e(6, "TooManyConsumers"),
-            .s(7, "Token", TokenError.definition),
-            .s(8, "Arithmetic", ArithmeticError.definition),
-            .s(9, "Transactional", TransactionalError.definition),
+            .s(3, "Module", registry.def(ModuleErrorData.self)),
+            .e(4, "ConsumerRemaining"), .e(5, "NoProviders"), .e(6, "TooManyConsumers"),
+            .s(7, "Token", registry.def(TokenError.self)),
+            .s(8, "Arithmetic", registry.def(ArithmeticError.self)),
+            .s(9, "Transactional", registry.def(TransactionalError.self)),
             .e(10, "Exhausted"), .e(11, "Corruption"), .e(12, "Unavailable"),
             .e(13, "RootNotAllowed")
         ])
@@ -166,8 +167,12 @@ public extension DispatchError {
             lhs.index == rhs.index && lhs.error == rhs.error
         }
         
-        public static var definition: TypeDefinition {
-            .composite(fields: [.v(UInt8.definition), .v(.data(count: 4))])
+        public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder
+        {
+            .composite(fields: [
+                .v(registry.def(UInt8.self)),
+                .v(registry.def(Data.self, .fixed(4)))
+            ])
         }
     }
     

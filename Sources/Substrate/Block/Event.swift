@@ -24,7 +24,7 @@ public extension PalletEvent {
     @inlinable static var frameTypeName: String { "Event" }
 }
 
-public typealias EventTypeInfo = [(field: NetworkType.Field, type: NetworkType)]
+public typealias EventTypeInfo = [TypeDefinition.Field]
 public typealias EventChildTypes = [ValidatableTypeStatic.Type]
 
 public extension PalletEvent where

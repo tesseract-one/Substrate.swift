@@ -23,12 +23,11 @@ public protocol StaticHasher: Hasher, ValidatableType {
 public extension StaticHasher {
     @inlinable var type: LatestMetadata.StorageHasher { Self.hasherType }
     
-    static func validate(runtime: any Runtime,
-                         type: NetworkType.Info) -> Result<Void, TypeError>
+    static func validate(type: TypeDefinition) -> Result<Void, TypeError>
     {
-        guard let name = type.type.path.last, name == hasherType.name else {
-            return .failure(.wrongType(for: Self.self, type: type.type,
-                                       reason: "Unknown hasher: \(type.type)", .get()))
+        guard type.name.hasSuffix(hasherType.name) else {
+            return .failure(.wrongType(for: Self.self, type: type,
+                                       reason: "Unknown hasher: \(type)", .get()))
         }
         return .success(())
     }

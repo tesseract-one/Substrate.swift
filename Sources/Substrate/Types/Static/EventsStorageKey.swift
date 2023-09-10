@@ -23,11 +23,11 @@ public struct EventsStorageKey<BE: SomeBlockEvents>: PlainStorageKey, ComplexSta
     public static func decode<D:ScaleCodec.Decoder>(
         valueFrom decoder: inout D, runtime: Runtime
     ) throws -> BE {
-        try runtime.decode(from: &decoder) { runtime in
+        try runtime.decode(from: &decoder) {
             guard let key = runtime.resolve(storage: Self.name, pallet: Self.pallet) else {
                 throw StorageKeyCodingError.storageNotFound(name: Self.name, pallet: Self.pallet)
             }
-            return key.value.id
+            return key.value
         }
     }
 }

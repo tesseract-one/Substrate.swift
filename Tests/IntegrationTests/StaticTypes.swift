@@ -72,10 +72,11 @@ extension Configs.Substrate {
                     try runtime.encode(value: data, in: &encoder)
                 }
                 
-                static var definition: TypeDefinition {
+                static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
                     .composite(fields: [
-                        .v(N.definition), .v(UInt64.definition), .v(UInt64.definition),
-                        .v(UInt64.definition), .v(D.definition)
+                        .v(registry.def(N.self)), .v(registry.def(UInt64.self)),
+                        .v(registry.def(UInt64.self)),
+                        .v(registry.def(UInt64.self)), .v(registry.def(D.self))
                     ])
                 }
             }
@@ -100,9 +101,11 @@ extension Configs.Substrate {
                     try runtime.encode(value: flags, in: &encoder)
                 }
                 
-                static var definition: TypeDefinition {
+                static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
                     .composite(fields: [
-                        .v(B.definition), .v(B.definition), .v(B.definition), .v(UInt128.definition)
+                        .v(registry.def(B.self)), .v(registry.def(B.self)),
+                        .v(registry.def(B.self)),
+                        .v(registry.def(UInt128.self))
                     ])
                 }
             }

@@ -10,31 +10,31 @@ import ContextCodable
 
 public protocol SomeRuntimeDynamicSwiftCodableContext {
     var runtime: Runtime { get }
-    var type: NetworkType.LazyId { get }
+    var type: TypeDefinition.Lazy { get }
     
-    init(runtime: Runtime, type: @escaping NetworkType.LazyId)
+    init(runtime: Runtime, type: @escaping TypeDefinition.Lazy)
 }
 
 public struct RuntimeSwiftCodableContext: SomeRuntimeDynamicSwiftCodableContext {
     public var runtime: Runtime
-    public var type: NetworkType.LazyId
+    public var type: TypeDefinition.Lazy
     
-    public init(runtime: Runtime, type: @escaping NetworkType.LazyId) {
+    public init(runtime: Runtime, type: @escaping TypeDefinition.Lazy) {
         self.runtime = runtime
         self.type = type
     }
     
     public init(runtime: Runtime) {
         self.runtime = runtime
-        self.type = NetworkType.IdNever
+        self.type = TypeDefinition.Never
     }
 }
 
 public struct RuntimeDynamicSwiftCodableContext: SomeRuntimeDynamicSwiftCodableContext {
     public let runtime: Runtime
-    public let type: NetworkType.LazyId
+    public let type: TypeDefinition.Lazy
     
-    public init(runtime: Runtime, type: @escaping NetworkType.LazyId) {
+    public init(runtime: Runtime, type: @escaping TypeDefinition.Lazy) {
         self.runtime = runtime
         self.type = type
     }
@@ -57,41 +57,13 @@ public typealias RuntimeSwiftCodable = RuntimeSwiftDecodable & RuntimeSwiftEncod
 public protocol RuntimeDynamicSwiftDecodable: ContextDecodable where
     DecodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
-    init(from decoder: Decoder, `as` id: NetworkType.Id, runtime: Runtime) throws
-    init(from decoder: Decoder, `as` info: NetworkType.Info, runtime: Runtime) throws
+    init(from decoder: Decoder, `as` type: TypeDefinition, runtime: Runtime) throws
 }
 
 public protocol RuntimeDynamicSwiftEncodable: ContextEncodable where
     EncodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
-    func encode(to encoder: Encoder, `as` id: NetworkType.Id, runtime: any Runtime) throws
-    func encode(to encoder: Encoder, `as` info: NetworkType.Info, runtime: any Runtime) throws
-}
-
-public extension RuntimeDynamicSwiftDecodable {
-    @inlinable
-    init(from decoder: Decoder, `as` id: NetworkType.Id, runtime: Runtime) throws {
-        guard let type = runtime.resolve(type: id) else {
-            throw DecodingError.valueNotFound(
-                NetworkType.Id.self,
-                .init(codingPath: decoder.codingPath,
-                      debugDescription: "Type id \(id) is not found in runtime")
-            )
-        }
-        try self.init(from: decoder, as: id.i(type), runtime: runtime)
-    }
-}
-
-public extension RuntimeDynamicSwiftEncodable {
-    @inlinable
-    func encode(to encoder: Encoder, `as` id: NetworkType.Id, runtime: any Runtime) throws {
-        guard let type = runtime.resolve(type: id) else {
-            throw EncodingError.invalidValue(
-                id, .init(codingPath: encoder.codingPath,
-                          debugDescription: "Type is not found in runtime"))
-        }
-        try encode(to: encoder, as: id.i(type), runtime: runtime)
-    }
+    func encode(to encoder: Encoder, `as` type: TypeDefinition, runtime: any Runtime) throws
 }
 
 public typealias RuntimeDynamicSwiftCodable = RuntimeDynamicSwiftDecodable & RuntimeDynamicSwiftEncodable
@@ -121,7 +93,7 @@ public extension RuntimeSwiftDecodable where
     DecodingContext == RuntimeSwiftCodableContext
 {
     @inlinable
-    init(from decoder: Decoder, `as` info: NetworkType.Info, runtime: Runtime) throws {
+    init(from decoder: Decoder, `as` type: TypeDefinition, runtime: Runtime) throws {
         try self.init(from: decoder, runtime: runtime)
     }
 }
@@ -133,7 +105,7 @@ public extension RuntimeSwiftEncodable {
     }
     
     @inlinable
-    func encode(to encoder: Encoder, `as` info: NetworkType.Info, runtime: any Runtime) throws {
+    func encode(to encoder: Encoder, `as` type: TypeDefinition, runtime: any Runtime) throws {
         try encode(to: encoder, runtime: runtime)
     }
 }
@@ -143,21 +115,19 @@ public extension RuntimeDynamicSwiftDecodable where
 {
     @inlinable
     init(from decoder: Decoder, context: DecodingContext) throws {
-        try self.init(from: decoder, runtime: context.runtime, id: context.type)
+        try self.init(from: decoder, runtime: context.runtime, type: context.type)
     }
 }
 
 public extension RuntimeDynamicSwiftDecodable {
     @inlinable
-    init(from decoder: Decoder, runtime: any Runtime,
-         id: NetworkType.LazyId) throws
-    {
+    init(from decoder: Decoder, runtime: any Runtime, type: TypeDefinition.Lazy) throws {
         switch Self.self {
         case let sself as Swift.Decodable.Type:
             self = try sself.init(from: decoder) as! Self
         case let sself as any RuntimeSwiftDecodable.Type:
             self = try sself.init(from: decoder, runtime: runtime) as! Self
-        default: try self.init(from: decoder, as: id(runtime), runtime: runtime)
+        default: try self.init(from: decoder, as: type(), runtime: runtime)
         }
     }
 }
@@ -167,19 +137,17 @@ public extension RuntimeDynamicSwiftEncodable where
 {
     @inlinable
     func encode(to encoder: Encoder, context: EncodingContext) throws {
-        try encode(to: encoder, runtime: context.runtime, id: context.type)
+        try encode(to: encoder, runtime: context.runtime, type: context.type)
     }
 }
 
 public extension RuntimeDynamicSwiftEncodable {
     @inlinable
-    func encode(to encoder: Encoder, runtime: any Runtime,
-                id: NetworkType.LazyId) throws
-    {
+    func encode(to encoder: Encoder, runtime: any Runtime, type: TypeDefinition.Lazy) throws {
         switch self {
         case let sself as Swift.Encodable: try sself.encode(to: encoder)
         case let sself as any RuntimeSwiftEncodable: try sself.encode(to: encoder, runtime: runtime)
-        default: try self.encode(to: encoder, as: id(runtime), runtime: runtime)
+        default: try self.encode(to: encoder, as: type(), runtime: runtime)
         }
     }
 }

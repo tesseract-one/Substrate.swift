@@ -15,10 +15,8 @@ public enum MultiSignature: Hashable, Equatable, IdentifiableType,
     case sr25519(Sr25519Signature)
     case ecdsa(EcdsaSignature)
     
-    public static func validate(runtime: Runtime, type: NetworkType.Info) -> Result<Void, TypeError> {
-        typeInfo(runtime: runtime, type: type).flatMap {
-            validate(info: $0, type: type, runtime: runtime)
-        }
+    public static func validate(type: TypeDefinition) -> Result<Void, TypeError> {
+        parseType(type: type).flatMap { validate(info: $0, type: type) }
     }
     
     public static var childTypes: ChildTypes {
@@ -26,11 +24,11 @@ public enum MultiSignature: Hashable, Equatable, IdentifiableType,
          (2, "Ecdsa", [EcdsaSignature.self])]
     }
     
-    public static var definition: TypeDefinition {
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
         .variant(variants: [
-            .s(0, "Ed25519", Ed25519Signature.definition),
-            .s(1, "Sr25519", Sr25519Signature.definition),
-            .s(2, "Ecdsa", EcdsaSignature.definition)
+            .s(0, "Ed25519", registry.def(Ed25519Signature.self)),
+            .s(1, "Sr25519", registry.def(Sr25519Signature.self)),
+            .s(2, "Ecdsa", registry.def(EcdsaSignature.self))
         ])
     }
 }
@@ -76,10 +74,10 @@ extension MultiSignature: StaticSignature {
 }
 
 extension MultiSignature: ValueRepresentable {
-    public func asValue(runtime: Runtime, type info: NetworkType.Info) throws -> Value<NetworkType.Id> {
-        try validate(runtime: runtime, type: info).get()
-        guard case .variant(variants: let variants) = info.type.flatten(runtime).definition else {
-            throw TypeError.wrongType(for: Self.self, type: info.type,
+    public func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
+        try validate(runtime: runtime, type: type).get()
+        guard case .variant(variants: let variants) = type.flatten().definition else {
+            throw TypeError.wrongType(for: Self.self, type: type,
                                       reason: "Should be variant", .get())
         }
         switch self {
@@ -87,17 +85,17 @@ extension MultiSignature: ValueRepresentable {
             return try .variant(name: variants[0].name,
                                 values: [sig.asValue(runtime: runtime,
                                                      type: variants[0].fields[0].type)],
-                                info.id)
+                                type)
         case .ed25519(let sig):
             return try .variant(name: variants[1].name,
                                 values: [sig.asValue(runtime: runtime,
                                                      type: variants[1].fields[0].type)],
-                                info.id)
+                                type)
         case .ecdsa(let sig):
             return try .variant(name: variants[2].name,
                                 values: [sig.asValue(runtime: runtime,
                                                      type: variants[2].fields[0].type)],
-                                info.id)
+                                type)
         }
     }
 }

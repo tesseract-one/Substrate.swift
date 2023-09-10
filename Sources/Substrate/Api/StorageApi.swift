@@ -34,7 +34,7 @@ public class StorageApiRegistry<R: RootApi>: RootApiAware {
     }
     
     public func getApi<A>(_ t: A.Type) -> A where A: StorageApi, A.R == R {
-        _apis.sync { apis in
+        _apis.mutate { apis in
             if let api = apis[A.id] as? A {
                 return api
             }
