@@ -97,6 +97,38 @@ public extension TypeRegistry where Id == TypeDefinition.TypeId {
         }.get()
     }
     
+    func def<T>(
+        _ type: T.Type, child: T.Type, config: T.TypeConfig,
+        _ wrapped: (TypeRegistry<Id>, T.TypeConfig) -> TypeDefinition.Builder
+    ) -> TypeDefinition
+        where T: IdentifiableTypeCustomWrapperStatic
+    {
+        let sfId = TypeDefinition.TypeId(type: type, config: "\(child)\(config)")
+        if let def = self[sfId] { return def }
+        let chId = TypeDefinition.TypeId(type: child, config: config.description)
+        var wdef = self[chId]
+        if wdef == nil {
+            let storage = TypeDefinition.Storage(registry: self)
+            add(id: chId, storage: storage)
+            wdef = try! storage.initialize { () -> Result<_, Never> in
+                var bdr = wrapped(self, config)
+                if bdr.params.name == nil {
+                    bdr = bdr.name("\(child)\(config)")
+                }
+                return .success(bdr)
+            }.get()
+        }
+        let storage = TypeDefinition.Storage(registry: self)
+        add(id: sfId, storage: storage)
+        return try! storage.initialize { () -> Result<_, Never> in
+            var bdr = type.definition(in: self, config: config, wrapped: wdef!)
+            if bdr.params.name == nil {
+                bdr = bdr.name("\(type)\(config)")
+            }
+            return .success(bdr)
+        }.get()
+    }
+    
     func def<T: IdentifiableWithConfigTypeStatic>(_ type: T.Type,
                                                   _ config: T.TypeConfig) -> TypeDefinition
     {

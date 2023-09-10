@@ -116,41 +116,59 @@ extension Character: IdentifiableTypeStatic {
     }
 }
 
+public extension Collection where Self: IdentifiableTypeCustomWrapperStatic,
+                                  TypeConfig == IdentifiableCollectionTypeConfig
+{
+    @inlinable
+    static func definition(
+        in registry: TypeRegistry<TypeDefinition.TypeId>,
+        config: TypeConfig, wrapped: TypeDefinition
+    ) -> TypeDefinition.Builder {
+        switch config {
+        case .dynamic: return .sequence(of: wrapped)
+        case .fixed(let count): return .array(count: count, of: wrapped)
+        }
+    }
+}
+
 public extension Collection where Self: IdentifiableWithConfigTypeStatic,
+                                  Self: IdentifiableTypeCustomWrapperStatic,
                                   TypeConfig == IdentifiableCollectionTypeConfig,
                                   Element: IdentifiableTypeStatic
 {
+    @inlinable
     static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>,
                            _ config: TypeConfig) -> TypeDefinition.Builder
     {
-        switch config {
-        case .dynamic: return .sequence(of: registry.def(Element.self))
-        case .fixed(let count): return .array(count: count, of: registry.def(Element.self))
-        }
-    }
-    
-    @inlinable
-    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
-        definition(in: registry, .dynamic)
+        definition(in: registry, config: config, wrapped: registry.def(Element.self))
     }
 }
 
-extension Array: IdentifiableWithConfigTypeStatic,
-                 IdentifiableTypeStatic where Element: IdentifiableTypeStatic
-{
+extension Array: IdentifiableTypeCustomWrapperStatic {
     public typealias TypeConfig = IdentifiableCollectionTypeConfig
 }
 
-extension Data: IdentifiableWithConfigTypeStatic, IdentifiableTypeStatic {
+extension Array: IdentifiableWithConfigTypeStatic,
+                 IdentifiableTypeStatic where Element: IdentifiableTypeStatic {}
+
+extension Data: IdentifiableWithConfigTypeStatic, IdentifiableTypeCustomWrapperStatic, IdentifiableTypeStatic {
     public typealias TypeConfig = IdentifiableCollectionTypeConfig
 }
 
 extension Optional: IdentifiableTypeStatic where Wrapped: IdentifiableTypeStatic {
     @inlinable
     public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
-        .variant(variants: [
-            .e(0, "None"), .s(1, "Some", registry.def(Wrapped.self))
-        ])
+        definition(in: registry, config: .nothing, wrapped: registry.def(Wrapped.self))
+    }
+}
+
+extension Optional: IdentifiableTypeCustomWrapperStatic {
+    public typealias TypeConfig = Nothing
+    
+    public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>,
+                                  config: TypeConfig, wrapped: TypeDefinition) -> TypeDefinition.Builder
+    {
+        .variant(variants: [.e(0, "None"), .s(1, "Some", wrapped)])
     }
 }
 

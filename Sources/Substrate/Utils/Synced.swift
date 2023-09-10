@@ -40,7 +40,7 @@ public class Synced<T>: ThreadSynced {
                 fatalError("Mutex unlock failed!")
             }
         }
-        return try op(&_value)
+        return try op(_value)
     }
     
     public func mutate<U>(_ op: (inout T) throws -> U) rethrows -> U {

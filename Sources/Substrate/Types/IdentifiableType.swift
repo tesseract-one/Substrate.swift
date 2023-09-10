@@ -7,13 +7,6 @@
 
 import Foundation
 
-public protocol IdentifiableWithConfigTypeStatic: ValidatableTypeStatic {
-    associatedtype TypeConfig: CustomStringConvertible
-    
-    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>,
-                           _ config: TypeConfig) -> TypeDefinition.Builder
-}
-
 public protocol IdentifiableTypeStatic: ValidatableTypeStatic {
     static func definition(
         in registry: TypeRegistry<TypeDefinition.TypeId>
@@ -50,7 +43,40 @@ public extension IdentifiableTypeStatic {
     }
 }
 
-public enum IdentifiableCollectionTypeConfig: CustomStringConvertible {
+public protocol IdentifiableWithConfigTypeStatic {
+    associatedtype TypeConfig: CustomStringConvertible
+    
+    static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>,
+                           _ config: TypeConfig) -> TypeDefinition.Builder
+}
+
+public protocol IdentifiableTypeCustomWrapperStatic {
+    associatedtype TypeConfig: CustomStringConvertible
+    
+    static func definition(
+        in registry: TypeRegistry<TypeDefinition.TypeId>,
+        config: TypeConfig, wrapped: TypeDefinition
+    ) -> TypeDefinition.Builder
+}
+
+public extension IdentifiableWithConfigTypeStatic where TypeConfig: Default {
+    static func definition(
+        in registry: TypeRegistry<TypeDefinition.TypeId>
+    ) -> TypeDefinition.Builder {
+        definition(in: registry, .default)
+    }
+}
+
+public extension IdentifiableTypeCustomWrapperStatic where TypeConfig: Default {
+    static func definition(
+        in registry: TypeRegistry<TypeDefinition.TypeId>,
+        wrapped: TypeDefinition
+    ) -> TypeDefinition.Builder {
+        definition(in: registry, config: .default, wrapped: wrapped)
+    }
+}
+
+public enum IdentifiableCollectionTypeConfig: CustomStringConvertible, Default {
     case dynamic
     case fixed(UInt32)
     
@@ -60,6 +86,8 @@ public enum IdentifiableCollectionTypeConfig: CustomStringConvertible {
         case .fixed(let count): return "[\(count)]"
         }
     }
+    
+    public static var `default`: IdentifiableCollectionTypeConfig = .dynamic
 }
 
 public typealias IdentifiableType = IdentifiableTypeStatic & ValidatableType
