@@ -15,7 +15,7 @@ extension Value {
             /// The composite value that is the wrong length.
             actual: [String: Value<C>],
             /// The type we're trying to encode it into.
-            expected: TypeDefinition.Strong,
+            expected: TypeDefinition,
             /// The length we're expecting our composite type to be to encode properly.
             expectedLen: Int
         )
@@ -23,7 +23,7 @@ extension Value {
             /// The composite value that is the wrong length.
             actual: [Value<C>],
             /// The type we're trying to encode it into.
-            expected: TypeDefinition.Strong,
+            expected: TypeDefinition,
             /// The length we're expecting our composite type to be to encode properly.
             expectedLen: Int
         )
@@ -32,24 +32,24 @@ extension Value {
             /// The variant type we're trying to encode.
             actual: Variant,
             /// The type we're trying to encode it into.
-            expected: TypeDefinition.Strong
+            expected: TypeDefinition
         )
         /// The variant or composite field we're trying to encode is not present in the type we're encoding into.
         case mapFieldIsMissing(
             /// The name of the composite field we can't find.
             missingFieldName: String,
             /// The type we're trying to encode this into.
-            expected: TypeDefinition.Strong
+            expected: TypeDefinition
         )
         /// The [`Value`] type we're trying to encode is not the correct shape for the type we're trying to encode it into.
         case wrongShape(
             /// The value we're trying to encode.
             actual: Value<C>,
             /// The type we're trying to encode it into.
-            expected: TypeDefinition.Strong
+            expected: TypeDefinition
         )
         /// The type ID given is supposed to be compact encoded, but this is not possible to do automatically.
-        case cannotCompactEncode(TypeDefinition.Strong)
+        case cannotCompactEncode(TypeDefinition)
     }
 }
 
@@ -82,8 +82,8 @@ extension Value: RuntimeDynamicEncodable {
             try _encodeVariant(type: type, variants: variants, runtime: runtime, in: &encoder)
         case .primitive(is: let primitive):
             try _encodePrimitive(type: type, prim: primitive, in: &encoder)
-        case .compact(of: let type):
-            try _encodeCompact(type: type, of: type, runtime: runtime, in: &encoder)
+        case .compact(of: let vType):
+            try _encodeCompact(type: type, of: vType, runtime: runtime, in: &encoder)
         case .bitsequence(format: let format):
             try _encodeBitSequence(type: type, format: format, runtime: runtime, in: &encoder)
         case .void: break
@@ -108,7 +108,7 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                try encode(in: &encoder, as: fields[0].type, runtime: runtime)
+                try encode(in: &encoder, as: fields[0].type.strong, runtime: runtime)
             } else {
                 try _encodeCompositeFields(type: type, fields: fields, runtime: runtime, in: &encoder)
             }
@@ -118,7 +118,7 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                try encode(in: &encoder, as: fields[0].type, runtime: runtime)
+                try encode(in: &encoder, as: fields[0].type.strong, runtime: runtime)
             } else {
                 try _encodeCompositeFields(type: type, fields: fields, runtime: runtime, in: &encoder)
             }
@@ -128,7 +128,7 @@ private extension Value {
                 // aiming for has exactly 1 field. Perhaps it's a wrapper type, so let's
                 // aim to encode to the contents of it instead (1 field composites are
                 // transparent anyway in SCALE terms).
-                try encode(in: &encoder, as: fields[0].type, runtime: runtime)
+                try encode(in: &encoder, as: fields[0].type.strong, runtime: runtime)
             } else {
                 throw EncodingError.wrongShape(actual: self, expected: type.strong)
             }
@@ -136,12 +136,12 @@ private extension Value {
     }
     
     func _encodeSequence<E: ScaleCodec.Encoder>(
-        type: TypeDefinition, valueType: TypeDefinition, runtime: Runtime, in encoder: inout E
+        type: TypeDefinition, valueType: TypeDefinition.Weak, runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
         case .sequence(let values):
             try values.encode(in: &encoder) { value, encoder in
-                try value.encode(in: &encoder, as: valueType, runtime: runtime)
+                try value.encode(in: &encoder, as: valueType.strong, runtime: runtime)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -159,7 +159,7 @@ private extension Value {
     }
     
     func _encodeArray<E: ScaleCodec.Encoder>(
-        type: TypeDefinition, valueType: TypeDefinition, count: UInt32,
+        type: TypeDefinition, valueType: TypeDefinition.Weak, count: UInt32,
         runtime: Runtime, in encoder: inout E
     ) throws {
         switch value {
@@ -170,7 +170,7 @@ private extension Value {
                 )
             }
             for value in values {
-                try value.encode(in: &encoder, as: valueType, runtime: runtime)
+                try value.encode(in: &encoder, as: valueType.strong, runtime: runtime)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -230,7 +230,7 @@ private extension Value {
                 guard let value = map[name] else {
                     throw EncodingError.mapFieldIsMissing(missingFieldName: name, expected: field.type.strong)
                 }
-                try value.encode(in: &encoder, as: field.type, runtime: runtime)
+                try value.encode(in: &encoder, as: field.type.strong, runtime: runtime)
             }
         } else {
             let values = self.sequence!
@@ -241,7 +241,7 @@ private extension Value {
             }
             guard values.count > 0 else { return }
             for (field, value) in zip(fields, values) {
-                try value.encode(in: &encoder, as: field.type, runtime: runtime)
+                try value.encode(in: &encoder, as: field.type.strong, runtime: runtime)
             }
         }
     }
@@ -305,7 +305,7 @@ private extension Value {
     }
     
     func _encodeCompact<E: ScaleCodec.Encoder>(
-        type: TypeDefinition, of: TypeDefinition, runtime: Runtime, in encoder: inout E
+        type: TypeDefinition, of: TypeDefinition.Weak, runtime: Runtime, in encoder: inout E
     ) throws {
         // Resolve to a primitive type inside the compact encoded type (or fail if
         // we hit some type we wouldn't know how to work with).

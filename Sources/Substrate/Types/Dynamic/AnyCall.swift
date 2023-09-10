@@ -160,7 +160,7 @@ extension AnyCall: RuntimeEncodable, RuntimeDynamicEncodable {
                     throw FrameTypeError.valueNotFound(for: errorTypeName,
                                                        key: el.name!, .get())
                 }
-                return try (el.name!, value.asValue(runtime: runtime, type: el.type))
+                return try (el.name!, value.asValue(runtime: runtime, type: *el.type))
             }
             let map = Dictionary(uniqueKeysWithValues: pairs)
             variant = Value(value: .variant(.map(name: name, fields: map)),
@@ -171,7 +171,7 @@ extension AnyCall: RuntimeEncodable, RuntimeDynamicEncodable {
                     throw FrameTypeError.valueNotFound(for: errorTypeName,
                                                        key: String(idx), .get())
                 }
-                return try value.asValue(runtime: runtime, type: el.type)
+                return try value.asValue(runtime: runtime, type: *el.type)
             }
             variant = Value(value: .variant(.sequence(name: name, values: values)),
                             context: palletCall.type)
@@ -239,7 +239,7 @@ extension AnyCall: ValidatableTypeStatic {
             }
             guard case .variant(_) = vart.fields[0].type.definition else {
                 return .failure(.wrongType(for: Self.self,
-                                           type: vart.fields[0].type,
+                                           type: *vart.fields[0].type,
                                            reason: "Child type isn't variant", .get()))
             }
             return .success(())
@@ -308,7 +308,7 @@ private extension AnyCall {
             guard let val = (value ?? _params[key]) else {
                 return .failure(.valueNotFound(key: key))
             }
-            return val.validate(runtime: runtime, type: param.type).mapError {
+            return val.validate(runtime: runtime, type: *param.type).mapError {
                 .childError(index: idx, error: $0)
             }
         }

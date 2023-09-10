@@ -86,7 +86,7 @@ public extension ComplexStaticFrameType where
         }
         return zip(ourTypes, info).enumerated().voidErrorMap { index, zip in
             let (our, info) = zip
-            return our.validate(type: info.type).mapError {
+            return our.validate(type: *info.type).mapError {
                 .childError(for: Self.self, index: index, error: $0, .get())
             }
         }
@@ -130,14 +130,14 @@ public extension FrameTypeDefinition {
                 return .failure(.typeInfoNotFound(for: type, .get()))
             }
             return validate(fields: fields,
-                            ifields: info.map{($0.name, $0.type)},
+                            ifields: info.map{($0.name, *$0.type)},
                             type: type, runtime: runtime)
         case .event(fields: let fields):
             guard let info = runtime.resolve(eventParams: type.name, pallet: type.frame) else {
                 return .failure(.typeInfoNotFound(for: type, .get()))
             }
             return validate(fields: fields,
-                            ifields: info.map{($0.name, $0.type)},
+                            ifields: info.map{($0.name, *$0.type)},
                             type: type, runtime: runtime)
         case .runtimeCall(params: let params, return: let rtype):
             guard let info = runtime.resolve(runtimeCall: type.name, api: type.frame) else {

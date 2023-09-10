@@ -39,8 +39,7 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
     
     public static func recordType(events type: TypeDefinition) throws -> TypeDefinition {
         switch type.flatten().definition {
-        case .sequence(of: let record):
-            return record
+        case .sequence(of: let record): return *record
         default:
             throw TypeError.wrongType(for: Self.self, type: type,
                                       reason: "Not a sequence", .get())

@@ -77,7 +77,7 @@ public extension ListTuple where DroppedLast: ValidatableTupleDynamic,
         }
         let ltype = fields.removeLast()
         return dropLast.validate(runtime: runtime, type: type, fields: &fields).flatMap {
-            last.validate(runtime: runtime, type: ltype.type)
+            last.validate(runtime: runtime, type: *ltype.type)
         }
     }
 }

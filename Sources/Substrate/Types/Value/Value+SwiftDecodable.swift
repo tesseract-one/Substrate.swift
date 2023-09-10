@@ -171,13 +171,13 @@ private extension Value where C == TypeDefinition {
             var map: [String: Value<C>] = Dictionary(minimumCapacity: fields.count)
             for field in fields {
                 try value.next(key: field.name!.camelCased(with: "_"))
-                map[field.name!] = try Value(from: &value, as: field.type, runtime: runtime, custom: true)
+                map[field.name!] = try Value(from: &value, as: *field.type, runtime: runtime, custom: true)
             }
             return Value(value: .map(map), context: type)
         } else { // Sequence
             var value = try from.nestedUnkeyedContainer()
             let seq = try fields.map {
-                try Value(from: &value, as: $0.type, runtime: runtime, custom: true)
+                try Value(from: &value, as: *$0.type, runtime: runtime, custom: true)
             }
             return Value(value: .sequence(seq), context: type)
         }
@@ -185,7 +185,7 @@ private extension Value where C == TypeDefinition {
     
     static func _decodeSequence(
         from: inout ValueDecodingContainer, type: TypeDefinition,
-        valueType: TypeDefinition, runtime: Runtime
+        valueType: TypeDefinition.Weak, runtime: Runtime
     ) throws -> Self {
         if case .primitive(is: .u8) = valueType.definition { // [u8] array
             if let data = try? from.decode(Data.self) {
@@ -204,7 +204,7 @@ private extension Value where C == TypeDefinition {
                 values.reserveCapacity(count)
             }
             while try !value.isAtEnd() {
-                values.append(try Value(from: &value, as: valueType, runtime: runtime, custom: true))
+                values.append(try Value(from: &value, as: *valueType, runtime: runtime, custom: true))
             }
             return Value(value: .sequence(values), context: type)
         }
@@ -219,7 +219,7 @@ private extension Value where C == TypeDefinition {
             if try from.decodeNil() {
                 return Value(value: .variant(.sequence(name: "None", values: [])), context: type)
             }
-            let some = try Value(from: &from, as: someType, runtime: runtime, custom: true)
+            let some = try Value(from: &from, as: *someType, runtime: runtime, custom: true)
             return Value(value: .variant(.sequence(name: "Some", values: [some])), context: type)
         }
         if let data = try? from.decode(Data.self) { // SCALE serialized
@@ -264,7 +264,7 @@ private extension Value where C == TypeDefinition {
     
     static func _decodeArray(
         from: inout ValueDecodingContainer, type: TypeDefinition,
-        count: UInt32, valueType: TypeDefinition, runtime: Runtime
+        count: UInt32, valueType: TypeDefinition.Weak, runtime: Runtime
     ) throws -> Self {
         if case .primitive(is: .u8) = valueType.definition { // [u8] array
             if let data = try? from.decode(Data.self) {
@@ -287,7 +287,7 @@ private extension Value where C == TypeDefinition {
             var values = Array<Self>()
             values.reserveCapacity(Int(count))
             while try !value.isAtEnd() {
-                values.append(try Value(from: &value, as: valueType, runtime: runtime, custom: true))
+                values.append(try Value(from: &value, as: *valueType, runtime: runtime, custom: true))
             }
             guard values.count == count else {
                 throw try from.newError("Wrong array size: \(values.count), expected: \(count)")
@@ -327,7 +327,7 @@ private extension Value where C == TypeDefinition {
     
     static func _decodeCompact(
         from: inout ValueDecodingContainer, type: TypeDefinition,
-        of: TypeDefinition, runtime: Runtime
+        of: TypeDefinition.Weak, runtime: Runtime
     ) throws -> Self {
         var innerType = of
         var value: Self? = nil

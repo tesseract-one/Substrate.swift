@@ -116,7 +116,7 @@ public struct AnySignature: Signature {
             if let name = CryptoTypeId.byName.keys.first(where: { fieldTypeName.contains($0) }) {
                 return .success(["": CryptoTypeId.byName[name]!])
             }
-            return parseTypeInfo(type: fields[0].type)
+            return parseTypeInfo(type: *fields[0].type)
         default:
             return .failure(.wrongType(for: Self.self, type: type,
                                        reason: "Can't be parsed as signature", .get()))

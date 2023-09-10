@@ -41,8 +41,8 @@ extension Value: ValidatableTypeDynamic {
             return _validateVariant(type: type, variants: variants, runtime: runtime)
         case .primitive(is: let primitive):
             return _validatePrimitive(type: type, primitive: primitive)
-        case .compact(of: let type):
-            return _validateCompact(type: type, compact: type)
+        case .compact(of: let vType):
+            return _validateCompact(type: type, compact: vType)
         case .bitsequence(_):
             return _validateBitSequence(type: type)
         case .void:
@@ -65,7 +65,7 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                return validate(runtime: runtime, type: fields[0].type, custom: true)
+                return validate(runtime: runtime, type: *fields[0].type, custom: true)
             } else {
                 return _validateCompositeFields(type: type, fields: fields, runtime: runtime)
             }
@@ -75,7 +75,7 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                return validate(runtime: runtime, type: fields[0].type, custom: true)
+                return validate(runtime: runtime, type: *fields[0].type, custom: true)
             } else {
                 return _validateCompositeFields(type: type, fields: fields, runtime: runtime)
             }
@@ -85,7 +85,7 @@ private extension Value {
                 // aiming for has exactly 1 field. Perhaps it's a wrapper type, so let's
                 // aim to encode to the contents of it instead (1 field composites are
                 // transparent anyway in SCALE terms).
-                return validate(runtime: runtime, type: fields[0].type, custom: true)
+                return validate(runtime: runtime, type: *fields[0].type, custom: true)
             } else {
                 return .failure(.wrongType(for: self, type: type,
                                            reason: "Isn't Composite", .get()))
@@ -94,18 +94,18 @@ private extension Value {
     }
     
     func _validateSequence(
-        type: TypeDefinition, valueType: TypeDefinition, runtime: Runtime
+        type: TypeDefinition, valueType: TypeDefinition.Weak, runtime: Runtime
     ) -> Result<Void, TypeError> {
         switch value {
         case .sequence(let values):
             return values.voidErrorMap { value in
-                value.validate(runtime: runtime, type: valueType, custom: true)
+                value.validate(runtime: runtime, type: *valueType, custom: true)
             }
         case .primitive(let primitive):
             switch primitive {
             case .bytes(_):
                 guard case .primitive(is: .u8) = valueType.definition else {
-                    return .failure(.wrongType(for: self, type: valueType,
+                    return .failure(.wrongType(for: self, type: *valueType,
                                                reason: "Isn't byte", .get()))
                 }
                 return .success(())
@@ -120,7 +120,7 @@ private extension Value {
     }
     
     func _validateArray(
-        type: TypeDefinition, valueType: TypeDefinition, count: UInt32, runtime: Runtime
+        type: TypeDefinition, valueType: TypeDefinition.Weak, count: UInt32, runtime: Runtime
     ) -> Result<Void, TypeError> {
         switch value {
         case .sequence(let values):
@@ -130,7 +130,7 @@ private extension Value {
                                                   type: type, .get()))
             }
             return values.voidErrorMap {
-                $0.validate(runtime: runtime, type: valueType, custom: true)
+                $0.validate(runtime: runtime, type: *valueType, custom: true)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -141,7 +141,7 @@ private extension Value {
                                                       type: type, .get()))
                 }
                 guard case .primitive(is: .u8) = valueType.definition else {
-                    return .failure(.wrongType(for: self, type: valueType,
+                    return .failure(.wrongType(for: self, type: *valueType,
                                                reason: "Isn't byte", .get()))
                 }
                 return .success(())
@@ -200,7 +200,7 @@ private extension Value {
                     return .failure(.fieldNotFound(for: self, field: name,
                                                    type: type, .get()))
                 }
-                return value.validate(runtime: runtime, type: field.type, custom: true)
+                return value.validate(runtime: runtime, type: *field.type, custom: true)
             }
         } else {
             let values = self.sequence!
@@ -211,7 +211,7 @@ private extension Value {
             }
             guard values.count > 0 else { return .success(()) }
             return zip(fields, values).voidErrorMap { field, value in
-                value.validate(runtime: runtime, type: field.type, custom: true)
+                value.validate(runtime: runtime, type: *field.type, custom: true)
             }
         }
     }
@@ -277,7 +277,7 @@ private extension Value {
         }
     }
     
-    func _validateCompact(type: TypeDefinition, compact: TypeDefinition) -> Result<Void, TypeError> {
+    func _validateCompact(type: TypeDefinition, compact: TypeDefinition.Weak) -> Result<Void, TypeError> {
         // Resolve to a primitive type inside the compact encoded type (or fail if
         // we hit some type we wouldn't know how to work with).
         var innerType = compact
@@ -286,7 +286,7 @@ private extension Value {
             switch innerType.definition {
             case .composite(fields: let fields):
                 guard fields.count == 1 else {
-                    return .failure(.wrongType(for: self, type: innerType,
+                    return .failure(.wrongType(for: self, type: *innerType,
                                                reason: "Isn't compact", .get()))
                 }
                 innerType = fields[0].type
@@ -298,11 +298,11 @@ private extension Value {
                 case .u64: innerCtType = .u64
                 case .u128: innerCtType = .u128
                 case .u256: innerCtType = .u256
-                default: return .failure(.wrongType(for: self, type: innerType,
+                default: return .failure(.wrongType(for: self, type: *innerType,
                                                     reason: "Primitive isn't compact encodable",
                                                     .get()))
                 }
-            default: return .failure(.wrongType(for: self, type: innerType,
+            default: return .failure(.wrongType(for: self, type: *innerType,
                                                 reason: "Isn't compact", .get()))
             }
         }
@@ -314,20 +314,20 @@ private extension Value {
             switch value.value {
             case .map(let map):
                 guard map.count == 1 else {
-                    return .failure(.wrongType(for: self, type: innerType,
+                    return .failure(.wrongType(for: self, type: *innerType,
                                                reason: "Isn't 1 value map", .get()))
                 }
                 value = map.values.first!
             case .sequence(let seq):
                 guard seq.count == 1 else {
-                    return .failure(.wrongType(for: self, type: innerType,
+                    return .failure(.wrongType(for: self, type: *innerType,
                                                reason: "Isn't 1 value sequence", .get()))
                 }
                 value = seq.first!
             case .primitive(let primitive):
                 innerPrimitive = primitive
             default:
-                return .failure(.wrongType(for: self, type: innerType,
+                return .failure(.wrongType(for: self, type: *innerType,
                                            reason: "Isn't compact encodable", .get()))
             }
         }

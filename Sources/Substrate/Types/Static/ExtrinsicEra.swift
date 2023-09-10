@@ -142,7 +142,7 @@ extension ExtrinsicEra: ValueRepresentable {
         case .immortal: return .variant(name: "Immortal", values: [], type)
         case .mortal(period: _, phase: _):
             let (first, second) = self.serialize()
-            return .variant(name: "Mortal\(first)", values: [.uint(UInt256(second!), bodyType)], type)
+            return .variant(name: "Mortal\(first)", values: [.uint(UInt256(second!), *bodyType)], type)
         }
     }
 }

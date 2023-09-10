@@ -84,17 +84,17 @@ extension MultiSignature: ValueRepresentable {
         case .sr25519(let sig):
             return try .variant(name: variants[0].name,
                                 values: [sig.asValue(runtime: runtime,
-                                                     type: variants[0].fields[0].type)],
+                                                     type: *variants[0].fields[0].type)],
                                 type)
         case .ed25519(let sig):
             return try .variant(name: variants[1].name,
                                 values: [sig.asValue(runtime: runtime,
-                                                     type: variants[1].fields[0].type)],
+                                                     type: *variants[1].fields[0].type)],
                                 type)
         case .ecdsa(let sig):
             return try .variant(name: variants[2].name,
                                 values: [sig.asValue(runtime: runtime,
-                                                     type: variants[2].fields[0].type)],
+                                                     type: *variants[2].fields[0].type)],
                                 type)
         }
     }

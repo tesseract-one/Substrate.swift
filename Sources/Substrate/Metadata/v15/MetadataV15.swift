@@ -26,7 +26,7 @@ public final class MetadataV15: Metadata {
         self.types = types
         self.version = network.version
         let byNamePairs = types.types.compactMap { kv in
-            (kv.value.name, kv.value.weak)
+            (kv.value.name, kv.value.strong)
         }
         self.typesByName = Dictionary(byNamePairs) { (l, r) in l }
         self.extrinsic = try Extrinsic(network: network.extrinsic, types: types)
@@ -57,7 +57,7 @@ public final class MetadataV15: Metadata {
         types into: R,
         _ cb: (inout R, TypeDefinition) throws -> Void
     ) rethrows -> R {
-        try types.types.reduce(into: into) { r, e in try cb(&r, e.value.weak) }
+        try types.types.reduce(into: into) { r, e in try cb(&r, e.value.strong) }
     }
     
     @inlinable

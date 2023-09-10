@@ -29,10 +29,10 @@ public extension TypeDefinition {
         let name = info.type.name ?? ""
         return info.type.parameters.resultMap { param in
             guard let type = param.type else {
-                return .success(Parameter(name: param.name, type: nil))
+                return .success(.n(param.name))
             }
             return from(type: type, types: types, registry: registry).map {
-                Parameter(name: param.name, type: $0)
+                .t(param.name, $0)
             }
         }.flatMap { parameters in
             registry.def(id: info.id) {
@@ -71,19 +71,19 @@ public extension TypeDefinition {
             if ids.count == 0 { return .success(.void) }
             return ids.resultMap { id in
                 from(type: id, types: types, registry: registry)
-            }.map { $0.map { Field(nil, $0) } }.map { .composite(fields: $0) }
+            }.map { $0.map { .v($0) } }.map { .composite(fields: $0) }
         case .composite(fields: let fields):
             if fields.count == 0 { return .success(.void) }
             return fields.resultMap { field in
                 from(type: field.type, types: types, registry: registry).map {
-                    Field(field.name, $0)
+                    .okv(field.name, $0)
                 }
             }.map { .composite(fields: $0) }
         case .variant(variants: let vars):
             return vars.resultMap { vart in
                 vart.fields.resultMap { field in
                     from(type: field.type, types: types, registry: registry).map {
-                        Field(field.name, $0)
+                        .okv(field.name, $0)
                     }
                 }.map { Variant(vart.index, vart.name, $0) }
             }.map { .variant(variants: $0) }

@@ -90,7 +90,7 @@ public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
             }
             guard case .variant(_) = vart.fields[0].type.definition else {
                 return .failure(.wrongType(for: Self.self,
-                                           type: vart.fields[0].type,
+                                           type: *vart.fields[0].type,
                                            reason: "Child type isn't variant", .get()))
             }
             return .success(())

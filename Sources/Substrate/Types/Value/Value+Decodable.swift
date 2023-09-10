@@ -10,9 +10,9 @@ import ScaleCodec
 
 extension Value {
     public enum DecodingError: Error {
-        case variantNotFound(UInt8, TypeDefinition.Strong)
+        case variantNotFound(UInt8, TypeDefinition)
         /// The type given is supposed to be compact encoded, but this is not possible to do automatically.
-        case cannotCompactDecode(TypeDefinition.Strong)
+        case cannotCompactDecode(TypeDefinition)
     }
 }
 
@@ -69,25 +69,25 @@ private extension Value where C == TypeDefinition {
         if fields[0].name != nil { // Map
             var map: [String: Value<C>] = Dictionary(minimumCapacity: fields.count)
             for field in fields {
-                map[field.name!] = try Value(from: &decoder, as: field.type, runtime: runtime)
+                map[field.name!] = try Value(from: &decoder, as: *field.type, runtime: runtime)
             }
             return Value(value: .map(map), context: type)
         } else {
             let seq = try fields.map {
-                try Value(from: &decoder, as: $0.type, runtime: runtime)
+                try Value(from: &decoder, as: *$0.type, runtime: runtime)
             }
             return Value(value: .sequence(seq), context: type)
         }
     }
     
     static func _decodeSequence<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: TypeDefinition, valueType: TypeDefinition, runtime: Runtime
+        from decoder: inout D, type: TypeDefinition, valueType: TypeDefinition.Weak, runtime: Runtime
     ) throws -> Self {
         if case .primitive(is: .u8) = valueType.definition {
             return try Value(value: .primitive(.bytes(decoder.decode())), context: type)
         } else {
             let values = try Array(from: &decoder) { decoder in
-                try Value(from: &decoder, as: valueType, runtime: runtime)
+                try Value(from: &decoder, as: *valueType, runtime: runtime)
             }
             return Value(value: .sequence(values), context: type)
         }
@@ -110,7 +110,7 @@ private extension Value where C == TypeDefinition {
     
     static func _decodeArray<D: ScaleCodec.Decoder>(
         from decoder: inout D, type: TypeDefinition,
-        valueType: TypeDefinition, count: UInt32, runtime: Runtime
+        valueType: TypeDefinition.Weak, count: UInt32, runtime: Runtime
     ) throws -> Self {
         if case .primitive(is: .u8) = valueType.definition {
             return try Value(value: .primitive(.bytes(decoder.decode(.fixed(UInt(count))))),
@@ -119,7 +119,7 @@ private extension Value where C == TypeDefinition {
             var values: [Value<C>] = []
             values.reserveCapacity(Int(count))
             for _ in 0..<count {
-                try values.append(Value(from: &decoder, as: valueType, runtime: runtime))
+                try values.append(Value(from: &decoder, as: *valueType, runtime: runtime))
             }
             return Value(value: .sequence(values), context: type)
         }
@@ -170,7 +170,7 @@ private extension Value where C == TypeDefinition {
     }
     
     static func _decodeCompact<D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: TypeDefinition, of: TypeDefinition, runtime: Runtime
+        from decoder: inout D, type: TypeDefinition, of: TypeDefinition.Weak, runtime: Runtime
     ) throws -> Self {
         var innerType = of
         var value: Value<C>? = nil

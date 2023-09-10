@@ -97,7 +97,7 @@ public extension DynamicTypes {
             accountParamNames.contains($0.name.lowercased())
         }?.type
         if let accountType = accountType {
-            account = .success(accountType)
+            account = .success(*accountType)
         } else {
             account = metadata.search(type: {accountSelector.matches($0)})
                 .map{.success($0)} ?? .failure(.typeNotFound(name: "AccountId",
@@ -134,7 +134,7 @@ public extension DynamicTypes {
             guard let type = fs.first(where:{$0.name?.lowercased().contains("hash") ?? false})?.type else {
                 return .failure(.subtypeNotFound(name: "Hash", in: "Header", selector: ".*hash.type"))
             }
-            return .success(type)
+            return .success(*type)
         }
         
         let hasher: Maybe<AnyFixedHasher.HashType> = header!.flatMap { header in
@@ -180,10 +180,10 @@ public extension DynamicTypes {
         var callType: TypeDefinition? = nil
         for param in metaType.parameters {
             switch param.name.lowercased() {
-            case "address": addressType = param.type
-            case "signature": sigType = param.type
-            case "extra": extraType = param.type
-            case "call": callType = param.type
+            case "address": addressType = *param.type
+            case "signature": sigType = *param.type
+            case "extra": extraType = *param.type
+            case "call": callType = *param.type
             default: continue
             }
         }

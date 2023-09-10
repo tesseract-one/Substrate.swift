@@ -119,8 +119,8 @@ extension AnyEventRecord: CompositeValidatableType {
             return .failure(.fieldNotFound(for: Self.self, field: "event",
                                            type: type, .get()))
         }
-        return Phase.validate(type: phase.type)
-            .flatMap { _ in AnyEvent.validate(type: event.type) }
+        return Phase.validate(type: *phase.type)
+            .flatMap { _ in AnyEvent.validate(type: *event.type) }
     }
 }
 
@@ -136,12 +136,12 @@ extension AnyEventRecord: RuntimeDynamicDecodable {
         var other: [String: Value<TypeDefinition>] = [:]
         for field in sinfo {
             switch field.name! {
-            case "phase": phase = try runtime.decode(from: &decoder, type: field.type)
+            case "phase": phase = try runtime.decode(from: &decoder, type: *field.type)
             case "event", "e", "ev":
-                let info = try AnyEvent.fetchEventData(from: &decoder, runtime: runtime, type: field.type)
-                event = (name: info.name, pallet: info.pallet, data: info.data, type: field.type)
+                let info = try AnyEvent.fetchEventData(from: &decoder, runtime: runtime, type: *field.type)
+                event = (name: info.name, pallet: info.pallet, data: info.data, type: *field.type)
             default:
-                other[field.name!] = try Value(from: &decoder, as: field.type, runtime: runtime)
+                other[field.name!] = try Value(from: &decoder, as: *field.type, runtime: runtime)
             }
         }
         self._runtime = runtime
@@ -165,6 +165,6 @@ public extension SomeEventRecord {
         if type == nil {
             type = flat.parameters.first { eventNames.contains($0.name.lowercased()) }?.type
         }
-        return type
+        return *type
     }
 }

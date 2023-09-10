@@ -23,7 +23,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
             let idVar = try Self.findIdVariant(in: vars, type: flat).get()
             if try decoder.peek() == idVar.index {
                 let _ = try decoder.decode(.enumCaseId)
-                self = try .id(Id(from: &decoder, as: idVar.fields.first!.type, runtime: runtime))
+                self = try .id(Id(from: &decoder, as: *idVar.fields.first!.type, runtime: runtime))
             } else {
                 let val = try Value<TypeDefinition>(from: &decoder, as: flat, runtime: runtime).flatten()
                 self = .other(name: val.variant!.name, values: val.variant!.values)
@@ -67,7 +67,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                 let idVar = try Self.findIdVariant(in: vars, type: flat).get()
                 return try .variant(
                     name: idVar.name,
-                    values: [id.asValue(runtime: runtime, type: idVar.fields.first!.type)],
+                    values: [id.asValue(runtime: runtime, type: *idVar.fields.first!.type)],
                     type
                 )
             case .other(name: let n, values: let params):
@@ -81,7 +81,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
                                                             type: type, .get())
                 }
                 let mapped = try zip(item.fields, params).map {
-                    try $1.asValue(runtime: runtime, type: $0.type)
+                    try $1.asValue(runtime: runtime, type: *$0.type)
                 }
                 return .variant(name: n, values: mapped, type)
             }
@@ -113,7 +113,7 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
         switch flat.definition {
         case .variant(variants: let vars):
             return findIdVariant(in: vars, type: flat).flatMap { variant in
-                TAccountId.validate(type: variant.fields.first!.type).map{_ in}
+                TAccountId.validate(type: *variant.fields.first!.type).map{_ in}
             }
         default:
             return TAccountId.validate(type: flat)

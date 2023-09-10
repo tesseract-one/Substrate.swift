@@ -14,7 +14,7 @@ public protocol IdentifiableTypeStatic: ValidatableTypeStatic {
     
     static func validate(
         type: TypeDefinition,
-        registry: any ThreadSynced<TypeRegistry<TypeDefinition.TypeId>>
+        registry: TypeRegistry<TypeDefinition.TypeId>
     ) -> Result<Void, TypeError>
     
     static var typeRegistry: Synced<TypeRegistry<TypeDefinition.TypeId>> { get }
@@ -31,15 +31,15 @@ public extension IdentifiableTypeStatic {
     @inlinable
     static func validate(type: TypeDefinition) -> Result<Void, TypeError>
     {
-        validate(type: type, registry: typeRegistry)
+        typeRegistry.sync{validate(type: type, registry: $0)}
     }
     
     @inlinable
     static func validate(
         type: TypeDefinition,
-        registry: any ThreadSynced<TypeRegistry<TypeDefinition.TypeId>>
+        registry: TypeRegistry<TypeDefinition.TypeId>
     ) -> Result<Void, TypeError> {
-        registry.sync{$0.def(Self.self)}.validate(for: Self.self, type: type)
+        registry.def(Self.self).validate(for: Self.self, type: type)
     }
 }
 

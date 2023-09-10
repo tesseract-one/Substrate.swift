@@ -7,63 +7,90 @@
 
 import Foundation
 
+prefix operator *
+
 public protocol AnyTypeDefinition: Equatable, Hashable, CustomStringConvertible {
     var name: String { get }
     var parameters: [TypeDefinition.Parameter] { get }
     var definition: TypeDefinition.Def { get }
     
-    var weak: TypeDefinition { get }
-    var strong: TypeDefinition.Strong { get }
+    var weak: TypeDefinition.Weak { get }
+    var strong: TypeDefinition { get }
     var objectId: ObjectIdentifier { get }
 }
 
 public struct TypeDefinition: AnyTypeDefinition {
-    public var name: String { _storage.name }
-    public var parameters: [Parameter] { _storage.parameters }
-    public var definition: Def { _storage.definition }
+    @inlinable public var name: String { _storage.name }
+    @inlinable public var parameters: [Parameter] { _storage.parameters }
+    @inlinable public var definition: Def { _storage.definition }
     
-    @inlinable public var weak: TypeDefinition { self }
-    public var strong: Strong { _storage.strong }
-    public var objectId: ObjectIdentifier { _storage.id }
+    @inlinable public var weak: Weak { _storage.weak }
+    @inlinable public var strong: Self { self }
+    @inlinable public var objectId: ObjectIdentifier { _storage.id }
     
-    private init(storage: Storage) {
+    private init(storage: Storage, registry: AnyObject) {
         self._storage = storage
+        self._registry = registry
     }
     
-    private weak var _storage: Storage!
+    public let _storage: Storage
+    private let _registry: AnyObject
 }
 
 public extension TypeDefinition {
     enum Def: Equatable, Hashable {
         case composite(fields: [Field])
         case variant(variants: [Variant])
-        case sequence(of: TypeDefinition)
-        case array(count: UInt32, of: TypeDefinition)
-        case compact(of: TypeDefinition)
+        case sequence(of: TypeDefinition.Weak)
+        case array(count: UInt32, of: TypeDefinition.Weak)
+        case compact(of: TypeDefinition.Weak)
         case primitive(is: NetworkType.Primitive)
         case bitsequence(format: BitSequence.Format)
         case void
+        
+        @inlinable
+        public static func sequence(of def: TypeDefinition) -> Self {
+            .sequence(of: def.weak)
+        }
+        @inlinable
+        public static func array(count: UInt32, of def: TypeDefinition) -> Self {
+            .array(count: count, of: def.weak)
+        }
+        @inlinable
+        public static func compact(of def: TypeDefinition) -> Self {
+            .compact(of: def.weak)
+        }
     }
 }
 
 public extension TypeDefinition {
     struct Field: Equatable, Hashable, CustomStringConvertible {
         public let name: String?
-        public let type: TypeDefinition
+        public let type: TypeDefinition.Weak
         
-        public init(_ name: String?, _ type: TypeDefinition) {
+        public init(_ name: String?, _ type: TypeDefinition.Weak) {
             self.name = name; self.type = type
         }
         @inlinable
         public static func kv(_ name: String, _ type: TypeDefinition) -> Self {
+            Self(name, type.weak)
+        }
+        @inlinable
+        public static func kv(_ name: String, _ type: TypeDefinition.Weak) -> Self {
             Self(name, type)
         }
         @inlinable
         public static func okv(_ name: String?, _ type: TypeDefinition) -> Self {
+            Self(name, type.weak)
+        }
+        @inlinable
+        public static func okv(_ name: String?, _ type: TypeDefinition.Weak) -> Self {
             Self(name, type)
         }
         @inlinable
-        public static func v(_ type: TypeDefinition) -> Self { Self(nil, type) }
+        public static func v(_ type: TypeDefinition) -> Self { Self(nil, type.weak) }
+        @inlinable
+        public static func v(_ type: TypeDefinition.Weak) -> Self { Self(nil, type) }
         
         public var description: String {
             name != nil ? "\(name!): \(type)" : "\(type)"
@@ -90,7 +117,7 @@ public extension TypeDefinition {
         }
         @inlinable
         public static func s(_ index: UInt8, _ name: String, _ field: TypeDefinition) -> Self {
-            Self(index, name, [.v(field)])
+            Self(index, name, [.v(field.weak)])
         }
         @inlinable
         public static func m(_ index: UInt8, _ name: String, _ fields: [Field]) -> Self {
@@ -98,7 +125,7 @@ public extension TypeDefinition {
         }
         @inlinable
         public static func m(_ index: UInt8, _ name: String, _ fields: [TypeDefinition]) -> Self {
-            Self(index, name, fields.map{.v($0)})
+            Self(index, name, fields.map{.v($0.weak)})
         }
         
         public var description: String {
@@ -111,13 +138,24 @@ public extension TypeDefinition {
 public extension TypeDefinition {
     struct Parameter: Hashable, Equatable, CustomStringConvertible {
         public let name: String
-        public let type: TypeDefinition?
+        public let type: TypeDefinition.Weak?
         
-        public init(name: String, type: TypeDefinition?) {
+        public init(name: String, type: TypeDefinition.Weak?) {
             self.name = name
             self.type = type
         }
-        
+        @inlinable
+        public static func n(_ name: String) -> Self {
+            Self(name: name, type: nil)
+        }
+        @inlinable
+        public static func t(_ name: String, _ type: TypeDefinition.Weak) -> Self {
+            Self(name: name, type: type)
+        }
+        @inlinable
+        public static func t(_ name: String, _ type: TypeDefinition) -> Self {
+            Self(name: name, type: type.weak)
+        }
         public var description: String {
             type == nil ? name : "\(name): \(type!)"
         }
@@ -125,22 +163,22 @@ public extension TypeDefinition {
 }
 
 public extension TypeDefinition {
-    struct Strong: AnyTypeDefinition {
+    struct Weak: AnyTypeDefinition {
         public var name: String { _storage.name }
         public var parameters: [Parameter] { _storage.parameters }
         public var definition: Def { _storage.definition }
         
-        @inlinable public var strong: TypeDefinition.Strong { self }
-        public var weak: TypeDefinition { _storage.weak }
+        public var strong: TypeDefinition { _storage.strong }
+        @inlinable public var weak: Self { self }
         public var objectId: ObjectIdentifier { _storage.id }
         
-        fileprivate init(storage: Storage, registry: AnyObject) {
+        public static prefix func * (def: Self) -> TypeDefinition { def._storage.strong }
+        
+        fileprivate init(storage: Storage) {
             self._storage = storage
-            self._registry = registry
         }
         
-        private let _storage: Storage
-        private let _registry: AnyObject
+        private weak var _storage: Storage!
     }
     
     final class Storage: Equatable, Hashable, CustomStringConvertible {
@@ -148,8 +186,10 @@ public extension TypeDefinition {
         public var definition: Def { _definition }
         public var parameters: [Parameter] { _parameters }
         
-        public var weak: TypeDefinition { TypeDefinition(storage: self) }
-        public var strong: Strong { Strong(storage: self, registry: _registry) }
+        public var weak: Weak { Weak(storage: self) }
+        public var strong: TypeDefinition {
+            TypeDefinition(storage: self, registry: _registry)
+        }
         public var id: ObjectIdentifier { ObjectIdentifier(self) }
         
         public var description: String { self.weak.description }
@@ -166,7 +206,7 @@ public extension TypeDefinition {
                 self._name = bd.params.name!
                 self._parameters = bd.params.parameters ?? []
                 self._definition = bd.def
-                return self.weak
+                return self.strong
             }
         }
         
@@ -178,10 +218,10 @@ public extension TypeDefinition {
             lhs.weak == rhs.weak
         }
         
-        private(set) var _definition: Def
-        private(set) var _name: String!
-        private(set) var _parameters: [Parameter]!
-        private(set) weak var _registry: AnyObject!
+        private var _definition: Def
+        private var _name: String!
+        private var _parameters: [Parameter]!
+        private weak var _registry: AnyObject!
     }
     
     struct TypeId: Hashable, Equatable {
@@ -329,6 +369,11 @@ public extension TypeDefinition {
     }
 }
 
+public extension Optional where Wrapped == TypeDefinition.Weak {
+    @inlinable
+    static prefix func * (odef: Self) -> TypeDefinition? { odef.map { $0.strong } }
+}
+
 public extension AnyTypeDefinition {
     @inlinable var fullName: String {
         parameters.count == 0 ? name
@@ -338,9 +383,9 @@ public extension AnyTypeDefinition {
     @inlinable func flatten() -> TypeDefinition {
         switch self.definition {
         case .composite(fields: let fields):
-            guard fields.count == 1 else { return self.weak }
+            guard fields.count == 1 else { return self.strong }
             return fields[0].type.flatten()
-        default: return self.weak
+        default: return self.strong
         }
     }
     
@@ -397,7 +442,7 @@ public extension AnyTypeDefinition {
     }
     
     @inlinable func asBytes() -> UInt32? {
-        let subtype: TypeDefinition
+        let subtype: TypeDefinition.Weak
         let count: UInt32
         switch flatten().definition {
         case .sequence(of: let type): subtype = type; count = 0

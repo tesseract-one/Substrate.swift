@@ -27,9 +27,9 @@ public extension Value {
         case .bitsequence(format: let format):
             return try _bitSequenceSize(from: &decoder, format: format)
         case .array(count: let count, of: let vType):
-            return try _arraySize(from: &decoder, count: Int(count), type: vType)
+            return try _arraySize(from: &decoder, count: Int(count), type: *vType)
         case .sequence(of: let vType):
-            return try _sequenceSize(from: &decoder, type: vType)
+            return try _sequenceSize(from: &decoder, type: *vType)
         case .composite(fields: let fields):
             return try _compositeSize(from: &decoder, fields: fields)
         case .variant(variants: let vars):
@@ -98,7 +98,7 @@ private extension Value {
         from decoder: inout D, fields: [TypeDefinition.Field]
     ) throws -> Int {
         try fields.reduce(0) { sum, field in
-            try sum + Self.calculateSize(in: &decoder, for: field.type)
+            try sum + Self.calculateSize(in: &decoder, for: *field.type)
         }
     }
     

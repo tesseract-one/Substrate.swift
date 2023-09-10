@@ -97,30 +97,30 @@ public struct AnyBlock<H: FixedHasher,
                 guard let hField = fields.first(where: { $0.name!.lowercased() == Self.headerKey }) else {
                     return (header: nil, extrinsic: nil, other: nil)
                 }
-                header = (AnyCodableCodingKey(Self.headerKey), hField.type)
+                header = (AnyCodableCodingKey(Self.headerKey), *hField.type)
                 guard let eField = fields.first(where: { $0.name!.lowercased() == Self.extrinsicsKey }) else {
                     return (header: header, extrinsic: nil, other: nil)
                 }
-                extrinsics = (AnyCodableCodingKey(Self.extrinsicsKey), eField.type)
+                extrinsics = (AnyCodableCodingKey(Self.extrinsicsKey), *eField.type)
                 filtered = fields.filter { ![Self.headerKey, Self.extrinsicsKey].contains($0.name!.lowercased()) }
             } else { // Unnamed
-                header = (AnyCodableCodingKey(0), fields[0].type)
-                extrinsics = (AnyCodableCodingKey(1), fields[1].type)
+                header = (AnyCodableCodingKey(0), *fields[0].type)
+                extrinsics = (AnyCodableCodingKey(1), *fields[1].type)
                 filtered = fields.count > 2 ? Array(fields.suffix(from: 2)) : []
             }
-            guard case .sequence(of: let extrinsicId) = extrinsics.1.definition else {
+            guard case .sequence(of: let extrinsic) = extrinsics.1.definition else {
                 return (header: header, extrinsic: nil, other: nil)
             }
             if filtered.count == 0 {
                 return (header: header,
-                        extrinsic: (extrinsics.0, extrinsicId), other: nil)
+                        extrinsic: (extrinsics.0, *extrinsic), other: nil)
             }
             let other = filtered.enumerated().map {
                 let key = $0.element.name.map { AnyCodableCodingKey($0) }
                     ?? AnyCodableCodingKey($0.offset + 2)
-                return (key, $0.element.type)
+                return (key, *$0.element.type)
             }
-            return (header: header, extrinsic: (extrinsics.0, extrinsicId),
+            return (header: header, extrinsic: (extrinsics.0, *extrinsic),
                     other: Dictionary(uniqueKeysWithValues: other))
         default: return (header: nil, extrinsic: nil, other: nil)
         }
@@ -176,7 +176,7 @@ public extension AnyBlock {
                 return .failure(.fieldNotFound(for: Self.self, field: "number",
                                                type: type, .get()))
             }
-            return Compact<N>.validate(type: n.type)
+            return Compact<N>.validate(type: *n.type)
         }
     }
 }

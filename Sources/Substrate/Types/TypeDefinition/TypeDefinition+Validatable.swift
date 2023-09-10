@@ -21,7 +21,7 @@ public extension AnyTypeDefinition {
         if objectId == type.objectId { return .success(()) }
         // Nope. Let's validate
         return reduce(with: TypeDefinition.ValidatableReducer(type: `for`),
-                      state: [.def(type)], unpack: true).map{_ in}
+                      state: [.def(type.weak)], unpack: true).map{_ in}
     }
 }
 
@@ -31,15 +31,15 @@ public extension TypeDefinition {
         public typealias State = [Def]
         
         public enum Def {
-            case def(TypeDefinition)
-            case compact(TypeDefinition)
-            case oneType(of: TypeDefinition, count: UInt32, TypeDefinition)
-            case oneTypeFields(of: TypeDefinition, [TypeDefinition.Field])
-            case variants(of: TypeDefinition, [String: TypeDefinition.Variant])
-            case fields(of: TypeDefinition, [TypeDefinition.Field])
-            case variantFields(of: TypeDefinition, variant: String, [TypeDefinition.Field])
+            case def(TypeDefinition.Weak)
+            case compact(TypeDefinition.Weak)
+            case oneType(of: TypeDefinition.Weak, count: UInt32, TypeDefinition.Weak)
+            case oneTypeFields(of: TypeDefinition.Weak, [TypeDefinition.Field])
+            case variants(of: TypeDefinition.Weak, [String: TypeDefinition.Variant])
+            case fields(of: TypeDefinition.Weak, [TypeDefinition.Field])
+            case variantFields(of: TypeDefinition.Weak, variant: String, [TypeDefinition.Field])
             
-            public var type: TypeDefinition {
+            public var type: TypeDefinition.Weak {
                 switch self {
                 case .def(let def), .fields(of: let def, _), .compact(let def),
                      .oneType(of: let def, count: _, _),
@@ -115,7 +115,7 @@ public extension TypeDefinition {
                         return .failure(.wrongValuesCount(for: error(state), expected: count,
                                                           type: type.strong, info: .get()))
                     }
-                    state.append(.oneType(of: type, count: rcount, rtype.flatten()))
+                    state.append(.oneType(of: type, count: rcount, rtype.flatten().weak))
                     return .success(true)
                 case .composite(fields: let fields):
                     guard count == fields.count else {
@@ -276,7 +276,7 @@ public extension TypeDefinition {
                 }
                 guard let vrt = vars[name] else {
                     return .failure(.variantNotFound(for: error(state), variant: name,
-                                                     type: type, .get()))
+                                                     type: type.strong, .get()))
                 }
                 guard vrt.index == index else {
                     return .failure(.wrongVariantIndex(for: error(state), variant: name,

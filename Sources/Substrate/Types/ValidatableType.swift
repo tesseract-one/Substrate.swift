@@ -21,19 +21,19 @@ public typealias ValidatableType = ValidatableTypeDynamic & ValidatableTypeStati
 
 public enum TypeError: Error, Hashable, Equatable, CustomDebugStringConvertible {
     case badState(for: String, reason: String, info: ErrorMethodInfo)
-    case wrongType(for: String, type: TypeDefinition.Strong, reason: String,
+    case wrongType(for: String, type: TypeDefinition, reason: String,
                    info: ErrorMethodInfo)
-    case wrongValuesCount(for: String, expected: Int, type: TypeDefinition.Strong,
+    case wrongValuesCount(for: String, expected: Int, type: TypeDefinition,
                           info: ErrorMethodInfo)
-    case fieldNotFound(for: String, field: String, type: TypeDefinition.Strong,
+    case fieldNotFound(for: String, field: String, type: TypeDefinition,
                        info: ErrorMethodInfo)
-    case variantNotFound(for: String, variant: String, type: TypeDefinition.Strong,
+    case variantNotFound(for: String, variant: String, type: TypeDefinition,
                          info: ErrorMethodInfo)
     case wrongVariantIndex(for: String, variant: String,
-                           expected: UInt8, type: TypeDefinition.Strong,
+                           expected: UInt8, type: TypeDefinition,
                            info: ErrorMethodInfo)
     case wrongVariantFieldsCount(for: String, variant: String,
-                                 expected: Int, type: TypeDefinition.Strong,
+                                 expected: Int, type: TypeDefinition,
                                  info: ErrorMethodInfo)
     
     
@@ -113,7 +113,7 @@ public extension CompositeStaticValidatableType {
                                               type: type, .get()))
         }
         return zip(ourFields, info).voidErrorMap { field, info in
-            field.validate(type: info.type)
+            field.validate(type: *info.type)
         }
     }
 }
@@ -165,7 +165,7 @@ public extension VariantStaticValidatableType {
                                                          type: type, .get()))
             }
             return zip(variant.fields, inVariant.fields).voidErrorMap { field, info in
-                field.validate(type: info.type)
+                field.validate(type: *info.type)
             }
         }
     }
@@ -176,7 +176,7 @@ public extension TypeError { // For static validation
     static func wrongType(for _type: Any.Type, type: TypeDefinition,
                           reason: String, _ info: ErrorMethodInfo) -> Self
     {
-        .wrongType(for: String(describing: _type), type: type.strong,
+        .wrongType(for: String(describing: _type), type: type,
                    reason: reason, info: info)
     }
     
@@ -186,7 +186,7 @@ public extension TypeError { // For static validation
                                  _ info: ErrorMethodInfo) -> Self
     {
         .wrongValuesCount(for: String(describing: _type), expected: expected,
-                          type: type.strong, info: info)
+                          type: type, info: info)
     }
     
     @inlinable
@@ -194,7 +194,7 @@ public extension TypeError { // For static validation
                               type: TypeDefinition, _ info: ErrorMethodInfo) -> Self
     {
         .fieldNotFound(for: String(describing: _type), field: field,
-                       type: type.strong, info: info)
+                       type: type, info: info)
     }
     
     @inlinable
@@ -202,7 +202,7 @@ public extension TypeError { // For static validation
                                 type: TypeDefinition, _ info: ErrorMethodInfo) -> Self
     {
         .variantNotFound(for: String(describing: _type), variant: variant,
-                         type: type.strong, info: info)
+                         type: type, info: info)
     }
     
     @inlinable
@@ -212,7 +212,7 @@ public extension TypeError { // For static validation
     {
         .wrongVariantFieldsCount(for: String(describing: _type),
                                  variant: variant, expected: expected,
-                                 type: type.strong, info: info)
+                                 type: type, info: info)
     }
     
     @inlinable
@@ -221,7 +221,7 @@ public extension TypeError { // For static validation
                                   _ info: ErrorMethodInfo) -> Self
     {
         .wrongVariantIndex(for: String(describing: _type), variant: variant,
-                           expected: expected, type: type.strong, info: info)
+                           expected: expected, type: type, info: info)
     }
 }
 
@@ -230,7 +230,7 @@ public extension TypeError { // For dynamic validation
     static func wrongType(for value: Any, type: TypeDefinition,
                           reason: String, _ info: ErrorMethodInfo) -> Self
     {
-        .wrongType(for: String(describing: value), type: type.strong,
+        .wrongType(for: String(describing: value), type: type,
                    reason: reason, info: info)
     }
     
@@ -240,7 +240,7 @@ public extension TypeError { // For dynamic validation
                                  _ info: ErrorMethodInfo) -> Self
     {
         .wrongValuesCount(for: String(describing: value), expected: expected,
-                          type: type.strong, info: info)
+                          type: type, info: info)
     }
     
     @inlinable
@@ -248,7 +248,7 @@ public extension TypeError { // For dynamic validation
                               type: TypeDefinition, _ info: ErrorMethodInfo) -> Self
     {
         .fieldNotFound(for: String(describing: value), field: field,
-                       type: type.strong, info: info)
+                       type: type, info: info)
     }
     
     @inlinable
@@ -256,7 +256,7 @@ public extension TypeError { // For dynamic validation
                                 type: TypeDefinition, _ info: ErrorMethodInfo) -> Self
     {
         .variantNotFound(for: String(describing: value), variant: variant,
-                         type: type.strong, info: info)
+                         type: type, info: info)
     }
     
     @inlinable
@@ -266,7 +266,7 @@ public extension TypeError { // For dynamic validation
     {
         .wrongVariantFieldsCount(for: String(describing: value),
                                  variant: variant, expected: expected,
-                                 type: type.strong, info: info)
+                                 type: type, info: info)
     }
     
     @inlinable
@@ -275,6 +275,6 @@ public extension TypeError { // For dynamic validation
                                   _ info: ErrorMethodInfo) -> Self
     {
         .wrongVariantIndex(for: String(describing: value), variant: variant,
-                           expected: expected, type: type.strong, info: info)
+                           expected: expected, type: type, info: info)
     }
 }

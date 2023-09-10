@@ -20,7 +20,7 @@ public final class TypeRegistry<Id: Hashable>: Equatable, Hashable, CustomString
     public var description: String { types.description }
     
     @inlinable
-    public var definitions: [Id: TypeDefinition] { types.mapValues{$0.weak} }
+    public var definitions: [Id: TypeDefinition] { types.mapValues{$0.strong} }
     
     @inlinable
     public var reversed: Reversed {
@@ -33,7 +33,7 @@ public final class TypeRegistry<Id: Hashable>: Equatable, Hashable, CustomString
         self.types = types
     }
     
-    public subscript(_ id: Id) -> TypeDefinition? { types[id]?.weak }
+    public subscript(_ id: Id) -> TypeDefinition? { types[id]?.strong }
     
     @inlinable
     public func hash(into hasher: inout Swift.Hasher) {

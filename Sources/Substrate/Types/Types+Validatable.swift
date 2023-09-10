@@ -197,10 +197,10 @@ extension Array: ValidatableTypeStatic where Element: ValidatableTypeStatic {
     {
         switch type.flatten().definition {
         case .array(count: _, of: let eType), .sequence(of: let eType):
-            return Element.validate(type: eType)
+            return Element.validate(type: *eType)
         case .composite(fields: let fields):
             return fields.voidErrorMap {
-                Element.validate(type: $0.type)
+                Element.validate(type: *$0.type)
             }
         default:
             return .failure(.wrongType(for: Self.self, type: type,
@@ -216,7 +216,7 @@ extension Optional: ValidatableTypeStatic where Wrapped: ValidatableTypeStatic {
             return .failure(.wrongType(for: Self.self, type: type,
                                        reason: "Isn't Optional", .get()))
         }
-        return Wrapped.validate(type: field.type)
+        return Wrapped.validate(type: *field.type)
     }
 }
 
@@ -227,8 +227,8 @@ extension Either: ValidatableTypeStatic where Left: ValidatableTypeStatic, Right
             return .failure(.wrongType(for: Self.self, type: type,
                                        reason: "Isn't Result", .get()))
         }
-        return Left.validate(type: result.err.type).flatMap { _ in
-            Right.validate(type: result.ok.type)
+        return Left.validate(type: *result.err.type).flatMap { _ in
+            Right.validate(type: *result.ok.type)
         }
     }
 }

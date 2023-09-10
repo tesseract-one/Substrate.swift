@@ -64,6 +64,6 @@ public extension SomeBlock {
             throw TypeError.fieldNotFound(for: Self.self, field: "header",
                                           type: type, .get())
         }
-        return header.type
+        return *header.type
     }
 }

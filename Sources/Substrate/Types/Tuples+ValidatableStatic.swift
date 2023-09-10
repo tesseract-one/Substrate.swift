@@ -70,7 +70,7 @@ public extension ListTuple where DroppedLast: ValidatableTupleStatic, Last: Vali
         }
         let ltype = fields.removeLast()
         return DroppedLast.validate(type: type, fields: &fields).flatMap {
-            Last.validate(type: ltype.type)
+            Last.validate(type: *ltype.type)
         }
     }
 }

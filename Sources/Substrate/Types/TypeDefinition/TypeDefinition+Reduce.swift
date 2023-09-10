@@ -61,7 +61,7 @@ public extension AnyTypeDefinition {
     func reduce<R: TypeDefinitionReducer>(
         with reducer: R, state: inout R.State, unpack: Bool = false
     ) -> Result<Void, R.Failure> {
-        var visited = Dictionary<ObjectIdentifier, TypeDefinition>()
+        var visited = Dictionary<ObjectIdentifier, TypeDefinition.Weak>()
         return reduce(with: reducer, state: &state, unpack: unpack,
                       visited: &visited).map {_ in}
             
@@ -69,11 +69,11 @@ public extension AnyTypeDefinition {
     
     func reduce<R: TypeDefinitionReducer>(
         with reducer: R, state: inout R.State, unpack: Bool,
-        visited: inout Dictionary<ObjectIdentifier, TypeDefinition>
+        visited: inout Dictionary<ObjectIdentifier, TypeDefinition.Weak>
     ) -> Result<Bool, R.Failure> {
         let id = self.objectId
         if let visit = visited[id] {
-            return reducer.visited(def: visit, state: &state)
+            return reducer.visited(def: *visit, state: &state)
         }
         visited[id] = self.weak; defer { let _ = visited.removeValue(forKey: id) }
         switch definition {
@@ -84,7 +84,7 @@ public extension AnyTypeDefinition {
                                              unpack: unpack, visited: &visited)
             }
             let named = fields.firstIndex { $0.name != nil } != nil
-            switch reducer.start(composite: self.weak, named: named,
+            switch reducer.start(composite: self.strong, named: named,
                                  count: fields.count, state: &state)
             {
             case .failure(let err): return .failure(err)
@@ -96,14 +96,14 @@ public extension AnyTypeDefinition {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
-            switch reducer.end(composite: self.weak, named: named,
+            switch reducer.end(composite: self.strong, named: named,
                                count: fields.count, state: &state)
             {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
         case .variant(variants: let variants):
-            switch reducer.start(variant: self.weak, count: variants.count,
+            switch reducer.start(variant: self.strong, count: variants.count,
                                  state: &state)
             {
             case .failure(let err): return .failure(err)
@@ -130,14 +130,14 @@ public extension AnyTypeDefinition {
                 case .success(let finish): if !finish { return .success(false) }
                 }
             }
-            switch reducer.end(variant: self.weak, count: variants.count,
+            switch reducer.end(variant: self.strong, count: variants.count,
                                state: &state)
             {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
         case .array(count: let count, of: let value):
-            switch reducer.start(array: self.weak, count: count, state: &state) {
+            switch reducer.start(array: self.strong, count: count, state: &state) {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
@@ -147,12 +147,12 @@ public extension AnyTypeDefinition {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
-            switch reducer.end(array: self.weak, count: count, state: &state) {
+            switch reducer.end(array: self.strong, count: count, state: &state) {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
         case .compact(of: let value):
-            switch reducer.start(compact: self.weak, state: &state) {
+            switch reducer.start(compact: self.strong, state: &state) {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
@@ -162,12 +162,12 @@ public extension AnyTypeDefinition {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
-            switch reducer.end(compact: self.weak, state: &state) {
+            switch reducer.end(compact: self.strong, state: &state) {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
         case .sequence(of: let value):
-            switch reducer.start(sequence: self.weak, state: &state) {
+            switch reducer.start(sequence: self.strong, state: &state) {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
@@ -177,22 +177,22 @@ public extension AnyTypeDefinition {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
-            switch reducer.end(sequence: self.weak, state: &state) {
+            switch reducer.end(sequence: self.strong, state: &state) {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
         case .primitive(is: let prim):
-            switch reducer.primitive(def: self.weak, is: prim, state: &state) {
+            switch reducer.primitive(def: self.strong, is: prim, state: &state) {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
         case .bitsequence(format: let format):
-            switch reducer.bitSequence(def: self.weak, format: format, state: &state) {
+            switch reducer.bitSequence(def: self.strong, format: format, state: &state) {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
         case .void:
-            switch reducer.void(def: self.weak, state: &state) {
+            switch reducer.void(def: self.strong, state: &state) {
             case .failure(let err): return .failure(err)
             case .success(let finish): if !finish { return .success(false) }
             }
@@ -203,7 +203,7 @@ public extension AnyTypeDefinition {
     @inlinable
     func reduce<R: TypeDefinitionReducer>(
         fields: [TypeDefinition.Field], with reducer: R, state: inout R.State,
-        unpack: Bool, visited: inout Dictionary<ObjectIdentifier, TypeDefinition>
+        unpack: Bool, visited: inout Dictionary<ObjectIdentifier, TypeDefinition.Weak>
     ) -> Result<Bool, R.Failure> {
         for (idx, field) in fields.enumerated() {
             switch reducer.start(field: idx, name: field.name, state: &state) {

@@ -112,8 +112,8 @@ public enum MetadataError: Error {
                                 name: String, pallet: String,
                                 info: ErrorMethodInfo)
     case storageNonCompositeKey(name: String, pallet: String,
-                                type: TypeDefinition.Strong, info: ErrorMethodInfo)
-    case typeIsNotVariant(type: TypeDefinition.Strong, info: ErrorMethodInfo)
+                                type: TypeDefinition, info: ErrorMethodInfo)
+    case typeIsNotVariant(type: TypeDefinition, info: ErrorMethodInfo)
 }
 
 public struct OpaqueMetadata: ScaleCodec.Codable, RuntimeDecodable, IdentifiableType {

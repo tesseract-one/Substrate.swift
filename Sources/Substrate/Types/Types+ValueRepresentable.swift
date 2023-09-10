@@ -96,14 +96,14 @@ public extension Collection where Element == ValueRepresentable {
             }
             fallthrough
         case .sequence(of: let eType):
-            return voidErrorMap { $0.validate(runtime: runtime, type: eType).map{_ in} }
+            return voidErrorMap { $0.validate(runtime: runtime, type: *eType).map{_ in} }
         case .composite(fields: let fields):
             guard count == fields.count else {
                 return .failure(.wrongValuesCount(for: self, expected: count,
                                                   type: type, .get()))
             }
             return zip(self, fields).voidErrorMap { v, f in
-                v.validate(runtime: runtime, type: f.type).map {_ in}
+                v.validate(runtime: runtime, type: *f.type).map {_ in}
             }
         default:
             return .failure(.wrongType(for: self, type: type,
@@ -121,7 +121,7 @@ public extension Collection where Element == ValueRepresentable {
             }
             fallthrough
         case .sequence(of: let eType):
-            let mapped = try map{ try $0.asValue(runtime: runtime, type: eType) }
+            let mapped = try map{ try $0.asValue(runtime: runtime, type: *eType) }
             return .sequence(mapped, type)
         case .composite(fields: let fields):
             guard fields.count == count else {
@@ -129,7 +129,7 @@ public extension Collection where Element == ValueRepresentable {
                                                  expected: count,
                                                  type: type, .get())
             }
-            let arr = try zip(self, fields).map { try $0.asValue(runtime: runtime, type: $1.type) }
+            let arr = try zip(self, fields).map { try $0.asValue(runtime: runtime, type: *$1.type) }
             return .sequence(arr, type)
         default:
             throw TypeError.wrongType(for: self, type: type,
@@ -156,7 +156,7 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
                     return .failure(.wrongType(for: self, type: type,
                                                reason: "field name is nil", .get()))
                 }
-                return self[key].validate(runtime: runtime, type: field.type).map{_ in}
+                return self[key].validate(runtime: runtime, type: *field.type).map{_ in}
             }
         // Variant can be represented as ["Name": Value]
         case .variant(variants: let variants):
@@ -172,7 +172,7 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
             // this will allow array/dictionary as a parameter
             if variant.fields.count == 1 {
                 return first!.value.validate(runtime: runtime,
-                                             type: variant.fields[0].type).map{_ in}
+                                             type: *variant.fields[0].type).map{_ in}
             }
             // unpack fields
             switch first!.value {
@@ -183,7 +183,7 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
                                                       type: type, .get()))
                 }
                 return zip(variant.fields, arr).voidErrorMap { field, elem in
-                    elem.validate(runtime: runtime, type: field.type).map{_ in}
+                    elem.validate(runtime: runtime, type: *field.type).map{_ in}
                 }
             case let dict as Dictionary<String, ValueRepresentable>:
                 return variant.fields.voidErrorMap { field in
@@ -191,7 +191,7 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
                         return .failure(.wrongType(for: self, type: type,
                                                    reason: "field name is nil", .get()))
                     }
-                    return dict[key].validate(runtime: runtime, type: field.type).map{_ in}
+                    return dict[key].validate(runtime: runtime, type: *field.type).map{_ in}
                 }
             default: return .failure(.wrongType(for: self, type: type,
                                                 reason: "Can't be a variant type", .get()))
@@ -212,7 +212,7 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
                     throw TypeError.wrongType(for: self, type: type,
                                               reason: "field name is nil", .get())
                 }
-                return try (key, self[key].asValue(runtime: runtime, type: field.type))
+                return try (key, self[key].asValue(runtime: runtime, type: *field.type))
             }
             return .map(Dictionary<_,_>(uniqueKeysWithValues: map), type)
         // Variant can be represented as ["Name": Value]
@@ -228,7 +228,7 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
             // this will allow array/dictionary as a parameter
             if variant.fields.count == 1 {
                 let val = try first!.value.asValue(runtime: runtime,
-                                                   type: variant.fields.first!.type)
+                                                   type: *variant.fields.first!.type)
                 if let name = variant.fields.first?.name {
                     return .variant(name: variant.name, fields: [name: val], type)
                 } else {
@@ -244,7 +244,7 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
                                                      type: type, .get())
                 }
                 let seq = try zip(arr, variant.fields).map { el, fld in
-                    try el.asValue(runtime: runtime, type: fld.type)
+                    try el.asValue(runtime: runtime, type: *fld.type)
                 }
                 return .variant(name: variant.name, values: seq, type)
             case let dict as Dictionary<String, ValueRepresentable>:
@@ -253,7 +253,7 @@ extension Dictionary: ValueRepresentable, ValidatableTypeDynamic where Key == St
                         throw TypeError.wrongType(for: self, type: type,
                                                   reason: "field name is nil", .get())
                     }
-                    return try (key, dict[key].asValue(runtime: runtime, type: field.type))
+                    return try (key, dict[key].asValue(runtime: runtime, type: *field.type))
                 }
                 return .variant(name: variant.name,
                                 fields: Dictionary<_,_>(uniqueKeysWithValues: map), type)
@@ -278,7 +278,7 @@ extension Optional: ValueRepresentable, ValidatableTypeDynamic where Wrapped == 
                          type: TypeDefinition) -> Result<Void, TypeError> {
         if let value = self {
             if let field = type.asOptional() {
-                return value.validate(runtime: runtime, type: field.type).map{_ in}
+                return value.validate(runtime: runtime, type: *field.type).map{_ in}
             }
             return value.validate(runtime: runtime, type: type)
         }
@@ -291,7 +291,7 @@ extension Optional: ValueRepresentable, ValidatableTypeDynamic where Wrapped == 
     public func asValue(runtime: Runtime, type: TypeDefinition) throws -> Value<TypeDefinition> {
         if let svalue = self {
             if let field = type.asOptional() {
-                let value = try svalue.asValue(runtime: runtime, type: field.type)
+                let value = try svalue.asValue(runtime: runtime, type: *field.type)
                 return .variant(name: "Some", values: [value], type)
             }
             return try svalue.asValue(runtime: runtime, type: type)
@@ -323,9 +323,9 @@ extension Either: ValueRepresentable, ValidatableTypeDynamic
         }
         switch self {
         case .left(let err):
-            return err.validate(runtime: runtime, type: result.err.type).map{_ in}
+            return err.validate(runtime: runtime, type: *result.err.type).map{_ in}
         case .right(let ok):
-            return ok.validate(runtime: runtime, type: result.ok.type).map{_ in}
+            return ok.validate(runtime: runtime, type: *result.ok.type).map{_ in}
         }
     }
     
@@ -339,11 +339,11 @@ extension Either: ValueRepresentable, ValidatableTypeDynamic
         case .left(let err):
             return try .variant(name: "Err",
                                 values: [err.asValue(runtime: runtime,
-                                                     type: result.err.type)], type)
+                                                     type: *result.err.type)], type)
         case .right(let ok):
             return try .variant(name: "Ok",
                                 values: [ok.asValue(runtime: runtime,
-                                                    type: result.ok.type)], type)
+                                                    type: *result.ok.type)], type)
         }
     }
 }

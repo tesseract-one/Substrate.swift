@@ -96,7 +96,7 @@ public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, Custo
             return .failure(.wrongValuesCount(for: Self.self, expected: 1,
                                               type: type, .get()))
         }
-        return TModuleError.validate(type: module.fields[0].type)
+        return TModuleError.validate(type: *module.fields[0].type)
     }
     
     public var debugDescription: String {
