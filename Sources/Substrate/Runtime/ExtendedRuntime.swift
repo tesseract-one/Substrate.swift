@@ -60,11 +60,7 @@ open class ExtendedRuntime<RC: Config>: BasicRuntime<RC> {
         self.genesisHash = genesisHash
         self.version = version
         self.properties = properties
-        guard let hasher = ST<RC>.Hasher(type: types.hasher.value) else {
-            let hasher = try types.hasher.get()
-            throw DynamicTypes.LookupError.unknownHasherType(type: hasher.hasher.type.name)
-        }
-        try super.init(config: config, metadata: metadata, hasher: hasher, types: types,
+        try super.init(config: config, metadata: metadata, types: types,
                        addressFormat: properties.ss58Format ?? .default)
     }
     
@@ -75,8 +71,6 @@ open class ExtendedRuntime<RC: Config>: BasicRuntime<RC> {
                      isStatic: ST<RC>.AccountId.self is any StaticAccountId.Type)
         try validate(type: ST<RC>.Block.self, info: types.block,
                      isStatic: ST<RC>.Block.self is any StaticBlock.Type)
-        try validate(type: ST<RC>.Hash.self, info: types.hash,
-                     isStatic: ST<RC>.Hash.self is any StaticHash.Type)
         try validate(type: ST<RC>.DispatchError.self, info: types.dispatchError,
                      isStatic: ST<RC>.DispatchError.self is any StaticCallError.Type)
         try validate(type: ST<RC>.TransactionValidityError.self,

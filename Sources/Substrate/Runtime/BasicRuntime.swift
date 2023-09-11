@@ -16,7 +16,7 @@ open class BasicRuntime<RC: Config>: Runtime {
     public let types: DynamicTypes
     public let staticTypes: Synced<TypeRegistry<TypeDefinition.TypeId>>
     
-    open var hasher: any Hasher { typedHasher }
+    open var hasher: any FixedHasher { typedHasher }
     public let typedHasher: ST<RC>.Hasher
     
     open var extrinsicDecoder: any ExtrinsicDecoder { extrinsicManager }
@@ -38,14 +38,14 @@ open class BasicRuntime<RC: Config>: Runtime {
         customCoders[type.objectId]
     }
     
-    public init(config: RC, metadata: any Metadata, hasher: ST<RC>.Hasher,
+    public init(config: RC, metadata: any Metadata,
                 types: DynamicTypes, addressFormat: SS58.AddressFormat) throws
     {
         self.config = config
         self.types = types
         self.metadata = metadata
-        self.typedHasher = hasher
         self.addressFormat = addressFormat
+        self.typedHasher = try ST<RC>.Hasher(type: types.hasher.value)
         self.staticTypes = Synced(value: TypeRegistry())
         self.extrinsicManager = try config.extrinsicManager(types: types, metadata: metadata)
         if let bc = config as? any BatchSupportedConfig {

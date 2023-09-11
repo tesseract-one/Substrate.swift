@@ -52,8 +52,11 @@ public struct AnyFixedHasher: FixedHasher, Equatable {
         self.hasher = type.hasher
     }
     
-    public init?(type: HashType?) {
-        guard let type = type else { return nil }
+    public init(type: HashType?) throws {
+        guard let type = type else {
+            throw DynamicTypes.LookupError.wrongType(name: "Hasher",
+                                                     reason: "Is nil")
+        }
         self.init(type: type)
     }
     

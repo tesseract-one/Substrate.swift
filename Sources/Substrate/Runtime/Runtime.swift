@@ -11,7 +11,7 @@ import ScaleCodec
 public protocol Runtime: AnyObject {
     var addressFormat: SS58.AddressFormat { get }
     var metadata: any Metadata { get }
-    var hasher: any Hasher { get }
+    var hasher: any FixedHasher { get }
     var extrinsicDecoder: any ExtrinsicDecoder { get }
     var isBatchSupported: Bool { get }
     

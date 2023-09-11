@@ -9,7 +9,7 @@ import Foundation
 import ContextCodable
 
 public struct AnyHash: Hash {
-    public typealias DecodingContext = TypeDefinition.Lazy
+    public typealias DecodingContext = () throws -> Int
     
     public let raw: Data
     
@@ -17,16 +17,12 @@ public struct AnyHash: Hash {
         self.raw = raw
     }
     
-    public init(raw: Data, type lazy: TypeDefinition.Lazy) throws
+    public init(raw: Data, bits: () throws -> Int) throws
     {
-        let type = try lazy()
-        guard let count = type.asBytes() else {
-            throw TypeError.wrongType(for: Self.self, type: type,
-                                      reason: "Isn't bytes", .get())
-        }
-        guard count == 0 || count == raw.count else {
-            throw TypeError.wrongValuesCount(for: Self.self,
-                                             expected: raw.count, type: type, .get())
+        let bits = try bits()
+        guard raw.count == bits / 8 else {
+            throw SizeMismatchError(size: raw.count,
+                                    expected: bits / 8)
         }
         self.raw = raw
     }
@@ -34,7 +30,7 @@ public struct AnyHash: Hash {
     public init(from decoder: Swift.Decoder, context: DecodingContext) throws {
         let container = try decoder.singleValueContainer()
         let data = try container.decode(Data.self)
-        try self.init(raw: data, type: context)
+        try self.init(raw: data, bits: context)
     }
     
     public static func validate(as type: TypeDefinition,

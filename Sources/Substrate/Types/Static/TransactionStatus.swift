@@ -73,7 +73,7 @@ extension TransactionStatus: RuntimeSwiftCodable, Swift.Encodable {
                 throw Swift.DecodingError.dataCorruptedError(in: container1,
                                                              debugDescription: "Empty case object")
             }
-            let hashContext = { try runtime.types.hash.get() }
+            let hashContext = { runtime.hasher.bitWidth }
             switch key {
             case .broadcast:
                 self = try .broadcast(container2.decode([String].self, forKey: key))

@@ -115,9 +115,9 @@ extension RpcClient: Client {
     public func block(
         hash index: ST<C>.BlockNumber?, metadata: any Metadata,
         config: C, types: DynamicTypes
-    ) async throws ->ST<C>.Hash? {
+    ) async throws -> ST<C>.Hash? {
         try await call(method: "chain_getBlockHash", params: Params(index.map(UIntHex.init)),
-                       context: { try types.hash.get() })
+                       context: { try ST<C>.Hasher(type: try? types.hasher.get()).bitWidth })
     }
     
     @inlinable
@@ -204,7 +204,7 @@ extension RpcClient: Client {
         var encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
         return try await call(method: "author_submitExtrinsic", params: Params(encoder.output),
-                              context: { try runtime.types.hash.get() })
+                              context: { runtime.hasher.bitWidth })
     }
     
     public func storage<V>(value key: any StorageKey<V>,

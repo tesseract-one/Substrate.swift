@@ -43,7 +43,7 @@ public extension Runtime {
     
     @inlinable
     func create<H: Hash>(hash: H.Type, raw: Data) throws -> H {
-        try H(raw: raw) { try types.hash.get() }
+        try H(raw: raw, bits: { hasher.bitWidth })
     }
     
     @inlinable

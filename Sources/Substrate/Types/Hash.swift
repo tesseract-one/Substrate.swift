@@ -12,20 +12,15 @@ import ContextCodable
 public protocol Hash: ContextDecodable, Swift.Encodable,
                       VoidValueRepresentable, ValueRepresentable,
                       ValidatableType, Equatable, CustomStringConvertible
-    where DecodingContext == TypeDefinition.Lazy
+    where DecodingContext == (() throws -> Int)
 {
     var raw: Data { get }
     
-    init(raw: Data, type: TypeDefinition.Lazy) throws
+    init(raw: Data, bits: () throws -> Int) throws
 }
 
 public extension Hash {
     var description: String { raw.hex() }
-    
-    @inlinable
-    init(raw: Data, type: TypeDefinition) throws {
-        try self.init(raw: raw) { type }
-    }
     
     func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -57,7 +52,7 @@ public protocol StaticHash: Hash, IdentifiableType, FixedDataCodable, RuntimeCod
 
 public extension StaticHash {
     @inlinable
-    init(raw: Data, type: TypeDefinition.Lazy) throws
+    init(raw: Data, bits: () throws -> Int) throws
     {
         try self.init(raw: raw)
     }

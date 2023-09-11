@@ -37,7 +37,7 @@ public extension StaticHasher {
 public protocol FixedHasher: Hasher, ValidatableType {
     associatedtype THash: Hash
     
-    init?(type: AnyFixedHasher.HashType?)
+    init(type: AnyFixedHasher.HashType?) throws
     
     func hash(data: Data, runtime: any Runtime) throws -> THash
     
@@ -60,8 +60,12 @@ public extension StaticFixedHasher {
     @inlinable var fixedType: AnyFixedHasher.HashType { Self.fixedHasherType }
     @inlinable var bitWidth: Int { Self.bitWidth }
     
-    init?(type: AnyFixedHasher.HashType?) {
-        guard type == nil || type == Self.fixedHasherType else { return nil }
+    init(type: AnyFixedHasher.HashType?) throws {
+        guard type == nil || type == Self.fixedHasherType else {
+            throw DynamicTypes.LookupError.wrongType(
+                name: "Hasher: \(type!)", reason: "Expected: \(Self.fixedHasherType)"
+            )
+        }
         self = Self.instance
     }
     

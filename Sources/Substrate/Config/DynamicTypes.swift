@@ -18,7 +18,6 @@ public struct DynamicTypes {
     public var dispatchError: Maybe<TypeDefinition>
     public var event: TypeDefinition
     public var extrinsicExtra: TypeDefinition
-    public var hash: Maybe<TypeDefinition>
     public var hasher: Maybe<AnyFixedHasher.HashType>
     public var signature: TypeDefinition
     public var transactionValidityError: Maybe<TypeDefinition>
@@ -26,9 +25,8 @@ public struct DynamicTypes {
     public init(address: TypeDefinition, account: Maybe<TypeDefinition>,
                 block: Maybe<TypeDefinition>, call: TypeDefinition,
                 dispatchError: Maybe<TypeDefinition>, event: TypeDefinition,
-                extrinsicExtra: TypeDefinition, hash: Maybe<TypeDefinition>,
-                hasher: Maybe<AnyFixedHasher.HashType>, signature: TypeDefinition,
-                transactionValidityError: Maybe<TypeDefinition>)
+                extrinsicExtra: TypeDefinition, hasher: Maybe<AnyFixedHasher.HashType>,
+                signature: TypeDefinition, transactionValidityError: Maybe<TypeDefinition>)
     {
         self.address = address
         self.account = account
@@ -37,7 +35,6 @@ public struct DynamicTypes {
         self.dispatchError = dispatchError
         self.event = event
         self.extrinsicExtra = extrinsicExtra
-        self.hash = hash
         self.hasher = hasher
         self.signature = signature
         self.transactionValidityError = transactionValidityError
@@ -61,7 +58,6 @@ public extension DynamicTypes {
                 return "Bad type \(n), reason: \(r)"
             case .unknownHasherType(type: let t):
                 return "Unknown hasher with type: \(t)"
-            
             }
         }
     }
@@ -127,16 +123,6 @@ public extension DynamicTypes {
                 .map{.success($0)} ?? .failure(.typeNotFound(name: "Header", selector: headerSelector.pattern))
         }
         
-        let hash: Maybe<TypeDefinition> = header!.flatMap { header in
-            guard case .composite(fields: let fs) = header.definition else {
-                return .failure(.wrongType(name: "Header", reason: "Not a composite"))
-            }
-            guard let type = fs.first(where:{$0.name?.lowercased().contains("hash") ?? false})?.type else {
-                return .failure(.subtypeNotFound(name: "Hash", in: "Header", selector: ".*hash.type"))
-            }
-            return .success(*type)
-        }
-        
         let hasher: Maybe<AnyFixedHasher.HashType> = header!.flatMap { header in
             guard let type = header.parameters?.first(where:{$0.name.lowercased() == "hash"})?.type else {
                 return .failure(.subtypeNotFound(name: "Hash", in: "Header", selector: "Parameter: Hash"))
@@ -160,7 +146,7 @@ public extension DynamicTypes {
         
         return DynamicTypes(address: ext.address, account: account, block: block,
                                   call: ext.call, dispatchError: dispatchError, event: event,
-                                  extrinsicExtra: ext.extra, hash: hash, hasher: hasher,
+                                  extrinsicExtra: ext.extra, hasher: hasher,
                                   signature: ext.signature, transactionValidityError: transError)
     }
     
