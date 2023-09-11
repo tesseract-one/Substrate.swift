@@ -15,12 +15,13 @@ public struct ExtrinsicCustomDynamicCoder: RuntimeCustomDynamicCoder {
         self.name = name
     }
     
-    public func checkType(type: TypeDefinition, runtime: Runtime) throws -> Bool {
+    public func checkType(type: TypeDefinition) -> Bool {
         type.name.hasSuffix(name)
     }
     
     public func encode<C, E: ScaleCodec.Encoder>(
-        value: Value<C>, in encoder: inout E, as type: TypeDefinition, runtime: Runtime
+        value: Value<C>, in encoder: inout E, as type: TypeDefinition,
+        with coders: [ObjectIdentifier: any CustomDynamicCoder]?
     ) throws {
         guard let bytes = value.bytes else {
             throw Value.EncodingError.wrongShape(actual: value, expected: type.strong)
@@ -29,7 +30,7 @@ public struct ExtrinsicCustomDynamicCoder: RuntimeCustomDynamicCoder {
     }
     
     public func validate<C>(
-        value: Value<C>, as type: TypeDefinition, runtime: Runtime
+        value: Value<C>, as type: TypeDefinition, in runtime: Runtime
     ) -> Result<Void, TypeError> {
         value.bytes != nil
             ? .success(())

@@ -154,7 +154,7 @@ public extension AnyBlock {
             self._runtime = runtime
             self.type = type
             var container = ValueDecodingContainer(decoder)
-            let value = try Value<TypeDefinition>(from: &container, as: type, runtime: _runtime, custom: true)
+            let value = try Value<TypeDefinition>(from: &container, as: type, runtime: _runtime, skip: false)
             guard let map = value.map else {
                 throw try container.newError("Header is not a map: \(value)")
             }

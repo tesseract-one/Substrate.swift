@@ -17,16 +17,16 @@ extension Value: RuntimeDynamicSwiftDecodable where C == TypeDefinition {
     @inlinable
     public init(from decoder: Swift.Decoder, as type: TypeDefinition, runtime: Runtime) throws {
         var value = ValueDecodingContainer(decoder)
-        try self.init(from: &value, as: type, runtime: runtime, custom: true)
+        try self.init(from: &value, as: type, runtime: runtime, skip: false)
     }
     
     public init(from container: inout ValueDecodingContainer,
                 `as` type: TypeDefinition,
                 runtime: Runtime,
-                custom: Bool) throws
+                skip custom: Bool) throws
     {
-        if custom, let coder = runtime.custom(coder: type) {
-            self = try coder.decode(from: &container, as: type, runtime: runtime)
+        if !custom, let coder = runtime.dynamicCustomCoders[type.objectId] {
+            self = try coder.decode(from: &container, as: type, in: runtime)
             return
         }
         switch type.definition {
@@ -171,13 +171,13 @@ private extension Value where C == TypeDefinition {
             var map: [String: Value<C>] = Dictionary(minimumCapacity: fields.count)
             for field in fields {
                 try value.next(key: field.name!.camelCased(with: "_"))
-                map[field.name!] = try Value(from: &value, as: *field.type, runtime: runtime, custom: true)
+                map[field.name!] = try Value(from: &value, as: *field.type, runtime: runtime, skip: false)
             }
             return Value(value: .map(map), context: type)
         } else { // Sequence
             var value = try from.nestedUnkeyedContainer()
             let seq = try fields.map {
-                try Value(from: &value, as: *$0.type, runtime: runtime, custom: true)
+                try Value(from: &value, as: *$0.type, runtime: runtime, skip: false)
             }
             return Value(value: .sequence(seq), context: type)
         }
@@ -204,7 +204,7 @@ private extension Value where C == TypeDefinition {
                 values.reserveCapacity(count)
             }
             while try !value.isAtEnd() {
-                values.append(try Value(from: &value, as: *valueType, runtime: runtime, custom: true))
+                values.append(try Value(from: &value, as: *valueType, runtime: runtime, skip: false))
             }
             return Value(value: .sequence(values), context: type)
         }
@@ -219,7 +219,7 @@ private extension Value where C == TypeDefinition {
             if try from.decodeNil() {
                 return Value(value: .variant(.sequence(name: "None", values: [])), context: type)
             }
-            let some = try Value(from: &from, as: *someType, runtime: runtime, custom: true)
+            let some = try Value(from: &from, as: *someType, runtime: runtime, skip: false)
             return Value(value: .variant(.sequence(name: "Some", values: [some])), context: type)
         }
         if let data = try? from.decode(Data.self) { // SCALE serialized
@@ -287,7 +287,7 @@ private extension Value where C == TypeDefinition {
             var values = Array<Self>()
             values.reserveCapacity(Int(count))
             while try !value.isAtEnd() {
-                values.append(try Value(from: &value, as: *valueType, runtime: runtime, custom: true))
+                values.append(try Value(from: &value, as: *valueType, runtime: runtime, skip: false))
             }
             guard values.count == count else {
                 throw try from.newError("Wrong array size: \(values.count), expected: \(count)")

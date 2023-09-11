@@ -22,7 +22,7 @@ open class BasicRuntime<RC: Config>: Runtime {
     open var extrinsicDecoder: any ExtrinsicDecoder { extrinsicManager }
     public let extrinsicManager: RC.TExtrinsicManager
     
-    public private(set) var customCoders: [ObjectIdentifier: any RuntimeCustomDynamicCoder]!
+    public let dynamicCustomCoders: [ObjectIdentifier: any RuntimeCustomDynamicCoder]
     
     open func encoder() -> any ScaleCodec.Encoder { config.encoder() }
     
@@ -32,10 +32,6 @@ open class BasicRuntime<RC: Config>: Runtime {
     
     open func decoder(with data: Data) -> any ScaleCodec.Decoder {
         config.decoder(data: data)
-    }
-    
-    open func custom(coder type: TypeDefinition) -> (any RuntimeCustomDynamicCoder)? {
-        customCoders[type.objectId]
     }
     
     public init(config: RC, metadata: any Metadata,
@@ -53,16 +49,14 @@ open class BasicRuntime<RC: Config>: Runtime {
         } else {
             self.isBatchSupported = false
         }
-        self.customCoders = nil
         let customCoders = try config.customCoders(types: types, metadata: metadata)
-        let codersMap = try metadata.reduce(
+        self.dynamicCustomCoders = metadata.reduce(
             types: [ObjectIdentifier: any RuntimeCustomDynamicCoder]()
         ) { out, tdef in
-            for coder in customCoders where try coder.checkType(type: tdef, runtime: self) {
+            for coder in customCoders where coder.checkType(type: tdef) {
                 out[tdef.objectId] = coder
             }
         }
-        self.customCoders = codersMap
     }
     
     open func validate() throws {

@@ -17,6 +17,7 @@ public protocol Runtime: AnyObject {
     
     var types: DynamicTypes { get }
     var staticTypes: Synced<TypeRegistry<TypeDefinition.TypeId>> { get }
+    var dynamicCustomCoders: [ObjectIdentifier: any RuntimeCustomDynamicCoder] { get }
     
     func encoder() -> any ScaleCodec.Encoder
     func encoder(reservedCapacity: Int) -> any ScaleCodec.Encoder
@@ -28,8 +29,6 @@ public protocol Runtime: AnyObject {
     func resolve(palletIndex name: String) -> UInt8?
     func resolve(palletError index: UInt8) -> (pallet: String, type: TypeDefinition)?
     func resolve(palletError name: String) -> (pallet: UInt8, type: TypeDefinition)?
-    
-    func custom(coder type: TypeDefinition) -> RuntimeCustomDynamicCoder?
     
     // Calls
     func resolve(palletCall name: String) -> (pallet: UInt8, type: TypeDefinition)?

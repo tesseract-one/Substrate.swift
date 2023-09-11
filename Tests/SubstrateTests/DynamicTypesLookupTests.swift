@@ -27,7 +27,6 @@ final class DynamicTypesLookupTests: XCTestCase {
         let _ = try types.account.get()
         let _ = try types.dispatchError.get()
         if !is14 {
-            let _ = try types.hash.get()
             let _ = try types.block.get()
             let _ = try types.transactionValidityError.get()
         }

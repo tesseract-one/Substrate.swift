@@ -21,15 +21,15 @@ extension Value: ValidatableTypeDynamic {
     public func validate(as type: TypeDefinition,
                          in runtime: any Runtime) -> Result<Void, TypeError>
     {
-        return validate(as: type, in: runtime, custom: true)
+        return validate(as: type, in: runtime, skip: false)
     }
     
     public func validate(as type: TypeDefinition,
                          in runtime: any Runtime,
-                         custom: Bool) -> Result<Void, TypeError>
+                         skip custom: Bool) -> Result<Void, TypeError>
     {
-        if custom, let coder = runtime.custom(coder: type) {
-            return coder.validate(value: self, as: type, runtime: runtime)
+        if !custom, let coder = runtime.dynamicCustomCoders[type.objectId] {
+            return coder.validate(value: self, as: type, in: runtime)
         }
         switch type.definition {
         case .composite(fields: let fields):
@@ -66,7 +66,7 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                return validate(as: *fields[0].type, in: runtime, custom: true)
+                return validate(as: *fields[0].type, in: runtime, skip: false)
             } else {
                 return _validateCompositeFields(type: type, fields: fields, runtime: runtime)
             }
@@ -76,7 +76,7 @@ private extension Value {
                 // perhaps the type we're encoding to is a wrapper type then; let's
                 // jump in and try to encode our composite to the contents of it (1
                 // field composites are transparent anyway in SCALE terms).
-                return validate(as: *fields[0].type, in: runtime, custom: true)
+                return validate(as: *fields[0].type, in: runtime, skip: false)
             } else {
                 return _validateCompositeFields(type: type, fields: fields, runtime: runtime)
             }
@@ -86,7 +86,7 @@ private extension Value {
                 // aiming for has exactly 1 field. Perhaps it's a wrapper type, so let's
                 // aim to encode to the contents of it instead (1 field composites are
                 // transparent anyway in SCALE terms).
-                return validate(as: *fields[0].type, in: runtime, custom: true)
+                return validate(as: *fields[0].type, in: runtime, skip: false)
             } else {
                 return .failure(.wrongType(for: self, type: type,
                                            reason: "Isn't Composite", .get()))
@@ -100,7 +100,7 @@ private extension Value {
         switch value {
         case .sequence(let values):
             return values.voidErrorMap { value in
-                value.validate(as: *valueType, in: runtime, custom: true)
+                value.validate(as: *valueType, in: runtime, skip: false)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -131,7 +131,7 @@ private extension Value {
                                                   type: type, .get()))
             }
             return values.voidErrorMap {
-                $0.validate(as: *valueType, in: runtime, custom: true)
+                $0.validate(as: *valueType, in: runtime, skip: false)
             }
         case .primitive(let primitive):
             switch primitive {
@@ -201,7 +201,7 @@ private extension Value {
                     return .failure(.fieldNotFound(for: self, field: name,
                                                    type: type, .get()))
                 }
-                return value.validate(as: *field.type, in: runtime, custom: true)
+                return value.validate(as: *field.type, in: runtime, skip: false)
             }
         } else {
             let values = self.sequence!
@@ -212,7 +212,7 @@ private extension Value {
             }
             guard values.count > 0 else { return .success(()) }
             return zip(fields, values).voidErrorMap { field, value in
-                value.validate(as: *field.type, in: runtime, custom: true)
+                value.validate(as: *field.type, in: runtime, skip: false)
             }
         }
     }

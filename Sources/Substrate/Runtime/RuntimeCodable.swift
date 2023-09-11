@@ -218,43 +218,28 @@ public extension Runtime {
     }
 }
 
-public protocol RuntimeCustomDynamicCoder {
-    func checkType(type: TypeDefinition, runtime: any Runtime) throws -> Bool
-    
-    func decode<D: ScaleCodec.Decoder>(
-        from decoder: inout D, as type: TypeDefinition, runtime: any Runtime
-    ) throws -> Value<TypeDefinition>
-    
-    func encode<C, E: ScaleCodec.Encoder>(
-        value: Value<C>, in encoder: inout E, as type: TypeDefinition, runtime: any Runtime
-    ) throws
-    
+public protocol RuntimeCustomDynamicCoder: CustomDynamicCoder {
     func decode(from container: inout ValueDecodingContainer,
-                as type: TypeDefinition, runtime: any Runtime) throws -> Value<TypeDefinition>
+                as type: TypeDefinition,
+                in runtime: any Runtime) throws -> Value<TypeDefinition>
     
     func validate<C>(value: Value<C>, as type: TypeDefinition,
-                     runtime: any Runtime) -> Result<Void, TypeError>
+                     in runtime: any Runtime) -> Result<Void, TypeError>
 }
 
 public extension RuntimeCustomDynamicCoder {
     @inlinable
-    func decode<D: ScaleCodec.Decoder>(
-        from decoder: inout D, as type: TypeDefinition, runtime: any Runtime
-    ) throws -> Value<TypeDefinition> {
-        try Value(from: &decoder, as: type, runtime: runtime, custom: false)
+    func decode(from container: inout ValueDecodingContainer,
+                as type: TypeDefinition,
+                in runtime: any Runtime) throws -> Value<TypeDefinition>
+    {
+        try Value(from: &container, as: type, runtime: runtime, skip: true)
     }
     
     @inlinable
-    func encode<C, E: ScaleCodec.Encoder>(
-        value: Value<C>, in encoder: inout E, as type: TypeDefinition, runtime: any Runtime
-    ) throws {
-        try value.encode(in: &encoder, as: type, runtime: runtime, custom: false)
-    }
-
-    @inlinable
-    func decode(from container: inout ValueDecodingContainer,
-                as type: TypeDefinition, runtime: any Runtime) throws -> Value<TypeDefinition>
+    func validate<C>(value: Value<C>, as type: TypeDefinition,
+                     in runtime: any Runtime) -> Result<Void, TypeError>
     {
-        try Value(from: &container, as: type, runtime: runtime, custom: false)
+        value.validate(as: type, in: runtime, skip: true)
     }
 }
