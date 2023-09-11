@@ -66,6 +66,8 @@ public extension RuntimeLazyDynamicDecodable {
                                 lazy type: TypeDefinition.Lazy) throws
     {
         switch Self.self {
+        case let sself as ScaleCodec.Decodable.Type:
+            self = try sself.init(from: &decoder) as! Self
         case let sself as RuntimeDecodable.Type:
             self = try sself.init(from: &decoder, runtime: runtime) as! Self
         case let sself as RuntimeDynamicDecodable.Type:
@@ -81,6 +83,8 @@ public extension RuntimeLazyDynamicEncodable {
                                        lazy type: TypeDefinition.Lazy) throws
     {
         switch self {
+        case let sself as ScaleCodec.Encodable:
+            try sself.encode(in: &encoder)
         case let sself as RuntimeEncodable:
             try sself.encode(in: &encoder, runtime: runtime)
         case let sself as RuntimeDynamicEncodable:
