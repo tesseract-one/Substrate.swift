@@ -9,45 +9,53 @@ import Foundation
 import ContextCodable
 
 public protocol SomeRuntimeDynamicSwiftCodableContext {
-    var runtime: Runtime { get }
-    var type: TypeDefinition.Lazy { get }
-    
-    init(runtime: Runtime, type: @escaping TypeDefinition.Lazy)
+    init(runtime: any Runtime, type: @escaping TypeDefinition.Lazy) throws
 }
 
-public struct RuntimeSwiftCodableContext: SomeRuntimeDynamicSwiftCodableContext {
-    public var runtime: Runtime
-    public var type: TypeDefinition.Lazy
+public protocol SomeRuntimeSwiftCodableContext: SomeRuntimeDynamicSwiftCodableContext {
+    init(runtime: any Runtime)
+}
+
+public struct VoidCodableContext: SomeRuntimeSwiftCodableContext {
+    public init() {}
+    public init(runtime: any Runtime) {}
+    public init(runtime: any Runtime, type: @escaping TypeDefinition.Lazy) throws {}
+}
+
+public struct RuntimeCodableContext: SomeRuntimeSwiftCodableContext {
+    public let runtime: any Runtime
     
-    public init(runtime: Runtime, type: @escaping TypeDefinition.Lazy) {
+    public init(runtime: any Runtime) {
         self.runtime = runtime
-        self.type = type
     }
     
-    public init(runtime: Runtime) {
+    public init(runtime: any Runtime, type: @escaping TypeDefinition.Lazy) throws {
         self.runtime = runtime
-        self.type = TypeDefinition.Never
     }
 }
 
-public struct RuntimeDynamicSwiftCodableContext: SomeRuntimeDynamicSwiftCodableContext {
-    public let runtime: Runtime
-    public let type: TypeDefinition.Lazy
+public struct RuntimeDynamicCodableContext: SomeRuntimeDynamicSwiftCodableContext {
+    public let runtime: any Runtime
+    public let type: TypeDefinition
     
-    public init(runtime: Runtime, type: @escaping TypeDefinition.Lazy) {
+    public init(runtime: any Runtime, type: @escaping TypeDefinition.Lazy) throws {
+        try self.init(runtime: runtime, type: type())
+    }
+    
+    public init(runtime: any Runtime, type: TypeDefinition) {
         self.runtime = runtime
         self.type = type
     }
 }
 
 public protocol RuntimeSwiftDecodable: ContextDecodable where
-    DecodingContext == RuntimeSwiftCodableContext
+    DecodingContext: SomeRuntimeSwiftCodableContext
 {
     init(from decoder: Decoder, runtime: any Runtime) throws
 }
 
 public protocol RuntimeSwiftEncodable: ContextEncodable where
-    EncodingContext == RuntimeSwiftCodableContext
+    EncodingContext: SomeRuntimeSwiftCodableContext
 {
     func encode(to encoder: Encoder, runtime: any Runtime) throws
 }
@@ -73,6 +81,17 @@ public extension Swift.Decodable {
     init(from decoder: Decoder, runtime: any Runtime) throws {
         try self.init(from: decoder)
     }
+    
+    @inlinable
+    init(from decoder: Decoder, `as` type: TypeDefinition, runtime: any Runtime) throws {
+        try self.init(from: decoder)
+    }
+}
+
+public extension Swift.Decodable where Self: ContextDecodable {
+    init(from decoder: Decoder, context: DecodingContext) throws {
+        try self.init(from: decoder)
+    }
 }
 
 public extension Swift.Encodable {
@@ -80,25 +99,36 @@ public extension Swift.Encodable {
     func encode(to encoder: Encoder, runtime: any Runtime) throws {
         try encode(to: encoder)
     }
+    
+    @inlinable
+    func encode(to encoder: Encoder, `as` type: TypeDefinition, runtime: any Runtime) throws {
+        try encode(to: encoder)
+    }
 }
 
-public extension RuntimeSwiftDecodable {
-    @inlinable
-    init(from decoder: Decoder, context: DecodingContext) throws {
-        try self.init(from: decoder, runtime: context.runtime)
+public extension Swift.Encodable where Self: ContextEncodable {
+    func encode(to encoder: Encoder, context: EncodingContext) throws {
+        try encode(to: encoder)
     }
 }
 
 public extension RuntimeSwiftDecodable where
-    DecodingContext == RuntimeSwiftCodableContext
+    DecodingContext == RuntimeCodableContext
 {
     @inlinable
-    init(from decoder: Decoder, `as` type: TypeDefinition, runtime: Runtime) throws {
+    init(from decoder: Decoder, context: DecodingContext) throws {
+        try self.init(from: decoder, runtime: context.runtime)
+    }
+    
+    @inlinable
+    init(from decoder: Decoder, `as` type: TypeDefinition, runtime: any Runtime) throws {
         try self.init(from: decoder, runtime: runtime)
     }
 }
 
-public extension RuntimeSwiftEncodable {
+public extension RuntimeSwiftEncodable where
+    EncodingContext == RuntimeCodableContext
+{
     @inlinable
     func encode(to encoder: Encoder, context: EncodingContext) throws {
         try encode(to: encoder, runtime: context.runtime)
@@ -111,44 +141,20 @@ public extension RuntimeSwiftEncodable {
 }
 
 public extension RuntimeDynamicSwiftDecodable where
-    DecodingContext == RuntimeDynamicSwiftCodableContext
+    DecodingContext == RuntimeDynamicCodableContext
 {
     @inlinable
     init(from decoder: Decoder, context: DecodingContext) throws {
-        try self.init(from: decoder, runtime: context.runtime, type: context.type)
-    }
-}
-
-public extension RuntimeDynamicSwiftDecodable {
-    @inlinable
-    init(from decoder: Decoder, runtime: any Runtime, type: TypeDefinition.Lazy) throws {
-        switch Self.self {
-        case let sself as Swift.Decodable.Type:
-            self = try sself.init(from: decoder) as! Self
-        case let sself as any RuntimeSwiftDecodable.Type:
-            self = try sself.init(from: decoder, runtime: runtime) as! Self
-        default: try self.init(from: decoder, as: type(), runtime: runtime)
-        }
+        try self.init(from: decoder, as: context.type, runtime: context.runtime)
     }
 }
 
 public extension RuntimeDynamicSwiftEncodable where
-    EncodingContext == RuntimeDynamicSwiftCodableContext
+    EncodingContext == RuntimeDynamicCodableContext
 {
     @inlinable
     func encode(to encoder: Encoder, context: EncodingContext) throws {
-        try encode(to: encoder, runtime: context.runtime, type: context.type)
-    }
-}
-
-public extension RuntimeDynamicSwiftEncodable {
-    @inlinable
-    func encode(to encoder: Encoder, runtime: any Runtime, type: TypeDefinition.Lazy) throws {
-        switch self {
-        case let sself as Swift.Encodable: try sself.encode(to: encoder)
-        case let sself as any RuntimeSwiftEncodable: try sself.encode(to: encoder, runtime: runtime)
-        default: try self.encode(to: encoder, as: type(), runtime: runtime)
-        }
+        try encode(to: encoder, as: context.type, runtime: context.runtime)
     }
 }
 

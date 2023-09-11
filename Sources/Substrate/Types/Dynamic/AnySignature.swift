@@ -99,6 +99,11 @@ public struct AnySignature: Signature {
                     return .failure(.wrongValuesCount(for: Self.self, expected: 1,
                                                       type: type, .get()))
                 }
+                if let typeName = item.fields[0].typeName?.lowercased() {
+                    if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
+                        return .success((item.name, CryptoTypeId.byName[name]!))
+                    }
+                }
                 let typeName = item.fields[0].type.name.lowercased()
                 if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
                     return .success((item.name, CryptoTypeId.byName[name]!))
@@ -114,6 +119,11 @@ public struct AnySignature: Signature {
             }
             guard fields.count == 1 else {
                 return .failure(.wrongValuesCount(for: Self.self, expected: 1, type: type, .get()))
+            }
+            if let typeName = fields[0].typeName?.lowercased() {
+                if let name = CryptoTypeId.byName.keys.first(where: { typeName.contains($0) }) {
+                    return .success(["": CryptoTypeId.byName[name]!])
+                }
             }
             let fieldTypeName = fields[0].type.name.lowercased()
             if let name = CryptoTypeId.byName.keys.first(where: { fieldTypeName.contains($0) }) {

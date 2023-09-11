@@ -28,7 +28,7 @@ extension Value: ValidatableTypeDynamic {
                          in runtime: any Runtime,
                          skip custom: Bool) -> Result<Void, TypeError>
     {
-        if !custom, let coder = runtime.dynamicCustomCoders[type.objectId] {
+        if !custom, let coder = runtime.dynamicRuntimeCustomCoders[type.objectId] {
             return coder.validate(value: self, as: type, in: runtime)
         }
         switch type.definition {

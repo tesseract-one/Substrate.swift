@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public struct AnyTransactionValidityError: CallError, CustomDebugStringConvertible {
-    public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
+    public typealias DecodingContext = RuntimeDynamicCodableContext
     
     public let value: Value<TypeDefinition>
     
@@ -39,7 +39,7 @@ public struct AnyTransactionValidityError: CallError, CustomDebugStringConvertib
 }
 
 public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, CustomDebugStringConvertible {
-    public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
+    public typealias DecodingContext = RuntimeDynamicCodableContext
     
     public let value: Value<TypeDefinition>
     private let _runtime: any Runtime

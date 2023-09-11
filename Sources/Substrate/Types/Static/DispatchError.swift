@@ -188,6 +188,9 @@ public extension DispatchError {
                 .v(registry.def(Data.self, .fixed(4)))
             ])
         }
+        
+        public typealias DecodingContext = RuntimeCodableContext
+        public typealias EncodingContext = VoidCodableContext
     }
     
     enum TokenError: UInt8, CaseIterable, ScaleCodec.Codable,
@@ -236,6 +239,9 @@ public extension DispatchError {
 }
 
 extension DispatchError: RuntimeSwiftCodable, Swift.Encodable {
+    public typealias DecodingContext = RuntimeCodableContext
+    public typealias EncodingContext = VoidCodableContext
+    
     public init(from decoder: Swift.Decoder, runtime: Runtime) throws {
         let container1 = try decoder.singleValueContainer()
         if let simple = try? container1.decode(String.self) {

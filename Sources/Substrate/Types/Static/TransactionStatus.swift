@@ -54,6 +54,9 @@ extension TransactionStatus: SomeTransactionStatus {
 }
 
 extension TransactionStatus: RuntimeSwiftCodable, Swift.Encodable {
+    public typealias DecodingContext = RuntimeCodableContext
+    public typealias EncodingContext = VoidCodableContext
+    
     public init(from decoder: Swift.Decoder, runtime: any Runtime) throws {
         let container1 = try decoder.singleValueContainer()
         if let simple = try? container1.decode(String.self) {

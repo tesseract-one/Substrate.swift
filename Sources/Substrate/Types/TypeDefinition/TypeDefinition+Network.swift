@@ -77,16 +77,19 @@ public extension TypeDefinition {
             if fields.count == 0 { return .success(.void) }
             return fields.resultMap { field in
                 from(type: field.type, types: types, registry: registry).map {
-                    .okv(field.name, $0)
+                    .mkv(field.name, $0, typeName: field.typeName,
+                         docs: field.docs.count > 0 ? field.docs : nil)
                 }
             }.map { .composite(fields: $0) }
         case .variant(variants: let vars):
             return vars.resultMap { vart in
                 vart.fields.resultMap { field in
                     from(type: field.type, types: types, registry: registry).map {
-                        .okv(field.name, $0)
+                        .mkv(field.name, $0, typeName: field.typeName,
+                             docs: field.docs.count > 0 ? field.docs : nil)
                     }
-                }.map { Variant(vart.index, vart.name, $0) }
+                }.map { Variant(vart.index, vart.name, $0,
+                                vart.docs.count > 0 ? vart.docs : nil) }
             }.map { .variant(variants: $0) }
         }
     }
@@ -163,7 +166,8 @@ public extension NetworkType.Info {
                               bitSeq: &bitSeq, reversed: &reversed,
                               next: &next)
                 return NetworkType.Field(name: field.name, type: id,
-                                         typeName: field.type.name, docs: [])
+                                         typeName: field.typeName,
+                                         docs: field.docs ?? [])
             }
             types[id] = .init(path: path, parameters: parameters,
                               definition: .composite(fields: mapped), docs: docs)
@@ -174,10 +178,11 @@ public extension NetworkType.Info {
                                   bitSeq: &bitSeq, reversed: &reversed,
                                   next: &next)
                     return NetworkType.Field(name: field.name, type: id,
-                                             typeName: field.type.name, docs: [])
+                                             typeName: field.typeName,
+                                             docs: field.docs ?? [])
                 }
                 return NetworkType.Variant(name: vart.name, fields: fields,
-                                           index: vart.index, docs: [])
+                                           index: vart.index, docs: vart.docs ?? [])
             }
             types[id] = .init(path: path, parameters: parameters,
                               definition: .variant(variants: mapped), docs: docs)

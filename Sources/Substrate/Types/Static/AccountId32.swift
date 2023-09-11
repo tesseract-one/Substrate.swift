@@ -8,8 +8,8 @@
 import Foundation
 
 public struct AccountId32: StaticAccountId, Hashable, Equatable {
-    public typealias DecodingContext = RuntimeSwiftCodableContext
-    public typealias EncodingContext = RuntimeSwiftCodableContext
+    public typealias DecodingContext = RuntimeCodableContext
+    public typealias EncodingContext = RuntimeCodableContext
     
     public let raw: Data
     public let runtime: any Runtime

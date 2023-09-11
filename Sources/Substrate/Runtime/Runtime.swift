@@ -17,7 +17,8 @@ public protocol Runtime: AnyObject {
     
     var types: DynamicTypes { get }
     var staticTypes: Synced<TypeRegistry<TypeDefinition.TypeId>> { get }
-    var dynamicCustomCoders: [ObjectIdentifier: any RuntimeCustomDynamicCoder] { get }
+    var dynamicCustomCoders: [ObjectIdentifier: any CustomDynamicCoder] { get }
+    var dynamicRuntimeCustomCoders: [ObjectIdentifier: any RuntimeCustomDynamicCoder] { get }
     
     func encoder() -> any ScaleCodec.Encoder
     func encoder(reservedCapacity: Int) -> any ScaleCodec.Encoder

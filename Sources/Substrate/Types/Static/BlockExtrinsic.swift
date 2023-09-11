@@ -10,6 +10,7 @@ import Foundation
 public struct BlockExtrinsic<M: ExtrinsicManager>: OpaqueExtrinsic, IdentifiableType,
                                                    CustomStringConvertible, CustomDebugStringConvertible
 {
+    public typealias DecodingContext = RuntimeCodableContext
     public typealias THash = M.TConfig.THasher.THash
     public typealias TSignedExtra = M.TSignedExtra
     public typealias TUnsignedExtra = M.TUnsignedExtra

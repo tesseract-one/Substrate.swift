@@ -22,7 +22,15 @@ open class BasicRuntime<RC: Config>: Runtime {
     open var extrinsicDecoder: any ExtrinsicDecoder { extrinsicManager }
     public let extrinsicManager: RC.TExtrinsicManager
     
-    public let dynamicCustomCoders: [ObjectIdentifier: any RuntimeCustomDynamicCoder]
+    @inlinable
+    public var dynamicCustomCoders: [ObjectIdentifier: any CustomDynamicCoder] {
+        _dynamicCustomCoders
+    }
+    
+    @inlinable
+    public var dynamicRuntimeCustomCoders: [ObjectIdentifier: any RuntimeCustomDynamicCoder] {
+        _dynamicRuntimeCustomCoders
+    }
     
     open func encoder() -> any ScaleCodec.Encoder { config.encoder() }
     
@@ -33,6 +41,9 @@ open class BasicRuntime<RC: Config>: Runtime {
     open func decoder(with data: Data) -> any ScaleCodec.Decoder {
         config.decoder(data: data)
     }
+    
+    public private(set) var _dynamicCustomCoders: [ObjectIdentifier: any CustomDynamicCoder]!
+    public private(set) var _dynamicRuntimeCustomCoders: [ObjectIdentifier: any RuntimeCustomDynamicCoder]!
     
     public init(config: RC, metadata: any Metadata,
                 types: DynamicTypes, addressFormat: SS58.AddressFormat) throws
@@ -50,13 +61,16 @@ open class BasicRuntime<RC: Config>: Runtime {
             self.isBatchSupported = false
         }
         let customCoders = try config.customCoders(types: types, metadata: metadata)
-        self.dynamicCustomCoders = metadata.reduce(
+        self._dynamicCustomCoders = nil
+        self._dynamicRuntimeCustomCoders = nil
+        self._dynamicRuntimeCustomCoders = metadata.reduce(
             types: [ObjectIdentifier: any RuntimeCustomDynamicCoder]()
         ) { out, tdef in
-            for coder in customCoders where coder.checkType(type: tdef) {
+            for coder in customCoders where coder.check(type: tdef, in: self) {
                 out[tdef.objectId] = coder
             }
         }
+        self._dynamicCustomCoders = _dynamicRuntimeCustomCoders.mapValues{$0.dynamicCoder(in: self)}
     }
     
     open func validate() throws {

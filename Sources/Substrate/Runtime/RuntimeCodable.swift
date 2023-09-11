@@ -218,22 +218,76 @@ public extension Runtime {
     }
 }
 
-public protocol RuntimeCustomDynamicCoder: CustomDynamicCoder {
+public protocol RuntimeCustomDynamicCoder {
+    func check(type: TypeDefinition, in runtime: any Runtime) -> Bool
+    
+    func decode<D: ScaleCodec.Decoder>(
+        from decoder: inout D, as type: TypeDefinition,
+        in runtime: any Runtime
+    ) throws -> Value<TypeDefinition>
+    
+    func encode<C, E: ScaleCodec.Encoder>(
+        value: Value<C>, in encoder: inout E,
+        as type: TypeDefinition, in runtime: any Runtime
+    ) throws
+    
     func decode(from container: inout ValueDecodingContainer,
                 as type: TypeDefinition,
                 in runtime: any Runtime) throws -> Value<TypeDefinition>
     
     func validate<C>(value: Value<C>, as type: TypeDefinition,
                      in runtime: any Runtime) -> Result<Void, TypeError>
+    
+    func dynamicCoder(in runtime: any Runtime) -> any CustomDynamicCoder
+}
+
+public extension RuntimeCustomDynamicCoder where Self: CustomDynamicCoder {
+    func check(type: TypeDefinition, in runtime: any Runtime) -> Bool {
+        check(type: type)
+    }
 }
 
 public extension RuntimeCustomDynamicCoder {
+    @inlinable
+    func decode<D: ScaleCodec.Decoder>(
+        from decoder: inout D, as type: TypeDefinition,
+        in runtime: any Runtime
+    ) throws -> Value<TypeDefinition> {
+        if let dyn = self as? CustomDynamicCoder {
+            return try dyn.decode(from: &decoder, as: type,
+                                  with: runtime.dynamicCustomCoders)
+        }
+        return try Value(from: &decoder, as: type,
+                         with: runtime.dynamicCustomCoders,
+                         skip: true)
+    }
+    
+    @inlinable
+    func encode<C, E: ScaleCodec.Encoder>(
+        value: Value<C>, in encoder: inout E,
+        as type: TypeDefinition, in runtime: any Runtime
+    ) throws {
+        if let dyn = self as? CustomDynamicCoder {
+            try dyn.encode(value: value, in: &encoder, as: type,
+                           with: runtime.dynamicCustomCoders)
+        } else {
+            try value.encode(in: &encoder, as: type,
+                             with: runtime.dynamicCustomCoders,
+                             skip: true)
+        }
+    }
+    
     @inlinable
     func decode(from container: inout ValueDecodingContainer,
                 as type: TypeDefinition,
                 in runtime: any Runtime) throws -> Value<TypeDefinition>
     {
-        try Value(from: &container, as: type, runtime: runtime, skip: true)
+        if let dyn = self as? CustomDynamicCoder {
+            return try dyn.decode(from: &container, as: type,
+                                  with: runtime.dynamicCustomCoders)
+        }
+        return try Value(from: &container, as: type,
+                         runtime: runtime, skip: true)
     }
     
     @inlinable
@@ -241,5 +295,49 @@ public extension RuntimeCustomDynamicCoder {
                      in runtime: any Runtime) -> Result<Void, TypeError>
     {
         value.validate(as: type, in: runtime, skip: true)
+    }
+    
+    @inlinable
+    func dynamicCoder(in runtime: any Runtime) -> any CustomDynamicCoder {
+        if let dyn = self as? CustomDynamicCoder {
+            return dyn
+        }
+        return RuntimeCustomDynamicCoderWrapper(coder: self,
+                                                runtime: runtime)
+    }
+}
+
+public struct RuntimeCustomDynamicCoderWrapper: CustomDynamicCoder {
+    public let coder: any RuntimeCustomDynamicCoder
+    public private(set) weak var runtime: (any Runtime)!
+    
+    public init(coder: any RuntimeCustomDynamicCoder, runtime: any Runtime) {
+        self.coder = coder
+        self.runtime = runtime
+    }
+    
+    public func check(type: TypeDefinition) -> Bool {
+        coder.check(type: type, in: runtime)
+    }
+    
+    public func decode<D: ScaleCodec.Decoder>(
+        from decoder: inout D, as type: TypeDefinition,
+        with coders: [ObjectIdentifier: any CustomDynamicCoder]?
+    ) throws -> Value<TypeDefinition> {
+        try coder.decode(from: &decoder, as: type, in: runtime)
+    }
+    
+    public func encode<C, E: ScaleCodec.Encoder>(
+        value: Value<C>, in encoder: inout E, as type: TypeDefinition,
+        with coders: [ObjectIdentifier: any CustomDynamicCoder]?
+    ) throws {
+        try coder.encode(value: value, in: &encoder, as: type, in: runtime)
+    }
+    
+    public func decode(from container: inout ValueDecodingContainer,
+                       as type: TypeDefinition,
+                       with coders: [ObjectIdentifier : CustomDynamicCoder]?
+    ) throws -> Value<TypeDefinition> {
+        try coder.decode(from: &container, as: type, in: runtime)
     }
 }

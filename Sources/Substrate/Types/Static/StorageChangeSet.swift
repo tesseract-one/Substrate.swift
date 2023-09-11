@@ -8,7 +8,9 @@
 import Foundation
 
 public struct StorageChangeSet<H: Hash>: SomeStorageChangeSet {
+    public typealias DecodingContext = RuntimeCodableContext
     public typealias THash = H
+    
     public let block: H
     public let changes: [(key: Data, value: Data?)]
     

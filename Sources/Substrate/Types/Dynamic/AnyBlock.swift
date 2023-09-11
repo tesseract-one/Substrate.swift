@@ -12,7 +12,7 @@ public struct AnyBlock<H: FixedHasher,
                        N: UnsignedInteger & CompactCodable & DataConvertible,
                        E: OpaqueExtrinsic>: SomeBlock
 {
-    public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
+    public typealias DecodingContext = RuntimeDynamicCodableContext
     public typealias THeader = Header
     public typealias TExtrinsic = E
     
@@ -134,7 +134,7 @@ public struct AnyBlock<H: FixedHasher,
 
 public extension AnyBlock {
     struct Header: SomeBlockHeader, RuntimeDynamicSwiftDecodable {
-        public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
+        public typealias DecodingContext = RuntimeDynamicCodableContext
         public typealias THasher = H
         public typealias TNumber = N
         

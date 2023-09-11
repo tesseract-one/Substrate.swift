@@ -12,6 +12,9 @@ import ScaleCodec
 public enum TransactionValidityError: StaticCallError, Equatable, Swift.Codable,
                                       RuntimeSwiftCodable, ScaleCodec.Codable, RuntimeCodable
 {
+    public typealias DecodingContext = VoidCodableContext
+    public typealias EncodingContext = VoidCodableContext
+    
     /// The transaction is invalid.
     case invalid(InvalidTransaction)
     /// Transaction validity can't be determined.
@@ -82,6 +85,9 @@ public extension TransactionValidityError {
     enum InvalidTransaction: Error, Equatable, Swift.Codable, ScaleCodec.Codable,
                              RuntimeCodable, RuntimeSwiftCodable, IdentifiableType
     {
+        public typealias DecodingContext = VoidCodableContext
+        public typealias EncodingContext = VoidCodableContext
+        
         /// The call of the transaction is not expected.
         case call
         /// General error to do with the inability to pay some fees (e.g. account balance too low).
@@ -254,6 +260,9 @@ public extension TransactionValidityError {
     enum UnknownTransaction: Error, Equatable, Swift.Codable, ScaleCodec.Codable,
                              RuntimeCodable, RuntimeSwiftCodable, IdentifiableType
     {
+        public typealias DecodingContext = VoidCodableContext
+        public typealias EncodingContext = VoidCodableContext
+        
         /// Could not lookup some information that is required to validate the transaction.
         case cannotLookup
         /// No validator found for the given unsigned transaction.

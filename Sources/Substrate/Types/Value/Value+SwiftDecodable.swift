@@ -9,48 +9,63 @@ import Foundation
 import ContextCodable
 import ScaleCodec
 
-extension Value: ContextDecodable where C == TypeDefinition {}
 
-extension Value: RuntimeDynamicSwiftDecodable where C == TypeDefinition {
-    public typealias DecodingContext = RuntimeDynamicSwiftCodableContext
+extension Value: ContextDecodable, DynamicSwiftDecodable where C == TypeDefinition {
+    public typealias DecodingContext = DynamicCodableContext
     
     @inlinable
-    public init(from decoder: Swift.Decoder, as type: TypeDefinition, runtime: Runtime) throws {
+    public init(from decoder: Swift.Decoder, as type: TypeDefinition) throws {
         var value = ValueDecodingContainer(decoder)
-        try self.init(from: &value, as: type, runtime: runtime, skip: false)
+        try self.init(from: &value, as: type, with: nil)
     }
     
     public init(from container: inout ValueDecodingContainer,
-                `as` type: TypeDefinition,
-                runtime: Runtime,
-                skip custom: Bool) throws
+                as type: TypeDefinition,
+                with coders: [ObjectIdentifier: any CustomDynamicCoder]?,
+                skip custom: Bool = false) throws
     {
-        if !custom, let coder = runtime.dynamicCustomCoders[type.objectId] {
-            self = try coder.decode(from: &container, as: type, in: runtime)
+        if !custom, let coder = coders?[type.objectId] {
+            self = try coder.decode(from: &container, as: type, with: coders)
             return
         }
         switch type.definition {
         case .composite(fields: let fields):
-            self = try Self._decodeComposite(from: &container, type: type, fields: fields, runtime: runtime)
+            self = try Self._decodeComposite(from: &container, type: type, fields: fields, coders: coders)
         case .sequence(of: let vType):
-            self = try Self._decodeSequence(from: &container, type: type, valueType: vType, runtime: runtime)
+            self = try Self._decodeSequence(from: &container, type: type, valueType: vType, coders: coders)
         case .variant(variants: let vars):
             self = try Self._decodeVariant(from: &container, name: type.name,
-                                           type: type, variants: vars, runtime: runtime)
+                                           type: type, variants: vars, coders: coders)
         case .array(count: let count, of: let vType):
             self = try Self._decodeArray(from: &container, type: type, count: count,
-                                         valueType: vType, runtime: runtime)
+                                         valueType: vType, coders: coders)
         case .primitive(is: let vType):
-            self = try Self._decodePrimitive(from: &container, type: type, prim: vType, runtime: runtime)
+            self = try Self._decodePrimitive(from: &container, type: type, prim: vType)
         case .compact(of: let vType):
-            self = try Self._decodeCompact(from: &container, type: type, of: vType, runtime: runtime)
+            self = try Self._decodeCompact(from: &container, type: type, of: vType)
         case .bitsequence(_):
-            self = try Self._decodeBitSequence(from: &container, type: type, runtime: runtime)
+            self = try Self._decodeBitSequence(from: &container, type: type, coders: coders)
         case .void:
             guard try container.decodeNil() else { throw try container.newError("Can't decode nil") }
             self.value = .sequence([])
             self.context = type
         }
+    }
+}
+
+extension Value: RuntimeDynamicSwiftDecodable where C == TypeDefinition {
+    @inlinable
+    public init(from decoder: Swift.Decoder, as type: TypeDefinition, runtime: Runtime) throws {
+        var value = ValueDecodingContainer(decoder)
+        try self.init(from: &value, as: type, runtime: runtime)
+    }
+    
+    public init(from container: inout ValueDecodingContainer,
+                `as` type: TypeDefinition,
+                runtime: Runtime,
+                skip custom: Bool = false) throws
+    {
+        try self.init(from: &container, as: type, with: runtime.dynamicCustomCoders, skip: custom)
     }
 }
 
@@ -156,7 +171,7 @@ public enum ValueDecodingContainer {
 private extension Value where C == TypeDefinition {
     static func _decodeComposite(
         from: inout ValueDecodingContainer, type: TypeDefinition,
-        fields: [TypeDefinition.Field], runtime: Runtime
+        fields: [TypeDefinition.Field], coders: [ObjectIdentifier: any CustomDynamicCoder]?
     ) throws -> Self {
         guard fields.count > 0 else {
             guard try from.decodeNil() else {
@@ -165,19 +180,19 @@ private extension Value where C == TypeDefinition {
             return Value(value: .sequence([]), context: type)
         }
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, type: type)
+            return try _from(data: data, type: type, coders: coders)
         } else if fields[0].name != nil { // Map
             var value = try from.nestedKeyedContainer()
             var map: [String: Value<C>] = Dictionary(minimumCapacity: fields.count)
             for field in fields {
                 try value.next(key: field.name!.camelCased(with: "_"))
-                map[field.name!] = try Value(from: &value, as: *field.type, runtime: runtime, skip: false)
+                map[field.name!] = try Value(from: &value, as: *field.type, with: coders)
             }
             return Value(value: .map(map), context: type)
         } else { // Sequence
             var value = try from.nestedUnkeyedContainer()
             let seq = try fields.map {
-                try Value(from: &value, as: *$0.type, runtime: runtime, skip: false)
+                try Value(from: &value, as: *$0.type, with: coders)
             }
             return Value(value: .sequence(seq), context: type)
         }
@@ -185,7 +200,7 @@ private extension Value where C == TypeDefinition {
     
     static func _decodeSequence(
         from: inout ValueDecodingContainer, type: TypeDefinition,
-        valueType: TypeDefinition.Weak, runtime: Runtime
+        valueType: TypeDefinition.Weak, coders: [ObjectIdentifier: any CustomDynamicCoder]?
     ) throws -> Self {
         if case .primitive(is: .u8) = valueType.definition { // [u8] array
             if let data = try? from.decode(Data.self) {
@@ -196,7 +211,7 @@ private extension Value where C == TypeDefinition {
                 throw try from.newError("Expected hex or [u8] for data")
             }
         } else if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, type: type)
+            return try _from(data: data, type: type, coders: coders)
         } else { // array
             var value = try from.nestedUnkeyedContainer()
             var values = Array<Self>()
@@ -204,7 +219,7 @@ private extension Value where C == TypeDefinition {
                 values.reserveCapacity(count)
             }
             while try !value.isAtEnd() {
-                values.append(try Value(from: &value, as: *valueType, runtime: runtime, skip: false))
+                values.append(try Value(from: &value, as: *valueType, with: coders))
             }
             return Value(value: .sequence(values), context: type)
         }
@@ -212,18 +227,18 @@ private extension Value where C == TypeDefinition {
     
     static func _decodeVariant(
         from: inout ValueDecodingContainer, name: String, type: TypeDefinition,
-        variants: [TypeDefinition.Variant], runtime: Runtime
+        variants: [TypeDefinition.Variant], coders: [ObjectIdentifier: any CustomDynamicCoder]?
     ) throws -> Self {
         guard name != "Option" else { // Option<T> can be null or value
             let someType = variants.first(where: { $0.name == "Some" })!.fields[0].type
             if try from.decodeNil() {
                 return Value(value: .variant(.sequence(name: "None", values: [])), context: type)
             }
-            let some = try Value(from: &from, as: *someType, runtime: runtime, skip: false)
+            let some = try Value(from: &from, as: *someType, with: coders)
             return Value(value: .variant(.sequence(name: "Some", values: [some])), context: type)
         }
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, type: type)
+            return try _from(data: data, type: type, coders: coders)
         } else {
             var container = try from.nestedKeyedContainer()
             var variant: TypeDefinition.Variant
@@ -251,7 +266,7 @@ private extension Value where C == TypeDefinition {
                 variant = found
             }
             let value = try Self._decodeComposite(from: &container, type: type,
-                                                  fields: variant.fields, runtime: runtime)
+                                                  fields: variant.fields, coders: coders)
             switch value.value {
             case .map(let map):
                 return Value(value: .variant(.map(name: variant.name, fields: map)), context: type)
@@ -264,7 +279,8 @@ private extension Value where C == TypeDefinition {
     
     static func _decodeArray(
         from: inout ValueDecodingContainer, type: TypeDefinition,
-        count: UInt32, valueType: TypeDefinition.Weak, runtime: Runtime
+        count: UInt32, valueType: TypeDefinition.Weak,
+        coders: [ObjectIdentifier: any CustomDynamicCoder]?
     ) throws -> Self {
         if case .primitive(is: .u8) = valueType.definition { // [u8] array
             if let data = try? from.decode(Data.self) {
@@ -281,13 +297,13 @@ private extension Value where C == TypeDefinition {
                 throw try from.newError("Expected hex or [u8] for data")
             }
         } else if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, type: type)
+            return try _from(data: data, type: type, coders: coders)
         } else { // array
             var value = try from.nestedUnkeyedContainer()
             var values = Array<Self>()
             values.reserveCapacity(Int(count))
             while try !value.isAtEnd() {
-                values.append(try Value(from: &value, as: *valueType, runtime: runtime, skip: false))
+                values.append(try Value(from: &value, as: *valueType, with: coders))
             }
             guard values.count == count else {
                 throw try from.newError("Wrong array size: \(values.count), expected: \(count)")
@@ -297,8 +313,7 @@ private extension Value where C == TypeDefinition {
     }
     
     static func _decodePrimitive(
-        from: inout ValueDecodingContainer, type: TypeDefinition,
-        prim: NetworkType.Primitive, runtime: Runtime
+        from: inout ValueDecodingContainer, type: TypeDefinition, prim: NetworkType.Primitive
     ) throws -> Self {
         switch prim {
         case .bool: return Value(value: .primitive(.bool(try from.decode(Bool.self))), context: type)
@@ -326,8 +341,7 @@ private extension Value where C == TypeDefinition {
     }
     
     static func _decodeCompact(
-        from: inout ValueDecodingContainer, type: TypeDefinition,
-        of: TypeDefinition.Weak, runtime: Runtime
+        from: inout ValueDecodingContainer, type: TypeDefinition, of: TypeDefinition.Weak
     ) throws -> Self {
         var innerType = of
         var value: Self? = nil
@@ -337,7 +351,7 @@ private extension Value where C == TypeDefinition {
                 switch prim {
                 case .u8, .u16, .u32, .u64, .u128, .u256:
                     value = try Self._decodePrimitive(from: &from, type: type,
-                                                      prim: prim, runtime: runtime)
+                                                      prim: prim)
                 default: throw try from.newError("Can't compact decode: \(innerType)")
                 }
             case .composite(fields: let fields):
@@ -352,13 +366,21 @@ private extension Value where C == TypeDefinition {
     }
     
     static func _decodeBitSequence(
-        from: inout ValueDecodingContainer, type: TypeDefinition, runtime: Runtime
+        from: inout ValueDecodingContainer, type: TypeDefinition,
+        coders: [ObjectIdentifier: any CustomDynamicCoder]?
     ) throws -> Self {
         if let data = try? from.decode(Data.self) { // SCALE serialized
-            return try runtime.decodeValue(from: data, type: type)
+            return try _from(data: data, type: type, coders: coders)
         }
         let bools = try from.decode([Bool].self)
         return Value(value: .bitSequence(BitSequence(bits: bools, order: .lsb0)),
                      context: type)
+    }
+    
+    static func _from(data: Data, type: TypeDefinition,
+                      coders: [ObjectIdentifier: any CustomDynamicCoder]?) throws -> Value<C>
+    {
+        var decoder = ScaleCodec.decoder(from: data)
+        return try Value(from: &decoder, as: type, with: coders)
     }
 }

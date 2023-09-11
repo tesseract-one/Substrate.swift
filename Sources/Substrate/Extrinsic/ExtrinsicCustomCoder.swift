@@ -8,14 +8,14 @@
 import Foundation
 import ScaleCodec
 
-public struct ExtrinsicCustomDynamicCoder: RuntimeCustomDynamicCoder {
+public struct ExtrinsicCustomDynamicCoder: RuntimeCustomDynamicCoder, CustomDynamicCoder {
     public let name: String
     
     public init(name: String) {
         self.name = name
     }
     
-    public func checkType(type: TypeDefinition) -> Bool {
+    public func check(type: TypeDefinition) -> Bool {
         type.name.hasSuffix(name)
     }
     

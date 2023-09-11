@@ -78,7 +78,7 @@ extension RpcClient: Client {
     public func accountNextIndex(
         id: ST<C>.AccountId, runtime: ExtendedRuntime<C>
     ) async throws -> ST<C>.Index {
-        let context = ST<C>.AccountId.EncodingContext(runtime: runtime) {
+        let context = try ST<C>.AccountId.EncodingContext(runtime: runtime) {
             try runtime.types.account.get()
         }
         return try await call(method: "system_accountNextIndex",
@@ -117,7 +117,7 @@ extension RpcClient: Client {
         config: C, types: DynamicTypes
     ) async throws -> ST<C>.Hash? {
         try await call(method: "chain_getBlockHash", params: Params(index.map(UIntHex.init)),
-                       context: { try ST<C>.Hasher(type: try? types.hasher.get()).bitWidth })
+                       context: { try ST<C>.Hasher(type: types.hasher.value).bitWidth })
     }
     
     @inlinable
@@ -132,7 +132,7 @@ extension RpcClient: Client {
     public func block(
         header hash: ST<C>.Hash?, runtime: ExtendedRuntime<C>
     ) async throws -> ST<C>.BlockHeader? {
-        let context = ST<C>.BlockHeader.DecodingContext(runtime: runtime) {
+        let context = try ST<C>.BlockHeader.DecodingContext(runtime: runtime) {
             try ST<C>.Block.headerType(block: runtime.types.block.get())
         }
         return try await call(method: "chain_getHeader", params: Params(hash),
@@ -153,18 +153,17 @@ extension RpcClient: Client {
     ) async throws -> Result<Void, Either<ST<C>.DispatchError, ST<C>.TransactionValidityError>> {
         var encoder = runtime.encoder()
         try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
-        let dispatchErrorCtx = ST<C>.DispatchError.DecodingContext(runtime: runtime) {
+        let dispatchErrorCtx = try ST<C>.DispatchError.DecodingContext(runtime: runtime) {
             try runtime.types.dispatchError.get()
         }
-        let transactionErrorCtx = ST<C>.TransactionValidityError.DecodingContext(runtime: runtime) {
+        let transactionErrorCtx = try ST<C>.TransactionValidityError.DecodingContext(runtime: runtime) {
             try runtime.types.transactionValidityError.get()
         }
-        let nothingCtx = RuntimeSwiftCodableContext(runtime: runtime)
         let context = Either<ST<C>.TransactionValidityError, Either<ST<C>.DispatchError, Nothing>>
             .resultContext(
                 left: transactionErrorCtx,
                 right: Either<ST<C>.DispatchError, Nothing>
-                    .resultContext(left: dispatchErrorCtx, right: nothingCtx)
+                    .resultContext(left: dispatchErrorCtx, right: .init())
             )
         let result: Either<ST<C>.TransactionValidityError, Either<ST<C>.DispatchError, Nothing>> =
             try await call(method: "system_dryRun",

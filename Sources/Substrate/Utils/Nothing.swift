@@ -16,6 +16,8 @@ public struct Nothing: Hashable, Equatable, CustomStringConvertible, Expressible
 }
 
 extension Nothing: Swift.Encodable, RuntimeSwiftEncodable, RuntimeDynamicSwiftEncodable {
+    public typealias EncodingContext = VoidCodableContext
+    
     public func encode(to encoder: Swift.Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encodeNil()
@@ -23,6 +25,8 @@ extension Nothing: Swift.Encodable, RuntimeSwiftEncodable, RuntimeDynamicSwiftEn
 }
 
 extension Nothing: Swift.Decodable, RuntimeSwiftDecodable, RuntimeDynamicSwiftDecodable {
+    public typealias DecodingContext = VoidCodableContext
+    
     public init(from decoder: Swift.Decoder) throws {
         let container = try decoder.singleValueContainer()
         guard container.decodeNil() else {

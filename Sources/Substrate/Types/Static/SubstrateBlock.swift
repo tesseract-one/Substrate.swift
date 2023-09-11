@@ -15,7 +15,8 @@ public struct SubstrateBlock<H: StaticFixedHasher,
                              N: ConfigUnsignedInteger,
                              E: OpaqueExtrinsic & IdentifiableType>: StaticBlock, IdentifiableType,
                                                                          CustomStringConvertible
-{    
+{
+    public typealias DecodingContext = RuntimeCodableContext
     public typealias THeader = Header
     public typealias TExtrinsic = E
     
@@ -49,6 +50,7 @@ public extension SubstrateBlock {
     struct Header: SomeBlockHeader, RuntimeSwiftDecodable, RuntimeEncodable,
                    IdentifiableType, CustomStringConvertible
     {
+        public typealias DecodingContext = RuntimeCodableContext
         public typealias TNumber = N
         public typealias THasher = H
         
@@ -112,6 +114,8 @@ public extension SubstrateBlock.Header {
     struct Digest: RuntimeSwiftDecodable, ScaleCodec.Encodable,
                    IdentifiableType, CustomStringConvertible
     {
+        public typealias DecodingContext = RuntimeCodableContext
+        
         public let logs: [DigestItem]
         
         enum CodingKeys: CodingKey {

@@ -69,32 +69,51 @@ public extension TypeDefinition {
     struct Field: Equatable, Hashable, CustomStringConvertible {
         public let name: String?
         public let type: TypeDefinition.Weak
-        public let typeName: String? = nil
-        public let docs: [String]? = nil
+        public let typeName: String?
+        public let docs: [String]?
         
-        public init(_ name: String?, _ type: TypeDefinition.Weak) {
+        public init(_ name: String?, _ type: TypeDefinition.Weak,
+                    _ typeName: String?, _ docs: [String]?)
+        {
             self.name = name; self.type = type
+            self.typeName = typeName; self.docs = docs
         }
         @inlinable
-        public static func kv(_ name: String, _ type: TypeDefinition) -> Self {
-            Self(name, type.weak)
+        public static func kv(_ name: String, _ type: TypeDefinition,
+                              typeName: String? = nil, docs: [String]? = nil) -> Self
+        {
+            Self(name, type.weak, typeName, docs)
         }
         @inlinable
-        public static func kv(_ name: String, _ type: TypeDefinition.Weak) -> Self {
-            Self(name, type)
+        public static func kv(_ name: String, _ type: TypeDefinition.Weak,
+                              typeName: String? = nil, docs: [String]? = nil) -> Self
+        {
+            Self(name, type, typeName, docs)
         }
         @inlinable
-        public static func okv(_ name: String?, _ type: TypeDefinition) -> Self {
-            Self(name, type.weak)
+        public static func mkv(_ name: String?, _ type: TypeDefinition,
+                               typeName: String? = nil, docs: [String]? = nil) -> Self
+        {
+            Self(name, type.weak, typeName, docs)
         }
         @inlinable
-        public static func okv(_ name: String?, _ type: TypeDefinition.Weak) -> Self {
-            Self(name, type)
+        public static func mkv(_ name: String?, _ type: TypeDefinition.Weak,
+                               typeName: String? = nil, docs: [String]? = nil) -> Self
+        {
+            Self(name, type, typeName, docs)
         }
         @inlinable
-        public static func v(_ type: TypeDefinition) -> Self { Self(nil, type.weak) }
+        public static func v(_ type: TypeDefinition,
+                             typeName: String? = nil, docs: [String]? = nil) -> Self
+        {
+            Self(nil, type.weak, typeName, docs)
+        }
         @inlinable
-        public static func v(_ type: TypeDefinition.Weak) -> Self { Self(nil, type) }
+        public static func v(_ type: TypeDefinition.Weak,
+                             typeName: String? = nil, docs: [String]? = nil) -> Self
+        {
+            Self(nil, type, typeName, docs)
+        }
         
         public var description: String {
             name != nil ? "\(name!): \(type)" : "\(type)"
@@ -107,29 +126,41 @@ public extension TypeDefinition {
         public let index: UInt8
         public let name: String
         public let fields: [Field]
+        public let docs: [String]?
         
-        public init(_ index: UInt8, _ name: String, _ fields: [Field]) {
-            self.index = index; self.name = name; self.fields = fields
+        public init(_ index: UInt8, _ name: String,
+                    _ fields: [Field], _ docs: [String]?)
+        {
+            self.index = index; self.name = name
+            self.fields = fields; self.docs = docs
         }
         @inlinable
-        public static func e(_ index: UInt8, _ name: String) -> Self {
-            Self(index, name, [])
+        public static func e(_ index: UInt8, _ name: String, docs: [String]? = nil) -> Self {
+            Self(index, name, [], docs)
         }
         @inlinable
-        public static func s(_ index: UInt8, _ name: String, _ field: Field) -> Self {
-            Self(index, name, [field])
+        public static func s(_ index: UInt8, _ name: String,
+                             _ field: Field, _ docs: [String]? = nil) -> Self
+        {
+            Self(index, name, [field], docs)
         }
         @inlinable
-        public static func s(_ index: UInt8, _ name: String, _ field: TypeDefinition) -> Self {
-            Self(index, name, [.v(field.weak)])
+        public static func s(_ index: UInt8, _ name: String,
+                             _ field: TypeDefinition, _ docs: [String]? = nil) -> Self
+        {
+            Self(index, name, [.v(field.weak)], docs)
         }
         @inlinable
-        public static func m(_ index: UInt8, _ name: String, _ fields: [Field]) -> Self {
-            Self(index, name, fields)
+        public static func m(_ index: UInt8, _ name: String,
+                             _ fields: [Field], _ docs: [String]? = nil) -> Self
+        {
+            Self(index, name, fields, docs)
         }
         @inlinable
-        public static func m(_ index: UInt8, _ name: String, _ fields: [TypeDefinition]) -> Self {
-            Self(index, name, fields.map{.v($0.weak)})
+        public static func m(_ index: UInt8, _ name: String,
+                             _ fields: [TypeDefinition], _ docs: [String]? = nil) -> Self
+        {
+            Self(index, name, fields.map{.v($0.weak)}, docs)
         }
         
         public var description: String {
