@@ -299,8 +299,8 @@ public extension TypeDefinition {
         public func visited(def: TypeDefinition,
                             state: inout State) -> Result<Bool, Failure>
         {
-            // recursion. we will check it
-            return popState(state: &state, .get())
+            // recursion. we will check it on top level
+            .success(true)
         }
         
         @inlinable

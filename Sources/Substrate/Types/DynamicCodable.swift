@@ -14,10 +14,24 @@ public protocol DynamicDecodable: RuntimeDynamicDecodable {
 }
 
 public protocol DynamicEncodable: RuntimeDynamicEncodable {
-    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, `as` type: TypeDefinition) throws
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, as type: TypeDefinition) throws
 }
 
 public typealias DynamicCodable = DynamicDecodable & DynamicEncodable
+
+public extension ScaleCodec.Decodable {
+    @inlinable
+    init<D: ScaleCodec.Decoder>(from decoder: inout D, as type: TypeDefinition) throws {
+        try self.init(from: &decoder)
+    }
+}
+
+public extension ScaleCodec.Encodable {
+    @inlinable
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, as type: TypeDefinition) throws {
+        try encode(in: &encoder)
+    }
+}
 
 public extension DynamicDecodable {
     @inlinable
@@ -30,9 +44,10 @@ public extension DynamicDecodable {
 }
 
 public extension DynamicEncodable {
+    @inlinable
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
                                        `as` type: TypeDefinition,
-                                       runtime: Runtime) throws
+                                       runtime: any Runtime) throws
     {
         try encode(in: &encoder, as: type)
     }
@@ -49,6 +64,10 @@ public struct DynamicCodableContext: SomeDynamicSwiftCodableContext {
         self.type = type
     }
     
+    public init(runtime: Runtime, type: TypeDefinition) {
+        self.type = type
+    }
+    
     public init(runtime: any Runtime, type: @escaping TypeDefinition.Lazy) throws {
         self.type = try type()
     }
@@ -59,13 +78,13 @@ extension VoidCodableContext: SomeDynamicSwiftCodableContext {
     public init(type: TypeDefinition) { self.init() }
 }
 
-public protocol DynamicSwiftDecodable: ContextDecodable where
+public protocol DynamicSwiftDecodable: RuntimeDynamicSwiftDecodable where
     DecodingContext: SomeDynamicSwiftCodableContext
 {
     init(from decoder: Swift.Decoder, `as` type: TypeDefinition) throws
 }
 
-public protocol DynamicSwiftEncodable: ContextEncodable where
+public protocol DynamicSwiftEncodable: RuntimeDynamicSwiftEncodable where
     EncodingContext: SomeDynamicSwiftCodableContext
 {
     func encode(to encoder: Swift.Encoder, `as` type: TypeDefinition) throws

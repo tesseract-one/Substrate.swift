@@ -9,7 +9,7 @@ import Foundation
 import ScaleCodec
 
 public protocol TransactionQueryRuntimeCallCommon: StaticRuntimeCall, ComplexStaticFrameType
-    where TReturn: RuntimeDynamicDecodable & ValidatableType,
+    where TReturn: RuntimeLazyDynamicDecodable & ValidatableType,
           TypeInfo == RuntimeCallTypeInfo, ChildTypes == RuntimeCallChildTypes
 {
     var extrinsic: Data { get }
@@ -40,7 +40,7 @@ public extension TransactionQueryRuntimeCallCommon {
 }
 
 public struct TransactionQueryInfoRuntimeCall<DI>: TransactionQueryRuntimeCallCommon
-    where DI: RuntimeDynamicDecodable & ValidatableType
+    where DI: RuntimeLazyDynamicDecodable & ValidatableType
 {
     public typealias TReturn = DI
     
@@ -55,7 +55,7 @@ public struct TransactionQueryInfoRuntimeCall<DI>: TransactionQueryRuntimeCallCo
 }
 
 public struct TransactionQueryFeeDetailsRuntimeCall<FD>: TransactionQueryRuntimeCallCommon
-    where FD: RuntimeDynamicDecodable & ValidatableType
+    where FD: RuntimeLazyDynamicDecodable & ValidatableType
 {
     public typealias TReturn = FD
     

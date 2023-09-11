@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
+public enum AnyAddress<Id: AccountId>: Address, RuntimeDynamicCodable, CustomStringConvertible {
     public typealias TAccountId = Id
     
     case id(Id)
@@ -23,13 +23,13 @@ public enum AnyAddress<Id: AccountId>: Address, CustomStringConvertible {
             let idVar = try Self.findIdVariant(in: vars, type: flat).get()
             if try decoder.peek() == idVar.index {
                 let _ = try decoder.decode(.enumCaseId)
-                self = try .id(Id(from: &decoder, as: *idVar.fields.first!.type, runtime: runtime))
+                self = try .id(Id(from: &decoder, runtime: runtime, lazy: { *idVar.fields.first!.type }))
             } else {
                 let val = try Value<TypeDefinition>(from: &decoder, as: flat, runtime: runtime).flatten()
                 self = .other(name: val.variant!.name, values: val.variant!.values)
             }
         default:
-            self = try .id(Id(from: &decoder, as: type, runtime: runtime))
+            self = try .id(Id(from: &decoder, runtime: runtime, lazy: { type }))
         }
     }
     

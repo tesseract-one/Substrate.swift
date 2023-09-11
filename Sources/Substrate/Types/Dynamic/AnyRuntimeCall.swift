@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct AnyRuntimeCall<Return: RuntimeDynamicDecodable>: RuntimeCall {
+public struct AnyRuntimeCall<Return: RuntimeLazyDynamicDecodable>: RuntimeCall {
     public typealias TReturn = Return
     
     public let api: String

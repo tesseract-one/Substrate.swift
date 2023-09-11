@@ -8,17 +8,24 @@
 import Foundation
 import ContextCodable
 
-public protocol SomeRuntimeDynamicSwiftCodableContext {
+public protocol RuntimeLazyDynamicSwiftCodableContext {
     init(runtime: any Runtime, type: @escaping TypeDefinition.Lazy) throws
 }
 
-public protocol SomeRuntimeSwiftCodableContext: SomeRuntimeDynamicSwiftCodableContext {
+public protocol SomeRuntimeDynamicSwiftCodableContext: RuntimeLazyDynamicSwiftCodableContext {
+    init(runtime: any Runtime, type: TypeDefinition)
+}
+
+public protocol SomeRuntimeSwiftCodableContext: RuntimeLazyDynamicSwiftCodableContext {
     init(runtime: any Runtime)
 }
 
-public struct VoidCodableContext: SomeRuntimeSwiftCodableContext {
+public struct VoidCodableContext: SomeRuntimeSwiftCodableContext,
+                                  SomeRuntimeDynamicSwiftCodableContext
+{
     public init() {}
     public init(runtime: any Runtime) {}
+    public init(runtime: any Runtime, type: TypeDefinition) {}
     public init(runtime: any Runtime, type: @escaping TypeDefinition.Lazy) throws {}
 }
 
@@ -38,23 +45,32 @@ public struct RuntimeDynamicCodableContext: SomeRuntimeDynamicSwiftCodableContex
     public let runtime: any Runtime
     public let type: TypeDefinition
     
-    public init(runtime: any Runtime, type: @escaping TypeDefinition.Lazy) throws {
-        try self.init(runtime: runtime, type: type())
-    }
-    
     public init(runtime: any Runtime, type: TypeDefinition) {
         self.runtime = runtime
         self.type = type
     }
+    
+    public init(runtime: any Runtime, type: @escaping TypeDefinition.Lazy) throws {
+        try self.init(runtime: runtime, type: type())
+    }
 }
 
-public protocol RuntimeSwiftDecodable: ContextDecodable where
+public protocol RuntimeLazyDynamicSwiftDecodable: ContextDecodable where
+    DecodingContext: RuntimeLazyDynamicSwiftCodableContext {}
+
+public protocol RuntimeLazyDynamicSwiftEncodable: ContextEncodable where
+    EncodingContext: RuntimeLazyDynamicSwiftCodableContext {}
+
+public typealias RuntimeLazyDynamicSwiftCodable =
+    RuntimeLazyDynamicSwiftDecodable & RuntimeLazyDynamicSwiftEncodable
+
+public protocol RuntimeSwiftDecodable: RuntimeLazyDynamicSwiftDecodable where
     DecodingContext: SomeRuntimeSwiftCodableContext
 {
     init(from decoder: Decoder, runtime: any Runtime) throws
 }
 
-public protocol RuntimeSwiftEncodable: ContextEncodable where
+public protocol RuntimeSwiftEncodable: RuntimeLazyDynamicSwiftEncodable where
     EncodingContext: SomeRuntimeSwiftCodableContext
 {
     func encode(to encoder: Encoder, runtime: any Runtime) throws
@@ -62,13 +78,13 @@ public protocol RuntimeSwiftEncodable: ContextEncodable where
 
 public typealias RuntimeSwiftCodable = RuntimeSwiftDecodable & RuntimeSwiftEncodable
 
-public protocol RuntimeDynamicSwiftDecodable: ContextDecodable where
+public protocol RuntimeDynamicSwiftDecodable: RuntimeLazyDynamicSwiftDecodable where
     DecodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
     init(from decoder: Decoder, `as` type: TypeDefinition, runtime: Runtime) throws
 }
 
-public protocol RuntimeDynamicSwiftEncodable: ContextEncodable where
+public protocol RuntimeDynamicSwiftEncodable: RuntimeLazyDynamicSwiftEncodable where
     EncodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
     func encode(to encoder: Encoder, `as` type: TypeDefinition, runtime: any Runtime) throws

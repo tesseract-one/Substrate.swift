@@ -8,11 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
-                            RuntimeDynamicDecodable, IdentifiableType
+public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable, IdentifiableType
 {
-    public struct Weight: ScaleCodec.Decodable, RuntimeDecodable,
-                          RuntimeDynamicDecodable, IdentifiableType
+    public struct Weight: ScaleCodec.Decodable, RuntimeDecodable, IdentifiableType
     {
         public let refTime: UInt64
         public let proofSize: UInt64
@@ -28,16 +26,16 @@ public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
         }
     }
     
-    public enum DispatchClass: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeDecodable,
-                               RuntimeDynamicDecodable, IdentifiableType
+    public enum DispatchClass: UInt8, CaseIterable, ScaleCodec.Codable,
+                               RuntimeDecodable, IdentifiableType
     {
         case normal
         case operational
         case mandatory
     }
     
-    public enum Pays: UInt8, CaseIterable, ScaleCodec.Codable, RuntimeDecodable,
-                      RuntimeDynamicDecodable, IdentifiableType
+    public enum Pays: UInt8, CaseIterable, ScaleCodec.Codable,
+                      RuntimeDecodable, IdentifiableType
     {
         case yes
         case no
@@ -61,9 +59,7 @@ public struct DispatchInfo: ScaleCodec.Decodable, RuntimeDecodable,
 }
 
 
-public struct RuntimeDispatchInfo<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
-                                                               RuntimeDynamicDecodable,
-                                                               IdentifiableType
+public struct RuntimeDispatchInfo<Bal: ConfigUnsignedInteger>: RuntimeDecodable, IdentifiableType
 {
     public let weight: DispatchInfo.Weight
     public let clazz: DispatchInfo.DispatchClass
@@ -82,7 +78,7 @@ public struct RuntimeDispatchInfo<Bal: ConfigUnsignedInteger>: RuntimeDecodable,
     }
 }
 
-public struct FeeDetails<Bal>: RuntimeDecodable, RuntimeDynamicDecodable, IdentifiableType
+public struct FeeDetails<Bal>: RuntimeDecodable, IdentifiableType
     where Bal: ConfigUnsignedInteger
 {
     public struct InclusionFee: RuntimeDecodable, IdentifiableType {

@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct AnySignature: Signature {
+public struct AnySignature: Signature, RuntimeDynamicCodable {
     public enum Error: Swift.Error {
         case unsupportedCrypto(id: CryptoTypeId)
         case unsupportedCrypto(name: String)

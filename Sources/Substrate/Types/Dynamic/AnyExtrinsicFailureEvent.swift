@@ -8,7 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public struct AnyExtrinsicFailureEvent: SomeExtrinsicFailureEvent, ComplexFrameType {
+public struct AnyExtrinsicFailureEvent: SomeExtrinsicFailureEvent,
+                                        RuntimeDynamicDecodable,
+                                        ComplexFrameType {
     public typealias TypeInfo = EventTypeInfo
     
     public struct ExtrinsicFailed: Error {

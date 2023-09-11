@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Event: RuntimeDynamicDecodable {
+public protocol Event: RuntimeLazyDynamicDecodable {
     var pallet: String { get }
     var name: String { get }
 }
@@ -58,7 +58,7 @@ public extension StaticEvent {
     }
 }
 
-public protocol SomeEventRecord: RuntimeDynamicDecodable, ValidatableType {
+public protocol SomeEventRecord: RuntimeLazyDynamicDecodable, ValidatableType {
     var extrinsicIndex: UInt32? { get }
     var header: (name: String, pallet: String) { get }
     var any: AnyEvent { get throws }

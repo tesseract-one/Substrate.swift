@@ -153,7 +153,7 @@ public extension TypeDefinition {
         public func visited(def: TypeDefinition,
                             state: inout State) -> Result<Bool, Failure>
         {
-            popState(state: &state)
+            return .success(true)
         }
         
         @inlinable

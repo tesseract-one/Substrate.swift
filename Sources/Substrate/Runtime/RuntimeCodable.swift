@@ -8,22 +8,15 @@
 import Foundation
 import ScaleCodec
 
-public protocol RuntimeEncodable {
-    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws
-}
-
-public protocol RuntimeDecodable {
+public protocol RuntimeDecodable: RuntimeLazyDynamicDecodable {
     init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws
 }
 
-public typealias RuntimeCodable = RuntimeEncodable & RuntimeDecodable
-
-public extension ScaleCodec.Encodable {
-    @inlinable
-    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
-        try encode(in: &encoder)
-    }
+public protocol RuntimeEncodable: RuntimeLazyDynamicEncodable {
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws
 }
+
+public typealias RuntimeCodable = RuntimeEncodable & RuntimeDecodable
 
 public extension ScaleCodec.Decodable {
     @inlinable
@@ -32,39 +25,70 @@ public extension ScaleCodec.Decodable {
     }
 }
 
-public extension RuntimeDecodable {
+public extension ScaleCodec.Encodable {
     @inlinable
-    init<D: ScaleCodec.Decoder>(from decoder: inout D,
-                                `as` type: TypeDefinition,
-                                runtime: any Runtime) throws
-    {
-        try self.init(from: &decoder, runtime: runtime)
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
+        try encode(in: &encoder)
     }
 }
 
-public extension RuntimeEncodable {
-    @inlinable
-    func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
-                                       `as` type: TypeDefinition,
-                                       runtime: any Runtime) throws
-    {
-        try self.encode(in: &encoder, runtime: runtime)
-    }
-}
-
-public protocol RuntimeDynamicDecodable {
+public protocol RuntimeDynamicDecodable: RuntimeLazyDynamicDecodable {
     init<D: ScaleCodec.Decoder>(from decoder: inout D,
                                 `as` type: TypeDefinition,
                                 runtime: any Runtime) throws
 }
 
-public protocol RuntimeDynamicEncodable {
+public protocol RuntimeDynamicEncodable: RuntimeLazyDynamicEncodable {
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
                                        `as` type: TypeDefinition,
                                        runtime: Runtime) throws
 }
 
 public typealias RuntimeDynamicCodable = RuntimeDynamicDecodable & RuntimeDynamicEncodable
+
+public protocol RuntimeLazyDynamicDecodable {
+    init<D: ScaleCodec.Decoder>(from decoder: inout D,
+                                runtime: any Runtime,
+                                lazy type: TypeDefinition.Lazy) throws
+}
+
+public protocol RuntimeLazyDynamicEncodable {
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
+                                       runtime: Runtime,
+                                       lazy type: TypeDefinition.Lazy) throws
+}
+
+public typealias RuntimeLazyDynamicCodable = RuntimeLazyDynamicDecodable & RuntimeLazyDynamicEncodable
+
+public extension RuntimeLazyDynamicDecodable {
+    init<D: ScaleCodec.Decoder>(from decoder: inout D,
+                                runtime: any Runtime,
+                                lazy type: TypeDefinition.Lazy) throws
+    {
+        switch Self.self {
+        case let sself as RuntimeDecodable.Type:
+            self = try sself.init(from: &decoder, runtime: runtime) as! Self
+        case let sself as RuntimeDynamicDecodable.Type:
+            self = try sself.init(from: &decoder, as: type(), runtime: runtime) as! Self
+        default: fatalError("Never implement it directly! Use child protocols!")
+        }
+    }
+}
+
+public extension RuntimeLazyDynamicEncodable {
+    func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
+                                       runtime: Runtime,
+                                       lazy type: TypeDefinition.Lazy) throws
+    {
+        switch self {
+        case let sself as RuntimeEncodable:
+            try sself.encode(in: &encoder, runtime: runtime)
+        case let sself as RuntimeDynamicEncodable:
+            try sself.encode(in: &encoder, as: type(), runtime: runtime)
+        default: fatalError("Never implement it directly! Use child protocols!")
+        }
+    }
+}
 
 public extension Runtime {
     @inlinable
@@ -99,24 +123,30 @@ public extension Runtime {
     }
     
     @inlinable
-    func decode<T: RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
-        from decoder: inout D, type: T.Type,
-        where def: TypeDefinition.Lazy
+    func decode<T: RuntimeLazyDynamicDecodable, D: ScaleCodec.Decoder>(
+        from decoder: inout D, lazy type: T.Type, def: TypeDefinition
     ) throws -> T {
-        switch type {
-        case let type as ScaleCodec.Decodable.Type:
-            return try type.init(from: &decoder) as! T
-        case let type as RuntimeDecodable.Type:
-            return try decode(from: &decoder, type) as! T
-        default:
-            return try decode(from: &decoder, type: type, def: def())
-        }
+        try type.init(from: &decoder, runtime: self, lazy: { def })
     }
     
     @inlinable
-    func decode<T: RuntimeDynamicDecodable, D: ScaleCodec.Decoder>(
-        from decoder: inout D,
-        where type: TypeDefinition.Lazy
+    func decode<T: RuntimeLazyDynamicDecodable, D: ScaleCodec.Decoder>(
+        from decoder: inout D, lazy type: TypeDefinition
+    ) throws -> T {
+        try decode(from: &decoder, lazy: T.self, def: type)
+    }
+    
+    @inlinable
+    func decode<T: RuntimeLazyDynamicDecodable, D: ScaleCodec.Decoder>(
+        from decoder: inout D, type: T.Type,
+        where def: TypeDefinition.Lazy
+    ) throws -> T {
+        try type.init(from: &decoder, runtime: self, lazy: def)
+    }
+    
+    @inlinable
+    func decode<T: RuntimeLazyDynamicDecodable, D: ScaleCodec.Decoder>(
+        from decoder: inout D, where type: TypeDefinition.Lazy
     ) throws -> T {
         try decode(from: &decoder, type: T.self, where: type)
     }
@@ -154,7 +184,22 @@ public extension Runtime {
     }
     
     @inlinable
-    func decode<T: RuntimeDynamicDecodable>(
+    func decode<T: RuntimeLazyDynamicDecodable>(
+        from data: Data, type: T.Type, def: TypeDefinition
+    ) throws -> T {
+        var decoder = decoder(with: data)
+        return try decode(from: &decoder, lazy: type, def: def)
+    }
+    
+    @inlinable
+    func decode<T: RuntimeLazyDynamicDecodable>(
+        from data: Data, lazy type: TypeDefinition
+    ) throws -> T {
+        try decode(from: data, type: T.self, def: type)
+    }
+    
+    @inlinable
+    func decode<T: RuntimeLazyDynamicDecodable>(
         from data: Data, type: T.Type,
         where def: TypeDefinition.Lazy
     ) throws -> T {
@@ -163,7 +208,7 @@ public extension Runtime {
     }
     
     @inlinable
-    func decode<T: RuntimeDynamicDecodable>(
+    func decode<T: RuntimeLazyDynamicDecodable>(
         from data: Data, where def: TypeDefinition.Lazy
     ) throws -> T {
         try decode(from: data, type: T.self, where: def)
@@ -182,14 +227,17 @@ public extension Runtime {
     }
     
     @inlinable
-    func encode<T: RuntimeDynamicEncodable, E: ScaleCodec.Encoder>(
+    func encode<T: RuntimeLazyDynamicEncodable, E: ScaleCodec.Encoder>(
+        value: T, in encoder: inout E, lazy type: TypeDefinition
+    ) throws {
+        try value.encode(in: &encoder, runtime: self, lazy: { type })
+    }
+    
+    @inlinable
+    func encode<T: RuntimeLazyDynamicEncodable, E: ScaleCodec.Encoder>(
         value: T, in encoder: inout E, where type: TypeDefinition.Lazy
     ) throws {
-        switch value {
-        case let val as ScaleCodec.Encodable: try val.encode(in: &encoder)
-        case let val as RuntimeEncodable: try encode(value: val, in: &encoder)
-        default: try encode(value: value, in: &encoder, as: type())
-        }
+        try value.encode(in: &encoder, runtime: self, lazy: type)
     }
     
     @inlinable
@@ -209,7 +257,16 @@ public extension Runtime {
     }
     
     @inlinable
-    func encode<T: RuntimeDynamicEncodable>(
+    func encode<T: RuntimeLazyDynamicEncodable>(
+        value: T, lazy type: TypeDefinition
+    ) throws -> Data {
+        var encoder = encoder()
+        try encode(value: value, in: &encoder, lazy: type)
+        return encoder.output
+    }
+    
+    @inlinable
+    func encode<T: RuntimeLazyDynamicEncodable>(
         value: T, where type: TypeDefinition.Lazy
     ) throws -> Data {
         var encoder = encoder()

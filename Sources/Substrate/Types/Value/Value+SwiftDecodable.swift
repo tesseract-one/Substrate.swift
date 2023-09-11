@@ -9,7 +9,6 @@ import Foundation
 import ContextCodable
 import ScaleCodec
 
-
 extension Value: ContextDecodable, DynamicSwiftDecodable where C == TypeDefinition {
     public typealias DecodingContext = DynamicCodableContext
     
@@ -53,7 +52,7 @@ extension Value: ContextDecodable, DynamicSwiftDecodable where C == TypeDefiniti
     }
 }
 
-extension Value: RuntimeDynamicSwiftDecodable where C == TypeDefinition {
+extension Value: RuntimeLazyDynamicSwiftDecodable, RuntimeDynamicSwiftDecodable where C == TypeDefinition {
     @inlinable
     public init(from decoder: Swift.Decoder, as type: TypeDefinition, runtime: Runtime) throws {
         var value = ValueDecodingContainer(decoder)

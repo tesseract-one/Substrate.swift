@@ -56,7 +56,7 @@ extension Value: DynamicDecodable where C == TypeDefinition {
     }
 }
 
-extension Value: RuntimeDynamicDecodable where C == TypeDefinition {
+extension Value: RuntimeLazyDynamicDecodable, RuntimeDynamicDecodable where C == TypeDefinition {
     @inlinable
     public init<D: ScaleCodec.Decoder>(from decoder: inout D,
                                        as type: TypeDefinition,

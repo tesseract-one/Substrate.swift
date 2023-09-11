@@ -10,7 +10,7 @@ import ScaleCodec
 
 public typealias AnyValueStorageKey = AnyStorageKey<Value<TypeDefinition>>
 
-public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, CustomStringConvertible {
+public struct AnyStorageKey<Val: RuntimeLazyDynamicDecodable>: DynamicStorageKey, CustomStringConvertible {
     public typealias TParams = [ValueRepresentable]
     public typealias TBaseParams = (name: String, pallet: String)
     public typealias TValue = Val
@@ -99,7 +99,7 @@ public struct AnyStorageKey<Val: RuntimeDynamicDecodable>: DynamicStorageKey, Cu
         guard let (_, vType, data) = runtime.resolve(storage: base.name, pallet: base.pallet) else {
             throw StorageKeyCodingError.storageNotFound(name: base.name, pallet: base.pallet)
         }
-        return try runtime.decode(from: data, type: vType)
+        return try runtime.decode(from: data, lazy: vType)
     }
     
     public static func validate(base: (name: String, pallet: String), runtime: Runtime) throws {

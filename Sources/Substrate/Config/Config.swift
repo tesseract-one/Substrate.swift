@@ -22,8 +22,8 @@ public protocol BasicConfig {
     associatedtype TExtrinsicPayment: ValueRepresentable & ValidatableType
     associatedtype TSystemProperties: SystemProperties
     associatedtype TRuntimeVersion: RuntimeVersion
-    associatedtype TRuntimeDispatchInfo: RuntimeDynamicDecodable & ValidatableType
-    associatedtype TFeeDetails: RuntimeDynamicDecodable & ValidatableType
+    associatedtype TRuntimeDispatchInfo: RuntimeLazyDynamicDecodable & ValidatableType
+    associatedtype TFeeDetails: RuntimeLazyDynamicDecodable & ValidatableType
 }
 
 public protocol Config {

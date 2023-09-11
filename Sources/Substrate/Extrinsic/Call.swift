@@ -80,7 +80,7 @@ public protocol CallHolder<TCall> {
     var call: TCall { get }
 }
 
-public protocol CallError: Error, ValidatableType, RuntimeDynamicDecodable,
-                           RuntimeDynamicSwiftDecodable {}
+public protocol CallError: Error, ValidatableType, RuntimeLazyDynamicDecodable,
+                           RuntimeLazyDynamicSwiftDecodable {}
 public protocol StaticCallError: CallError, RuntimeDecodable, RuntimeSwiftDecodable, IdentifiableType {}
 

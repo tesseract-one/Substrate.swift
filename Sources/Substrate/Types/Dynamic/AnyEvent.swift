@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public struct AnyEvent: Event, ValidatableType, CustomStringConvertible {
+public struct AnyEvent: Event, RuntimeDynamicDecodable, ValidatableType, CustomStringConvertible {
     public let pallet: String
     public let name: String
     

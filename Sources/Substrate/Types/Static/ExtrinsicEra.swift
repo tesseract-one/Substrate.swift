@@ -117,7 +117,7 @@ extension ExtrinsicEra: ScaleCodec.Codable {
     }
 }
 
-extension ExtrinsicEra: RuntimeCodable, RuntimeDynamicDecodable, RuntimeDynamicEncodable {}
+extension ExtrinsicEra: RuntimeCodable {}
 
 extension ExtrinsicEra: IdentifiableType {
     public static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder

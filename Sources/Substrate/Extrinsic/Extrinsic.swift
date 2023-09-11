@@ -75,7 +75,7 @@ public protocol OpaqueExtrinsic<THash, TSignedExtra, TUnsignedExtra>: RuntimeSwi
 }
 
 
-public protocol SomeExtrinsicEra: RuntimeDynamicCodable, ValueRepresentable, ValidatableType, Default {
+public protocol SomeExtrinsicEra: RuntimeLazyDynamicCodable, ValueRepresentable, ValidatableType, Default {
     var isImmortal: Bool { get }
     
     func blockHash<R: RootApi>(api: R) async throws -> R.RC.TBlock.THeader.THasher.THash

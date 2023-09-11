@@ -9,6 +9,7 @@ import Foundation
 import ScaleCodec
 
 public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
+                                                RuntimeDynamicDecodable,
                                                 CustomStringConvertible {
     public typealias ER = ER
     
@@ -54,6 +55,7 @@ public struct BlockEvents<ER: SomeEventRecord>: SomeBlockEvents,
     
     public static var `default`: Self { Self(events: []) }
 }
+
 
 extension BlockEvents: RuntimeDecodable where ER: RuntimeDecodable {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws  {

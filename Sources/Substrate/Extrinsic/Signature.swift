@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol Signature: RuntimeDynamicCodable, ValueRepresentable,
+public protocol Signature: RuntimeLazyDynamicCodable, ValueRepresentable,
                            ValidatableType, CustomStringConvertible
 {
     var raw: Data { get }

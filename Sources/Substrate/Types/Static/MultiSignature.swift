@@ -130,4 +130,4 @@ extension MultiSignature: ScaleCodec.Codable {
     }
 }
 
-extension MultiSignature: RuntimeCodable, RuntimeDynamicCodable {}
+extension MultiSignature: RuntimeCodable {}

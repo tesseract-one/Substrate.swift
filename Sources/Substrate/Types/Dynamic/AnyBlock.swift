@@ -10,7 +10,7 @@ import ScaleCodec
 
 public struct AnyBlock<H: FixedHasher,
                        N: UnsignedInteger & CompactCodable & DataConvertible,
-                       E: OpaqueExtrinsic>: SomeBlock
+                       E: OpaqueExtrinsic>: SomeBlock, RuntimeDynamicSwiftDecodable
 {
     public typealias DecodingContext = RuntimeDynamicCodableContext
     public typealias THeader = Header

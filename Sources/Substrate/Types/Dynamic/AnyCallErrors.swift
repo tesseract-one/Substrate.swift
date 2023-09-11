@@ -8,7 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public struct AnyTransactionValidityError: CallError, CustomDebugStringConvertible {
+public struct AnyTransactionValidityError: CallError, RuntimeDynamicDecodable,
+                                           RuntimeDynamicSwiftDecodable, CustomDebugStringConvertible
+{
     public typealias DecodingContext = RuntimeDynamicCodableContext
     
     public let value: Value<TypeDefinition>
@@ -38,7 +40,10 @@ public struct AnyTransactionValidityError: CallError, CustomDebugStringConvertib
     }
 }
 
-public struct AnyDispatchError: SomeDispatchError, VariantValidatableType, CustomDebugStringConvertible {
+public struct AnyDispatchError: SomeDispatchError, RuntimeDynamicSwiftDecodable,
+                                RuntimeDynamicDecodable, VariantValidatableType,
+                                CustomDebugStringConvertible
+{
     public typealias DecodingContext = RuntimeDynamicCodableContext
     
     public let value: Value<TypeDefinition>

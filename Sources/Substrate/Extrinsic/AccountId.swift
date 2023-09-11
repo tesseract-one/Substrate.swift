@@ -8,7 +8,7 @@
 import Foundation
 import ScaleCodec
 
-public protocol AccountId: RuntimeDynamicCodable, RuntimeDynamicSwiftCodable,
+public protocol AccountId: RuntimeLazyDynamicCodable, RuntimeLazyDynamicSwiftCodable,
                            ValueRepresentable, ValidatableType
 {
     init(from string: String, runtime: any Runtime,

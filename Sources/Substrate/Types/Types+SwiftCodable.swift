@@ -60,22 +60,27 @@ extension Date: RuntimeSwiftCodable, RuntimeDynamicSwiftCodable, DynamicSwiftCod
     public typealias DecodingContext = VoidCodableContext
     public typealias EncodingContext = VoidCodableContext
 }
+
 extension Compact: ContextEncodable where T.UI: DataSerializable & Encodable {
     public typealias EncodingContext = VoidCodableContext
 }
 extension Compact: ContextDecodable where T.UI: DataInitalizable & Decodable {
     public typealias DecodingContext = VoidCodableContext
 }
+extension Compact: RuntimeLazyDynamicSwiftDecodable where T.UI: DataInitalizable & Decodable {}
 extension Compact: RuntimeSwiftDecodable where T.UI: DataInitalizable & Decodable {}
+extension Compact: RuntimeLazyDynamicSwiftEncodable where T.UI: DataSerializable & Encodable {}
 extension Compact: RuntimeSwiftEncodable where T.UI: DataSerializable & Encodable {}
 extension Compact: RuntimeDynamicSwiftDecodable where T.UI: DataInitalizable & Decodable {}
 extension Compact: RuntimeDynamicSwiftEncodable where T.UI: DataSerializable & Encodable {}
 extension Compact: DynamicSwiftDecodable where T.UI: DataInitalizable & Decodable {}
 extension Compact: DynamicSwiftEncodable where T.UI: DataSerializable & Encodable {}
+
 extension NBKDoubleWidth: ContextCodable where Self: UnsignedInteger {
     public typealias DecodingContext = VoidCodableContext
     public typealias EncodingContext = VoidCodableContext
 }
+extension NBKDoubleWidth: RuntimeLazyDynamicSwiftCodable where Self: UnsignedInteger {}
 extension NBKDoubleWidth: RuntimeSwiftCodable where Self: UnsignedInteger {}
 extension NBKDoubleWidth: RuntimeDynamicSwiftCodable where Self: UnsignedInteger {}
 extension NBKDoubleWidth: DynamicSwiftCodable where Self: UnsignedInteger {}
@@ -92,6 +97,9 @@ extension Optional: ContextEncodable where Wrapped: ContextEncodable {
         }
     }
 }
+extension Optional: RuntimeLazyDynamicSwiftEncodable where
+    Wrapped: RuntimeLazyDynamicSwiftEncodable,
+    Wrapped.EncodingContext: RuntimeLazyDynamicSwiftCodableContext {}
 extension Optional: RuntimeSwiftEncodable where
     Wrapped: RuntimeSwiftEncodable,
     Wrapped.EncodingContext == RuntimeCodableContext
@@ -102,7 +110,7 @@ extension Optional: RuntimeSwiftEncodable where
 }
 extension Optional: RuntimeDynamicSwiftEncodable where
     Wrapped: RuntimeDynamicSwiftEncodable,
-    Wrapped.EncodingContext == RuntimeDynamicCodableContext
+    Wrapped.EncodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
     public func encode(to encoder: Encoder, as type: TypeDefinition,
                        runtime: any Runtime) throws
@@ -131,6 +139,9 @@ extension Optional: ContextDecodable where Wrapped: ContextDecodable {
         }
     }
 }
+extension Optional: RuntimeLazyDynamicSwiftDecodable where
+    Wrapped: RuntimeLazyDynamicSwiftDecodable,
+    Wrapped.DecodingContext: RuntimeLazyDynamicSwiftCodableContext {}
 extension Optional: RuntimeSwiftDecodable where
     Wrapped: RuntimeSwiftDecodable, Wrapped.DecodingContext == RuntimeCodableContext
 {
@@ -141,7 +152,7 @@ extension Optional: RuntimeSwiftDecodable where
 }
 extension Optional: RuntimeDynamicSwiftDecodable where
     Wrapped: RuntimeDynamicSwiftDecodable,
-    Wrapped.DecodingContext == RuntimeDynamicCodableContext
+    Wrapped.DecodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
     public init(from decoder: Decoder, as type: TypeDefinition, runtime: any Runtime) throws {
         self = try Self(from: decoder,
@@ -166,6 +177,9 @@ extension Array: ContextEncodable where Element: ContextEncodable {
         }
     }
 }
+extension Array: RuntimeLazyDynamicSwiftEncodable where
+    Element: RuntimeLazyDynamicSwiftEncodable,
+    Element.EncodingContext: RuntimeLazyDynamicSwiftCodableContext {}
 extension Array: RuntimeSwiftEncodable where
     Element: RuntimeSwiftEncodable, Element.EncodingContext == RuntimeCodableContext
 {
@@ -175,7 +189,7 @@ extension Array: RuntimeSwiftEncodable where
 }
 extension Array: RuntimeDynamicSwiftEncodable where
     Element: RuntimeDynamicSwiftEncodable,
-    Element.EncodingContext == RuntimeDynamicCodableContext
+    Element.EncodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
     public func encode(to encoder: Encoder, as type: TypeDefinition,
                        runtime: Runtime) throws {
@@ -203,6 +217,9 @@ extension Array: ContextDecodable where Element: ContextDecodable {
         self = array
     }
 }
+extension Array: RuntimeLazyDynamicSwiftDecodable where
+    Element: RuntimeLazyDynamicSwiftDecodable,
+    Element.DecodingContext: RuntimeLazyDynamicSwiftCodableContext {}
 extension Array: RuntimeSwiftDecodable where
     Element: RuntimeSwiftDecodable,
     Element.DecodingContext == RuntimeCodableContext
@@ -214,7 +231,7 @@ extension Array: RuntimeSwiftDecodable where
 }
 extension Array: RuntimeDynamicSwiftDecodable where
     Element: RuntimeDynamicSwiftDecodable,
-    Element.DecodingContext == RuntimeDynamicCodableContext
+    Element.DecodingContext: SomeRuntimeDynamicSwiftCodableContext
 {
     public init(from decoder: Decoder, as type: TypeDefinition, runtime: Runtime) throws {
         try self.init(from: decoder, context: .init(runtime: runtime, type: type))

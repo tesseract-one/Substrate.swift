@@ -117,7 +117,7 @@ public extension AnyCall where C == TypeDefinition {
     }
 }
 
-extension AnyCall: RuntimeDecodable, RuntimeDynamicDecodable where C == TypeDefinition {
+extension AnyCall: RuntimeLazyDynamicDecodable, RuntimeDecodable where C == TypeDefinition {
     public init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
         let pallet = try decoder.decode(UInt8.self)
         guard let call = runtime.resolve(palletCall: pallet) else {
@@ -129,7 +129,7 @@ extension AnyCall: RuntimeDecodable, RuntimeDynamicDecodable where C == TypeDefi
     }
 }
 
-extension AnyCall: RuntimeEncodable, RuntimeDynamicEncodable {
+extension AnyCall: RuntimeEncodable {
     public func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws
     {
         guard let palletCall = runtime.resolve(palletCall: pallet) else {

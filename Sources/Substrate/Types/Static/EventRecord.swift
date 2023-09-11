@@ -8,7 +8,9 @@
 import Foundation
 import ScaleCodec
 
-public struct EventRecord<H: Hash>: SomeEventRecord, CompositeStaticValidatableType, CustomStringConvertible
+public struct EventRecord<H: Hash>: SomeEventRecord,
+                                    CompositeStaticValidatableType,
+                                    CustomStringConvertible
 {
     public let phase: EventPhase
     public let header: (name: String, pallet: String)
