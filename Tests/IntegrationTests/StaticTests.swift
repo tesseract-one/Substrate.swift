@@ -80,9 +80,9 @@ final class StaticTests: XCTestCase {
             let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: self.config())
             let to = try toKp.address(in: substrate)
-            let call = Config.Balances.Call.TransferAllowDeath(dest: to,
-                                                               value: 15483812856)
-            let tx = try await substrate.tx.new(call)
+            let tx = try await substrate.tx.balances.transferAllowDeath(
+                dest: to, value: 15483812856
+            )
             let _ = try await tx.signAndSend(signer: from)
         }
     }
@@ -117,12 +117,9 @@ final class StaticTests: XCTestCase {
             let to = try toKp.address(in: substrate)
             let call = Config.Balances.Call.TransferAllowDeath(dest: to,
                                                                value: 15483812856)
-            let tx = try await substrate.tx.new(call).fakeSign(account: from.pubKey)
-            let queryInfo = try Config.TransactionPaymentApi.QueryInfo(
-                extrinsic: tx.extrinsic,
-                runtime: substrate.runtime
-            )
-            let _ = try await substrate.call.execute(call: queryInfo)
+            let tx = try await substrate.tx.new(call)
+            let _ = try await substrate.call.transaction.queryInfo(tx: tx,
+                                                                   from: from.pubKey)
         }
     }
     
@@ -134,12 +131,9 @@ final class StaticTests: XCTestCase {
             let to = try toKp.address(in: substrate)
             let call = Config.Balances.Call.TransferAllowDeath(dest: to,
                                                                value: 15483812856)
-            let tx = try await substrate.tx.new(call).fakeSign(account: from.pubKey)
-            let queryFee = try Config.TransactionPaymentApi.QueryFeeDetails(
-                extrinsic: tx.extrinsic,
-                runtime: substrate.runtime
-            )
-            let _ = try await substrate.call.execute(call: queryFee)
+            let tx = try await substrate.tx.new(call)
+            let _ = try await substrate.call.transaction.queryFeeDetails(tx: tx,
+                                                                         from: from.pubKey)
         }
     }
     
