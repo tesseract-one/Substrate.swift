@@ -11,6 +11,8 @@ import Substrate
 import SubstrateRPC
 
 final class StaticTests: XCTestCase {
+    public typealias Config = Configs.Substrate
+    
     let debug = false
     lazy var env = Environment()
     
@@ -36,9 +38,9 @@ final class StaticTests: XCTestCase {
     func testStorageValueCall() {
         runAsyncTest(withTimeout: 30) {
             let substrate = try await Api(rpc: self.httpClient, config: .substrate)
-            let entry = try substrate.query.dynamic(name: "Account", pallet: "System")
+            let entry = try substrate.query.entry(Config.System.Storage.Account.self)
             let alice = try self.env.kpAlice.pubKey.account(in: substrate)
-            let value = try await entry.value([alice])
+            let value = try await entry.value(alice)
             XCTAssertNotNil(value)
         }
     }
@@ -46,7 +48,7 @@ final class StaticTests: XCTestCase {
     func testStorageIteration() {
         runAsyncTest(withTimeout: 30) {
             let substrate = try await Api(rpc: self.httpClient, config: .substrate)
-            let entry = try substrate.query.dynamic(name: "Account", pallet: "System")
+            let entry = try substrate.query.entry(Config.System.Storage.Account.self)
             var found = false
             for try await _ in entry.entries().prefix(2) {
                 found = true
@@ -71,9 +73,8 @@ final class StaticTests: XCTestCase {
             let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: .substrate)
             let to = try toKp.address(in: substrate)
-            let call = AnyCall(name: "transfer_allow_death",
-                               pallet: "Balances",
-                               params: ["dest": to, "value": 15483812856])
+            let call = Config.Balances.Call.TransferAllowDeath(dest: to,
+                                                               value: 15483812856)
             let tx = try await substrate.tx.new(call)
             let _ = try await tx.signAndSend(signer: from)
         }
@@ -92,12 +93,10 @@ final class StaticTests: XCTestCase {
 
             let to1 = try toKp1.address(in: substrate)
             let to2 = try toKp2.address(in: substrate)
-            let call1 = AnyCall(name: "transfer_allow_death",
-                                pallet: "Balances",
-                                params: ["dest": to1, "value": 15383812800])
-            let call2 = AnyCall(name: "transfer_allow_death",
-                                pallet: "Balances",
-                                params: ["dest": to2, "value": 15583812810])
+            let call1 = Config.Balances.Call.TransferAllowDeath(dest: to1,
+                                                                value: 15383812800)
+            let call2 = Config.Balances.Call.TransferAllowDeath(dest: to2,
+                                                                value: 15583812810)
             let tx = try await substrate.tx.batchAll([call1, call2])
             let _ = try await tx.signAndSend(signer: from)
         }
@@ -109,9 +108,8 @@ final class StaticTests: XCTestCase {
             let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: .substrate)
             let to = try toKp.address(in: substrate)
-            let call = AnyCall(name: "transfer_allow_death",
-                               pallet: "Balances",
-                               params: ["dest": to, "value": 15483812856])
+            let call = Config.Balances.Call.TransferAllowDeath(dest: to,
+                                                               value: 15483812856)
             let tx = try await substrate.tx.new(call)
             let _ = try await tx.paymentInfo(account: from.pubKey)
         }
@@ -123,9 +121,8 @@ final class StaticTests: XCTestCase {
             let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.httpClient, config: .substrate)
             let to = try toKp.address(in: substrate)
-            let call = AnyCall(name: "transfer_allow_death",
-                               pallet: "Balances",
-                               params: ["dest": to, "value": 15483812856])
+            let call = Config.Balances.Call.TransferAllowDeath(dest: to,
+                                                               value: 15483812856)
             let tx = try await substrate.tx.new(call)
             let _ = try await tx.feeDetails(account: from.pubKey)
         }
@@ -138,15 +135,25 @@ final class StaticTests: XCTestCase {
             let toKp = self.env.keyPairs.someElement(without: [from])!
             let substrate = try await Api(rpc: self.wsClient, config: .substrate)
             let to = try toKp.address(in: substrate)
-            let call = AnyCall(name: "transfer_allow_death",
-                               pallet: "Balances",
-                               params: ["dest": to, "value": 15483812850])
+            let call = Config.Balances.Call.TransferAllowDeath(dest: to,
+                                                               value: 15483812856)
             let tx = try await substrate.tx.new(call)
             let events = try await tx.signSendAndWatch(signer: from)
                 .waitForInBlock()
                 .success()
             XCTAssert(events.events.count > 0)
-            print("Events: \(try events.parsed())")
+            let withdraw = try events.first(event: Config.Balances.Event.Withdraw.self)
+            XCTAssertNotNil(withdraw)
+            print(withdraw!)
+            let transfer = try events.first(event: Config.Balances.Event.Transfer.self)
+            XCTAssertNotNil(transfer)
+            print(transfer!)
+            let feePaid = try events.first(event: Config.TransactionPayment.Event.TransactionFeePaid.self)
+            XCTAssertNotNil(feePaid)
+            print(feePaid!)
+            let success = try events.first(event: Config.System.Event.ExtrinsicSuccess.self)
+            XCTAssertNotNil(success)
+            print(success!)
         }
     }
     
@@ -163,12 +170,10 @@ final class StaticTests: XCTestCase {
 
             let to1 = try toKp1.address(in: substrate)
             let to2 = try toKp2.address(in: substrate)
-            let call1 = AnyCall(name: "transfer_allow_death",
-                                pallet: "Balances",
-                                params: ["dest": to1, "value": 15383812800])
-            let call2 = AnyCall(name: "transfer_allow_death",
-                                pallet: "Balances",
-                                params: ["dest": to2, "value": 15583812810])
+            let call1 = Config.Balances.Call.TransferAllowDeath(dest: to1,
+                                                                value: 15383812800)
+            let call2 = Config.Balances.Call.TransferAllowDeath(dest: to2,
+                                                                value: 15583812810)
             let tx = try await substrate.tx.batchAll([call1, call2])
             let events = try await tx.signSendAndWatch(signer: from)
                 .waitForInBlock()
