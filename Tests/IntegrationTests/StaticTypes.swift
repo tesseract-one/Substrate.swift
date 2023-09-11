@@ -247,8 +247,8 @@ extension Configs.Substrate {
                 static var name: String = "TransactionFeePaid"
                 
                 let who: ST<C>.AccountId
-                let actualFee: ST<C>.ExtrinsicPayment
-                let tip: ST<C>.ExtrinsicPayment
+                let actualFee: Balances.Types.Balance
+                let tip: Balances.Types.Balance
                 
                 init<D>(paramsFrom decoder: inout D, runtime: Runtime) throws where D : Decoder {
                     who = try runtime.decode(from: &decoder)
@@ -259,10 +259,86 @@ extension Configs.Substrate {
                 static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
                     .event(fields: [
                         .v(registry.def(ST<C>.AccountId.self)),
-                        .v(registry.def(ST<C>.ExtrinsicPayment.self)),
-                        .v(registry.def(ST<C>.ExtrinsicPayment.self))
+                        .v(registry.def(Balances.Types.Balance.self)),
+                        .v(registry.def(Balances.Types.Balance.self))
                     ])
                 }
+            }
+        }
+    }
+    
+    struct TransactionPaymentApi: RuntimeApi {
+        typealias C = Configs.Substrate
+        
+        static var name: String = "TransactionPaymentApi"
+        
+        var calls: [any StaticRuntimeCall.Type] {
+            [QueryInfo.self, QueryFeeDetails.self]
+        }
+        
+        struct QueryInfo: RuntimeApiCall, IdentifiableFrameType {
+            typealias TApi = TransactionPaymentApi
+            typealias TReturn = ST<C>.RuntimeDispatchInfo
+            
+            static var method: String = "query_info"
+            
+            let uxt: Data
+            let len: UInt32
+            
+            public init(extrinsic: Data) {
+                uxt = extrinsic
+                len = UInt32(extrinsic.count)
+            }
+            
+            public init<CL: Call>(extrinsic: ST<C>.SignedExtrinsic<CL>, runtime: ExtendedRuntime<C>) throws {
+                var encoder = runtime.encoder()
+                try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
+                self.init(extrinsic: encoder.output)
+            }
+            
+            func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: any Runtime) throws {
+                try encoder.encode(uxt)
+                try encoder.encode(len)
+            }
+            
+            static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+                .runtimeCall(params: [
+                    .v(registry.def(Data.self, .dynamic)),
+                    .v(registry.def(UInt32.self))
+                ], return: registry.def(ST<C>.RuntimeDispatchInfo.self))
+            }
+        }
+        
+        struct QueryFeeDetails: RuntimeApiCall, IdentifiableFrameType {
+            typealias TApi = TransactionPaymentApi
+            typealias TReturn = ST<C>.FeeDetails
+            
+            static var method: String = "query_fee_details"
+            
+            let uxt: Data
+            let len: UInt32
+            
+            public init(extrinsic: Data) {
+                uxt = extrinsic
+                len = UInt32(extrinsic.count)
+            }
+            
+            public init<CL: Call>(extrinsic: ST<C>.SignedExtrinsic<CL>, runtime: ExtendedRuntime<C>) throws {
+                var encoder = runtime.encoder()
+                try runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: runtime)
+                self.init(extrinsic: encoder.output)
+            }
+            
+            func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: any Runtime) throws {
+                try encoder.encode(uxt)
+                try encoder.encode(len)
+            }
+            
+            static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
+                .runtimeCall(params: [
+                    .v(registry.def(Data.self, .dynamic)),
+                    .v(registry.def(UInt32.self))
+                ], return: registry.def(ST<C>.FeeDetails.self))
             }
         }
     }

@@ -69,9 +69,9 @@ public protocol Config {
     func defaultPayment(runtime: any Runtime) throws -> ST<Self>.ExtrinsicPayment
     
     // Pallets list for validation
-    func frames(runtime: any Runtime) throws -> [RuntimeValidatableType]
+    func frames(runtime: any Runtime) throws -> [any RuntimeValidatableType]
     // Runtime calls for validation
-    func runtimeCalls(runtime: any Runtime) throws -> [any StaticRuntimeCall.Type]
+    func runtimeApis(runtime: any Runtime) throws -> [any RuntimeValidatableType]
     
     // If you want your own Scale Codec coders
     func encoder() -> ScaleCodec.Encoder
@@ -193,13 +193,9 @@ public extension BatchSupportedConfig {
     }
     
     @inlinable
-    public static func defaultRuntimeCalls<C: Config>(
-        runtime: any Runtime, config: C
-    ) -> [any StaticRuntimeCall.Type] {
-        runtime.metadata.version < 15
-            ? []
-            : [TransactionQueryInfoRuntimeCall<ST<C>.RuntimeDispatchInfo>.self,
-               TransactionQueryFeeDetailsRuntimeCall<ST<C>.FeeDetails>.self]
+    public static func defaultRuntimeApis<C: Config>(_: C.Type) -> [any RuntimeValidatableType]
+    {
+        [BaseRuntimeTransactionApi<C>()]
     }
 }
 
@@ -251,13 +247,13 @@ public extension Config {
     }
     
     @inlinable
-    func frames(runtime: any Runtime) throws -> [RuntimeValidatableType] {
+    func frames(runtime: any Runtime) throws -> [any RuntimeValidatableType] {
         Configs.defaultFrames(Self.self)
     }
     
     @inlinable
-    func runtimeCalls(runtime: any Runtime) throws -> [any StaticRuntimeCall.Type] {
-        Configs.defaultRuntimeCalls(runtime: runtime, config: self)
+    func runtimeApis(runtime: any Runtime) throws -> [any RuntimeValidatableType] {
+        Configs.defaultRuntimeApis(Self.self)
     }
     
     @inlinable

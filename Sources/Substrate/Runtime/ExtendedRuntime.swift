@@ -78,7 +78,7 @@ open class ExtendedRuntime<RC: Config>: BasicRuntime<RC> {
                      isStatic: ST<RC>.TransactionValidityError.self is any StaticCallError.Type)
         // Static types provided by Config
         try config.frames(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
-        try config.runtimeCalls(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
+        try config.runtimeApis(runtime: self).voidErrorMap { $0.validate(runtime: self) }.get()
     }
     
     public func validate<T: ValidatableTypeStatic>(type: T.Type, info: DynamicTypes.Maybe<TypeDefinition>,

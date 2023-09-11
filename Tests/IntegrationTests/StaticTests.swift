@@ -29,15 +29,22 @@ final class StaticTests: XCTestCase {
         return cl
     }()
     
+    func config() -> Configs.Registry<Config> {
+        return try! .substrate(
+            frames: [Config.System(), Config.Balances(), Config.TransactionPayment()],
+            runtimeApis: [Config.TransactionPaymentApi()]
+        )
+    }
+    
     func testInitialization() {
         runAsyncTest(withTimeout: 30) {
-            let _ = try await Api(rpc: self.httpClient, config: .substrate)
+            let _ = try await Api(rpc: self.httpClient, config: self.config())
         }
     }
     
     func testStorageValueCall() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: .substrate)
+            let substrate = try await Api(rpc: self.httpClient, config: self.config())
             let entry = try substrate.query.entry(Config.System.Storage.Account.self)
             let alice = try self.env.kpAlice.pubKey.account(in: substrate)
             let value = try await entry.value(alice)
@@ -47,7 +54,7 @@ final class StaticTests: XCTestCase {
     
     func testStorageIteration() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: .substrate)
+            let substrate = try await Api(rpc: self.httpClient, config: self.config())
             let entry = try substrate.query.entry(Config.System.Storage.Account.self)
             var found = false
             for try await _ in entry.entries().prefix(2) {
@@ -59,7 +66,7 @@ final class StaticTests: XCTestCase {
     
     func testBlock() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: .substrate)
+            let substrate = try await Api(rpc: self.httpClient, config: self.config())
             let block = try await substrate.client.block(runtime: substrate.runtime)
             XCTAssertNotNil(block)
             print("Block: \(block!)")
@@ -71,7 +78,7 @@ final class StaticTests: XCTestCase {
         runAsyncTest(withTimeout: 30) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
-            let substrate = try await Api(rpc: self.httpClient, config: .substrate)
+            let substrate = try await Api(rpc: self.httpClient, config: self.config())
             let to = try toKp.address(in: substrate)
             let call = Config.Balances.Call.TransferAllowDeath(dest: to,
                                                                value: 15483812856)
@@ -82,7 +89,7 @@ final class StaticTests: XCTestCase {
     
     func testTransferBatchTx() {
         runAsyncTest(withTimeout: 30) {
-            let substrate = try await Api(rpc: self.httpClient, config: .substrate)
+            let substrate = try await Api(rpc: self.httpClient, config: self.config())
             guard substrate.runtime.isBatchSupported else {
                 print("Batch is not supported in the current runtime")
                 return
@@ -106,12 +113,16 @@ final class StaticTests: XCTestCase {
         runAsyncTest(withTimeout: 30) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
-            let substrate = try await Api(rpc: self.httpClient, config: .substrate)
+            let substrate = try await Api(rpc: self.httpClient, config: self.config())
             let to = try toKp.address(in: substrate)
             let call = Config.Balances.Call.TransferAllowDeath(dest: to,
                                                                value: 15483812856)
-            let tx = try await substrate.tx.new(call)
-            let _ = try await tx.paymentInfo(account: from.pubKey)
+            let tx = try await substrate.tx.new(call).fakeSign(account: from.pubKey)
+            let queryInfo = try Config.TransactionPaymentApi.QueryInfo(
+                extrinsic: tx.extrinsic,
+                runtime: substrate.runtime
+            )
+            let _ = try await substrate.call.execute(call: queryInfo)
         }
     }
     
@@ -119,7 +130,7 @@ final class StaticTests: XCTestCase {
         runAsyncTest(withTimeout: 30) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
-            let substrate = try await Api(rpc: self.httpClient, config: .substrate)
+            let substrate = try await Api(rpc: self.httpClient, config: self.config())
             let to = try toKp.address(in: substrate)
             let call = Config.Balances.Call.TransferAllowDeath(dest: to,
                                                                value: 15483812856)
@@ -133,7 +144,7 @@ final class StaticTests: XCTestCase {
         runAsyncTest(withTimeout: 300) {
             let from = self.env.fundedKeyPairs.someElement()!
             let toKp = self.env.keyPairs.someElement(without: [from])!
-            let substrate = try await Api(rpc: self.wsClient, config: .substrate)
+            let substrate = try await Api(rpc: self.wsClient, config: self.config())
             let to = try toKp.address(in: substrate)
             let call = Config.Balances.Call.TransferAllowDeath(dest: to,
                                                                value: 15483812856)
@@ -159,7 +170,7 @@ final class StaticTests: XCTestCase {
     
     func testTransferAndWatchBatchTx() {
         runAsyncTest(withTimeout: 300) {
-            let substrate = try await Api(rpc: self.wsClient, config: .substrate)
+            let substrate = try await Api(rpc: self.wsClient, config: self.config())
             guard substrate.runtime.isBatchSupported else {
                 print("Batch is not supported in the current runtime")
                 return

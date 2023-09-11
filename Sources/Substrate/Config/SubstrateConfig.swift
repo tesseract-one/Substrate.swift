@@ -62,8 +62,12 @@ public extension Configs {
         public let accountSelector: NSRegularExpression
         public let dispatchErrorSelector: NSRegularExpression
         public let transactionValidityErrorSelector: NSRegularExpression
+        public let frames: [any RuntimeValidatableType]?
+        public let runtimeApis: [any RuntimeValidatableType]?
         
-        public init(
+        
+        public init(frames: [any RuntimeValidatableType]? = nil,
+                    runtimeApis: [any RuntimeValidatableType]? = nil,
                     customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
                     blockSelector: String = "^.*Block$",
                     headerSelector: String = "^.*Header$",
@@ -71,6 +75,8 @@ public extension Configs {
                     dispatchErrorSelector: String = "^.*DispatchError$",
                     transactionValidityErrorSelector: String = "^.*TransactionValidityError$") throws
         {
+            self.frames = frames
+            self.runtimeApis = runtimeApis
             self.runtimeCustomCoders = customCoders
             self.blockSelector = try NSRegularExpression(pattern: blockSelector)
             self.accountSelector = try NSRegularExpression(pattern: accountSelector)
@@ -79,6 +85,18 @@ public extension Configs {
             self.transactionValidityErrorSelector = try NSRegularExpression(
                 pattern: transactionValidityErrorSelector
             )
+        }
+        
+        // Pallets list for validation
+        @inlinable
+        public func frames(runtime: any Runtime) throws -> [any RuntimeValidatableType] {
+            self.frames ?? Configs.defaultFrames(Self.self)
+        }
+        
+        // Runtime calls for validation
+        @inlinable
+        public func runtimeApis(runtime: any Runtime) throws -> [any RuntimeValidatableType] {
+            self.runtimeApis ?? Configs.defaultRuntimeApis(Self.self)
         }
         
         @inlinable
@@ -115,13 +133,16 @@ public extension Configs {
 public extension Configs.Registry where C == Configs.Substrate {
     @inlinable
     static func substrate(
+        frames: [any RuntimeValidatableType]? = nil,
+        runtimeApis: [any RuntimeValidatableType]? = nil,
         customCoders: [RuntimeCustomDynamicCoder] = Configs.defaultCustomCoders,
         blockSelector: String = "^.*Block$", headerSelector: String = "^.*Header$",
         accountSelector: String = "^.*AccountId[0-9]*$",
         dispatchErrorSelector: String = "^.*DispatchError$",
         transactionValidityErrorSelector: String = "^.*TransactionValidityError$"
     ) throws -> Self {
-        try Self(config: .init(customCoders: customCoders, blockSelector: blockSelector,
+        try Self(config: .init(frames: frames, runtimeApis: runtimeApis,
+                               customCoders: customCoders, blockSelector: blockSelector,
                                headerSelector: headerSelector, accountSelector: accountSelector,
                                dispatchErrorSelector: dispatchErrorSelector,
                                transactionValidityErrorSelector: transactionValidityErrorSelector))
