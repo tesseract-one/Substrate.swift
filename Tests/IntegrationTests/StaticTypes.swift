@@ -297,7 +297,7 @@ extension Configs.Substrate {
             }
             
             func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: any Runtime) throws {
-                try encoder.encode(uxt)
+                try encoder.encode(uxt, .fixed(UInt(len)))
                 try encoder.encode(len)
             }
             
@@ -330,7 +330,7 @@ extension Configs.Substrate {
             }
             
             func encodeParams<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: any Runtime) throws {
-                try encoder.encode(uxt)
+                try encoder.encode(uxt, .fixed(UInt(len)))
                 try encoder.encode(len)
             }
             

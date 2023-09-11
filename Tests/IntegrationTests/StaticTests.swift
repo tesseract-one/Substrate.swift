@@ -134,8 +134,12 @@ final class StaticTests: XCTestCase {
             let to = try toKp.address(in: substrate)
             let call = Config.Balances.Call.TransferAllowDeath(dest: to,
                                                                value: 15483812856)
-            let tx = try await substrate.tx.new(call)
-            let _ = try await tx.feeDetails(account: from.pubKey)
+            let tx = try await substrate.tx.new(call).fakeSign(account: from.pubKey)
+            let queryFee = try Config.TransactionPaymentApi.QueryFeeDetails(
+                extrinsic: tx.extrinsic,
+                runtime: substrate.runtime
+            )
+            let _ = try await substrate.call.execute(call: queryFee)
         }
     }
     
