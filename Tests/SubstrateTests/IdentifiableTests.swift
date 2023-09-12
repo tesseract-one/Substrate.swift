@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import ScaleCodec
 @testable import Substrate
 
 final class IdentifiableTests: XCTestCase {
