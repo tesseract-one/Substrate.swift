@@ -36,14 +36,14 @@ public extension Frame {
     }
 }
 
-public protocol RuntimeApi: RuntimeValidatableType {
+public protocol RuntimeApiFrame: RuntimeValidatableType {
     var name: String { get }
     static var name: String { get }
     
     var calls: [any StaticRuntimeCall.Type] { get }
 }
 
-public extension RuntimeApi {
+public extension RuntimeApiFrame {
     @inlinable var name: String { Self.name }
     
     func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
@@ -91,11 +91,11 @@ public extension FrameError {
     static var pallet: String { TFrame.name }
 }
 
-public protocol RuntimeApiCall: StaticRuntimeCall {
-    associatedtype TApi: RuntimeApi
+public protocol RuntimeApiFrameCall: StaticRuntimeCall {
+    associatedtype TApi: RuntimeApiFrame
 }
 
-public extension RuntimeApiCall {
+public extension RuntimeApiFrameCall {
     static var api: String { TApi.name }
 }
 

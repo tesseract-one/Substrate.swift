@@ -24,13 +24,9 @@ extension Configs.Substrate {
              Event.ExtrinsicSuccess.self]
         }
         
-        var errors: [StaticPalletError.Type] {[]}
-        
         var storageKeys: [any PalletStorageKey.Type] {
             [Storage.Account.self, EventsStorageKey<ST<C>.BlockEvents>.self]
         }
-        
-        var constants: [any StaticConstant.Type] { [] }
         
         struct Event {
             struct ExtrinsicSuccess: FrameEvent, StaticEvent, IdentifiableFrameType {
@@ -111,12 +107,10 @@ extension Configs.Substrate {
         var calls: [any PalletCall.Type] {[
             Call.TransferAllowDeath.self
         ]}
+        
         var events: [any PalletEvent.Type] {[
             Event.Transfer.self, Event.Withdraw.self
         ]}
-        var errors: [any StaticPalletError.Type] {[]}
-        var storageKeys: [any PalletStorageKey.Type] {[]}
-        var constants: [any StaticConstant.Type] {[]}
         
         struct Event {
             struct Withdraw: FrameEvent, StaticEvent, IdentifiableFrameType {
@@ -233,13 +227,9 @@ extension Configs.Substrate {
         
         static var name: String = "TransactionPayment"
         
-        var calls: [any PalletCall.Type] {[]}
         var events: [any PalletEvent.Type] {[
             Event.TransactionFeePaid.self
         ]}
-        var errors: [any StaticPalletError.Type] {[]}
-        var storageKeys: [any PalletStorageKey.Type] {[]}
-        var constants: [any StaticConstant.Type] {[]}
         
         struct Event {
             struct TransactionFeePaid: FrameEvent, StaticEvent, IdentifiableFrameType {
@@ -267,7 +257,7 @@ extension Configs.Substrate {
         }
     }
     
-    struct TransactionPaymentApi: RuntimeApi {
+    struct TransactionPaymentApi: RuntimeApiFrame {
         typealias C = Configs.Substrate
         
         static var name: String = "TransactionPaymentApi"
@@ -276,7 +266,7 @@ extension Configs.Substrate {
             [QueryInfo.self, QueryFeeDetails.self]
         }
         
-        struct QueryInfo: RuntimeApiCall, IdentifiableFrameType {
+        struct QueryInfo: RuntimeApiFrameCall, IdentifiableFrameType {
             typealias TApi = TransactionPaymentApi
             typealias TReturn = ST<C>.RuntimeDispatchInfo
             
@@ -309,7 +299,7 @@ extension Configs.Substrate {
             }
         }
         
-        struct QueryFeeDetails: RuntimeApiCall, IdentifiableFrameType {
+        struct QueryFeeDetails: RuntimeApiFrameCall, IdentifiableFrameType {
             typealias TApi = TransactionPaymentApi
             typealias TReturn = ST<C>.FeeDetails
             
