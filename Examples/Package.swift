@@ -1,6 +1,5 @@
 // swift-tools-version:5.7
 // The swift-tools-version declares the minimum version of Swift required to build this package.
-
 import PackageDescription
 
 let package = Package(
@@ -10,6 +9,9 @@ let package = Package(
         .executable(
             name: "BalanceTransaction",
             targets: ["BalanceTransaction"]),
+        .executable(
+            name: "CustomStaticConfig",
+            targets: ["CustomStaticConfig"])
     ],
     dependencies: [
         .package(path: "../")
@@ -17,6 +19,14 @@ let package = Package(
     targets: [
         .executableTarget(
             name: "BalanceTransaction",
+            dependencies: [
+                .product(name: "Substrate", package: "Substrate.swift"),
+                .product(name: "SubstrateRPC", package: "Substrate.swift"),
+                .product(name: "SubstrateKeychain", package: "Substrate.swift")
+            ]
+        ),
+        .executableTarget(
+            name: "CustomStaticConfig",
             dependencies: [
                 .product(name: "Substrate", package: "Substrate.swift"),
                 .product(name: "SubstrateRPC", package: "Substrate.swift"),

@@ -13,7 +13,7 @@ let client = JsonRpcClient(.ws(url: URL(string: "ws://127.0.0.1:9944")!,
 print("Initialization...")
 
 // Api instance for local node with Dynamic config and RPC client.
-let api = try await Api(rpc: client, config: .dynamicBlake2)
+let api = try await Api(rpc: client, config: Config())
 
 print("=======\nTransfer Transaction\n=======")
 
@@ -27,13 +27,9 @@ let bob = try rootKeyPair.derive(path: [PathComponent(string: "/Bob")])
 // Obtain address from PublicKey
 let to = try bob.address(in: api)
 
-// Dynamic call for transfer
-let call = AnyCall(name: "transfer_allow_death",
-                   pallet: "Balances",
-                   params: ["dest": to, "value": 15483812850])
-
-// Create new transaction from call
-let tx = try await api.tx.new(call)
+// Create transaction for balance transfer
+let tx = try await api.tx.balances.transferAllowDeath(dest: to,
+                                                      value: 15483812850)
 
 // Sign it and submit. Wait for success
 let events = try await tx.signSendAndWatch(signer: alice)

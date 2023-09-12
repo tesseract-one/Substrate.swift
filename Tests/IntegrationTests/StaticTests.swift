@@ -98,13 +98,13 @@ final class StaticTests: XCTestCase {
 
             let to1 = try toKp1.address(in: substrate)
             let to2 = try toKp2.address(in: substrate)
-            let call1 = substrate.tx.balances.callTransferAllowDeath(
+            let tx1 = try await substrate.tx.balances.transferAllowDeath(
                 dest: to1, value: 15383812800
             )
-            let call2 = substrate.tx.balances.callTransferAllowDeath(
+            let tx2 = try await substrate.tx.balances.transferAllowDeath(
                 dest: to2, value: 15583812810
             )
-            let tx = try await substrate.tx.batchAll([call1, call2])
+            let tx = try await substrate.tx.batchAll([tx1, tx2])
             let _ = try await tx.signAndSend(signer: from)
         }
     }
@@ -179,13 +179,13 @@ final class StaticTests: XCTestCase {
 
             let to1 = try toKp1.address(in: substrate)
             let to2 = try toKp2.address(in: substrate)
-            let call1 = substrate.tx.balances.callTransferAllowDeath(
+            let tx1 = try await substrate.tx.balances.transferAllowDeath(
                 dest: to1, value: 15383812800
             )
-            let call2 = substrate.tx.balances.callTransferAllowDeath(
+            let tx2 = try await substrate.tx.balances.transferAllowDeath(
                 dest: to2, value: 15583812810
             )
-            let tx = try await substrate.tx.batchAll([call1, call2])
+            let tx = try await substrate.tx.batchAll([tx1, tx2])
             let events = try await tx.signSendAndWatch(signer: from)
                 .waitForInBlock()
                 .success()

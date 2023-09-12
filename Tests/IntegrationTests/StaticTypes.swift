@@ -389,12 +389,6 @@ extension ExtrinsicApiRegistry where R.RC == Configs.Substrate {
 }
 
 extension FrameExtrinsicApi where R.RC == Configs.Substrate, F == Configs.Substrate.Balances {
-    func callTransferAllowDeath(
-        dest: ST<R.RC>.Address, value: F.Types.Balance
-    ) -> F.Call.TransferAllowDeath {
-        F.Call.TransferAllowDeath(dest: dest, value: value)
-    }
-    
     func transferAllowDeath(
         dest: ST<R.RC>.Address, value: F.Types.Balance
     ) async throws -> Submittable<R, F.Call.TransferAllowDeath, ST<R.RC>.ExtrinsicUnsignedExtra> {
