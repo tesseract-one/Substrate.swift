@@ -333,3 +333,104 @@ extension Configs.Substrate {
         }
     }
 }
+
+extension RuntimeCallApiRegistry where R.RC == Configs.Substrate {
+    var transaction: FrameRuntimeCallApi<R, Configs.Substrate.TransactionPaymentApi> { _frame() }
+}
+
+extension FrameRuntimeCallApi where R.RC == Configs.Substrate,
+                                    F == Configs.Substrate.TransactionPaymentApi
+{
+    func queryInfo<C: Call>(extrinsic: ST<R.RC>.SignedExtrinsic<C>) async throws -> F.QueryInfo.TReturn {
+        var encoder = api.runtime.encoder()
+        try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: api.runtime)
+        let call = F.QueryInfo(extrinsic: encoder.output)
+        return try await api.call.execute(call: call)
+    }
+    
+    func queryInfo<C: Call>(
+        tx: Submittable<R, C, ST<R.RC>.ExtrinsicUnsignedExtra>, from: any PublicKey
+    ) async throws -> F.QueryInfo.TReturn {
+        let signed = try await tx.fakeSign(account: from)
+        return try await queryInfo(tx: signed)
+    }
+    
+    func queryInfo<C: Call>(
+        tx: Submittable<R, C, ST<R.RC>.ExtrinsicSignedExtra>
+    ) async throws -> F.QueryInfo.TReturn {
+        try await queryInfo(extrinsic: tx.extrinsic)
+    }
+    
+    func queryFeeDetails<C: Call>(
+        tx: Submittable<R, C, ST<R.RC>.ExtrinsicUnsignedExtra>, from: any PublicKey
+    ) async throws -> F.QueryFeeDetails.TReturn {
+        let signed = try await tx.fakeSign(account: from)
+        return try await queryFeeDetails(tx: signed)
+    }
+    
+    func queryFeeDetails<C: Call>(
+        tx: Submittable<R, C, ST<R.RC>.ExtrinsicSignedExtra>
+    ) async throws -> F.QueryFeeDetails.TReturn {
+        try await queryFeeDetails(extrinsic: tx.extrinsic)
+    }
+    
+    func queryFeeDetails<C: Call>(
+        extrinsic: ST<R.RC>.SignedExtrinsic<C>
+    ) async throws -> F.QueryFeeDetails.TReturn {
+        var encoder = api.runtime.encoder()
+        try api.runtime.extrinsicManager.encode(signed: extrinsic, in: &encoder, runtime: api.runtime)
+        let call = F.QueryFeeDetails(extrinsic: encoder.output)
+        return try await api.call.execute(call: call)
+    }
+}
+
+extension ExtrinsicApiRegistry where R.RC == Configs.Substrate {
+    var balances: FrameExtrinsicApi<R, Configs.Substrate.Balances> { _frame() }
+}
+
+extension FrameExtrinsicApi where R.RC == Configs.Substrate, F == Configs.Substrate.Balances {
+    func callTransferAllowDeath(
+        dest: ST<R.RC>.Address, value: F.Types.Balance
+    ) -> F.Call.TransferAllowDeath {
+        F.Call.TransferAllowDeath(dest: dest, value: value)
+    }
+    
+    func transferAllowDeath(
+        dest: ST<R.RC>.Address, value: F.Types.Balance
+    ) async throws -> Submittable<R, F.Call.TransferAllowDeath, ST<R.RC>.ExtrinsicUnsignedExtra> {
+        try await api.tx.new(F.Call.TransferAllowDeath(dest: dest, value: value))
+    }
+}
+
+extension ExtrinsicEvents where R.RC == Configs.Substrate {
+    var system: ExtrinsicEventsFrameFilter<R, Configs.Substrate.System> {
+        _frame()
+    }
+    var transactionPayment: ExtrinsicEventsFrameFilter<R, Configs.Substrate.TransactionPayment> {
+        _frame()
+    }
+    var balances: ExtrinsicEventsFrameFilter<R, Configs.Substrate.Balances> {
+        _frame()
+    }
+}
+
+extension ExtrinsicEventsFrameFilter where R.RC == Configs.Substrate, F == Configs.Substrate.System {
+    var extrinsicSuccess: ExtrinsicEventsEventFilter<R, F.Event.ExtrinsicSuccess>  { _event() }
+}
+
+extension ExtrinsicEventsFrameFilter where R.RC == Configs.Substrate, F == Configs.Substrate.TransactionPayment {
+    var transactionFeePaid: ExtrinsicEventsEventFilter<R, F.Event.TransactionFeePaid>  { _event() }
+}
+
+extension ExtrinsicEventsFrameFilter where R.RC == Configs.Substrate, F == Configs.Substrate.Balances {
+    var transfer: ExtrinsicEventsEventFilter<R, F.Event.Transfer>  { _event() }
+    var withdraw: ExtrinsicEventsEventFilter<R, F.Event.Withdraw>  { _event() }
+}
+
+extension StorageApiRegistry where R.RC == Configs.Substrate {
+    var system: FrameStorageApi<R, Configs.Substrate.System> { _frame() }
+}
+
+extension FrameStorageApi where R.RC == Configs.Substrate, F == Configs.Substrate.System {
+    var account: StorageEntry<R, F.Storage.Account> { api.query.entry() }
+}

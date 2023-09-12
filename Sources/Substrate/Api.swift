@@ -30,8 +30,8 @@ public extension RootApi {
 
 public protocol RootApiAware<RAPI> {
     associatedtype RAPI: RootApi
-    var rootApi: RAPI! { get }
-    mutating func setRootApi(api: RAPI) throws
+    var _rootApi: RAPI! { get }
+    mutating func _setRootApi(api: RAPI) throws
 }
 
 public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
@@ -61,11 +61,11 @@ public final class Api<RC: Config, CL: Client>: RootApi where CL.C == RC {
         self.constants = ConstantsApiRegistry()
         
         // Init registries
-        constants.setRootApi(api: self)
-        rpc.setRootApi(api: self)
-        call.setRootApi(api: self)
-        query.setRootApi(api: self)
-        tx.setRootApi(api: self)
+        constants._setRootApi(api: self)
+        rpc._setRootApi(api: self)
+        call._setRootApi(api: self)
+        query._setRootApi(api: self)
+        tx._setRootApi(api: self)
         
         // Validate
         try runtime.validate()

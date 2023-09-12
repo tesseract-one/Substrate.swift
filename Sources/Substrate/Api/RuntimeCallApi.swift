@@ -9,44 +9,47 @@ import Foundation
 
 public protocol RuntimeCallApi<R> {
     associatedtype R: RootApi
-    var api: R! { get }
     init(api: R)
-    static var id: String { get }
 }
 
 extension RuntimeCallApi {
-    public static var id: String { String(describing: self) }
+    public static var id: ObjectIdentifier { ObjectIdentifier(self) }
 }
 
 public class RuntimeCallApiRegistry<R: RootApi>: RootApiAware {
-    private let _apis: Synced<[String: any RuntimeCallApi]>
+    private let _apis: Synced<[ObjectIdentifier: any RuntimeCallApi]>
     
-    public weak var rootApi: R!
+    public weak var _rootApi: R!
     
     public init(api: R? = nil) {
-        self.rootApi = api
+        self._rootApi = api
         self._apis = Synced(value: [:])
     }
     
-    public func setRootApi(api: R) {
-        self.rootApi = api
+    public func _setRootApi(api: R) {
+        self._rootApi = api
     }
     
-    public func getApi<A>(_ t: A.Type) -> A where A: RuntimeCallApi, A.R == R {
+    public func _api<A>() -> A where A: RuntimeCallApi, A.R == R {
         _apis.mutate { apis in
             if let api = apis[A.id] as? A {
                 return api
             }
-            let api = A(api: rootApi)
+            let api = A(api: _rootApi)
             apis[A.id] = api
             return api
         }
+    }
+    
+    @inlinable
+    public func _api<A>(_ t: A.Type) -> A where A: RuntimeCallApi, A.R == R {
+        _api()
     }
 }
 
 public extension RuntimeCallApiRegistry {
     func has(method: String, api: String) -> Bool {
-        rootApi.runtime.resolve(runtimeCall: method, api: api) != nil
+        _rootApi.runtime.resolve(runtimeCall: method, api: api) != nil
     }
     
     func has<C: RuntimeCall>(call: C) -> Bool {
@@ -59,8 +62,8 @@ public extension RuntimeCallApiRegistry {
     
     func execute<C: RuntimeCall>(call: C,
                                  at hash: ST<R.RC>.Hash? = nil) async throws -> C.TReturn {
-        try await rootApi.client.execute(call: call,
-                                         at: hash ?? rootApi.hash,
-                                         runtime: rootApi.runtime)
+        try await _rootApi.client.execute(call: call,
+                                          at: hash ?? _rootApi.hash,
+                                          runtime: _rootApi.runtime)
     }
 }

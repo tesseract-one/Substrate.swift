@@ -9,37 +9,40 @@ import Foundation
 
 public protocol RpcApi<R> {
     associatedtype R: RootApi
-    var api: R! { get }
     init(api: R)
-    static var id: String { get }
 }
 
 extension RpcApi {
-    public static var id: String { String(describing: self) }
+    public static var id: ObjectIdentifier { ObjectIdentifier(self) }
 }
 
 public class RpcApiRegistry<R: RootApi>: RootApiAware {
-    private let _apis: Synced<[String: any RpcApi]>
+    private let _apis: Synced<[ObjectIdentifier: any RpcApi]>
     
-    public weak var rootApi: R!
+    public weak var _rootApi: R!
     
     public init(api: R? = nil) {
-        self.rootApi = api
+        self._rootApi = api
         self._apis = Synced(value: [:])
     }
     
-    public func setRootApi(api: R) {
-        self.rootApi = api
+    public func _setRootApi(api: R) {
+        self._rootApi = api
     }
     
-    public func getApi<A>(_ t: A.Type) -> A where A: RpcApi, A.R == R {
+    public func _api<A>() -> A where A: RpcApi, A.R == R {
         _apis.mutate { apis in
             if let api = apis[A.id] as? A {
                 return api
             }
-            let api = A(api: rootApi)
+            let api = A(api: _rootApi)
             apis[A.id] = api
             return api
         }
+    }
+    
+    @inlinable
+    public func _api<A>(_ t: A.Type) -> A where A: RpcApi, A.R == R {
+        _api()
     }
 }

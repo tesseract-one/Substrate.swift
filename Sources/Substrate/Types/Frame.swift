@@ -135,3 +135,75 @@ public extension Configs {
         public init() {}
     }
 }
+
+public struct ExtrinsicEventsFrameFilter<R: RootApi, F: Frame>: ExtrinsicEventsFilter {
+    public let blockEvents: ST<R.RC>.BlockEvents
+    public let index: UInt32
+    
+    public init(blockEvents: ST<R.RC>.BlockEvents, index: UInt32) {
+        self.blockEvents = blockEvents
+        self.index = index
+    }
+    
+    public static var pallet: String { F.name }
+    
+    public func _event<E: FrameEvent>(_: E.Type) -> ExtrinsicEventsEventFilter<R, E>
+        where E.TFrame == F
+    {
+        _event()
+    }
+    public func _event<E: FrameEvent>() -> ExtrinsicEventsEventFilter<R, E>
+        where E.TFrame == F
+    {
+        .init(blockEvents: blockEvents, index: index)
+    }
+}
+
+public extension ExtrinsicEvents {
+    @inlinable func _frame<F: Frame>() -> ExtrinsicEventsFrameFilter<R, F> {
+        _filter()
+    }
+    @inlinable func _frame<F: Frame>(_: F.Type) -> ExtrinsicEventsFrameFilter<R, F> {
+        _filter()
+    }
+}
+
+public struct FrameStorageApi<R: RootApi, F: Frame>: StorageApi {
+    public weak var api: R!
+    public init(api: R) { self.api = api }
+}
+
+public struct FrameConstantsApi<R: RootApi, F: Frame>: ConstantsApi {
+    public weak var api: R!
+    public init(api: R) { self.api = api }
+}
+
+public struct FrameExtrinsicApi<R: RootApi, F: Frame>: ExtrinsicApi {
+    public weak var api: R!
+    public init(api: R) { self.api = api }
+}
+
+public struct FrameRuntimeCallApi<R: RootApi, F: RuntimeApiFrame>: RuntimeCallApi {
+    public weak var api: R!
+    public init(api: R) { self.api = api }
+}
+
+public extension ConstantsApiRegistry {
+    func _frame<F: Frame>() -> FrameConstantsApi<R, F> { _api() }
+    func _frame<F: Frame>(_: F.Type) -> FrameConstantsApi<R, F> { _api() }
+}
+
+public extension ExtrinsicApiRegistry {
+    func _frame<F: Frame>() -> FrameExtrinsicApi<R, F> { _api() }
+    func _frame<F: Frame>(_: F.Type) -> FrameExtrinsicApi<R, F> { _api() }
+}
+
+public extension StorageApiRegistry {
+    func _frame<F: Frame>() -> FrameStorageApi<R, F> { _api() }
+    func _frame<F: Frame>(_: F.Type) -> FrameStorageApi<R, F> { _api() }
+}
+
+public extension RuntimeCallApiRegistry {
+    func _frame<F: RuntimeApiFrame>() -> FrameRuntimeCallApi<R, F> { _api() }
+    func _frame<F: RuntimeApiFrame>(_: F.Type) -> FrameRuntimeCallApi<R, F> { _api() }
+}

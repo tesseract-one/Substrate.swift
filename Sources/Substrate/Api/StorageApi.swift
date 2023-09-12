@@ -9,39 +9,42 @@ import Foundation
 
 public protocol StorageApi<R> {
     associatedtype R: RootApi
-    var api: R! { get }
     init(api: R)
-    static var id: String { get }
 }
 
 extension StorageApi {
-    public static var id: String { String(describing: self) }
+    public static var id: ObjectIdentifier { ObjectIdentifier(self) }
 }
 
 public class StorageApiRegistry<R: RootApi>: RootApiAware {
-    private let _apis: Synced<[String: any StorageApi]>
+    private let _apis: Synced<[ObjectIdentifier: any StorageApi]>
 
-    public weak var rootApi: R!
+    public weak var _rootApi: R!
     
     public init(api: R? = nil) {
-        self.rootApi = api
+        self._rootApi = api
         self._apis = Synced(value: [:])
     }
     
     @inlinable
-    public func setRootApi(api: R) {
-        self.rootApi = api
+    public func _setRootApi(api: R) {
+        self._rootApi = api
     }
     
-    public func getApi<A>(_ t: A.Type) -> A where A: StorageApi, A.R == R {
+    public func _api<A>() -> A where A: StorageApi, A.R == R {
         _apis.mutate { apis in
             if let api = apis[A.id] as? A {
                 return api
             }
-            let api = A(api: rootApi)
+            let api = A(api: _rootApi)
             apis[A.id] = api
             return api
         }
+    }
+    
+    @inlinable
+    public func _api<A>(_ t: A.Type) -> A where A: StorageApi, A.R == R {
+        _api()
     }
 }
 
@@ -57,7 +60,7 @@ public extension StorageApiRegistry {
     func entry<D: RuntimeDynamicDecodable>(
         _ type: D.Type, name: String, pallet: String
     ) throws -> StorageEntry<R, AnyStorageKey<D>> {
-        try StorageEntry(api: rootApi, params: (name, pallet))
+        try StorageEntry(api: _rootApi, params: (name, pallet))
     }
     
     @inlinable
@@ -68,13 +71,13 @@ public extension StorageApiRegistry {
     }
     
     @inlinable
-    func entry<Key: StaticStorageKey>() throws -> StorageEntry<R, Key> {
-        try StorageEntry(api: rootApi, params: ())
+    func entry<Key: StaticStorageKey>() -> StorageEntry<R, Key> {
+        try! StorageEntry(api: _rootApi, params: ())
     }
     
     @inlinable
-    func entry<Key: StaticStorageKey>(_ type: Key.Type) throws -> StorageEntry<R, Key> {
-        try StorageEntry(api: rootApi, params: ())
+    func entry<Key: StaticStorageKey>(_ type: Key.Type) -> StorageEntry<R, Key> {
+        try! StorageEntry(api: _rootApi, params: ())
     }
     
     @inlinable
@@ -82,15 +85,15 @@ public extension StorageApiRegistry {
         keys: [any StorageKey],
         at hash: ST<R.RC>.Hash? = nil
     ) async throws -> [(block: ST<R.RC>.Hash, changes: [(key: any StorageKey, value: Any?)])] {
-        try await rootApi.client.storage(anychanges: keys,
-                                         at: hash ?? rootApi.hash,
-                                         runtime: rootApi.runtime)
+        try await _rootApi.client.storage(anychanges: keys,
+                                          at: hash ?? _rootApi.hash,
+                                          runtime: _rootApi.runtime)
     }
 }
 
 public extension StorageApiRegistry where R.CL: SubscribableClient {
     @inlinable
     func watch(keys: [any StorageKey]) async throws -> AsyncThrowingStream<(any StorageKey, Any?), Error> {
-        try await rootApi.client.subscribe(anystorage: keys, runtime: rootApi.runtime)
+        try await _rootApi.client.subscribe(anystorage: keys, runtime: _rootApi.runtime)
     }
 }
