@@ -51,6 +51,13 @@ final class StaticTests: XCTestCase {
         }
     }
     
+    func testConstant() {
+        runAsyncTest(withTimeout: 30) {
+            let substrate = try await Api(rpc: self.httpClient, config: self.config())
+            let _ = try substrate.constants.system.blockWeights
+        }
+    }
+    
     func testStorageIteration() {
         runAsyncTest(withTimeout: 30) {
             let substrate = try await Api(rpc: self.httpClient, config: self.config())

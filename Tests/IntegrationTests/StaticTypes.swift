@@ -28,6 +28,10 @@ extension Configs.Substrate {
             [Storage.Account.self, EventsStorageKey<ST<C>.BlockEvents>.self]
         }
         
+        var constants: [any StaticConstant.Type] {
+            [Constant.BlockWeights.self]
+        }
+        
         struct Event {
             struct ExtrinsicSuccess: FrameEvent, StaticEvent, IdentifiableFrameType {
                 typealias TFrame = System
@@ -61,7 +65,18 @@ extension Configs.Substrate {
             }
         }
         
+        struct Constant {
+            struct BlockWeights: FrameConstant, IdentifiableFrameType {
+                typealias TFrame = System
+                typealias TValue = Types.BlockWeights
+                
+                static var name: String = "BlockWeights"
+            }
+        }
+        
         struct Types {
+            public typealias Weight = DispatchInfo.Weight
+            
             struct AccountInfo: RuntimeCodable, IdentifiableType
             {
                 let nonce: ST<C>.Index
@@ -93,6 +108,67 @@ extension Configs.Substrate {
                         .v(registry.def(UInt32.self)),
                         .v(registry.def(UInt32.self)),
                         .v(registry.def(Balances.Types.AccountData.self))
+                    ])
+                }
+            }
+            
+            struct BlockWeights: RuntimeDecodable, IdentifiableType {
+                let baseBlock: Weight
+                let maxBlock: Weight
+                let perClass: PerDispatchClass<WeightsPerClass>
+                
+                init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
+                    baseBlock = try decoder.decode()
+                    maxBlock = try decoder.decode()
+                    perClass = try runtime.decode(from: &decoder)
+                }
+                
+                static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+                    .composite(fields: [
+                        .v(registry.def(Weight.self)),
+                        .v(registry.def(Weight.self)),
+                        .v(registry.def(PerDispatchClass<WeightsPerClass>.self))
+                    ])
+                }
+            }
+            
+            struct PerDispatchClass<T: RuntimeDecodable & IdentifiableType>: RuntimeDecodable, IdentifiableType {
+                let normal: T
+                let operational: T
+                let mandatory: T
+                
+                init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
+                    normal = try runtime.decode(from: &decoder)
+                    operational = try runtime.decode(from: &decoder)
+                    mandatory = try runtime.decode(from: &decoder)
+                }
+                
+                static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+                    .composite(fields: [
+                        .v(registry.def(T.self)), .v(registry.def(T.self)), .v(registry.def(T.self))
+                    ])
+                }
+            }
+            
+            struct WeightsPerClass: RuntimeDecodable, IdentifiableType {
+                let baseExtrinsic: Weight
+                let maxExtrinsic: Weight?
+                let maxTotal: Weight?
+                let reserved: Weight?
+                
+                init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
+                    baseExtrinsic = try decoder.decode()
+                    maxExtrinsic = try decoder.decode()
+                    maxTotal = try decoder.decode()
+                    reserved = try decoder.decode()
+                }
+                
+                static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+                    .composite(fields: [
+                        .v(registry.def(Weight.self)),
+                        .v(registry.def(Weight?.self)),
+                        .v(registry.def(Weight?.self)),
+                        .v(registry.def(Weight?.self))
                     ])
                 }
             }
@@ -332,6 +408,18 @@ extension Configs.Substrate {
             }
         }
     }
+}
+
+extension ConstantsApiRegistry where R.RC == Configs.Substrate {
+    var system: FrameConstantsApi<R, Configs.Substrate.System> { _frame() }
+}
+
+extension FrameConstantsApi where R.RC == Configs.Substrate,
+                                  F == Configs.Substrate.System
+{
+    var blockWeights: F.Types.BlockWeights { get throws {
+        try api.constants.get(F.Constant.BlockWeights.self)
+    }}
 }
 
 extension RuntimeCallApiRegistry where R.RC == Configs.Substrate {

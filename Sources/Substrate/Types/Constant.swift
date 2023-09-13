@@ -17,6 +17,7 @@ public protocol StaticConstant: FrameType {
 
 public extension StaticConstant {
     @inlinable static var frame: String { pallet }
+    @inlinable static var frameTypeName: String { "Constant" }
 }
 
 public extension StaticConstant where TValue: RuntimeDecodable {
@@ -27,7 +28,10 @@ public extension StaticConstant where TValue: RuntimeDecodable {
     }
 }
 
-public extension StaticConstant where TValue: ValidatableTypeStatic {
+public protocol ValidatableStaticConstant: StaticConstant where
+    TValue: ValidatableTypeStatic {}
+
+public extension ValidatableStaticConstant {
     static func validate(runtime: any Runtime) -> Result<Void, FrameTypeError> {
         guard let info = runtime.resolve(constant: name, pallet: pallet) else {
             return .failure(.typeInfoNotFound(for: Self.self, .get()))
@@ -38,7 +42,9 @@ public extension StaticConstant where TValue: ValidatableTypeStatic {
     }
 }
 
-public extension StaticConstant where TValue: IdentifiableTypeStatic {
+public extension StaticConstant where Self: IdentifiableFrameType,
+                                      TValue: IdentifiableTypeStatic
+{
     @inlinable
     static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> FrameTypeDefinition {
         .constant(type: registry.def(TValue.self))
