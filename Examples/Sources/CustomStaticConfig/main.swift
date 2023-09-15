@@ -36,7 +36,13 @@ let events = try await tx.signSendAndWatch(signer: alice)
     .waitForInBlock()
     .success()
 
-// Parsed events
+let withdraw = try events.balances.withdraw.first
+let success = try events.system.extrinsicSuccess.first
+
+print("Success event: \(success!)")
+print("Withdraw event: \(withdraw!)")
+
+// All events
 for event in try events.parsed() {
     print(event)
 }

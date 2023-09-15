@@ -59,7 +59,18 @@ extension Config {
             }
         }
         
+        struct Constant {
+            struct BlockWeights: FrameConstant, IdentifiableFrameType {
+                typealias TFrame = System
+                typealias TValue = Types.BlockWeights
+                
+                static var name: String = "BlockWeights"
+            }
+        }
+        
         struct Types {
+            public typealias Weight = DispatchInfo.Weight
+            
             struct AccountInfo: RuntimeCodable, IdentifiableType
             {
                 let nonce: ST<Config>.Index
@@ -94,6 +105,67 @@ extension Config {
                     ])
                 }
             }
+            
+            struct BlockWeights: RuntimeDecodable, IdentifiableType {
+                let baseBlock: Weight
+                let maxBlock: Weight
+                let perClass: PerDispatchClass<WeightsPerClass>
+                
+                init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
+                    baseBlock = try decoder.decode()
+                    maxBlock = try decoder.decode()
+                    perClass = try runtime.decode(from: &decoder)
+                }
+                
+                static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+                    .composite(fields: [
+                        .v(registry.def(Weight.self)),
+                        .v(registry.def(Weight.self)),
+                        .v(registry.def(PerDispatchClass<WeightsPerClass>.self))
+                    ])
+                }
+            }
+            
+            struct PerDispatchClass<T: RuntimeDecodable & IdentifiableType>: RuntimeDecodable, IdentifiableType {
+                let normal: T
+                let operational: T
+                let mandatory: T
+                
+                init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
+                    normal = try runtime.decode(from: &decoder)
+                    operational = try runtime.decode(from: &decoder)
+                    mandatory = try runtime.decode(from: &decoder)
+                }
+                
+                static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+                    .composite(fields: [
+                        .v(registry.def(T.self)), .v(registry.def(T.self)), .v(registry.def(T.self))
+                    ])
+                }
+            }
+            
+            struct WeightsPerClass: RuntimeDecodable, IdentifiableType {
+                let baseExtrinsic: Weight
+                let maxExtrinsic: Weight?
+                let maxTotal: Weight?
+                let reserved: Weight?
+                
+                init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
+                    baseExtrinsic = try decoder.decode()
+                    maxExtrinsic = try decoder.decode()
+                    maxTotal = try decoder.decode()
+                    reserved = try decoder.decode()
+                }
+                
+                static func definition(in registry: TypeRegistry<TypeDefinition.TypeId>) -> TypeDefinition.Builder {
+                    .composite(fields: [
+                        .v(registry.def(Weight.self)),
+                        .v(registry.def(Weight?.self)),
+                        .v(registry.def(Weight?.self)),
+                        .v(registry.def(Weight?.self))
+                    ])
+                }
+            }
         }
     }
 }
@@ -114,4 +186,14 @@ extension StorageApiRegistry where R.RC == Config {
 
 extension FrameStorageApi where R.RC == Config, F == Config.System {
     var account: StorageEntry<R, F.Storage.Account> { api.query.entry() }
+}
+
+extension ConstantsApiRegistry where R.RC == Config {
+    var system: FrameConstantsApi<R, Config.System> { _frame() }
+}
+
+extension FrameConstantsApi where R.RC == Config, F == Config.System {
+    var blockWeights: F.Types.BlockWeights { get throws {
+        try api.constants.get(F.Constant.BlockWeights.self)
+    }}
 }
