@@ -8,16 +8,22 @@
 import Foundation
 import ScaleCodec
 
+// Type that doesn't need Type Definition for decoding.
+// Most of the FrameTypes and dynamic types with definition in metadata.
 public protocol RuntimeDecodable: RuntimeLazyDynamicDecodable {
     init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws
 }
 
+// Type that doesn't need Type Definition for encoding.
+// Most of the FrameTypes and dynamic types with definition in metadata.
 public protocol RuntimeEncodable: RuntimeLazyDynamicEncodable {
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws
 }
 
+// Codable typealias
 public typealias RuntimeCodable = RuntimeEncodable & RuntimeDecodable
 
+// ScaleCodec.Decodable is always RuntimeDecodable
 public extension ScaleCodec.Decodable {
     @inlinable
     init<D: ScaleCodec.Decoder>(from decoder: inout D, runtime: Runtime) throws {
@@ -25,6 +31,7 @@ public extension ScaleCodec.Decodable {
     }
 }
 
+// ScaleCodec.Encodable is always RuntimeEncodable
 public extension ScaleCodec.Encodable {
     @inlinable
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E, runtime: Runtime) throws {
@@ -32,34 +39,49 @@ public extension ScaleCodec.Encodable {
     }
 }
 
+// Type that needs Type Definition for decoding.
+// Most of the runtime dynamic types.
 public protocol RuntimeDynamicDecodable: RuntimeLazyDynamicDecodable {
     init<D: ScaleCodec.Decoder>(from decoder: inout D,
                                 `as` type: TypeDefinition,
                                 runtime: any Runtime) throws
 }
 
+// Type that needs Type Definition for encoding.
+// Most of the runtime dynamic types.
 public protocol RuntimeDynamicEncodable: RuntimeLazyDynamicEncodable {
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
                                        `as` type: TypeDefinition,
                                        runtime: Runtime) throws
 }
 
+// Codable typealias
 public typealias RuntimeDynamicCodable = RuntimeDynamicDecodable & RuntimeDynamicEncodable
 
+// Base decodable protocol for all SCALE codable structures.
+// Accepts runtime and lazy type definition.
+// Should never be implemented directly. Will be automatically implemented by one of the child protocols.
+// Should be used only at core-level as type restriction to support all types of structures (dynamic+static).
 public protocol RuntimeLazyDynamicDecodable {
     init<D: ScaleCodec.Decoder>(from decoder: inout D,
                                 runtime: any Runtime,
                                 lazy type: TypeDefinition.Lazy) throws
 }
 
+// Base encodable protocol for all SCALE codable structures.
+// Accepts runtime and lazy type definition.
+// Should never be implemented directly. Will be automatically implemented by one of the child protocols.
+// Should be used only at core-level as type restriction to support all types of structures (dynamic+static).
 public protocol RuntimeLazyDynamicEncodable {
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
                                        runtime: Runtime,
                                        lazy type: TypeDefinition.Lazy) throws
 }
 
+// Useful typealias for Codable types.
 public typealias RuntimeLazyDynamicCodable = RuntimeLazyDynamicDecodable & RuntimeLazyDynamicEncodable
 
+// Will detect proper implementation at runtime.
 public extension RuntimeLazyDynamicDecodable {
     init<D: ScaleCodec.Decoder>(from decoder: inout D,
                                 runtime: any Runtime,
@@ -77,6 +99,7 @@ public extension RuntimeLazyDynamicDecodable {
     }
 }
 
+// Will detect proper implementation at runtime.
 public extension RuntimeLazyDynamicEncodable {
     func encode<E: ScaleCodec.Encoder>(in encoder: inout E,
                                        runtime: Runtime,
@@ -94,6 +117,8 @@ public extension RuntimeLazyDynamicEncodable {
     }
 }
 
+
+// Helper methods to encode and decode types.
 public extension Runtime {
     @inlinable
     func decode<T: RuntimeDecodable, D: ScaleCodec.Decoder>(from decoder: inout D, _ type: T.Type) throws -> T {
@@ -279,6 +304,10 @@ public extension Runtime {
     }
 }
 
+// Hook type which allows to customize encoding and decoding of dynamic types
+// Runtime version of the CustomDynamicCoder.
+// Used for UcheckedExtrinsic, because metadata is wrong for it and it should be
+// encoded in a custom way
 public protocol RuntimeCustomDynamicCoder {
     func check(type: TypeDefinition, in runtime: any Runtime) -> Bool
     
