@@ -136,13 +136,7 @@ extension ExtrinsicApiRegistry where R.RC == Config {
     var balances: FrameExtrinsicApi<R, Config.Balances> { _frame() }
 }
 
-extension FrameExtrinsicApi where R.RC == Config, F == Config.Balances {
-    func callTransferAllowDeath(
-        dest: ST<R.RC>.Address, value: F.Types.Balance
-    ) -> F.Call.TransferAllowDeath {
-        F.Call.TransferAllowDeath(dest: dest, value: value)
-    }
-    
+extension FrameExtrinsicApi where R.RC == Config, F == Config.Balances {    
     func transferAllowDeath(
         dest: ST<R.RC>.Address, value: F.Types.Balance
     ) async throws -> Submittable<R, F.Call.TransferAllowDeath,

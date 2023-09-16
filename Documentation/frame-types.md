@@ -39,3 +39,21 @@ SDK provides helpers for common key types for simpler implementation:
 
 ### N-map keys
 N-map keys can be implemented through tuple keys via `TupleStorageKey` protocol and `Tuple1...Tuple15` structures.
+
+## Frame type
+
+This is a top-level type which can be used for all frame types registration. It's a protocol defined as:
+```swift
+public protocol Frame: RuntimeValidatableType {
+    static var name: String { get }
+    
+    var calls: [PalletCall.Type] { get }
+    var events: [PalletEvent.Type] { get }
+    var errors: [StaticPalletError.Type] { get }
+    var storageKeys: [any PalletStorageKey.Type] { get }
+    var constants: [any StaticConstant.Type] { get }
+}
+```
+Example implementation can be found in the [CustomStaticConfig](../Examples/Sources/CustomStaticConfig/) application.
+
+There are `Frame`-prefixed protocols for all static frame types, which accepts Frame as associated type. They all defined in the [Frame.swift](../Sources/Substrate/Types/Frame.swift) file.

@@ -62,7 +62,7 @@ let nodeUrl = URL(string: "wss://westend-rpc.polkadot.io")!
 // It's not most eficient though because uses a lot of dynamic types
 let substrate = try await Api(
     rpc: JsonRpcClient(.ws(url: nodeUrl)),
-    config: .dynamic
+    config: .dynamicBlake2
 )
 ```
 
