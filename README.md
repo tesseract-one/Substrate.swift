@@ -48,6 +48,14 @@ pod 'Substrate-Keychain', '~> 0.0.1'
 
 Then run `pod install`
 
+### Examples and Documentation
+
+This repository contains [Examples](./Examples/) project, which provides good starting point to get acquainted with SDK API.
+
+[Documentation](./Documentation/) is a good next step, it helps to understand how to implement own custom Configs and static types.
+
+Below is a set of top-level API examples with Dynamic Config, which can be used on the most of the Substrate-based networks.
+
 ### Initialization
 
 For initialization `Api` needs client and runtime config. For now there is only one client - JsonRPC.
