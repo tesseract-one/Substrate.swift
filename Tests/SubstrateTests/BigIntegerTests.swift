@@ -8,6 +8,7 @@
 import XCTest
 import ScaleCodec
 @testable import Substrate
+import NBKCoreKit
 
 final class BigIntegerTests: XCTestCase {
     private let jsonEncoder = JSONEncoder()
@@ -127,7 +128,7 @@ final class BigIntegerTests: XCTestCase {
     }
     
     private func compactValues<T>(for: T.Type) -> [(T, String)]
-        where T: UnsignedInteger & FixedWidthInteger & CompactCodable & DataSerializable, T.UI == T
+        where T: UnsignedInteger & NBKFixedWidthInteger & CompactCodable & DataSerializable, T.UI == T
     {
         var values: [(T, String)] = [
             (T(0), "00"), (T(1 << 6 - 1), "fc"), (T(1 << 6), "01 01"),
@@ -150,13 +151,13 @@ final class BigIntegerTests: XCTestCase {
     }
     
     private func jsonValues<T>(for: T.Type) -> [(T, String)]
-        where T: UnsignedInteger & FixedWidthInteger & DataSerializable
+        where T: UnsignedInteger & NBKFixedWidthInteger & DataSerializable
     {
         var values: [(T, String)] = []
         values.reserveCapacity(((T.bitWidth / 8) + 3) * 2)
         let pair = { (val: T) -> (T, String) in
             if val <= JSONEncoder.maxSafeInteger {
-                return (val, val.description(radix: 10))
+                return (val, val.description(radix: 10, uppercase: false))
             } else {
                 let hex = TrimmedHex(data: val.data(littleEndian: false, trimmed: true))
                 return (val, "\"\(hex.string)\"")

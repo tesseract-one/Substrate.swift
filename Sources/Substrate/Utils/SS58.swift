@@ -15,7 +15,10 @@ public struct SS58 {
         public var rawValue: RawValue { id }
         
         public init?(rawValue: Self.RawValue) {
-            guard rawValue != Self.reserved46.rawValue && rawValue != Self.reserved47.rawValue else {
+            guard rawValue != Self.reserved46.rawValue &&
+                    rawValue != Self.reserved47.rawValue &&
+                    rawValue < 16_384
+            else {
                 return nil
             }
             self.init(id: rawValue)
@@ -186,20 +189,18 @@ public struct SS58 {
             return (body.suffix(from: prefixLen), format)
         }
         
-        public static func encode(data: Data, format: AddressFormat) -> String {
-            // We mask out the upper two bits of the ident - SS58 Prefix currently only supports 14-bits
-            let ident = format.id & 0b00111111_11111111
-            var result = Array<UInt8>()
-            switch ident {
-            case 0..<64: result.append(UInt8(ident))
+        public static func encode(data: Data, format: AddressFormat) throws -> String {
+            var result = Data()
+            switch format.id {
+            case 0..<64: result.append(UInt8(format.id))
             case 64..<16_384:
                 // upper six bits of the lower byte(!)
-                result.append((UInt8(ident & 0b00000000_11111100) >> 2) | 0b01000000)
+                result.append((UInt8(format.id & 0b00000000_11111100) >> 2) | 0b01000000)
                 // lower two bits of the lower byte in the high pos,
                 // lower bits of the upper byte in the low pos
-                result.append(UInt8(ident >> 8) | UInt8(ident & 0b00000000_00000011) << 6)
+                result.append(UInt8(format.id >> 8) | UInt8(format.id & 0b00000000_00000011) << 6)
             default:
-                fatalError("masked out the upper two bits; qed")
+                throw Error.formatNotAllowed
             }
             let cLength = data.count > 1 ? Self.defaultEncodeChecksumLength : 1
             result.append(contentsOf: data)
@@ -250,7 +251,7 @@ public struct SS58 {
     }
     
     @inlinable
-    public static func encode(data: Data, format: AddressFormat) -> String {
-        AddressCodec.encode(data: data, format: format)
+    public static func encode(data: Data, format: AddressFormat) throws -> String {
+        try AddressCodec.encode(data: data, format: format)
     }
 }

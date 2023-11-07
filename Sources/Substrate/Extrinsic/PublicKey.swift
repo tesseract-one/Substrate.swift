@@ -26,8 +26,8 @@ public extension PublicKey {
     }
     
     @inlinable
-    func ss58(format: SS58.AddressFormat) -> String {
-        SS58.encode(data: raw, format: format)
+    func ss58(format: SS58.AddressFormat) throws -> String {
+        try SS58.encode(data: raw, format: format)
     }
     
     @inlinable

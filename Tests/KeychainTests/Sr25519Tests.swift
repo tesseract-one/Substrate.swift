@@ -138,7 +138,7 @@ final class Sr25519Tests: XCTestCase {
     
     func testSs58CheckRoundtripWorks() {
         let pair = Sr25519KeyPair()
-        let ss58 = pair.pubKey.ss58(format: .substrate)
+        let ss58 = try! pair.pubKey.ss58(format: .substrate)
         let pub = try? Sr25519PublicKey.from(ss58: ss58)
         XCTAssertEqual(pair.pubKey.raw, pub?.0.raw)
         XCTAssertEqual(pub?.1, .substrate)

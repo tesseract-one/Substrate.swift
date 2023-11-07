@@ -17,7 +17,7 @@ let package = Package(
             targets: ["SubstrateRPC"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/oscbyspro/Numberick.git", .upToNextMinor(from: "0.11.0")),
+        .package(url: "https://github.com/oscbyspro/Numberick.git", .upToNextMinor(from: "0.15.0")),
         .package(url: "https://github.com/tesseract-one/xxHash.swift.git", .upToNextMinor(from: "0.1.0")),
         .package(url: "https://github.com/tesseract-one/ScaleCodec.swift.git", .upToNextMinor(from: "0.3.1")),
         .package(url: "https://github.com/tesseract-one/ContextCodable.swift.git", .upToNextMinor(from: "0.1.0")),

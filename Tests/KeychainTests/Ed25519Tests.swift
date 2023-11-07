@@ -117,7 +117,7 @@ final class Ed25519Tests: XCTestCase {
         let oPair = try? Ed25519KeyPair(seed: Data("12345678901234567890123456789012".utf8))
         XCTAssertNotNil(oPair)
         guard let pair = oPair else { return }
-        let ss58 = pair.pubKey.ss58(format: .substrate)
+        let ss58 = try! pair.pubKey.ss58(format: .substrate)
         let pub = try? Ed25519PublicKey.from(ss58: ss58)
         XCTAssertEqual(pair.pubKey.raw, pub?.0.raw)
         XCTAssertEqual(pub?.1, .substrate)

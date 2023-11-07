@@ -35,7 +35,7 @@ public extension AccountId {
     }
     
     var string: String {
-        SS58.encode(data: raw, format: runtime.addressFormat)
+        try! SS58.encode(data: raw, format: runtime.addressFormat)
     }
     
     func address<A: Address>() throws -> A where A.TAccountId == Self {
