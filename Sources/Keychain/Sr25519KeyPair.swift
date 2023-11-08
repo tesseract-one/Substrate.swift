@@ -82,6 +82,22 @@ extension Sr25519KeyPair: KeyPair {
         return _keyPair.verify(message: message, signature: sig)
     }
     
+    public func sign(tx: Data) -> any Signature {
+        if tx.count > Ed25519KeyPair.nonHashedMaxSize {
+            return sign(message: HBlake2b256.instance.hash(data: tx).raw)
+        } else {
+            return sign(message: tx)
+        }
+    }
+    
+    public func verify(tx: Data, signature: any Signature) -> Bool {
+        if tx.count > Ed25519KeyPair.nonHashedMaxSize {
+            return verify(message: HBlake2b256.instance.hash(data: tx).raw, signature: signature)
+        } else {
+            return verify(message: tx, signature: signature)
+        }
+    }
+    
     public static var seedLength: Int = Sr25519Seed.size
 }
 
@@ -122,5 +138,13 @@ extension Substrate.Sr25519PublicKey {
             return false
         }
         return pub.verify(message: message, signature: sig)
+    }
+    
+    public func verify(signature: any Signature, tx: Data) -> Bool {
+        if tx.count > Ed25519KeyPair.nonHashedMaxSize {
+            return verify(signature: signature, message: HBlake2b256.instance.hash(data: tx).raw)
+        } else {
+            return verify(signature: signature, message: tx)
+        }
     }
 }

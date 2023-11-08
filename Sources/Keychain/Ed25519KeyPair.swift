@@ -54,6 +54,8 @@ public struct Ed25519KeyPair: Equatable, Hashable {
             throw KeyPairError(error: error)
         }
     }
+    
+    public static let nonHashedMaxSize: Int = 256
 }
 
 extension Ed25519KeyPair: KeyPair {
@@ -93,6 +95,22 @@ extension Ed25519KeyPair: KeyPair {
         return _keyPair.verify(message: message, signature: sig)
     }
     
+    public func sign(tx: Data) -> any Signature {
+        if tx.count > Self.nonHashedMaxSize {
+            return sign(message: HBlake2b256.instance.hash(data: tx).raw)
+        } else {
+            return sign(message: tx)
+        }
+    }
+    
+    public func verify(tx: Data, signature: any Signature) -> Bool {
+        if tx.count > Self.nonHashedMaxSize {
+            return verify(message: HBlake2b256.instance.hash(data: tx).raw, signature: signature)
+        } else {
+            return verify(message: tx, signature: signature)
+        }
+    }
+    
     public static var seedLength: Int = EDSeed.size
 }
 
@@ -130,5 +148,13 @@ extension Substrate.Ed25519PublicKey {
             return false
         }
         return pub.verify(message: message, signature: sig)
+    }
+    
+    public func verify(signature: any Signature, tx: Data) -> Bool {
+        if tx.count > Ed25519KeyPair.nonHashedMaxSize {
+            return verify(signature: signature, message: HBlake2b256.instance.hash(data: tx).raw)
+        } else {
+            return verify(signature: signature, message: tx)
+        }
     }
 }

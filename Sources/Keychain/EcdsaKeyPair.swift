@@ -84,6 +84,14 @@ extension EcdsaKeyPair: KeyPair {
         return Self._context.verify(signature: sig, hash: Array(hash), pubKey: self._public)
     }
     
+    public func sign(tx: Data) -> any Signature {
+        sign(message: tx)
+    }
+    
+    public func verify(tx: Data, signature: any Signature) -> Bool {
+        verify(message: tx, signature: signature)
+    }
+    
     public static var seedLength: Int = Secp256k1Context.privKeySize
 }
 
@@ -129,5 +137,9 @@ extension EcdsaPublicKey {
         }
         let hash: Data = HBlake2b256.instance.hash(data: message)
         return EcdsaKeyPair._context.verify(signature: sig, hash: Array(hash), pubKey: pub)
+    }
+    
+    public func verify(signature: any Signature, tx: Data) -> Bool {
+        verify(signature: signature, message: tx)
     }
 }

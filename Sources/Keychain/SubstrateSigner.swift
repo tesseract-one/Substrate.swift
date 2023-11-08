@@ -52,7 +52,7 @@ public extension KeyPair {
         } catch {
             return .failure(.badPayload(error: error.localizedDescription))
         }
-        let signature = sign(message: encoder.output)
+        let signature = sign(tx: encoder.output)
         do {
             let signature = try runtime.create(signature: ST<RC>.Signature.self,
                                                raw: signature.raw,

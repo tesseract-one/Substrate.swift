@@ -22,6 +22,9 @@ public protocol KeyPair {
     func sign(message: Data) -> any Signature
     func verify(message: Data, signature: any Signature) -> Bool
     
+    func sign(tx: Data) -> any Signature
+    func verify(tx: Data, signature: any Signature) -> Bool
+    
     static var seedLength: Int { get }
 }
 
