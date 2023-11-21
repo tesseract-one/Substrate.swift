@@ -225,6 +225,12 @@ public extension MetadataV14.Network {
         public let version: UInt8
         public let signedExtensions: [ExtrinsicSignedExtension]
         
+        public init(type: NetworkType.Id, version: UInt8, extensions: [ExtrinsicSignedExtension]) {
+            self.type = type
+            self.version = version
+            self.signedExtensions = extensions
+        }
+        
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             type = try decoder.decode()
             version = try decoder.decode()
@@ -244,6 +250,12 @@ public extension MetadataV14.Network {
         public let identifier: String
         public let type: NetworkType.Id
         public let additionalSigned: NetworkType.Id
+        
+        public init(identifier: String, type: NetworkType.Id, additionalSigned: NetworkType.Id) {
+            self.identifier = identifier
+            self.type = type
+            self.additionalSigned = additionalSigned
+        }
         
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             identifier = try decoder.decode()

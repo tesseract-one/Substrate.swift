@@ -100,6 +100,18 @@ public extension MetadataV15.Network {
         public let extraType: NetworkType.Id
         public let signedExtensions: [ExtrinsicSignedExtension]
         
+        public init(version: UInt8, addressType: NetworkType.Id,
+                    callType: NetworkType.Id, signatureType: NetworkType.Id,
+                    extraType: NetworkType.Id, extensions: [ExtrinsicSignedExtension])
+        {
+            self.version = version
+            self.addressType = addressType
+            self.callType = callType
+            self.signatureType = signatureType
+            self.extraType = extraType
+            self.signedExtensions = extensions
+        }
+        
         public init<D: ScaleCodec.Decoder>(from decoder: inout D) throws {
             version = try decoder.decode()
             addressType = try decoder.decode()
