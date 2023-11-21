@@ -25,7 +25,6 @@ public struct AnyEvent: Event, RuntimeDynamicDecodable, ValidatableType, CustomS
                                        runtime: Runtime) throws
     {
         var value = try Value(from: &decoder, as: type, runtime: runtime)
-        print(value)
         let pallet: String
         switch value.value {
         case .variant(.sequence(name: let name, values: let values)):
