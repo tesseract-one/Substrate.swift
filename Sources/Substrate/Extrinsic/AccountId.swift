@@ -65,11 +65,6 @@ public extension StaticAccountId {
         try self.init(from: string, runtime: runtime, type: TypeDefinition.Never)
     }
     
-    init(from string: String, runtime: any Runtime, type: TypeDefinition.Lazy) throws
-    {
-        try self.init(from: string, runtime: runtime)
-    }
-    
     init(pub: any PublicKey, runtime: any Runtime, type: TypeDefinition.Lazy) throws
     {
         try self.init(pub: pub, runtime: runtime)
